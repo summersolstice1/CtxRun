@@ -57,25 +57,32 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     // 防止重复监听
     if (unlistenNewEntry) return;
 
+    console.log('[RefineryStore] Initializing listeners...');
+
     // 1. 监听新条目 (New Entry)
     unlistenNewEntry = await listen<string>('refinery://new-entry', async (event) => {
-      const newId = event.payload;
-      // 这里的策略是：只有当用户处于第一页且没有复杂筛选时，才自动插入
-      // 否则可能会打乱用户当前的浏览流，或者仅仅显示一个"有新内容"的提示
-      // 简化起见：我们直接去获取这条最新的数据并插到头部
+      console.log('[RefineryStore] New entry detected:', event.payload);
 
-      // 为了获取完整数据，我们稍微偷懒调用一次第一页的查询，或者可以写个 get_item_by_id 后端命令
-      // 这里为了简单，我们直接重载第一页 (如果当前在第一页)
-      const { page, searchQuery } = get();
-      if (page === 1 && !searchQuery) {
-         await get().loadHistory(true);
+      const { page, searchQuery, kindFilter } = get();
+
+      // 策略修正：只要没有处于"搜索状态"或"非第一页"，就强制刷新
+      // 如果用户正在搜索，突然跳出来新内容会打断体验，所以搜索时不自动刷新
+      // 如果用户翻到了第10页，也不要自动跳回第1页
+
+      // 简单粗暴方案：只要在第一页且没有搜索就刷新
+      if (page === 1 && !searchQuery.trim() && kindFilter === 'all') {
+          await get().loadHistory(true); // 重新加载第一页
+      } else {
+          // 可选：显示一个小红点提示 "New items available"
       }
     });
 
     // 2. 监听更新 (Update - e.g. duplicate copy touched timestamp)
     unlistenUpdate = await listen<string>('refinery://update', async (event) => {
+       console.log('[RefineryStore] Entry updated:', event.payload);
        const { page, searchQuery } = get();
-       if (page === 1 && !searchQuery) {
+       // 同样，如果在第一页且没有搜索，就刷新以看到最新的置顶效果
+       if (page === 1 && !searchQuery.trim()) {
           await get().loadHistory(true);
        }
     });
