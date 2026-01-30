@@ -284,6 +284,8 @@ fn main() {
             context::commands::get_context_content,
             context::commands::copy_context_to_clipboard,
             context::commands::save_context_to_file,
+            context::commands::has_ignore_files,
+            context::commands::get_ignored_by_protocol,
             hyperview::get_file_meta,
             scheduler::update_reminder_config,
         ])

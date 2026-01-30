@@ -27,33 +27,6 @@ const updateNodeState = (nodes: FileNode[], targetId: string, isSelected: boolea
   });
 };
 
-const applyLockState = (nodes: FileNode[], fullConfig: IgnoreConfig, parentLocked = false): FileNode[] => {
-  return nodes.map(node => {
-    let shouldLock = parentLocked;
-
-    if (!shouldLock) {
-        if (node.kind === 'dir' && fullConfig.dirs.includes(node.name)) shouldLock = true;
-        if (node.kind === 'file' && fullConfig.files.includes(node.name)) shouldLock = true;
-        if (node.kind === 'file') {
-          const ext = node.name.split('.').pop()?.toLowerCase();
-          if (ext && fullConfig.extensions.includes(ext)) shouldLock = true;
-        }
-    }
-
-    const newNode: FileNode = {
-      ...node,
-      isSelected: shouldLock ? false : node.isSelected,
-      isLocked: shouldLock
-    };
-
-    if (newNode.children) {
-      newNode.children = applyLockState(newNode.children, fullConfig, shouldLock);
-    }
-
-    return newNode;
-  });
-};
-
 const invertTreeSelection = (nodes: FileNode[]): FileNode[] => {
   return nodes.map(node => {
     if (node.isLocked) return node;
@@ -78,6 +51,21 @@ const collectDirIds = (nodes: FileNode[]): string[] => {
   return ids;
 };
 
+// 收集树中所有路径
+const collectAllPaths = (nodes: FileNode[]): string[] => {
+  let paths: string[] = [];
+  const traverse = (nodeList: FileNode[]) => {
+    for (const node of nodeList) {
+      paths.push(node.path);
+      if (node.children) {
+        traverse(node.children);
+      }
+    }
+  };
+  traverse(nodes);
+  return paths;
+};
+
 interface ContextState {
   projectIgnore: IgnoreConfig;
   removeComments: boolean;
@@ -98,22 +86,30 @@ interface ContextState {
 
   updateProjectIgnore: (type: keyof IgnoreConfig, action: 'add' | 'remove', value: string) => void;
   resetProjectIgnore: () => void;
-  refreshTreeStatus: (globalConfig: IgnoreConfig) => void;
+  refreshTreeStatus: (globalConfig: IgnoreConfig) => Promise<void>;
   toggleSelect: (nodeId: string, checked: boolean) => void;
   invertSelection: () => void;
   setRemoveComments: (enable: boolean) => void;
   setDetectSecrets: (enable: boolean) => void;
+
+  // Git ignore 同步相关
+  isIgnoreSyncActive: boolean;
+  hasProjectIgnoreFiles: boolean;
+  toggleIgnoreSync: () => void;
+  checkIgnoreFiles: () => Promise<void>;
 }
 
 export const useContextStore = create<ContextState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       projectIgnore: DEFAULT_PROJECT_IGNORE,
       removeComments: false,
       detectSecrets: true,
       projectRoot: null,
       fileTree: [],
       isScanning: false,
+      isIgnoreSyncActive: false,
+      hasProjectIgnoreFiles: false,
 
       expandedIds: [],
 
@@ -181,16 +177,70 @@ export const useContextStore = create<ContextState>()(
         return { projectIgnore: DEFAULT_PROJECT_IGNORE };
       }),
 
-      refreshTreeStatus: (globalConfig) => set((state) => {
-        const effectiveConfig = {
-          dirs: [...globalConfig.dirs, ...state.projectIgnore.dirs],
-          files: [...globalConfig.files, ...state.projectIgnore.files],
-          extensions: [...globalConfig.extensions, ...state.projectIgnore.extensions],
+      refreshTreeStatus: async (globalConfig) => {
+        const state = get();
+        const { projectRoot, fileTree, isIgnoreSyncActive } = state;
+
+        let protocolIgnoredPaths: string[] = [];
+
+        // 如果开启了同步，从后端获取被 ignore 命中的所有路径
+        if (isIgnoreSyncActive && projectRoot) {
+          const allPaths = collectAllPaths(fileTree);
+          protocolIgnoredPaths = await invoke<string[]>('get_ignored_by_protocol', {
+            projectRoot,
+            paths: allPaths
+          });
+        }
+
+        const protocolSet = new Set(protocolIgnoredPaths);
+
+        // 应用锁定逻辑
+        const applyStatus = (nodes: FileNode[], parentLocked = false, parentGitIgnored = false): FileNode[] => {
+          return nodes.map(node => {
+            // 判定是否被常规规则命中
+            let isConfigIgnored = parentLocked ||
+                                  state.projectIgnore.dirs.includes(node.name) ||
+                                  globalConfig.dirs.includes(node.name);
+            if (node.kind === 'file') {
+              isConfigIgnored = isConfigIgnored ||
+                                state.projectIgnore.files.includes(node.name) ||
+                                globalConfig.files.includes(node.name);
+              const ext = node.name.split('.').pop()?.toLowerCase();
+              if (ext) {
+                isConfigIgnored = isConfigIgnored ||
+                                  state.projectIgnore.extensions.includes(ext) ||
+                                  globalConfig.extensions.includes(ext);
+              }
+            }
+
+            // 判定是否被 Git 协议命中（自身或父级被 git 忽略）
+            const isProtocolIgnored = parentGitIgnored || protocolSet.has(node.path);
+
+            const shouldLock = isConfigIgnored || isProtocolIgnored;
+
+            // 确定忽略来源：优先显示 Git 忽略，其次显示过滤规则
+            let ignoreSource: 'git' | 'filter' | undefined = undefined;
+            if (shouldLock) {
+              ignoreSource = isProtocolIgnored ? 'git' : 'filter';
+            }
+
+            const newNode: FileNode = {
+              ...node,
+              isSelected: shouldLock ? false : node.isSelected,
+              isLocked: shouldLock,
+              ignoreSource,
+            };
+
+            if (newNode.children) {
+              // 如果当前节点被 git 忽略，子节点也继承这个状态
+              newNode.children = applyStatus(newNode.children, shouldLock, isProtocolIgnored);
+            }
+            return newNode;
+          });
         };
 
-        const newTree = applyLockState(state.fileTree, effectiveConfig);
-        return { fileTree: newTree };
-      }),
+        set({ fileTree: applyStatus(fileTree) });
+      },
 
       toggleSelect: (nodeId, checked) => set((state) => ({
         fileTree: updateNodeState(state.fileTree, nodeId, checked)
@@ -202,6 +252,19 @@ export const useContextStore = create<ContextState>()(
 
       setRemoveComments: (enable) => set({ removeComments: enable }),
       setDetectSecrets: (enable) => set({ detectSecrets: enable }),
+
+      // 切换开关
+      toggleIgnoreSync: () => {
+        set((state) => ({ isIgnoreSyncActive: !state.isIgnoreSyncActive }));
+      },
+
+      // 探测项目是否有 ignore 文件
+      checkIgnoreFiles: async () => {
+        const state = get();
+        if (!state.projectRoot) return;
+        const hasFiles = await invoke<boolean>('has_ignore_files', { projectRoot: state.projectRoot });
+        set({ hasProjectIgnoreFiles: hasFiles });
+      },
     }),
     {
       name: 'context-config',
@@ -211,6 +274,7 @@ export const useContextStore = create<ContextState>()(
         removeComments: state.removeComments,
         detectSecrets: state.detectSecrets,
         expandedIds: state.expandedIds,
+        isIgnoreSyncActive: state.isIgnoreSyncActive,
       }),
     }
   )

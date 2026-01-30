@@ -8,7 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   FolderOpen, RefreshCw, Loader2, FileJson,
   PanelLeft, Search, ArrowRight, SlidersHorizontal, ChevronUp,
-  LayoutDashboard, FileText, ArrowRightLeft
+  LayoutDashboard, FileText, ArrowRightLeft, GitBranch
 } from 'lucide-react';
 import { useContextStore } from '@/store/useContextStore';
 import { useAppStore, DEFAULT_MODELS } from '@/store/useAppStore';
@@ -71,7 +71,8 @@ export function ContextView() {
     refreshTreeStatus,
     setProjectRoot, setFileTree, setIsScanning, toggleSelect,
     removeComments, detectSecrets, invertSelection,
-    expandedIds, toggleExpand
+    expandedIds, toggleExpand,
+    hasProjectIgnoreFiles, isIgnoreSyncActive, toggleIgnoreSync, checkIgnoreFiles
   } = useContextStore();
 
   const {
@@ -114,10 +115,16 @@ export function ContextView() {
   }, [projectRoot]);
 
   useEffect(() => {
+    if (projectRoot) {
+      checkIgnoreFiles();
+    }
+  }, [projectRoot]);
+
+  useEffect(() => {
     if (fileTree.length > 0) {
       refreshTreeStatus(globalIgnore);
     }
-  }, [globalIgnore, projectIgnore, refreshTreeStatus]);
+  }, [globalIgnore, projectIgnore, refreshTreeStatus, isIgnoreSyncActive]);
 
   const selectedFileCount = useMemo(() => {
     let count = 0;
@@ -326,8 +333,9 @@ export function ContextView() {
 
       const tree = await scanProject(path, effectiveConfig);
       setFileTree(tree);
-      setProjectRoot(path);
-      
+      await setProjectRoot(path);
+      await checkIgnoreFiles();
+
       const idealWidth = calculateIdealTreeWidth(tree);
       if (idealWidth > contextSidebarWidth) setContextSidebarWidth(idealWidth);
       if (!isContextSidebarOpen) setContextSidebarOpen(true);
@@ -414,6 +422,22 @@ export function ContextView() {
           <div className="p-3 border-b border-border/50 text-xs font-bold text-muted-foreground uppercase tracking-wider flex justify-between shrink-0 items-center">
              <span className="flex items-center gap-1"><FileJson size={12}/>{getText('context', 'explorer', language)}</span>
              <div className="flex items-center gap-2">
+                {/* 动态显示 Git 忽略同步按钮 */}
+                {hasProjectIgnoreFiles && (
+                  <button
+                    onClick={toggleIgnoreSync}
+                    className={cn(
+                      "p-1 rounded transition-all duration-200 flex items-center gap-1",
+                      isIgnoreSyncActive
+                        ? "bg-orange-500/20 text-orange-500 border border-orange-500/30"
+                        : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                    )}
+                    title={isIgnoreSyncActive ? getText('context', 'releaseIgnore', language) : getText('context', 'syncIgnore', language)}
+                  >
+                    <GitBranch size={12} className={cn(isIgnoreSyncActive && "animate-pulse")} />
+                    {isIgnoreSyncActive && <span className="text-[10px] font-bold">GIT</span>}
+                  </button>
+                )}
                 <button
                   onClick={invertSelection}
                   className="p-1 hover:bg-secondary/80 rounded transition-colors text-muted-foreground hover:text-foreground"

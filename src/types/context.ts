@@ -39,5 +39,6 @@ export interface FileNode {
   isPartial?: boolean;
   isExpanded?: boolean;
   isLocked?: boolean;
+  ignoreSource?: 'git' | 'filter';
   children?: FileNode[];
 }

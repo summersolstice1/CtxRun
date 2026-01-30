@@ -74,7 +74,11 @@ export function FileTreeNode({
       }}
       onClick={handleExpandClick}
       onDoubleClick={handleDoubleClick}
-      title={node.isLocked ? getText('common', 'ignoredByFilter', language) : node.path}
+      title={node.isLocked
+        ? (node.ignoreSource === 'git'
+          ? getText('common', 'ignoredByGit', language)
+          : getText('common', 'ignoredByFilter', language))
+        : node.path}
     >
       <div className="w-5 h-5 flex items-center justify-center shrink-0 text-muted-foreground">
         {Icon && <Icon size={14} />}
