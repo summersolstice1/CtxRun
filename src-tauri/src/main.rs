@@ -35,11 +35,11 @@ mod scheduler;
 const MAIN_WINDOW_LABEL: &str = "main";
 
 fn ensure_main_window(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window(MAIN_WINDOW_LABEL) {
+    match app.get_webview_window(MAIN_WINDOW_LABEL) { Some(window) => {
         let _ = window.unminimize();
         let _ = window.show();
         let _ = window.set_focus();
-    } else {
+    } _ => {
         let window_builder = WebviewWindowBuilder::new(
             app,
             MAIN_WINDOW_LABEL,
@@ -59,7 +59,7 @@ fn ensure_main_window(app: &AppHandle) {
             }
             Err(e) => eprintln!("Failed to recreate main window: {}", e),
         }
-    }
+    }}
 }
 
 #[tauri::command]

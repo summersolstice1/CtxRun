@@ -83,7 +83,7 @@ fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool
     {
         // Windows API check
         unsafe {
-            if let Ok(handle) = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
+            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) { Ok(handle) => {
                 if !handle.is_invalid() {
                     let mut is_critical = BOOL(0);
                     if IsProcessCritical(handle, &mut is_critical).is_ok() && bool::from(is_critical) {
@@ -94,9 +94,9 @@ fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool
                 } else {
                     return true;
                 }
-            } else {
+            } _ => {
                 return true;
-            }
+            }}
         }
 
         // Additional list
@@ -577,8 +577,9 @@ pub async fn diagnose_network() -> Vec<NetDiagResult> {
 
     let mut results = Vec::new();
     for handle in handles {
-        if let Ok(res) = handle.await {
-            results.push(res);
+        let res = handle.await;
+        if let Ok(result) = res {
+            results.push(result);
         }
     }
 

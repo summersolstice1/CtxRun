@@ -67,12 +67,14 @@ fn check_ide(cfg: &IdeConfig) -> ToolInfo {
         for path_str in search_paths {
             if path_str.contains('*') {
                 if let Some(parent) = Path::new(&path_str).parent().and_then(|p| p.parent()) {
-                    if let Ok(entries) = std::fs::read_dir(parent) {
-                        for entry in entries.flatten() {
+                    let read_result = std::fs::read_dir(parent);
+                    if let Ok(unflattened_entries) = read_result {
+                        let entries = unflattened_entries.flatten();
+                        for entry in entries {
                             let bin_path = entry.path().join("bin").join(format!("{}64.exe", cfg.bin));
                             if bin_path.exists() {
                                 info.path = Some(bin_path.to_string_lossy().to_string());
-                                info.version = "Installed (Version unknown)".to_string(); 
+                                info.version = "Installed (Version unknown)".to_string();
                                 break;
                             }
                         }
