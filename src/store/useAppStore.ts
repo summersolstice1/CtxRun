@@ -127,7 +127,7 @@ export const useAppStore = create<AppState>()(
         enabled: false,
         intervalMinutes: 45
       },
-      windowDestroyDelay: 30,
+      windowDestroyDelay: 0,  // 0 = 不自动销毁
 
       models: DEFAULT_MODELS,
       lastUpdated: 0,

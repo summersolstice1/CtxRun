@@ -37,6 +37,7 @@ export function SettingsModal() {
 
   // 辅助函数：格式化时间显示 (秒 -> 分:秒)
   const formatDuration = (seconds: number) => {
+    if (seconds === 0) return getText('settings', 'never', language);
     if (seconds < 60) return `${seconds} ${getText('settings', 'seconds', language)}`;
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -387,7 +388,7 @@ export function SettingsModal() {
                                     </div>
                                     <input
                                         type="range"
-                                        min="30"
+                                        min="0"
                                         max="1800"
                                         step="30"
                                         className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
@@ -395,7 +396,7 @@ export function SettingsModal() {
                                         onChange={(e) => setWindowDestroyDelay(parseInt(e.target.value))}
                                     />
                                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                                        <span>30 {getText('settings', 'seconds', language)}</span>
+                                        <span>{getText('settings', 'never', language)}</span>
                                         <span>30 {getText('settings', 'minutes', language)}</span>
                                     </div>
                                 </div>

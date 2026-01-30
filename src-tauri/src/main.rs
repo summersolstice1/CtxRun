@@ -66,6 +66,11 @@ fn ensure_main_window(app: &AppHandle) {
 async fn hide_main_window(app: AppHandle, window: WebviewWindow, delay_secs: u64) -> Result<(), String> {
     window.hide().map_err(|e| e.to_string())?;
 
+    // 如果延迟为 0，表示不自动销毁窗口
+    if delay_secs == 0 {
+        return Ok(());
+    }
+
     let app_handle = app.clone();
     let window_label = window.label().to_string();
 
@@ -344,17 +349,7 @@ fn main() {
                     if window.is_visible().unwrap_or(true) {
                         api.prevent_close();
                         let _ = window.hide();
-
-                        let app_handle = window.app_handle().clone();
-                        let win_label = label.to_string();
-                        tauri::async_runtime::spawn(async move {
-                            sleep(Duration::from_secs(30)).await;
-                            if let Some(w) = app_handle.get_webview_window(&win_label) {
-                                if !w.is_visible().unwrap_or(true) {
-                                    let _ = w.close();
-                                }
-                            }
-                        });
+                        // 注意：自动销毁逻辑已移至前端通过 hide_main_window 命令控制
                     }
                 } else if label == "spotlight" {
                     api.prevent_close();
