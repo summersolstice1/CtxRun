@@ -31,6 +31,7 @@ mod apps;
 mod context;
 mod hyperview;
 mod scheduler;
+mod refinery;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -293,6 +294,11 @@ fn main() {
             context::commands::get_ignored_by_protocol,
             hyperview::get_file_meta,
             scheduler::update_reminder_config,
+            // Refinery Commands
+            refinery::commands::get_refinery_history,
+            refinery::commands::toggle_refinery_pin,
+            refinery::commands::delete_refinery_items,
+            refinery::commands::clear_refinery_history,
         ])
         .setup(|app| {
             let system = System::new();
@@ -311,6 +317,9 @@ fn main() {
                     panic!("[Database] Critical Error: Failed to initialize database: {}", e);
                 }
             }
+
+            // 启动 Refinery 监听器
+            refinery::init_listener(app.handle().clone());
             
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 

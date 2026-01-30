@@ -13,6 +13,7 @@ import { PreviewModal } from "@/components/features/hyperview";
 const PromptView = lazy(() => import('@/components/features/prompts/PromptView').then(module => ({ default: module.PromptView })));
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
 const PatchView = lazy(() => import('@/components/features/patch/PatchView').then(module => ({ default: module.PatchView })));
+const RefineryView = lazy(() => import('@/components/features/refinery/RefineryView').then(module => ({ default: module.RefineryView })));
 const SystemMonitorModal = lazy(() => import('@/components/features/monitor/SystemMonitorModal').then(module => ({ default: module.SystemMonitorModal })));
 
 const appWindow = getCurrentWebviewWindow()
@@ -120,6 +121,7 @@ function App() {
             {currentView === 'prompts' && <PromptView />}
             {currentView === 'context' && <ContextView />}
             {currentView === 'patch' && <PatchView />}
+            {currentView === 'refinery' && <RefineryView />}
           </Suspense>
         </main>
       </div>

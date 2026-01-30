@@ -8,6 +8,7 @@ const translations = {
       prompts: "Prompt Verse",
       context: "Context Forge",
       patch: "Patch Weaver",
+      refinery: "Refinery",
       settings: "Settings"
     },
     sidebar: {
@@ -548,6 +549,7 @@ const translations = {
       prompts: "提词库",
       context: "文件整合",
       patch: "代码对比",
+      refinery: "剪贴板",
       settings: "设置"
     },
     sidebar: {
