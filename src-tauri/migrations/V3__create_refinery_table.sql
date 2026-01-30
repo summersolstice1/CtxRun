@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS refinery_history (
     -- UI 展现字段
     preview TEXT,                       -- 预览：文本截断或图片微缩图
     source_app TEXT,                    -- 来源应用 (VSCode, Chrome 等)
+    url TEXT,                            -- 浏览器 URL (仅浏览器复制时有效)
 
     -- 统计信息
     size_info TEXT,                     -- 文本存储 "125 chars", 图片存储 "1920x1080"

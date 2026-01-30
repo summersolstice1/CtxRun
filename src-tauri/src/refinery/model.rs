@@ -34,6 +34,7 @@ pub struct RefineryItem {
     pub content_hash: String,   // SHA256
     pub preview: Option<String>,
     pub source_app: Option<String>,
+    pub url: Option<String>,     // 浏览器 URL
     pub size_info: Option<String>, // "100 chars" | "1920x1080"
     pub is_pinned: bool,
     pub metadata: String,       // JSON

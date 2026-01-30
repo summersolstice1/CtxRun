@@ -67,6 +67,7 @@ pub fn get_refinery_history(
             content_hash: row.get("content_hash")?,
             preview: row.get("preview")?,
             source_app: row.get("source_app")?,
+            url: row.get("url")?,
             size_info: row.get("size_info")?,
             is_pinned: row.get("is_pinned")?,
             metadata: row.get("metadata")?,

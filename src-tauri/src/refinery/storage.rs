@@ -66,7 +66,8 @@ pub fn upsert_record(
     content: Option<String>,
     hash: String,
     preview: Option<String>,
-    source_app: Option<String>, // [新增]
+    source_app: Option<String>,
+    url: Option<String>, // [新增] 浏览器 URL
     size_info: Option<String>,
     metadata: RefineryMetadata
 ) -> Result<(bool, String), String> {
@@ -80,10 +81,10 @@ pub fn upsert_record(
     ).unwrap_or(None);
 
     if let Some(id) = existing_id {
-        // 2. 存在 -> 更新时间和 source_app
+        // 2. 存在 -> 更新时间、source_app 和 url
         conn.execute(
-            "UPDATE refinery_history SET updated_at = ?, source_app = ? WHERE id = ?",
-            params![now, source_app, &id]
+            "UPDATE refinery_history SET updated_at = ?, source_app = ?, url = ? WHERE id = ?",
+            params![now, source_app, url, &id]
         ).map_err(|e| e.to_string())?;
 
         Ok((false, id))
@@ -94,16 +95,17 @@ pub fn upsert_record(
 
         conn.execute(
             "INSERT INTO refinery_history (
-                id, kind, content, content_hash, preview, source_app, size_info,
+                id, kind, content, content_hash, preview, source_app, url, size_info,
                 metadata, created_at, updated_at, is_pinned
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, 0)",
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0)",
             params![
                 &new_id,
                 kind.to_string(),
                 content,
                 hash,
                 preview,
-                source_app, // [新增]
+                source_app,
+                url, // [新增]
                 size_info,
                 meta_json,
                 now,

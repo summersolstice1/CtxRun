@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Copy, Trash2, ArrowUpRight, FileJson, Calendar, HardDrive } from 'lucide-react';
+import { Copy, Trash2, ArrowUpRight, FileJson, Calendar, HardDrive, Globe } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
@@ -63,6 +63,12 @@ export function ContentWorkbench() {
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-1"><Calendar size={10} /> {formatTimeAgo(activeItem.createdAt, language)}</span>
                     <span className="flex items-center gap-1"><HardDrive size={10} /> ID: {activeItem.id.slice(0, 8)}</span>
+                    {activeItem.sourceApp && <span className="flex items-center gap-1"><FileJson size={10} /> {activeItem.sourceApp}</span>}
+                    {activeItem.url && (
+                        <a href={activeItem.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary hover:underline max-w-[200px] truncate" title={activeItem.url}>
+                            <Globe size={10} /> {activeItem.url}
+                        </a>
+                    )}
                 </div>
             </div>
 

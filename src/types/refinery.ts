@@ -14,6 +14,7 @@ export interface RefineryItem {
   contentHash: string;
   preview: string;      // 列表显示的摘要
   sourceApp?: string;
+  url?: string;         // 浏览器 URL (仅浏览器复制时有效)
   sizeInfo: string;
   isPinned: boolean;
   metadata: string;     // 原始 JSON 字符串

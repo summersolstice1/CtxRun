@@ -6,7 +6,7 @@ use clipboard_rs::{
     ClipboardWatcher, ClipboardWatcherContext, ContentFormat,
 };
 use clipboard_rs::common::RustImage;
-use active_win_pos_rs::get_active_window;
+use x_win::{get_active_window, get_browser_url};
 
 use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
@@ -28,7 +28,21 @@ impl RefineryHandler {
     // [新增] 获取当前活动应用名称的辅助函数
     fn get_current_app_name(&self) -> Option<String> {
         match get_active_window() {
-            Ok(window) => Some(window.app_name),
+            Ok(window) => Some(window.info.exec_name),
+            Err(_) => None,
+        }
+    }
+
+    // [新增] 获取当前浏览器的 URL
+    fn get_browser_url(&self) -> Option<String> {
+        match get_active_window() {
+            Ok(window) => {
+                // 尝试获取浏览器 URL，只在浏览器中有效
+                match get_browser_url(&window) {
+                    Ok(url) => Some(url),
+                    Err(_) => None,
+                }
+            },
             Err(_) => None,
         }
     }
@@ -38,6 +52,9 @@ impl RefineryHandler {
         // (因为读取剪贴板可能耗时，或者后续逻辑会延迟)
         let source_app = self.get_current_app_name();
 
+        // 2. 尝试获取浏览器 URL (仅在浏览器中有效)
+        let url = self.get_browser_url();
+
         // 每次变化时，创建一个新的读取上下文
         // 注意：在某些平台(Linux X11)读取操作可能会超时，这里需要健壮处理
         let ctx = ClipboardContext::new().map_err(|e| e.to_string())?;
@@ -46,18 +63,18 @@ impl RefineryHandler {
         // 因为很多时候复制文本也会伴随 HTML/RTF，但复制图片通常意图明确
 
         if ctx.has(ContentFormat::Image) {
-            return self.handle_image(&ctx, source_app);
+            return self.handle_image(&ctx, source_app, url);
         }
 
         if ctx.has(ContentFormat::Text) {
-            return self.handle_text(&ctx, source_app);
+            return self.handle_text(&ctx, source_app, url);
         }
 
         Ok(())
     }
 
-    // 更新函数签名，接收 source_app
-    fn handle_image(&mut self, ctx: &ClipboardContext, source_app: Option<String>) -> Result<(), String> {
+    // 更新函数签名，接收 source_app 和 url
+    fn handle_image(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
         let rust_image = ctx.get_image().map_err(|e| e.to_string())?;
 
         // 转换为 image crate 的 DynamicImage
@@ -89,12 +106,12 @@ impl RefineryHandler {
             tokens: None,
         };
 
-        // 3. 写入数据库，传入 source_app
-        self.write_to_db(RefineryKind::Image, Some(file_path), hash, preview, source_app, Some(size_info), metadata)
+        // 3. 写入数据库，传入 source_app 和 url
+        self.write_to_db(RefineryKind::Image, Some(file_path), hash, preview, source_app, url, Some(size_info), metadata)
     }
 
-    // 更新函数签名，接收 source_app
-    fn handle_text(&mut self, ctx: &ClipboardContext, source_app: Option<String>) -> Result<(), String> {
+    // 更新函数签名，接收 source_app 和 url
+    fn handle_text(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
         let content = ctx.get_text().map_err(|e| e.to_string())?;
         let trimmed = content.trim();
 
@@ -128,18 +145,19 @@ impl RefineryHandler {
             tokens: None, // 后续可用 tiktoken 计算
         };
 
-        // 3. 写入数据库，传入 source_app
-        self.write_to_db(RefineryKind::Text, Some(content), hash, preview, source_app, Some(size_info), metadata)
+        // 3. 写入数据库，传入 source_app 和 url
+        self.write_to_db(RefineryKind::Text, Some(content), hash, preview, source_app, url, Some(size_info), metadata)
     }
 
-    // 更新参数列表，增加 source_app
+    // 更新参数列表，增加 source_app 和 url
     fn write_to_db(
         &self,
         kind: RefineryKind,
         content: Option<String>,
         hash: String,
         preview: Option<String>,
-        source_app: Option<String>, // [新增]
+        source_app: Option<String>,
+        url: Option<String>, // [新增]
         size_info: Option<String>,
         metadata: RefineryMetadata
     ) -> Result<(), String> {
@@ -147,7 +165,7 @@ impl RefineryHandler {
         let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
         let (is_new, id) = upsert_record(
-            &conn, kind, content, hash, preview, source_app, size_info, metadata
+            &conn, kind, content, hash, preview, source_app, url, size_info, metadata
         )?;
 
         // 4. 通知前端
