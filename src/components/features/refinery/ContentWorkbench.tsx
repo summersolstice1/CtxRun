@@ -5,7 +5,6 @@ import { useRefineryStore } from '@/store/useRefineryStore';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
 import { CodeBlock } from '@/components/ui/CodeBlock';
-import { cn } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 
 export function ContentWorkbench() {

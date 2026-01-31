@@ -1,7 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { Search, Filter, Trash2, Layers, Image as ImageIcon, Type, X } from 'lucide-react';
+import { Search, Filter, Layers, Image as ImageIcon, Type, X } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { HistoryItem } from './HistoryItem';
@@ -14,8 +14,8 @@ export function HistorySidebar() {
     items, activeId, isLoading,
     searchQuery, setSearchQuery,
     kindFilter, setKindFilter,
-    togglePin, deleteItem, setActiveId,
-    loadHistory, hasMore
+    togglePin, setActiveId,
+    hasMore
   } = useRefineryStore();
 
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -31,7 +31,7 @@ export function HistorySidebar() {
   }, [localSearch, setSearchQuery, searchQuery]);
 
   // 无限滚动检测
-  const handleScroll = ({ scrollOffset, scrollDirection }: any) => {
+  const handleScroll = ({ scrollDirection }: any) => {
     if (scrollDirection === 'forward' && hasMore && !isLoading) {
        // 简单判断：如果滚到底部附近，加载更多 (实际可用更精细的计算)
        // 这里暂时略过，依赖用户手动刷新或后续优化

@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { FileText, Image as ImageIcon, Pin, Clock, Database } from 'lucide-react';
+import { FileText, Image as ImageIcon, Pin, Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RefineryItemUI } from '@/types/refinery';
 import { formatTimeAgo } from '@/lib/refinery_utils';
