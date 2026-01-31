@@ -1,19 +1,48 @@
-import { useMemo } from 'react';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { useMemo, useState, useEffect } from 'react';
 import { Copy, Trash2, ArrowUpRight, FileJson, Calendar, HardDrive, Globe } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { formatTimeAgo } from '@/lib/refinery_utils';
+import { readFile } from '@tauri-apps/plugin-fs';
 
 export function ContentWorkbench() {
   const { items, activeId, deleteItem } = useRefineryStore();
   const { language } = useAppStore();
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
 
   const activeItem = useMemo(() =>
     items.find(i => i.id === activeId),
   [items, activeId]);
+
+  // 当选中图片项时，读取图片文件并转为 Blob URL
+  useEffect(() => {
+    let currentUrl: string | null = null;
+
+    if (activeItem?.kind === 'image' && activeItem.content) {
+      readFile(activeItem.content)
+        .then((bytes) => {
+          const blob = new Blob([bytes], { type: 'image/png' });
+          const url = URL.createObjectURL(blob);
+          currentUrl = url;
+          setImageUrl(url);
+        })
+        .catch((err) => {
+          console.error('Failed to load image:', err);
+          setImageUrl(null);
+        });
+    } else {
+      setImageUrl(null);
+    }
+
+    // Cleanup: 释放之前的 Blob URL
+    return () => {
+      if (currentUrl) {
+        URL.revokeObjectURL(currentUrl);
+      }
+    };
+  }, [activeItem]);
 
   if (!activeItem) {
     return (
@@ -86,11 +115,17 @@ export function ContentWorkbench() {
             {activeItem.kind === 'image' ? (
                 <div className="h-full flex items-center justify-center min-h-[300px]">
                     <div className="relative group max-w-full max-h-full shadow-lg rounded-lg overflow-hidden border border-border bg-[url('https://transparenttextures.com/patterns/cubes.png')] bg-white/5">
-                        <img
-                            src={convertFileSrc(activeItem.content)}
-                            alt="Refinery Content"
-                            className="max-w-full max-h-[70vh] object-contain block"
-                        />
+                        {imageUrl ? (
+                            <img
+                                src={imageUrl}
+                                alt="Refinery Content"
+                                className="max-w-full max-h-[70vh] object-contain block"
+                            />
+                        ) : (
+                            <div className="flex items-center justify-center h-[70vh] text-muted-foreground">
+                                Loading image...
+                            </div>
+                        )}
                         <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur text-white text-[10px] p-2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                             <span>{activeItem.content}</span>
                             <span>{activeItem.metaParsed.width}x{activeItem.metaParsed.height}</span>

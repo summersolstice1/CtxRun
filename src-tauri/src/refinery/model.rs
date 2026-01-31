@@ -27,6 +27,7 @@ pub struct RefineryMetadata {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
 pub struct RefineryItem {
     pub id: String,
     pub kind: String,           // "text" | "image"
