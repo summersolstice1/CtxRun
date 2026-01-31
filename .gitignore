@@ -24,3 +24,8 @@ dist-ssr
 *.sln
 *.sw?
 Future.md
+/.claude/
+/images/
+/models/
+gen/
+icons/
