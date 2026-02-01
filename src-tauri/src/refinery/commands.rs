@@ -4,9 +4,17 @@ use std::fs;
 use std::path::Path;
 use clipboard_rs::{ClipboardContext, Clipboard};
 use clipboard_rs::common::{RustImageData, RustImage};
+use serde::Serialize;
 
 use crate::db::DbState;
 use super::model::RefineryItem;
+
+#[derive(Serialize)]
+pub struct RefineryStatistics {
+    pub total_entries: u32,
+    pub this_week: u32,
+    pub favorites: u32,
+}
 
 // ============================================================================
 // 查询与筛选 (Read)
@@ -20,6 +28,8 @@ pub fn get_refinery_history(
     search_query: Option<String>,
     kind_filter: Option<String>, // "text" | "image"
     pinned_only: bool,
+    start_date: Option<i64>,
+    end_date: Option<i64>,
 ) -> Result<Vec<RefineryItem>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let offset = (page - 1) * page_size;
@@ -51,7 +61,17 @@ pub fn get_refinery_history(
         sql.push_str(" AND is_pinned = 1");
     }
 
-    // 4. 排序与分页 (按更新时间倒序)
+    // 4. 日期范围筛选
+    if let Some(start) = start_date {
+        sql.push_str(" AND created_at >= ?");
+        params.push(Box::new(start));
+    }
+    if let Some(end) = end_date {
+        sql.push_str(" AND created_at <= ?");
+        params.push(Box::new(end));
+    }
+
+    // 5. 排序与分页 (按更新时间倒序)
     sql.push_str(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
     params.push(Box::new(page_size));
     params.push(Box::new(offset));
@@ -86,6 +106,40 @@ pub fn get_refinery_history(
     Ok(results)
 }
 
+/// 获取统计信息
+#[tauri::command]
+pub fn get_refinery_statistics(state: State<DbState>) -> Result<RefineryStatistics, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    // 总条目数
+    let total_entries: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM refinery_history",
+        [],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    // 收藏数
+    let favorites: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM refinery_history WHERE is_pinned = 1",
+        [],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    // 本周新增（计算7天前的时间戳）
+    let week_ago = chrono::Utc::now().timestamp_millis() - (7 * 24 * 60 * 60 * 1000);
+    let this_week: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM refinery_history WHERE created_at > ?",
+        params![week_ago],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    Ok(RefineryStatistics {
+        total_entries,
+        this_week,
+        favorites,
+    })
+}
+
 // ============================================================================
 // 操作与状态修改 (Update)
 // ============================================================================
@@ -111,8 +165,6 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
     }
 
     // 1. 查找需要删除的记录中，哪些是图片（需要删文件）
-    // 为了性能，我们手动拼接 IN 查询 (SQLite 参数限制通常是 999，批量删除需注意)
-    // 这里使用简单的循环查询（考虑到批量删除通常不会一次选几千个，循环可接受且安全）
     let mut files_to_delete: Vec<String> = Vec::new();
 
     {
@@ -137,7 +189,6 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
     }
 
     // 2. 执行数据库删除 (开启事务)
-    // 使用循环执行 delete，或者构造 WHERE id IN (...)
     let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
     let mut deleted_count = 0;
 

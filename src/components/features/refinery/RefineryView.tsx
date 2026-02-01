@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { HistorySidebar } from './HistorySidebar';
-import { ContentWorkbench } from './ContentWorkbench';
+import { RefinerySidebar } from './RefinerySidebar';
+import { RefineryFeed } from './RefineryFeed';
+import { RefineryDrawer } from './RefineryDrawer';
 import { useRefineryStore } from '@/store/useRefineryStore';
 
 export function RefineryView() {
@@ -14,12 +15,15 @@ export function RefineryView() {
   }, []);
 
   return (
-    <div className="h-full flex items-stretch overflow-hidden animate-in fade-in duration-300">
-        {/* Left Sidebar */}
-        <HistorySidebar />
+    <div className="h-full flex items-stretch bg-background relative overflow-hidden">
+      {/* Left Sidebar - Calendar & Filters */}
+      <RefinerySidebar />
 
-        {/* Right Workbench */}
-        <ContentWorkbench />
+      {/* Middle Content - Feed Stream */}
+      <RefineryFeed />
+
+      {/* Right Drawer - Detail Overlay (2/3) */}
+      <RefineryDrawer />
     </div>
   );
 }

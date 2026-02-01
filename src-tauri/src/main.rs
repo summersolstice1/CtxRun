@@ -296,6 +296,7 @@ fn main() {
             scheduler::update_reminder_config,
             // Refinery Commands
             refinery::commands::get_refinery_history,
+            refinery::commands::get_refinery_statistics,
             refinery::commands::toggle_refinery_pin,
             refinery::commands::delete_refinery_items,
             refinery::commands::clear_refinery_history,
