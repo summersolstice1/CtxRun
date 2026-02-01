@@ -1,8 +1,8 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Copy, Trash2, ArrowUpRight, FileJson, Calendar, HardDrive, Globe } from 'lucide-react';
+import { Copy, Trash2, ArrowUpRight, Calendar, HardDrive, Globe, Monitor, Clipboard } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
-import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
+import { invoke } from '@tauri-apps/api/core';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { readFile } from '@tauri-apps/plugin-fs';
@@ -48,7 +48,7 @@ export function ContentWorkbench() {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 gap-4 bg-background/50">
          <div className="w-24 h-24 rounded-2xl bg-secondary/20 flex items-center justify-center border border-dashed border-border">
-            <FileJson size={32} />
+            <Clipboard size={32} />
          </div>
          <p className="text-sm">Select an item to view details</p>
       </div>
@@ -58,13 +58,12 @@ export function ContentWorkbench() {
   const handleCopy = async () => {
       try {
           if (activeItem.kind === 'text') {
-              await writeText(activeItem.content || '');
-          } else {
-              // 对于图片，通常只复制路径，或者后续实现读取二进制写入剪贴板
-              await writeText(activeItem.content);
+              await invoke('copy_refinery_text', { text: activeItem.content || '' });
+          } else if (activeItem.kind === 'image' && activeItem.content) {
+              await invoke('copy_refinery_image', { imagePath: activeItem.content });
           }
       } catch (e) {
-          console.error(e);
+          console.error('Failed to copy:', e);
       }
   };
 
@@ -91,7 +90,7 @@ export function ContentWorkbench() {
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
                     <span className="flex items-center gap-1"><Calendar size={10} /> {formatTimeAgo(activeItem.createdAt, language)}</span>
                     <span className="flex items-center gap-1"><HardDrive size={10} /> ID: {activeItem.id.slice(0, 8)}</span>
-                    {activeItem.sourceApp && <span className="flex items-center gap-1"><FileJson size={10} /> {activeItem.sourceApp}</span>}
+                    {activeItem.sourceApp && <span className="flex items-center gap-1"><Monitor size={10} /> {activeItem.sourceApp}</span>}
                     {activeItem.url && (
                         <a href={activeItem.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary hover:underline max-w-[200px] truncate" title={activeItem.url}>
                             <Globe size={10} /> {activeItem.url}

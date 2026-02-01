@@ -80,11 +80,6 @@ export const HistoryItem = memo(({ item, isActive, style, onClick, onTogglePin }
               <Pin size={12} className={cn(item.isPinned && "fill-current")} />
             </button>
         </div>
-
-        {/* Active Indicator Bar */}
-        {isActive && (
-            <div className="absolute left-0 top-3 bottom-3 w-1 bg-primary rounded-r-full" />
-        )}
       </div>
     </div>
   );

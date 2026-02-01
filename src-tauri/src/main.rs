@@ -299,6 +299,8 @@ fn main() {
             refinery::commands::toggle_refinery_pin,
             refinery::commands::delete_refinery_items,
             refinery::commands::clear_refinery_history,
+            refinery::commands::copy_refinery_text,
+            refinery::commands::copy_refinery_image,
         ])
         .setup(|app| {
             let system = System::new();

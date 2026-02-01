@@ -2,6 +2,8 @@ use tauri::State;
 use rusqlite::params;
 use std::fs;
 use std::path::Path;
+use clipboard_rs::{ClipboardContext, Clipboard};
+use clipboard_rs::common::{RustImageData, RustImage};
 
 use crate::db::DbState;
 use super::model::RefineryItem;
@@ -209,4 +211,44 @@ pub fn clear_refinery_history(
 
     // 2. 复用删除逻辑
     delete_items_internal(&conn, &ids)
+}
+
+// ============================================================================
+// 剪贴板操作 (Clipboard)
+// ============================================================================
+
+/// 复制文本到剪贴板
+#[tauri::command]
+pub fn copy_refinery_text(text: String) -> Result<(), String> {
+    let clipboard = ClipboardContext::new()
+        .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+    clipboard.set_text(text)
+        .map_err(|e| format!("Failed to copy text: {}", e))?;
+    Ok(())
+}
+
+/// 复制图片到剪贴板
+#[tauri::command]
+pub fn copy_refinery_image(image_path: String) -> Result<(), String> {
+    // 读取图片文件
+    let path = Path::new(&image_path);
+    if !path.exists() {
+        return Err(format!("Image file not found: {}", image_path));
+    }
+
+    // 使用 image crate 打开图片
+    let img = image::open(path)
+        .map_err(|e| format!("Failed to open image: {}", e))?;
+
+    // 转换为 clipboard_rs 的 RustImageData
+    let rust_image = RustImageData::from_dynamic_image(img);
+
+    // 创建剪贴板上下文并设置图片
+    let clipboard = ClipboardContext::new()
+        .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+
+    clipboard.set_image(rust_image)
+        .map_err(|e| format!("Failed to copy image: {}", e))?;
+
+    Ok(())
 }

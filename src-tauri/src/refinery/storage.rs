@@ -81,11 +81,33 @@ pub fn upsert_record(
     ).unwrap_or(None);
 
     if let Some(id) = existing_id {
-        // 2. 存在 -> 更新时间、source_app 和 url
-        conn.execute(
-            "UPDATE refinery_history SET updated_at = ?, source_app = ?, url = ? WHERE id = ?",
-            params![now, source_app, url, &id]
-        ).map_err(|e| e.to_string())?;
+        // 2. 存在 -> 更新时间，只在有值时更新 source_app 和 url
+        match (&source_app, &url) {
+            (Some(app), Some(u)) => {
+                conn.execute(
+                    "UPDATE refinery_history SET updated_at = ?, source_app = ?, url = ? WHERE id = ?",
+                    params![now, app, u, &id]
+                ).map_err(|e| e.to_string())?;
+            }
+            (Some(app), None) => {
+                conn.execute(
+                    "UPDATE refinery_history SET updated_at = ?, source_app = ? WHERE id = ?",
+                    params![now, app, &id]
+                ).map_err(|e| e.to_string())?;
+            }
+            (None, Some(u)) => {
+                conn.execute(
+                    "UPDATE refinery_history SET updated_at = ?, url = ? WHERE id = ?",
+                    params![now, u, &id]
+                ).map_err(|e| e.to_string())?;
+            }
+            (None, None) => {
+                conn.execute(
+                    "UPDATE refinery_history SET updated_at = ? WHERE id = ?",
+                    params![now, &id]
+                ).map_err(|e| e.to_string())?;
+            }
+        }
 
         Ok((false, id))
     } else {
