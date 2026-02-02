@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   X, Copy, Trash2, Star, Calendar, Monitor,
   HardDrive, ArrowUpRight, Loader2, Image as ImageIcon,
-  Edit2, Save, PenTool
+  Edit2, Save, PenTool, Check
 } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
@@ -29,6 +29,7 @@ export function RefineryDrawer() {
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [copySuccess, setCopySuccess] = useState(false);
 
   // 当选中的 Item 改变时，重置状态
   useEffect(() => {
@@ -60,10 +61,19 @@ export function RefineryDrawer() {
       } else if (activeItem.kind === 'image' && activeItem.content) {
         await invoke('copy_refinery_image', { imagePath: activeItem.content });
       }
+      setCopySuccess(true);
     } catch (e) {
       console.error('Failed to copy:', e);
     }
   };
+
+  // 复制成功反馈 2 秒后重置
+  useEffect(() => {
+    if (copySuccess) {
+      const timer = setTimeout(() => setCopySuccess(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copySuccess]);
 
   const handleDelete = () => {
     if (!activeItem) return;
@@ -135,8 +145,20 @@ export function RefineryDrawer() {
                     <>
                       <ActionBtn onClick={() => setIsEditing(true)} icon={<Edit2 size={16} />} title="Edit" />
                       <div className="h-4 w-px bg-border/60 mx-1" />
-                      <ActionBtn onClick={() => togglePin(activeItem.id)} active={activeItem.isPinned} icon={<Star size={16} />} />
-                      <ActionBtn onClick={handleCopy} icon={<Copy size={16} />} />
+                      <ActionBtn
+                        onClick={() => togglePin(activeItem.id)}
+                        active={activeItem.isPinned}
+                        icon={<Star size={16} className={activeItem.isPinned ? 'fill-current' : ''} />}
+                        animated
+                        animationKey={activeItem.isPinned ? 'pinned' : 'unpinned'}
+                      />
+                      <ActionBtn
+  onClick={handleCopy}
+  icon={copySuccess ? <Check size={16} /> : <Copy size={16} />}
+  className={copySuccess ? 'text-green-500' : ''}
+  animated
+  animationKey={copySuccess ? 'check' : 'copy'}
+/>
                       <ActionBtn onClick={handleDelete} icon={<Trash2 size={16} />} className="hover:text-destructive" />
                     </>
                   ) : (
@@ -260,7 +282,21 @@ export function RefineryDrawer() {
   );
 }
 
-function ActionBtn({ icon, onClick, active, className, title }: any) {
+function ActionBtn({ icon, onClick, active, className, title, animated = false, animationKey }: any) {
+  const iconContent = animated ? (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={animationKey || 'icon'}
+        initial={{ scale: 0, rotate: -90, opacity: 0 }}
+        animate={{ scale: 1, rotate: 0, opacity: 1 }}
+        exit={{ scale: 0, rotate: 90, opacity: 0 }}
+        transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
+      >
+        {icon}
+      </motion.div>
+    </AnimatePresence>
+  ) : icon;
+
   return (
     <button
       onClick={onClick}
@@ -271,7 +307,7 @@ function ActionBtn({ icon, onClick, active, className, title }: any) {
       )}
       title={title}
     >
-      {icon}
+      {iconContent}
     </button>
   );
 }
