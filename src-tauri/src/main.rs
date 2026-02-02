@@ -302,6 +302,8 @@ fn main() {
             refinery::commands::clear_refinery_history,
             refinery::commands::copy_refinery_text,
             refinery::commands::copy_refinery_image,
+            refinery::commands::create_note,
+            refinery::commands::update_note,
         ])
         .setup(|app| {
             let system = System::new();

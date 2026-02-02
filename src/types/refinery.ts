@@ -20,6 +20,11 @@ export interface RefineryItem {
   metadata: string;     // 原始 JSON 字符串
   createdAt: number;
   updatedAt: number;
+  // [新增字段]
+  title?: string | null;
+  tags?: string[] | null;
+  isManual: boolean;
+  isEdited: boolean;
 }
 
 // 用于 UI 渲染的扩展接口

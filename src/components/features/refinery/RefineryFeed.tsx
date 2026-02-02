@@ -5,6 +5,7 @@ import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Sea
 import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { getText } from '@/lib/i18n';
+import type { LangKey } from '@/lib/i18n';
 
 export function RefineryFeed() {
   const {
@@ -208,7 +209,7 @@ function FeedCard({
 }
 
 // Helper function to get date key for grouping
-function getDateKey(timestamp: number, lang: string): string {
+function getDateKey(timestamp: number, lang: LangKey): string {
   const date = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date(today);

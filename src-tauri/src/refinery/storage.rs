@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 use chrono::Utc;
 use uuid::Uuid;
@@ -58,30 +58,34 @@ pub fn save_image_to_disk(app: &AppHandle, image: &DynamicImage) -> Result<(Stri
     Ok((file_path_str, hash))
 }
 
-/// 核心数据库操作：Upsert (插入或更新时间)
-/// 返回: (IsNewEntry: bool, ItemId: String)
-pub fn upsert_record(
+/// 场景 A：剪贴板捕获逻辑 (Worker 使用)
+/// 逻辑：
+/// 1. 计算哈希，在数据库中查找最近的一条相同哈希的记录。
+/// 2. 如果存在 -> 更新时间，使其置顶 (Bump)。
+/// 3. 如果不存在 -> 插入新记录。
+pub fn capture_clipboard_item(
     conn: &Connection,
     kind: RefineryKind,
     content: Option<String>,
     hash: String,
     preview: Option<String>,
     source_app: Option<String>,
-    url: Option<String>, // [新增] 浏览器 URL
+    url: Option<String>,
     size_info: Option<String>,
     metadata: RefineryMetadata
 ) -> Result<(bool, String), String> {
     let now = Utc::now().timestamp_millis();
 
-    // 1. 检查是否存在
+    // 1. 查找是否存在相同内容的记录 (按时间倒序取最新的)
     let existing_id: Option<String> = conn.query_row(
-        "SELECT id FROM refinery_history WHERE content_hash = ? LIMIT 1",
+        "SELECT id FROM refinery_history WHERE content_hash = ? ORDER BY updated_at DESC LIMIT 1",
         params![&hash],
         |row| row.get(0)
-    ).unwrap_or(None);
+    ).optional().map_err(|e| e.to_string())?;
 
     if let Some(id) = existing_id {
-        // 2. 存在 -> 更新时间，只在有值时更新 source_app 和 url
+        // 2. 存在 -> 仅仅更新时间戳和来源信息 (Bump)
+        // 注意：不覆盖用户可能已经编辑过的 title 或 tags
         match (&source_app, &url) {
             (Some(app), Some(u)) => {
                 conn.execute(
@@ -108,7 +112,6 @@ pub fn upsert_record(
                 ).map_err(|e| e.to_string())?;
             }
         }
-
         Ok((false, id))
     } else {
         // 3. 不存在 -> 插入新记录
@@ -118,8 +121,9 @@ pub fn upsert_record(
         conn.execute(
             "INSERT INTO refinery_history (
                 id, kind, content, content_hash, preview, source_app, url, size_info,
-                metadata, created_at, updated_at, is_pinned
-            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0)",
+                metadata, created_at, updated_at, is_pinned,
+                is_manual, is_edited, tags, title
+            ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 0, 0, 0, '[]', NULL)",
             params![
                 &new_id,
                 kind.to_string(),
@@ -127,7 +131,7 @@ pub fn upsert_record(
                 hash,
                 preview,
                 source_app,
-                url, // [新增]
+                url,
                 size_info,
                 meta_json,
                 now,
@@ -137,4 +141,88 @@ pub fn upsert_record(
 
         Ok((true, new_id))
     }
+}
+
+/// 场景 B：用户手动创建笔记 (Command 使用)
+/// 逻辑：直接插入，不检查去重。
+pub fn create_manual_note_db(
+    conn: &Connection,
+    content: String,
+    title: Option<String>,
+) -> Result<String, String> {
+    let now = Utc::now().timestamp_millis();
+    let new_id = Uuid::new_v4().to_string();
+
+    // 计算哈希和预览
+    let hash = hash_content(content.as_bytes());
+    let char_count = content.chars().count();
+    let size_info = format!("{} chars", char_count);
+    let preview: String = content.chars().take(150).collect();
+
+    let metadata = RefineryMetadata {
+        width: None,
+        height: None,
+        format: None,
+        tokens: None,
+    };
+    let meta_json = serde_json::to_string(&metadata).unwrap_or("{}".to_string());
+
+    conn.execute(
+        "INSERT INTO refinery_history (
+            id, kind, content, content_hash, preview, source_app, url, size_info,
+            metadata, created_at, updated_at, is_pinned,
+            is_manual, is_edited, tags, title
+        ) VALUES (?1, 'text', ?2, ?3, ?4, 'CtxRun', NULL, ?5, ?6, ?7, ?7, 0, 1, 0, '[]', ?8)",
+        params![
+            &new_id,
+            content,
+            hash,
+            preview,
+            size_info,
+            meta_json,
+            now,
+            title
+        ]
+    ).map_err(|e| e.to_string())?;
+
+    Ok(new_id)
+}
+
+/// 场景 C：用户更新笔记内容或标题 (Command 使用)
+pub fn update_note_db(
+    conn: &Connection,
+    id: &str,
+    content: Option<String>,
+    title: Option<String>
+) -> Result<(), String> {
+    let now = Utc::now().timestamp_millis();
+
+    if let Some(new_content) = content {
+        // 如果更新了内容，必须重新计算 Hash、Size 和 Preview
+        let hash = hash_content(new_content.as_bytes());
+        let char_count = new_content.chars().count();
+        let size_info = format!("{} chars", char_count);
+        let preview: String = new_content.chars().take(150).collect();
+
+        conn.execute(
+            "UPDATE refinery_history SET
+                content = ?1,
+                content_hash = ?2,
+                preview = ?3,
+                size_info = ?4,
+                title = COALESCE(?5, title),
+                updated_at = ?6,
+                is_edited = 1
+             WHERE id = ?7",
+            params![new_content, hash, preview, size_info, title, now, id]
+        ).map_err(|e| e.to_string())?;
+    } else if let Some(new_title) = title {
+        // 只更新标题
+        conn.execute(
+            "UPDATE refinery_history SET title = ?1, updated_at = ?2 WHERE id = ?3",
+            params![new_title, now, id]
+        ).map_err(|e| e.to_string())?;
+    }
+
+    Ok(())
 }

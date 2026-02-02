@@ -11,7 +11,7 @@ use x_win::{get_active_window, get_browser_url};
 
 use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
-use super::storage::{hash_content, save_image_to_disk, upsert_record};
+use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
 // 自我复制检测状态
 #[derive(Clone)]
@@ -204,11 +204,12 @@ impl RefineryHandler {
         let state = self.app.state::<DbState>();
         let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-        let (is_new, id) = upsert_record(
+        // 使用新的 capture_clipboard_item 函数
+        let (is_new, id) = capture_clipboard_item(
             &conn, kind, content, hash, preview, source_app, url, size_info, metadata
         )?;
 
-        // 4. 通知前端
+        // 通知前端
         // 如果是新记录：refinery://new-entry
         // 如果是更新：refinery://update
         let event_name = if is_new { "refinery://new-entry" } else { "refinery://update" };
@@ -217,7 +218,7 @@ impl RefineryHandler {
         // 如果 emit 失败（例如没有窗口监听），不会导致 panic，只会忽略
         let _ = self.app.emit(event_name, &id);
 
-        println!("[Refinery] Saved: {} (New: {})", id, is_new);
+        println!("[Refinery] Capture Saved: {} (New: {})", id, is_new);
 
         Ok(())
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Hash, Star, Type, Image as ImageIcon, Trash2, ChevronLeft, ChevronRight, Search, X, Loader2, Calendar } from 'lucide-react';
+import { Hash, Star, Type, Image as ImageIcon, Trash2, ChevronLeft, ChevronRight, Search, X, Loader2, Calendar, Plus } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -10,7 +10,8 @@ export function RefinerySidebar() {
     kindFilter, setKindFilter, pinnedOnly, togglePinnedOnly, clearHistory,
     calendarMonth, calendarYear, dateRange,
     navigateMonth, setRangeStart, setRangeEnd, resetDateFilter,
-    statistics, statisticsLoading
+    statistics, statisticsLoading,
+    createNote
   } = useRefineryStore();
   const { language } = useAppStore();
 
@@ -123,7 +124,7 @@ export function RefinerySidebar() {
   return (
     <div className="w-64 h-full bg-background border-r border-border/50 flex flex-col select-none">
       {/* Search Bar */}
-      <div className="p-3 border-b border-border/50">
+      <div className="p-3 border-b border-border/50 space-y-2">
         <div className="relative">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
           <input
@@ -141,6 +142,15 @@ export function RefinerySidebar() {
             </button>
           )}
         </div>
+
+        {/* Action Bar: New Note */}
+        <button
+          onClick={createNote}
+          className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-colors text-xs font-medium"
+        >
+          <Plus size={14} />
+          {language === 'zh' ? '新建笔记' : 'New Note'}
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar p-4 flex flex-col gap-4">

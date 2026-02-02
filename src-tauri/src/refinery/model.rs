@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RefineryKind {
     #[serde(rename = "text")]
     Text,
@@ -22,7 +22,6 @@ pub struct RefineryMetadata {
     pub width: Option<u32>,
     pub height: Option<u32>,
     pub format: Option<String>,
-    // 预留给 AI 分析的字段
     pub tokens: Option<usize>,
 }
 
@@ -35,10 +34,18 @@ pub struct RefineryItem {
     pub content_hash: String,   // SHA256
     pub preview: Option<String>,
     pub source_app: Option<String>,
-    pub url: Option<String>,     // 浏览器 URL
-    pub size_info: Option<String>, // "100 chars" | "1920x1080"
+    pub url: Option<String>,
+    pub size_info: Option<String>,
     pub is_pinned: bool,
     pub metadata: String,       // JSON
     pub created_at: i64,
     pub updated_at: i64,
+
+    // --- V4 新增字段 ---
+    pub title: Option<String>,
+    pub tags: Option<Vec<String>>, // 数据库存 JSON 字符串，取出来转 Vec
+    #[serde(default)]
+    pub is_manual: bool,
+    #[serde(default)]
+    pub is_edited: bool,
 }

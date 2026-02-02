@@ -1,5 +1,8 @@
 import { memo } from 'react';
-import { FileText, Image as ImageIcon, Pin, Database } from 'lucide-react';
+import {
+  FileText, Image as ImageIcon, Pin,
+  PenTool, Edit3
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RefineryItemUI } from '@/types/refinery';
 import { formatTimeAgo } from '@/lib/refinery_utils';
@@ -16,66 +19,79 @@ interface HistoryItemProps {
 export const HistoryItem = memo(({ item, isActive, style, onClick, onTogglePin }: HistoryItemProps) => {
   const { language } = useAppStore();
 
+  // 智能标题逻辑：有标题显示标题，没标题显示预览，都没显示占位符
+  const hasTitle = !!item.title;
+  const displayTitle = item.title || item.preview || (language === 'zh' ? '无标题' : 'Untitled');
+
+  // 副标题/摘要逻辑
+  const displaySubtitle = hasTitle ? (item.preview || '') : '';
+
   return (
     <div style={style} className="px-2 py-1">
       <div
         onClick={() => onClick(item.id)}
         className={cn(
-          "h-full rounded-lg border flex flex-col justify-center px-3 gap-1.5 cursor-pointer transition-all duration-200 group relative",
+          "h-full rounded-lg border flex flex-col justify-center px-3 gap-1 cursor-pointer transition-all duration-200 group relative select-none",
           isActive
             ? "bg-primary/10 border-primary/30 shadow-sm"
             : "bg-card border-border/40 hover:bg-secondary/50 hover:border-border"
         )}
       >
-        {/* Header Row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
+        {/* Row 1: Header (Icon + Source + Time) */}
+        <div className="flex items-center justify-between gap-2 opacity-70">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {/* 类型图标 */}
             <div className={cn(
-              "w-5 h-5 rounded flex items-center justify-center shrink-0",
-              item.kind === 'image' ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"
+              "w-4 h-4 rounded flex items-center justify-center shrink-0",
+              item.kind === 'image' ? "text-purple-500" : "text-blue-500"
             )}>
-              {item.kind === 'image' ? <ImageIcon size={12} /> : <FileText size={12} />}
+              {item.kind === 'image' ? <ImageIcon size={10} /> : <FileText size={10} />}
             </div>
 
-            {/* Source App Badge (Optional) */}
-            {item.sourceApp && (
-               <span className="text-[10px] font-medium text-muted-foreground/80 truncate max-w-[80px] bg-secondary px-1 rounded">
-                 {item.sourceApp}
-               </span>
-            )}
+            {/* 来源应用 Badge */}
+            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
+               {item.sourceApp || 'Unknown'}
+            </span>
           </div>
 
-          <span className="text-[10px] text-muted-foreground shrink-0 tabular-nums flex items-center gap-1">
-             {item.isPinned && <Pin size={10} className="fill-orange-500 text-orange-500 mr-1" />}
-             {formatTimeAgo(item.updatedAt, language)}
-          </span>
-        </div>
+          {/* 右侧状态图标区 */}
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+             {/* 状态标记：人工创建 或 已编辑 */}
+             {(item.isManual || item.isEdited) && (
+                <span title="Edited/Manual" className="flex items-center text-orange-500/80">
+                    {item.isManual ? <PenTool size={9} /> : <Edit3 size={9} />}
+                </span>
+             )}
 
-        {/* Preview Content */}
-        <div className="text-xs text-foreground/80 line-clamp-2 break-all font-mono leading-relaxed opacity-90 h-9">
-          {item.kind === 'image' ? (
-             <span className="flex items-center gap-1 text-muted-foreground italic">
-                [Image] {item.metaParsed.width}x{item.metaParsed.height} • {item.metaParsed.format}
+             <span className="tabular-nums">
+                {formatTimeAgo(item.updatedAt, language)}
              </span>
-          ) : (
-             item.preview || <span className="opacity-30 italic">Empty content</span>
-          )}
+
+             {item.isPinned && <Pin size={10} className="fill-orange-500 text-orange-500" />}
+          </div>
         </div>
 
-        {/* Footer Metadata */}
-        <div className="flex items-center justify-between mt-0.5">
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground/50">
-               <span className="flex items-center gap-1"><Database size={10} /> {item.sizeInfo}</span>
+        {/* Row 2: Title (Main Content) */}
+        <div className={cn(
+            "font-medium truncate text-sm text-foreground/90 pr-6",
+            !hasTitle && "font-mono text-xs opacity-80" // 无标题时使用等宽字体显示代码片段感
+        )}>
+            {displayTitle}
+        </div>
+
+        {/* Row 3: Subtitle / Metadata */}
+        <div className="flex items-center justify-between mt-0.5 h-4">
+            <div className="text-[10px] text-muted-foreground/50 truncate max-w-[180px] font-mono">
+               {displaySubtitle ? displaySubtitle : item.sizeInfo}
             </div>
 
-            {/* Hover Actions */}
+            {/* Hover Action: Pin */}
             <button
               onClick={(e) => onTogglePin(item.id, e)}
               className={cn(
-                "p-1 rounded-md transition-all opacity-0 group-hover:opacity-100 hover:bg-background shadow-sm border border-transparent hover:border-border/50",
+                "p-1 rounded-md transition-all opacity-0 group-hover:opacity-100 hover:bg-background shadow-sm border border-transparent hover:border-border/50 absolute right-2 bottom-2",
                 item.isPinned && "opacity-100 text-orange-500"
               )}
-              title="Pin to top"
             >
               <Pin size={12} className={cn(item.isPinned && "fill-current")} />
             </button>

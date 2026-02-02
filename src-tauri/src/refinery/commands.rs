@@ -1,13 +1,12 @@
-use tauri::State;
+use tauri::{State, Emitter}; // 引入 Emitter 用于通知前端
 use rusqlite::params;
-use std::fs;
-use std::path::Path;
-use clipboard_rs::{ClipboardContext, Clipboard};
-use clipboard_rs::common::{RustImageData, RustImage};
 use serde::Serialize;
+use serde_json;
+use clipboard_rs::Clipboard; // 导入 Clipboard trait
 
 use crate::db::DbState;
 use super::model::RefineryItem;
+use super::storage::{create_manual_note_db, update_note_db};
 use super::worker::SelfCopyState;
 
 #[derive(Serialize)]
@@ -18,7 +17,7 @@ pub struct RefineryStatistics {
 }
 
 // ============================================================================
-// 查询与筛选 (Read)
+// 查询与筛选 (Read) - 升级版
 // ============================================================================
 
 #[tauri::command]
@@ -38,12 +37,14 @@ pub fn get_refinery_history(
     let mut sql = String::from("SELECT * FROM refinery_history WHERE 1=1");
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-    // 1. 关键词搜索 (匹配 preview 或 source_app)
+    // 1. 关键词搜索 (升级：增加对 title 的匹配)
     if let Some(q) = search_query {
         let q_str = q.trim();
         if !q_str.is_empty() {
-            sql.push_str(" AND (preview LIKE ? OR source_app LIKE ?)");
+            // 注意：这里暂时使用 LIKE，如果数据量巨大建议改用 FTS Match
+            sql.push_str(" AND (preview LIKE ? OR source_app LIKE ? OR title LIKE ?)");
             let pattern = format!("%{}%", q_str);
+            params.push(Box::new(pattern.clone()));
             params.push(Box::new(pattern.clone()));
             params.push(Box::new(pattern));
         }
@@ -72,7 +73,7 @@ pub fn get_refinery_history(
         params.push(Box::new(end));
     }
 
-    // 5. 排序与分页 (按更新时间倒序)
+    // 5. 排序与分页
     sql.push_str(" ORDER BY updated_at DESC LIMIT ? OFFSET ?");
     params.push(Box::new(page_size));
     params.push(Box::new(offset));
@@ -83,10 +84,14 @@ pub fn get_refinery_history(
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
     let iter = stmt.query_map(param_refs.as_slice(), |row| {
+        // 处理 tags JSON 字符串转 Vec<String>
+        let tags_str: Option<String> = row.get("tags")?;
+        let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
+
         Ok(RefineryItem {
             id: row.get("id")?,
             kind: row.get("kind")?,
-            content: row.get("content")?, // 注意：如果是图片，这里是文件路径
+            content: row.get("content")?,
             content_hash: row.get("content_hash")?,
             preview: row.get("preview")?,
             source_app: row.get("source_app")?,
@@ -96,6 +101,11 @@ pub fn get_refinery_history(
             metadata: row.get("metadata")?,
             created_at: row.get("created_at")?,
             updated_at: row.get("updated_at")?,
+            // [新增字段映射]
+            title: row.get("title")?,
+            tags,
+            is_manual: row.get("is_manual").unwrap_or(false),
+            is_edited: row.get("is_edited").unwrap_or(false),
         })
     }).map_err(|e| e.to_string())?;
 
@@ -206,9 +216,9 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
 
     // 3. 执行文件系统删除 (数据库提交成功后再删文件)
     for path_str in files_to_delete {
-        let path = Path::new(&path_str);
+        let path = std::path::Path::new(&path_str);
         if path.exists() {
-            let _ = fs::remove_file(path).map_err(|e|
+            let _ = std::fs::remove_file(path).map_err(|e|
                 println!("[Refinery] Failed to delete image file: {} - {}", path_str, e)
             );
         }
@@ -272,7 +282,7 @@ pub fn clear_refinery_history(
 /// 复制文本到剪贴板
 #[tauri::command]
 pub fn copy_refinery_text(text: String, state: State<SelfCopyState>) -> Result<(), String> {
-    let clipboard = ClipboardContext::new()
+    let clipboard = clipboard_rs::ClipboardContext::new()
         .map_err(|e| format!("Failed to init clipboard: {}", e))?;
 
     // 标记为自我复制，防止监听器记录
@@ -286,6 +296,9 @@ pub fn copy_refinery_text(text: String, state: State<SelfCopyState>) -> Result<(
 /// 复制图片到剪贴板
 #[tauri::command]
 pub fn copy_refinery_image(image_path: String, state: State<SelfCopyState>) -> Result<(), String> {
+    use clipboard_rs::common::{RustImageData, RustImage};
+    use std::path::Path;
+
     // 读取图片文件
     let path = Path::new(&image_path);
     if !path.exists() {
@@ -300,7 +313,7 @@ pub fn copy_refinery_image(image_path: String, state: State<SelfCopyState>) -> R
     let rust_image = RustImageData::from_dynamic_image(img);
 
     // 创建剪贴板上下文并设置图片
-    let clipboard = ClipboardContext::new()
+    let clipboard = clipboard_rs::ClipboardContext::new()
         .map_err(|e| format!("Failed to init clipboard: {}", e))?;
 
     // 标记为自我复制，防止监听器记录
@@ -308,6 +321,47 @@ pub fn copy_refinery_image(image_path: String, state: State<SelfCopyState>) -> R
 
     clipboard.set_image(rust_image)
         .map_err(|e| format!("Failed to copy image: {}", e))?;
+
+    Ok(())
+}
+
+// ============================================================================
+// 笔记操作 (Create/Update) - 新增
+// ============================================================================
+
+#[tauri::command]
+pub fn create_note(
+    app: tauri::AppHandle,
+    state: State<DbState>,
+    content: String,
+    title: Option<String>
+) -> Result<String, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    // 调用 storage 层逻辑
+    let new_id = create_manual_note_db(&conn, content, title)?;
+
+    // 通知前端刷新列表
+    let _ = app.emit("refinery://new-entry", &new_id);
+
+    Ok(new_id)
+}
+
+#[tauri::command]
+pub fn update_note(
+    app: tauri::AppHandle,
+    state: State<DbState>,
+    id: String,
+    content: Option<String>,
+    title: Option<String>
+) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    // 调用 storage 层逻辑
+    update_note_db(&conn, &id, content, title)?;
+
+    // 通知前端刷新 (update 事件)
+    let _ = app.emit("refinery://update", &id);
 
     Ok(())
 }

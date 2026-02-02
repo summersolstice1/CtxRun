@@ -65,6 +65,10 @@ interface RefineryState {
   togglePin: (id: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   clearHistory: (days?: number) => Promise<void>;
+
+  // [新增] 笔记操作
+  createNote: () => Promise<void>;
+  updateNote: (id: string, content?: string, title?: string) => Promise<void>;
 }
 
 // 转换辅助函数
@@ -139,7 +143,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   },
 
   loadHistory: async (reset = false) => {
-    const { page, searchQuery, kindFilter, pinnedOnly, dateRange, calendarYear, calendarMonth, items, isLoading } = get();
+    const { page, searchQuery, kindFilter, pinnedOnly, dateRange, items, isLoading } = get();
     if (isLoading && !reset) return;
 
     set({ isLoading: true });
@@ -329,6 +333,62 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
       get().loadStatistics();
     } catch (e) {
       console.error(e);
+    }
+  },
+
+  // [新增] 笔记操作
+  createNote: async () => {
+    try {
+      // 1. 调用后端创建空笔记
+      // 使用 "New Note" 作为默认标题，空内容
+      const id = await invoke<string>('create_note', {
+        content: '',
+        title: 'New Note'
+      });
+
+      // 2. 刷新列表 (loadHistory 会把新项拉到最前)
+      await get().loadHistory(true);
+
+      // 3. 自动选中并打开抽屉
+      get().setActiveId(id);
+      get().setDrawerOpen(true);
+
+    } catch (e) {
+      console.error("Failed to create note:", e);
+    }
+  },
+
+  updateNote: async (id, content, title) => {
+    try {
+      // 1. 乐观更新本地 UI (为了即时响应)
+      set(state => ({
+        items: state.items.map(item => {
+          if (item.id !== id) return item;
+          return {
+            ...item,
+            // 如果传了 null/undefined 则保持原值
+            title: title !== undefined ? (title || null) : item.title,
+            // 注意：如果是 text 类型，content 字段即文本；如果是 image，content 是路径，不可修改
+            content: (item.kind === 'text' && content !== undefined) ? content : item.content,
+            isEdited: true,
+            updatedAt: Date.now() // 乐观更新时间
+          };
+        })
+      }));
+
+      // 2. 调用后端持久化
+      // 注意：Rust 端 Option<String> 对应 JS 的 string | null
+      await invoke('update_note', {
+        id,
+        content: content || null,
+        title: title || null
+      });
+
+      // 不需要 reloadHistory，因为乐观更新已经处理了 UI，
+      // 且 Rust 端发出的事件监听器会处理后续的一致性。
+    } catch (e) {
+      console.error("Failed to update note:", e);
+      // 实际生产中可能需要回滚机制
     }
   }
 }));
