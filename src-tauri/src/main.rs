@@ -324,10 +324,8 @@ fn main() {
                 }
             }
 
-            // 启动 Refinery 监听器（传入自我复制检测状态）
-            let self_copy_state = refinery::SelfCopyState::new();
-            app.manage(self_copy_state.clone());
-            refinery::init_listener(app.handle().clone(), self_copy_state);
+            // 启动 Refinery 监听器
+            refinery::init_listener(app.handle().clone());
 
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 

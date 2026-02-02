@@ -113,7 +113,20 @@ export function ContentWorkbench() {
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-[#0c0c0c]">
             {activeItem.kind === 'image' ? (
                 <div className="h-full flex items-center justify-center min-h-[300px]">
-                    <div className="relative group max-w-full max-h-full shadow-lg rounded-lg overflow-hidden border border-border bg-[url('https://transparenttextures.com/patterns/cubes.png')] bg-white/5">
+                    <div
+                        className="relative group max-w-full max-h-full shadow-lg rounded-lg overflow-hidden border border-border"
+                        style={{
+                            backgroundImage: `
+                                linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+                                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+                                linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+                                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)
+                            `,
+                            backgroundColor: '#ffffff',
+                            backgroundSize: '20px 20px',
+                            backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                        }}
+                    >
                         {imageUrl ? (
                             <img
                                 src={imageUrl}

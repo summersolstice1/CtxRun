@@ -1,6 +1,5 @@
-use std::sync::{Arc, Mutex};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
 use clipboard_rs::{
     Clipboard, ClipboardContext, ClipboardHandler,
@@ -13,49 +12,19 @@ use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
 use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
-// 自我复制检测状态
-#[derive(Clone)]
-pub struct SelfCopyState {
-    last_self_copy_time: Arc<Mutex<Option<Instant>>>,
-}
-
-impl SelfCopyState {
-    pub fn new() -> Self {
-        Self {
-            last_self_copy_time: Arc::new(Mutex::new(None)),
-        }
-    }
-
-    // 标记刚刚执行了自我复制
-    pub fn mark_self_copy(&self) {
-        *self.last_self_copy_time.lock().unwrap() = Some(Instant::now());
-    }
-
-    // 检查是否是自我复制（在指定时间内）
-    pub fn is_self_copy(&self, threshold_ms: u64) -> bool {
-        if let Some(last_time) = *self.last_self_copy_time.lock().unwrap() {
-            let elapsed = last_time.elapsed().as_millis() as u64;
-            return elapsed < threshold_ms;
-        }
-        false
-    }
-}
-
-// 默认阈值：1秒内的剪贴板变化视为自我复制
-const SELF_COPY_THRESHOLD_MS: u64 = 1000;
+// 自我应用名称，用于跳过自己触发的复制
+const SELF_APP_NAME: &str = "ctxrun";
 
 struct RefineryHandler {
     app: AppHandle,
     last_hash: String, // 内存中简单的防抖/防循环机制
-    self_copy_state: SelfCopyState, // 自我复制检测
 }
 
 impl RefineryHandler {
-    pub fn new(app: AppHandle, self_copy_state: SelfCopyState) -> Self {
+    pub fn new(app: AppHandle) -> Self {
         Self {
             app,
             last_hash: String::new(),
-            self_copy_state,
         }
     }
 
@@ -82,17 +51,16 @@ impl RefineryHandler {
     }
 
     fn process_clipboard(&mut self) -> Result<(), String> {
-        // 0. 自我复制检测：如果最近的剪贴板变化是由我们自己触发的，跳过
-        if self.self_copy_state.is_self_copy(SELF_COPY_THRESHOLD_MS) {
-            println!("[Refinery] Skipping self-copy");
+        // 1. 先捕获当前活动窗口（必须在读取剪贴板之前）
+        let source_app = self.get_current_app_name();
+
+        // 2. 自我复制检测：如果来源是自己应用，直接跳过
+        if source_app.as_deref() == Some(SELF_APP_NAME) {
+            println!("[Refinery] Skipping self-copy from {}", SELF_APP_NAME);
             return Ok(());
         }
 
-        // 1. 在读取剪贴板内容之前，先捕获当前活动窗口
-        // (因为读取剪贴板可能耗时，或者后续逻辑会延迟)
-        let source_app = self.get_current_app_name();
-
-        // 2. 尝试获取浏览器 URL (仅在浏览器中有效)
+        // 3. 尝试获取浏览器 URL (仅在浏览器中有效)
         let url = self.get_browser_url();
 
         // 每次变化时，创建一个新的读取上下文
@@ -233,7 +201,7 @@ impl ClipboardHandler for RefineryHandler {
 }
 
 /// 启动监听器 (在 main.rs 中调用)
-pub fn init_listener(app: AppHandle, self_copy_state: SelfCopyState) {
+pub fn init_listener(app: AppHandle) {
     // 放入独立线程，避免阻塞 Tauri 主循环
     thread::spawn(move || {
         // 适当延迟，等待系统准备好
@@ -244,7 +212,7 @@ pub fn init_listener(app: AppHandle, self_copy_state: SelfCopyState) {
         let manager = ClipboardWatcherContext::new();
         match manager {
             Ok(mut watcher) => {
-                let handler = RefineryHandler::new(app, self_copy_state);
+                let handler = RefineryHandler::new(app);
 
                 // 添加处理器并开始阻塞监听
                 watcher.add_handler(handler);

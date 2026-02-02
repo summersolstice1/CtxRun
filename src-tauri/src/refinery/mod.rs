@@ -3,4 +3,4 @@ pub mod storage;
 pub mod worker;
 pub mod commands;
 
-pub use worker::{init_listener, SelfCopyState};
+pub use worker::init_listener;

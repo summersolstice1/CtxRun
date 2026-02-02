@@ -4,7 +4,6 @@ use std::path::Path;
 use super::core::{self, ContextStats};
 use arboard::Clipboard;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
-use crate::refinery::worker::SelfCopyState;
 
 #[tauri::command]
 pub async fn calculate_context_stats(
@@ -35,17 +34,11 @@ pub async fn get_context_content(
 pub async fn copy_context_to_clipboard(
     paths: Vec<String>,
     header: String,
-    remove_comments: bool,
-    state: tauri::State<'_, SelfCopyState>
+    remove_comments: bool
 ) -> Result<String, String> {
-    // 克隆内部的 SelfCopyState（内部是 Arc，克隆很便宜）
-    let self_copy_state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         let content = core::assemble_context_parallel(paths, header, remove_comments);
         let mut clipboard = Clipboard::new().map_err(|e| format!("Clipboard init failed: {}", e))?;
-
-        // 关键：在剪贴板写入之前立即标记，防止 refinery 监听器捕获
-        self_copy_state.mark_self_copy();
 
         clipboard.set_text(content).map_err(|e| format!("Clipboard write failed: {}", e))?;
         Ok("Success".to_string())

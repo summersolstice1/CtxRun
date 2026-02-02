@@ -328,27 +328,29 @@ function FeedCard({
       {/* Content Preview */}
       <div className="text-sm text-foreground/90 leading-relaxed font-sans break-words">
         {item.kind === 'image' ? (
-          <div className="rounded-lg overflow-hidden border border-border/30 bg-secondary/20 max-w-sm inline-block">
-            {isLoading ? (
-              <div className="w-64 h-48 flex items-center justify-center text-muted-foreground/40">
-                <Loader2 size={24} className="animate-spin" />
-              </div>
-            ) : error ? (
-              <div className="w-64 h-48 flex items-center justify-center text-destructive/60 text-xs px-4 text-center">
-                {getText('refinery', 'failedToLoadImage', language)}
-              </div>
-            ) : imageUrl ? (
-              <img
-                src={imageUrl}
-                className="w-full h-auto object-cover max-h-48"
-                alt="Preview"
-                loading="lazy"
-              />
-            ) : (
-              <div className="w-64 h-48 flex items-center justify-center text-muted-foreground/40">
-                <ImageIcon size={32} />
-              </div>
-            )}
+          <div className="rounded-lg overflow-hidden border border-border/30 bg-secondary/20">
+            <div className="w-64 aspect-[4/3] relative">
+              {isLoading ? (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
+                  <Loader2 size={24} className="animate-spin" />
+                </div>
+              ) : error ? (
+                <div className="absolute inset-0 flex items-center justify-center text-destructive/60 text-xs px-4 text-center">
+                  {getText('refinery', 'failedToLoadImage', language)}
+                </div>
+              ) : imageUrl ? (
+                <img
+                  src={imageUrl}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  alt="Preview"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
+                  <ImageIcon size={32} />
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="line-clamp-[10] whitespace-pre-wrap">{item.preview || getText('refinery', 'emptyContent', language)}</div>

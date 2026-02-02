@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Search, Filter, Layers, Image as ImageIcon, Type, X } from 'lucide-react';
@@ -11,11 +11,10 @@ import { getText } from '@/lib/i18n';
 export function HistorySidebar() {
   const { language } = useAppStore();
   const {
-    items, activeId, isLoading,
+    items, activeId, isLoading, hasMore, loadHistory,
     searchQuery, setSearchQuery,
     kindFilter, setKindFilter,
-    togglePin, setActiveId,
-    hasMore
+    togglePin, setActiveId
   } = useRefineryStore();
 
   const [localSearch, setLocalSearch] = useState(searchQuery);
@@ -30,13 +29,21 @@ export function HistorySidebar() {
     return () => clearTimeout(timer);
   }, [localSearch, setSearchQuery, searchQuery]);
 
-  // 无限滚动检测
-  const handleScroll = ({ scrollDirection }: any) => {
-    if (scrollDirection === 'forward' && hasMore && !isLoading) {
-       // 简单判断：如果滚到底部附近，加载更多 (实际可用更精细的计算)
-       // 这里暂时略过，依赖用户手动刷新或后续优化
+  // 无限滚动实现
+  const handleScroll = useCallback((data: any) => {
+    if (!hasMore || isLoading || data.scrollUpdateWasRequested) return;
+
+    const { scrollOffset, scrollDirection } = data;
+    if (scrollDirection !== 'forward') return;
+
+    // 计算总内容高度
+    const totalHeight = items.length * 88; // itemSize = 88
+    const threshold = 200; // 距离底部 200px 时触发加载
+
+    if (scrollOffset >= totalHeight - threshold) {
+      loadHistory(false);
     }
-  };
+  }, [hasMore, isLoading, items.length, loadHistory]);
 
   const Row = ({ index, style }: any) => {
     const item = items[index];

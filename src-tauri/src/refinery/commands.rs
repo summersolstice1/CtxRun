@@ -7,7 +7,6 @@ use clipboard_rs::Clipboard; // 导入 Clipboard trait
 use crate::db::DbState;
 use super::model::RefineryItem;
 use super::storage::{create_manual_note_db, update_note_db};
-use super::worker::SelfCopyState;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -350,30 +349,24 @@ pub fn clear_refinery_history(
 
 /// 复制文本到剪贴板
 #[tauri::command]
-pub async fn copy_refinery_text(text: String, state: State<'_, SelfCopyState>) -> Result<(), String> {
-    // 克隆内部的 SelfCopyState（内部是 Arc，克隆很便宜）
-    let self_copy_state = state.inner().clone();
+pub async fn copy_refinery_text(text: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        // 关键：在剪贴板写入之前立即标记，防止监听器记录
-        self_copy_state.mark_self_copy();
-
         let clipboard = clipboard_rs::ClipboardContext::new()
             .map_err(|e| format!("Failed to init clipboard: {}", e))?;
 
         clipboard.set_text(text)
             .map_err(|e| format!("Failed to copy text: {}", e))?;
+
         Ok(())
     }).await.map_err(|e| e.to_string())?
 }
 
 /// 复制图片到剪贴板
 #[tauri::command]
-pub async fn copy_refinery_image(image_path: String, state: State<'_, SelfCopyState>) -> Result<(), String> {
+pub async fn copy_refinery_image(image_path: String) -> Result<(), String> {
     use clipboard_rs::common::{RustImageData, RustImage};
     use std::path::Path;
 
-    // 克隆内部的 SelfCopyState（内部是 Arc，克隆很便宜）
-    let self_copy_state = state.inner().clone();
     tauri::async_runtime::spawn_blocking(move || {
         let path = Path::new(&image_path);
         if !path.exists() {
@@ -404,9 +397,6 @@ pub async fn copy_refinery_image(image_path: String, state: State<'_, SelfCopySt
         // 创建剪贴板上下文
         let clipboard = clipboard_rs::ClipboardContext::new()
             .map_err(|e| format!("Failed to init clipboard: {}", e))?;
-
-        // 关键：在剪贴板写入之前立即标记，防止监听器记录
-        self_copy_state.mark_self_copy();
 
         clipboard.set_image(rust_image)
             .map_err(|e| format!("Failed to copy image: {}", e))?;
