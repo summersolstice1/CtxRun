@@ -211,8 +211,8 @@ export function RefinerySidebar() {
           )}
 
           <div className="grid grid-cols-7 gap-1 text-[10px] text-center text-muted-foreground/50">
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d) => (
-              <div key={d}>{d}</div>
+            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+              <div key={`dow-${i}-${d}`}>{d}</div>
             ))}
             {/* Empty cells for days before first of month */}
             {Array.from({ length: firstDayOfWeek }).map((_, i) => (
