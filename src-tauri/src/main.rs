@@ -51,7 +51,6 @@ fn ensure_main_window(app: &AppHandle) {
         .center()
         .decorations(false)
         .resizable(true)
-        .transparent(true)
         .visible(true);
 
         match window_builder.build() {
