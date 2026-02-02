@@ -76,12 +76,16 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
       }
     });
 
-    monaco.editor.setTheme(theme === 'dark' ? 'codeforge-dark' : 'codeforge-light');
+    // 修复：只要不是 light 模式，都使用深色主题
+    const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
+    monaco.editor.setTheme(targetTheme);
   };
 
   useEffect(() => {
     if (monacoRef.current) {
-      monacoRef.current.editor.setTheme(theme === 'dark' ? 'codeforge-dark' : 'codeforge-light');
+      // 修复：只要不是 light 模式，都使用深色主题
+      const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
+      monacoRef.current.editor.setTheme(targetTheme);
     }
   }, [theme]);
 

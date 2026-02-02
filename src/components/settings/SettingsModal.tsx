@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Monitor, Moon, Sun, Languages, Check, Filter, DownloadCloud, Bot, Bell, Database, Upload, Download, FileSpreadsheet, AlertTriangle, FolderCog, Shield, RefreshCw, AppWindow, Edit3, Info, Search as SearchIcon } from 'lucide-react';
+import { X, Monitor, Moon, Sun, Circle, Languages, Check, Filter, DownloadCloud, Bot, Bell, Database, Upload, Download, FileSpreadsheet, AlertTriangle, FolderCog, Shield, RefreshCw, AppWindow, Edit3, Info, Search as SearchIcon } from 'lucide-react';
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '@/store/useAppStore';
@@ -37,6 +37,7 @@ export function SettingsModal() {
 
   // 辅助函数：格式化时间显示 (秒 -> 分:秒)
   const formatDuration = (seconds: number) => {
+    if (seconds === 0) return getText('settings', 'never', language);
     if (seconds < 60) return `${seconds} ${getText('settings', 'seconds', language)}`;
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -225,9 +226,10 @@ export function SettingsModal() {
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                             {getText('settings', 'appearance', language)}
                         </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <ThemeCard active={theme === 'dark'} onClick={() => setTheme('dark')} icon={<Moon size={24} />} label={getText('settings', 'themeDark', language)} />
                             <ThemeCard active={theme === 'light'} onClick={() => setTheme('light')} icon={<Sun size={24} />} label={getText('settings', 'themeLight', language)} />
+                            <ThemeCard active={theme === 'black'} onClick={() => setTheme('black')} icon={<Circle size={24} fill="currentColor" />} label={getText('settings', 'themeBlack', language)} />
                         </div>
                         
                         <div className="w-full h-px bg-border/50 my-4" />
@@ -387,7 +389,7 @@ export function SettingsModal() {
                                     </div>
                                     <input
                                         type="range"
-                                        min="30"
+                                        min="0"
                                         max="1800"
                                         step="30"
                                         className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
@@ -395,7 +397,7 @@ export function SettingsModal() {
                                         onChange={(e) => setWindowDestroyDelay(parseInt(e.target.value))}
                                     />
                                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                                        <span>30 {getText('settings', 'seconds', language)}</span>
+                                        <span>{getText('settings', 'never', language)}</span>
                                         <span>30 {getText('settings', 'minutes', language)}</span>
                                     </div>
                                 </div>

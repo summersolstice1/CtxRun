@@ -1,14 +1,13 @@
-import { 
-  readTextFile, 
-  writeTextFile, 
+import {
+  readTextFile,
+  writeTextFile,
   mkdir,
-  exists, 
-  readDir, 
+  exists,
+  readDir,
   remove,
-  BaseDirectory 
+  BaseDirectory
 } from '@tauri-apps/plugin-fs';
 
-// 定义基础目录选项，统一使用 AppLocalData
 const BASE_DIR_OPT = { baseDir: BaseDirectory.AppLocalData };
 const PACKS_SUBDIR = 'packs';
 
@@ -21,7 +20,6 @@ export const fileStorage = {
 
       return await readTextFile(fileName, BASE_DIR_OPT);
     } catch (err) {
-      console.warn(`[Storage] Read ${fileName} failed:`, err);
       return null;
     }
   },
@@ -36,7 +34,6 @@ export const fileStorage = {
 
       await writeTextFile(fileName, value, BASE_DIR_OPT);
     } catch (err) {
-      console.error(`[Storage] Write ${fileName} failed:`, err);
     }
   },
 
@@ -47,11 +44,9 @@ export const fileStorage = {
         await remove(fileName, BASE_DIR_OPT);
       }
     } catch (err) {
-      console.warn(`[Storage] Remove ${fileName} failed:`, err);
     }
   },
 
-  // 扩展包专用存储逻辑
   packs: {
     ensureDir: async () => {
       try {
@@ -59,7 +54,6 @@ export const fileStorage = {
           await mkdir(PACKS_SUBDIR, { ...BASE_DIR_OPT, recursive: true });
         }
       } catch (e) {
-        console.error("[Storage] Failed to create packs dir", e);
       }
     },
 
@@ -68,7 +62,6 @@ export const fileStorage = {
         await fileStorage.packs.ensureDir();
         await writeTextFile(`${PACKS_SUBDIR}/${filename}`, content, BASE_DIR_OPT);
       } catch (e) {
-        console.error(`[Storage] Failed to save pack ${filename}`, e);
         throw e;
       }
     },
@@ -93,11 +86,10 @@ export const fileStorage = {
           .map(e => e.name || '')
           .filter(n => n.endsWith('.json'));
       } catch (e) {
-        console.warn("[Storage] No packs found or dir not exists");
         return [];
       }
     },
-    
+
     removePack: async (filename: string) => {
       try {
         const filePath = `${PACKS_SUBDIR}/${filename}`;
@@ -105,7 +97,6 @@ export const fileStorage = {
             await remove(filePath, BASE_DIR_OPT);
         }
       } catch (e) {
-        console.error("Failed to delete pack", e);
       }
     }
   }

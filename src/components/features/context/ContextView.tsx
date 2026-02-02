@@ -194,7 +194,6 @@ export function ContextView() {
               triggerToast(getText('context', 'toastSaved', language), 'success');
           }
       } catch (err) {
-          console.error("Action failed:", err);
           triggerToast(action === 'copy' ? getText('context', 'toastCopyFail', language) : getText('context', 'toastSaveFail', language), 'error');
       }
   };
@@ -220,7 +219,6 @@ export function ContextView() {
               await executeFinalAction(text, action, savePath);
           }
       } catch (e) {
-          console.error("Security scan failed:", e);
           triggerToast("Security scan error, proceeding anyway.", 'warning');
           await executeFinalAction(text, action, savePath);
       }
@@ -276,7 +274,6 @@ export function ContextView() {
         triggerToast(getText('context', 'toastCopied', language), 'success');
       }
     } catch (err) {
-      console.error("Failed to copy:", err);
       triggerToast("Copy failed", 'error');
     } finally {
       setIsGenerating(false);
@@ -314,7 +311,6 @@ export function ContextView() {
         triggerToast(getText('context', 'toastSaved', language), 'success');
       }
     } catch (err) {
-      console.error("Failed to generate:", err);
       triggerToast("Generation failed", 'error');
     } finally {
       setIsGenerating(false);
@@ -340,7 +336,6 @@ export function ContextView() {
       if (idealWidth > contextSidebarWidth) setContextSidebarWidth(idealWidth);
       if (!isContextSidebarOpen) setContextSidebarOpen(true);
     } catch (err) {
-      console.error("Scan failed:", err);
       triggerToast("Scan failed. Check path.", 'error');
     } finally {
       setIsScanning(false);
@@ -354,7 +349,7 @@ export function ContextView() {
         setPathInput(selected);
         await performScan(selected);
       }
-    } catch (err) { console.error(err); }
+    } catch (err) { }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -422,7 +417,6 @@ export function ContextView() {
           <div className="p-3 border-b border-border/50 text-xs font-bold text-muted-foreground uppercase tracking-wider flex justify-between shrink-0 items-center">
              <span className="flex items-center gap-1"><FileJson size={12}/>{getText('context', 'explorer', language)}</span>
              <div className="flex items-center gap-2">
-                {/* 动态显示 Git 忽略同步按钮 */}
                 {hasProjectIgnoreFiles && (
                   <button
                     onClick={toggleIgnoreSync}
@@ -499,7 +493,6 @@ export function ContextView() {
         <div className="flex-1 bg-background min-w-0 flex flex-col relative">
             <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] [mask-image:linear-gradient(to_bottom,transparent,black)] pointer-events-none" />
             
-            {/* 视图切换按钮 */}
             <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
                <div className={cn(
                   "pointer-events-auto bg-background/80 backdrop-blur-md border border-border p-1 rounded-xl flex items-center shadow-sm",
@@ -521,7 +514,6 @@ export function ContextView() {
                </div>
             </div>
 
-            {/* 内容区域 */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-10 h-full"> 
                 {rightViewMode === 'dashboard' ? (
                    <TokenDashboard
@@ -547,7 +539,6 @@ export function ContextView() {
         onDismiss={() => setToastState(prev => ({ ...prev, show: false }))} 
       />
 
-      {/* 扫描结果弹窗 */}
       <ScanResultDialog 
         isOpen={scanState.isOpen}
         results={scanState.results}

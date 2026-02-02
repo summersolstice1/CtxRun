@@ -39,6 +39,7 @@ pub async fn copy_context_to_clipboard(
     tauri::async_runtime::spawn_blocking(move || {
         let content = core::assemble_context_parallel(paths, header, remove_comments);
         let mut clipboard = Clipboard::new().map_err(|e| format!("Clipboard init failed: {}", e))?;
+
         clipboard.set_text(content).map_err(|e| format!("Clipboard write failed: {}", e))?;
         Ok("Success".to_string())
     }).await.map_err(|e| e.to_string())?

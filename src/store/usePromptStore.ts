@@ -55,7 +55,7 @@ export const usePromptStore = create<PromptState>()(
       hasMore: true,
       isLoading: false,
       activeGroup: 'all',
-      activeCategory: 'prompt', 
+      activeCategory: 'prompt',
       searchQuery: '',
       isStoreLoading: false,
       manifest: null,
@@ -76,7 +76,6 @@ export const usePromptStore = create<PromptState>()(
             const counts = await invoke<{ prompt: number, command: number }>('get_prompt_counts');
             set({ counts });
         } catch (e) {
-            console.error("Failed to fetch counts:", e);
         }
       },
 
@@ -85,7 +84,6 @@ export const usePromptStore = create<PromptState>()(
               const templates = await invoke<Prompt[]>('get_chat_templates');
               set({ chatTemplates: templates });
           } catch (e) {
-              console.error("Failed to fetch chat templates:", e);
           }
       },
 
@@ -125,7 +123,6 @@ export const usePromptStore = create<PromptState>()(
                 }
             }
         } catch (e) {
-            console.error('[Migration] Failed:', e);
         } finally {
             set({ migrationVersion: 1 });
         }
@@ -137,7 +134,6 @@ export const usePromptStore = create<PromptState>()(
             const uniqueGroups = Array.from(new Set([DEFAULT_GROUP, ...groups]));
             set({ groups: uniqueGroups });
         } catch (e) {
-            console.error("Failed to fetch groups:", e);
         }
       },
 
@@ -150,20 +146,20 @@ export const usePromptStore = create<PromptState>()(
 
         try {
             let newPrompts: Prompt[] = [];
-            
+
             if (state.searchQuery.trim()) {
                 newPrompts = await invoke('search_prompts', {
                     query: state.searchQuery,
                     page: currentPage,
                     pageSize: PAGE_SIZE,
-                    category: state.activeCategory 
+                    category: state.activeCategory
                 });
             } else {
                 newPrompts = await invoke('get_prompts', {
                     page: currentPage,
                     pageSize: PAGE_SIZE,
                     group: state.activeGroup,
-                    category: state.activeCategory 
+                    category: state.activeCategory
                 });
             }
 
@@ -174,7 +170,6 @@ export const usePromptStore = create<PromptState>()(
                 isLoading: false
             }));
         } catch (e) {
-            console.error("Failed to load prompts:", e);
             set({ isLoading: false });
         }
       },
@@ -190,7 +185,7 @@ export const usePromptStore = create<PromptState>()(
       },
 
       setActiveCategory: (category) => {
-        set({ activeCategory: category, activeGroup: 'all' }); 
+        set({ activeCategory: category, activeGroup: 'all' });
         get().loadPrompts(true);
       },
 
@@ -217,11 +212,11 @@ export const usePromptStore = create<PromptState>()(
 
         const updated: Prompt = { ...existing, ...data, updatedAt: Date.now() };
         await invoke('save_prompt', { prompt: updated });
-        
+
         set({
             prompts: prompts.map(p => p.id === id ? updated : p)
         });
-        
+
         if (data.group) get().refreshGroups();
       },
 
@@ -261,7 +256,6 @@ export const usePromptStore = create<PromptState>()(
                 isStoreLoading: false
             });
         } catch (errors) {
-            console.error("All mirrors failed to fetch manifest:", errors);
             set({ isStoreLoading: false });
         }
       },
@@ -276,7 +270,6 @@ export const usePromptStore = create<PromptState>()(
 
             const rawData = result.data;
 
-            // 数据清洗
             const enrichedPrompts: any[] = rawData.map((p: any) => ({
                 id: p.id ? `${pack.id}-${p.id}` : uuidv4(),
                 title: p.title || "Untitled",
@@ -295,13 +288,11 @@ export const usePromptStore = create<PromptState>()(
                 shellType: p.shellType || null
             }));
 
-            // 调用 Rust 事务导入
             await invoke('import_prompt_pack', {
                 packId: pack.id,
                 prompts: enrichedPrompts
             });
 
-            // 更新状态
             set(state => ({
                 installedPackIds: Array.from(new Set([...state.installedPackIds, pack.id]))
             }));
@@ -310,7 +301,6 @@ export const usePromptStore = create<PromptState>()(
             get().refreshGroups();
             get().refreshCounts();
         } catch (e: any) {
-            console.error("Install failed:", e);
             throw e;
         } finally {
             set({ isStoreLoading: false });
@@ -333,7 +323,6 @@ export const usePromptStore = create<PromptState>()(
             get().refreshGroups();
             get().refreshCounts();
         } catch (e) {
-            console.error("Uninstall failed:", e);
         } finally {
             set({ isStoreLoading: false });
         }

@@ -255,7 +255,6 @@ rm "$0"
     }
 
   } catch (e: any) {
-    console.error("Execution failed:", e);
     await showNotification(`Execution failed: ${e.message || e}`, "error");
   }
 }

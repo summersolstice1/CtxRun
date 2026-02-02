@@ -31,6 +31,7 @@ mod apps;
 mod context;
 mod hyperview;
 mod scheduler;
+mod refinery;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -65,6 +66,11 @@ fn ensure_main_window(app: &AppHandle) {
 #[tauri::command]
 async fn hide_main_window(app: AppHandle, window: WebviewWindow, delay_secs: u64) -> Result<(), String> {
     window.hide().map_err(|e| e.to_string())?;
+
+    // 如果延迟为 0，表示不自动销毁窗口
+    if delay_secs == 0 {
+        return Ok(());
+    }
 
     let app_handle = app.clone();
     let window_label = window.label().to_string();
@@ -288,6 +294,17 @@ fn main() {
             context::commands::get_ignored_by_protocol,
             hyperview::get_file_meta,
             scheduler::update_reminder_config,
+            // Refinery Commands
+            refinery::commands::get_refinery_history,
+            refinery::commands::get_refinery_item_detail,
+            refinery::commands::get_refinery_statistics,
+            refinery::commands::toggle_refinery_pin,
+            refinery::commands::delete_refinery_items,
+            refinery::commands::clear_refinery_history,
+            refinery::commands::copy_refinery_text,
+            refinery::commands::copy_refinery_image,
+            refinery::commands::create_note,
+            refinery::commands::update_note,
         ])
         .setup(|app| {
             let system = System::new();
@@ -306,7 +323,10 @@ fn main() {
                     panic!("[Database] Critical Error: Failed to initialize database: {}", e);
                 }
             }
-            
+
+            // 启动 Refinery 监听器
+            refinery::init_listener(app.handle().clone());
+
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 
             let menu = Menu::with_items(app, &[&quit_i])?;
@@ -344,17 +364,7 @@ fn main() {
                     if window.is_visible().unwrap_or(true) {
                         api.prevent_close();
                         let _ = window.hide();
-
-                        let app_handle = window.app_handle().clone();
-                        let win_label = label.to_string();
-                        tauri::async_runtime::spawn(async move {
-                            sleep(Duration::from_secs(30)).await;
-                            if let Some(w) = app_handle.get_webview_window(&win_label) {
-                                if !w.is_visible().unwrap_or(true) {
-                                    let _ = w.close();
-                                }
-                            }
-                        });
+                        // 注意：自动销毁逻辑已移至前端通过 hide_main_window 命令控制
                     }
                 } else if label == "spotlight" {
                     api.prevent_close();

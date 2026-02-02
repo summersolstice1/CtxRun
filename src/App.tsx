@@ -13,6 +13,7 @@ import { PreviewModal } from "@/components/features/hyperview";
 const PromptView = lazy(() => import('@/components/features/prompts/PromptView').then(module => ({ default: module.PromptView })));
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
 const PatchView = lazy(() => import('@/components/features/patch/PatchView').then(module => ({ default: module.PatchView })));
+const RefineryView = lazy(() => import('@/components/features/refinery/RefineryView').then(module => ({ default: module.RefineryView })));
 const SystemMonitorModal = lazy(() => import('@/components/features/monitor/SystemMonitorModal').then(module => ({ default: module.SystemMonitorModal })));
 
 const appWindow = getCurrentWebviewWindow()
@@ -22,9 +23,15 @@ function App() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
+    root.classList.remove('light', 'dark', 'black');
+    if (theme === 'black') {
+      root.classList.add('dark', 'black');
+    } else {
+      root.classList.add(theme);
+    }
+  }, [theme]);
 
+  useEffect(() => {
     const unlistenPromise = listen<AppTheme>('theme-changed', (event) => {
         setTheme(event.payload, true);
     });
@@ -88,14 +95,10 @@ function App() {
     }
   }, []);
 
-  // [新增] 将休息提醒配置同步到 Rust 后端
-  // 当配置在 SettingsModal 中被修改，或应用启动时，此 Effect 会自动触发
   useEffect(() => {
     invoke('update_reminder_config', {
       enabled: restReminder.enabled,
-      intervalMinutes: restReminder.intervalMinutes // Tauri 会自动映射为 Rust 的 interval_minutes
-    }).catch(err => {
-      console.error("Failed to sync reminder config to backend:", err);
+      intervalMinutes: restReminder.intervalMinutes
     });
   }, [restReminder.enabled, restReminder.intervalMinutes]);
 
@@ -120,6 +123,7 @@ function App() {
             {currentView === 'prompts' && <PromptView />}
             {currentView === 'context' && <ContextView />}
             {currentView === 'patch' && <PatchView />}
+            {currentView === 'refinery' && <RefineryView />}
           </Suspense>
         </main>
       </div>

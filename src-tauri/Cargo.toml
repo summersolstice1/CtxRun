@@ -1,6 +1,6 @@
 [package]
 name = "ctxrun"
-version = "1.4.1"
+version = "1.5.0-beta.1"
 description = "A Tool"
 authors = ["Winrisef"]
 license = ""
@@ -52,6 +52,12 @@ mime_guess = "2.0"
 url = "2.5"
 percent-encoding = "2.3"
 ignore = "0.4"
+clipboard-rs = "0.3"
+sha2 = "0.10"
+hex = "0.4"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+base64 = "0.22"
+x-win = "5.5"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-global-shortcut = "2"
