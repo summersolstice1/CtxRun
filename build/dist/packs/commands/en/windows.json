@@ -9290,7 +9290,7 @@
     "title": "iscc - Compile an Inno Setup script",
     "content": "iscc {{path\\to\\file.iss}}",
     "group": "Windows",
-    "description": "iscc: Compiler for Inno Setup installers. It compiles an Inno Setup scripts into an Windows installer executable. (Compile an Inno Setup script)",
+    "description": "iscc: Compiler for Inno Setup installers. It compiles an Inno Setup scripts into a Windows installer executable. (Compile an Inno Setup script)",
     "tags": [
       "windows",
       "iscc",
@@ -9305,7 +9305,7 @@
     "title": "iscc - Quietly compile an Inno Setup installer",
     "content": "iscc /Q {{path\\to\\file.iss}}",
     "group": "Windows",
-    "description": "iscc: Compiler for Inno Setup installers. It compiles an Inno Setup scripts into an Windows installer executable. (Quietly compile an Inno Setup installer)",
+    "description": "iscc: Compiler for Inno Setup installers. It compiles an Inno Setup scripts into a Windows installer executable. (Quietly compile an Inno Setup installer)",
     "tags": [
       "windows",
       "iscc",
@@ -9320,7 +9320,7 @@
     "title": "iscc - Compile a signed Inno Setup installer",
     "content": "iscc /S={{name}}={{command}} {{path\\to\\file.iss}}",
     "group": "Windows",
-    "description": "iscc: Compiler for Inno Setup installers. It compiles an Inno Setup scripts into an Windows installer executable. (Compile a signed Inno Setup installer)",
+    "description": "iscc: Compiler for Inno Setup installers. It compiles an Inno Setup scripts into a Windows installer executable. (Compile a signed Inno Setup installer)",
     "tags": [
       "windows",
       "iscc",
@@ -10547,10 +10547,10 @@
   {
     "id": "tldr-en-windows-slmgr.vbs-5",
     "type": "command",
-    "title": "slmgr.vbs - [a]c[t]ivate the Windows [p]roduct license offline. Requires Administrator privileges and an Confirmation ID provided by Microsoft Product Activation Center",
+    "title": "slmgr.vbs - [a]c[t]ivate the Windows [p]roduct license offline. Requires Administrator privileges and a Confirmation ID provided by Microsoft Product Activation Center",
     "content": "slmgr.vbs /atp {{confirmation_id}}",
     "group": "Windows",
-    "description": "slmgr.vbs: Install, activate, and manage Windows licenses. This command may override, deactivate, and/or remove your current Windows license. Please proceed with caution. ([a]c[t]ivate the Windows [p]roduct license offline. Requires Administrator privileges and an Confirmation ID provided by Microsoft Product Activation Center)",
+    "description": "slmgr.vbs: Install, activate, and manage Windows licenses. This command may override, deactivate, and/or remove your current Windows license. Please proceed with caution. ([a]c[t]ivate the Windows [p]roduct license offline. Requires Administrator privileges and a Confirmation ID provided by Microsoft Product Activation Center)",
     "tags": [
       "windows",
       "slmgr.vbs",

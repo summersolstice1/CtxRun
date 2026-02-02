@@ -14073,7 +14073,7 @@
     "id": "tldr-zh-common-jwt-1",
     "type": "command",
     "title": "jwt - 将 JWT 解码为 JSON 字符串",
-    "content": "jwt decode -j {{jwt字符串}}",
+    "content": "jwt decode {{[-j|--json]}} {{jwt字符串}}",
     "group": "通用工具 (Common)",
     "description": "jwt: 使用 JSON Web Tokens (JWTs) 进行操作。 可用的加密算法包括 HS256、HS384、HS512、RS256、RS384、RS512、ES256、ES384。 (将 JWT 解码为 JSON 字符串)",
     "tags": [
@@ -14088,7 +14088,7 @@
     "id": "tldr-zh-common-jwt-2",
     "type": "command",
     "title": "jwt - 将 JSON 字符串编码为 JWT",
-    "content": "jwt encode --alg {{HS256}} --secret {{1234567890}} '{{json字符串}}'",
+    "content": "jwt encode {{[-A|--alg]}} {{HS256}} {{[-S|--secret]}} {{1234567890}} '{{json字符串}}'",
     "group": "通用工具 (Common)",
     "description": "jwt: 使用 JSON Web Tokens (JWTs) 进行操作。 可用的加密算法包括 HS256、HS384、HS512、RS256、RS384、RS512、ES256、ES384。 (将 JSON 字符串编码为 JWT)",
     "tags": [
@@ -14103,7 +14103,7 @@
     "id": "tldr-zh-common-jwt-3",
     "type": "command",
     "title": "jwt - 将键值对载荷编码为 JWT",
-    "content": "jwt encode --alg {{HS256}} --secret {{1234567890}} -P {{键=值}}",
+    "content": "jwt encode {{[-A|--alg]}} {{HS256}} {{[-S|--secret]}} {{1234567890}} {{[-P|--payload]}} {{键=值}}",
     "group": "通用工具 (Common)",
     "description": "jwt: 使用 JSON Web Tokens (JWTs) 进行操作。 可用的加密算法包括 HS256、HS384、HS512、RS256、RS384、RS512、ES256、ES384。 (将键值对载荷编码为 JWT)",
     "tags": [
@@ -47163,7 +47163,7 @@
     "id": "tldr-zh-common-cargo-add-2",
     "type": "command",
     "title": "cargo-add - 添加依赖项并启动一个或多个特定功能",
-    "content": "cargo add {{依赖项}} --features {{功能1}},{{功能2}}",
+    "content": "cargo add {{依赖项}} {{[-F|--features]}} {{功能1,功能2,...}}",
     "group": "通用工具 (Common)",
     "description": "cargo-add: 向 Rust 项目的 `Cargo.toml` 文件添加依赖项。 (添加依赖项并启动一个或多个特定功能)",
     "tags": [

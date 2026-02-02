@@ -33020,7 +33020,7 @@
     "title": "tcpick - Capture traffic on a specific interface, port, and host",
     "content": "sudo tcpick {{[-i|--interface]}} {{interface}} {{[-C|--colors]}} -h {{host}} -p {{port}}",
     "group": "Linux Ops",
-    "description": "tcpick: Packet sniffing and network traffic analysis tool. It can capture and display TCP connections and data. It can also monitor network traffic on a interface, host, or port. (Capture traffic on a specific interface, port, and host)",
+    "description": "tcpick: Packet sniffing and network traffic analysis tool. It can capture and display TCP connections and data. It can also monitor network traffic on an interface, host, or port. (Capture traffic on a specific interface, port, and host)",
     "tags": [
       "linux",
       "tcpick",
@@ -33035,7 +33035,7 @@
     "title": "tcpick - Capture traffic on port 80 (HTTP) of a specific host",
     "content": "sudo tcpick {{[-i|--interface]}} {{eth0}} {{[-C|--colors]}} -h {{192.168.1.100}} -p {{80}}",
     "group": "Linux Ops",
-    "description": "tcpick: Packet sniffing and network traffic analysis tool. It can capture and display TCP connections and data. It can also monitor network traffic on a interface, host, or port. (Capture traffic on port 80 (HTTP) of a specific host)",
+    "description": "tcpick: Packet sniffing and network traffic analysis tool. It can capture and display TCP connections and data. It can also monitor network traffic on an interface, host, or port. (Capture traffic on port 80 (HTTP) of a specific host)",
     "tags": [
       "linux",
       "tcpick",
@@ -33050,7 +33050,7 @@
     "title": "tcpick - Display help",
     "content": "tcpick --help",
     "group": "Linux Ops",
-    "description": "tcpick: Packet sniffing and network traffic analysis tool. It can capture and display TCP connections and data. It can also monitor network traffic on a interface, host, or port. (Display help)",
+    "description": "tcpick: Packet sniffing and network traffic analysis tool. It can capture and display TCP connections and data. It can also monitor network traffic on an interface, host, or port. (Display help)",
     "tags": [
       "linux",
       "tcpick",
@@ -57020,7 +57020,7 @@
     "title": "i2cget - Read from a register of an I2C device",
     "content": "i2cget {{i2cbus}} {{device_address}} {{register_address}}",
     "group": "Linux Ops",
-    "description": "i2cget: Read from an register of an I2C device. Note: All addresses should be specified in hexadecimal. (Read from a register of an I2C device)",
+    "description": "i2cget: Read from a register of an I2C device. Note: All addresses should be specified in hexadecimal. (Read from a register of an I2C device)",
     "tags": [
       "linux",
       "i2cget",
@@ -57035,7 +57035,7 @@
     "title": "i2cget - Read from a register of an I2C device without asking for confirmation",
     "content": "i2cget -y {{i2cbus}} {{device_address}} {{register_address}}",
     "group": "Linux Ops",
-    "description": "i2cget: Read from an register of an I2C device. Note: All addresses should be specified in hexadecimal. (Read from a register of an I2C device without asking for confirmation)",
+    "description": "i2cget: Read from a register of an I2C device. Note: All addresses should be specified in hexadecimal. (Read from a register of an I2C device without asking for confirmation)",
     "tags": [
       "linux",
       "i2cget",
@@ -57050,7 +57050,7 @@
     "title": "i2cget - Read from a register of an I2C device using a specific mode",
     "content": "i2cget {{i2cbus}} {{device_address}} {{register_address}} {{b|w|c|s|i}}",
     "group": "Linux Ops",
-    "description": "i2cget: Read from an register of an I2C device. Note: All addresses should be specified in hexadecimal. (Read from a register of an I2C device using a specific mode)",
+    "description": "i2cget: Read from a register of an I2C device. Note: All addresses should be specified in hexadecimal. (Read from a register of an I2C device using a specific mode)",
     "tags": [
       "linux",
       "i2cget",
@@ -68387,10 +68387,10 @@
   {
     "id": "tldr-en-linux-last-0",
     "type": "command",
-    "title": "last - View last login infromation (e.g., username, terminal, boot time, kernel) of all users as read from `/var/log/wtmp`",
+    "title": "last - View last login information (e.g., username, terminal, boot time, kernel) of all users as read from `/var/log/wtmp`",
     "content": "last",
     "group": "Linux Ops",
-    "description": "last: View the last logged in users. (View last login infromation (e.g., username, terminal, boot time, kernel) of all users as read from `/var/log/wtmp`)",
+    "description": "last: View the last logged in users. (View last login information (e.g., username, terminal, boot time, kernel) of all users as read from `/var/log/wtmp`)",
     "tags": [
       "linux",
       "last",
@@ -70532,10 +70532,10 @@
   {
     "id": "tldr-en-linux-gs-1",
     "type": "command",
-    "title": "gs - Reduce PDF file size to 150 dpi images for reading on a e-book device",
+    "title": "gs - Reduce PDF file size to 150 dpi images for reading on an e-book device",
     "content": "gs -dNOPAUSE -dQUIET -dBATCH -sDEVICE=pdfwrite -dPDFSETTINGS=/ebook -sOutputFile={{output.pdf}} {{input.pdf}}",
     "group": "Linux Ops",
-    "description": "gs: GhostScript, a PDF and PostScript interpreter. (Reduce PDF file size to 150 dpi images for reading on a e-book device)",
+    "description": "gs: GhostScript, a PDF and PostScript interpreter. (Reduce PDF file size to 150 dpi images for reading on an e-book device)",
     "tags": [
       "linux",
       "gs",
@@ -73247,10 +73247,10 @@
   {
     "id": "tldr-en-linux-smem-1",
     "type": "command",
-    "title": "smem - Print memory usage for current processes for a every user on a system",
+    "title": "smem - Print memory usage for current processes for every user on a system",
     "content": "smem --users",
     "group": "Linux Ops",
-    "description": "smem: Print memory usage for programs. (Print memory usage for current processes for a every user on a system)",
+    "description": "smem: Print memory usage for programs. (Print memory usage for current processes for every user on a system)",
     "tags": [
       "linux",
       "smem",
@@ -75227,10 +75227,10 @@
   {
     "id": "tldr-en-linux-rpmkeys-0",
     "type": "command",
-    "title": "rpmkeys - List all imported RPM keys. Also outputs its Key ID needed for deleting a imported RPM key",
+    "title": "rpmkeys - List all imported RPM keys. Also outputs its Key ID needed for deleting an imported RPM key",
     "content": "sudo rpmkeys --list",
     "group": "Linux Ops",
-    "description": "rpmkeys: Tool to import and remove RPM keys for RPM repositories. When adding an RPM repository, you must also import the corresponding RPM key. (List all imported RPM keys. Also outputs its Key ID needed for deleting a imported RPM key)",
+    "description": "rpmkeys: Tool to import and remove RPM keys for RPM repositories. When adding an RPM repository, you must also import the corresponding RPM key. (List all imported RPM keys. Also outputs its Key ID needed for deleting an imported RPM key)",
     "tags": [
       "linux",
       "rpmkeys",
@@ -107732,10 +107732,10 @@
   {
     "id": "tldr-en-linux-macchanger-0",
     "type": "command",
-    "title": "macchanger - View the current and permanent MAC addresses of a interface",
+    "title": "macchanger - View the current and permanent MAC addresses of an interface",
     "content": "macchanger {{[-s|--show]}} {{interface}}",
     "group": "Linux Ops",
-    "description": "macchanger: Manipulate network interface MAC addresses. (View the current and permanent MAC addresses of a interface)",
+    "description": "macchanger: Manipulate network interface MAC addresses. (View the current and permanent MAC addresses of an interface)",
     "tags": [
       "linux",
       "macchanger",
@@ -113582,10 +113582,10 @@
   {
     "id": "tldr-en-linux-vzdump-3",
     "type": "command",
-    "title": "vzdump - Back up all guest systems and send an notification email to the root and admin users",
+    "title": "vzdump - Back up all guest systems and send a notification email to the root and admin users",
     "content": "vzdump --all --mode {{suspend}} --mailto {{root}} --mailto {{admin}}",
     "group": "Linux Ops",
-    "description": "vzdump: Backup Utility for virtual machines and containers. (Back up all guest systems and send an notification email to the root and admin users)",
+    "description": "vzdump: Backup Utility for virtual machines and containers. (Back up all guest systems and send a notification email to the root and admin users)",
     "tags": [
       "linux",
       "vzdump",

@@ -1863,7 +1863,7 @@
     "id": "tldr-zh-linux-addr2line-0",
     "type": "command",
     "title": "addr2line - 显示可执行文件的指令地址对应源代码的文件名和行数",
-    "content": "addr2line --exe={{可执行文件路径}} {{地址}}",
+    "content": "addr2line {{[-e|--exe]}} {{可执行文件路径}} {{地址}}",
     "group": "Linux 运维",
     "description": "addr2line: 将二进制文件地址转换成文件名和行数。 (显示可执行文件的指令地址对应源代码的文件名和行数)",
     "tags": [
@@ -1878,7 +1878,7 @@
     "id": "tldr-zh-linux-addr2line-1",
     "type": "command",
     "title": "addr2line - 显示函数名、文件名和行数",
-    "content": "addr2line --exe={{可执行文件路径}} --functions {{地址}}",
+    "content": "addr2line {{[-e|--exe]}} {{可执行文件路径}} {{[-f|--functions]}} {{地址}}",
     "group": "Linux 运维",
     "description": "addr2line: 将二进制文件地址转换成文件名和行数。 (显示函数名、文件名和行数)",
     "tags": [
@@ -1893,7 +1893,7 @@
     "id": "tldr-zh-linux-addr2line-2",
     "type": "command",
     "title": "addr2line - 将 C++ 代码函数名符号重组",
-    "content": "addr2line --exe={{可执行文件地址}} --functions --demangle {{地址}}",
+    "content": "addr2line {{[-e|--exe]}} {{可执行文件地址}} {{[-f|--functions]}} {{[-C|--demangle]}} {{地址}}",
     "group": "Linux 运维",
     "description": "addr2line: 将二进制文件地址转换成文件名和行数。 (将 C++ 代码函数名符号重组)",
     "tags": [
