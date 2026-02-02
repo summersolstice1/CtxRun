@@ -961,7 +961,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun"
-version = "1.4.1"
+version = "1.5.0-beta.1"
 dependencies = [
  "arboard",
  "base64 0.22.1",
