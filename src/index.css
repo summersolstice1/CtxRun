@@ -40,30 +40,61 @@
     /* === 🌙 深色模式 (Dark Mode) === */
     --background: 222.2 84% 4.9%; /* slate-950 */
     --foreground: 210 40% 98%;    /* slate-50 */
- 
+
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
- 
+
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
- 
+
     --primary: 217.2 91.2% 59.8%; /* blue-500 */
     --primary-foreground: 222.2 47.4% 11.2%;
- 
+
     --secondary: 217.2 32.6% 17.5%; /* slate-900 */
     --secondary-foreground: 210 40% 98%;
- 
+
     --muted: 217.2 32.6% 17.5%;
     --muted-foreground: 215 20.2% 65.1%;
- 
+
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
- 
+
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
- 
+
     --border: 217.2 32.6% 17.5%; /* slate-800 */
     --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+
+  .black {
+    /* === ⚫ 纯黑模式 (Pure Black Mode) === */
+    --background: 240 100% 1.4%;   /* #030304 */
+    --foreground: 0 0% 97%;         /* #F8F8F8 */
+
+    --card: 240 20% 4%;            /* #0A0A0A */
+    --card-foreground: 0 0% 97%;
+
+    --popover: 240 20% 4%;
+    --popover-foreground: 0 0% 97%;
+
+    --primary: 217.2 91.2% 59.8%;  /* blue-500 */
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 10% 7%;       /* #121212 */
+    --secondary-foreground: 0 0% 97%;
+
+    --muted: 240 10% 7%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 240 10% 12%;         /* #1E1E1E */
+    --accent-foreground: 0 0% 97%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 10% 10%;         /* #1A1A1A */
+    --input: 240 10% 10%;
     --ring: 212.7 26.8% 83.9%;
   }
   

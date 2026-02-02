@@ -34,7 +34,7 @@ export function CodeBlock({ language, children, className }: CodeBlockProps) {
 
   return (
     <div className={cn(
-        "relative group rounded-lg overflow-hidden my-3 border border-border/40 bg-[#1e1e1e] shadow-sm",
+        "relative group rounded-lg overflow-hidden my-3 border border-border/40 bg-card shadow-sm",
         className
     )}>
       <style>{`

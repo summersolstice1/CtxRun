@@ -7,7 +7,7 @@ import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, 
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 
 export type AppView = 'prompts' | 'context' | 'patch' | 'refinery';
-export type AppTheme = 'dark' | 'light';
+export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';
 
@@ -149,8 +149,13 @@ export const useAppStore = create<AppState>()(
       setContextSidebarWidth: (width) => set({ contextSidebarWidth: width }),
       setTheme: (theme, skipEmit = false) => set(() => {
         const root = document.documentElement;
-        if (theme === 'dark') root.classList.add('dark');
-        else root.classList.remove('dark');
+        root.classList.remove('light', 'dark', 'black');
+        if (theme === 'black') {
+          // black 主题同时添加 dark 和 black，确保 dark: 样式生效
+          root.classList.add('dark', 'black');
+        } else {
+          root.classList.add(theme);
+        }
         if (!skipEmit) {
             emit('theme-changed', theme).catch(err => console.error(err));
         }

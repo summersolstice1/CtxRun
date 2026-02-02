@@ -21,11 +21,20 @@ const appWindow = getCurrentWebviewWindow()
 function App() {
   const { currentView, theme, setTheme, syncModels, lastUpdated, restReminder, language } = useAppStore();
 
+  // 主题初始化：当 theme 从存储加载完成后，正确应用主题
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
+    root.classList.remove('light', 'dark', 'black');
+    if (theme === 'black') {
+      // black 主题同时添加 dark 和 black，确保 dark: 样式生效
+      root.classList.add('dark', 'black');
+    } else {
+      root.classList.add(theme);
+    }
+  }, [theme]);
 
+  // 窗口和事件监听器初始化：只在组件挂载时执行一次
+  useEffect(() => {
     const unlistenPromise = listen<AppTheme>('theme-changed', (event) => {
         setTheme(event.payload, true);
     });

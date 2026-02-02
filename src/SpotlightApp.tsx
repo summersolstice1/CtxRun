@@ -319,8 +319,14 @@ export default function SpotlightApp() {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(theme);
+    // 修复：移除所有主题类，并正确处理 black 主题
+    root.classList.remove('light', 'dark', 'black');
+    if (theme === 'black') {
+      // black 主题同时添加 dark 和 black，确保 dark: 样式生效
+      root.classList.add('dark', 'black');
+    } else {
+      root.classList.add(theme);
+    }
 
     // Spotlight 窗口需要透明 html 背景以显示圆角
     document.documentElement.style.backgroundColor = 'transparent';
@@ -336,8 +342,6 @@ export default function SpotlightApp() {
 
     const themeUnlisten = listen<AppTheme>('theme-changed', (event) => {
         setTheme(event.payload, true);
-        root.classList.remove('light', 'dark');
-        root.classList.add(event.payload);
     });
 
     return () => {
@@ -346,7 +350,7 @@ export default function SpotlightApp() {
         // 清理时恢复 html 背景色
         document.documentElement.style.backgroundColor = '';
     };
-  }, []);
+  }, [theme]); // 修复：将 theme 加入依赖数组
 
   return (
     <>

@@ -110,7 +110,7 @@ export function ContentWorkbench() {
         </div>
 
         {/* 2. Content Body */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-[#0c0c0c]">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-card">
             {activeItem.kind === 'image' ? (
                 <div className="h-full flex items-center justify-center min-h-[300px]">
                     <div

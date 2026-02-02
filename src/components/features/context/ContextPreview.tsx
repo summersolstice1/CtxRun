@@ -65,7 +65,9 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
 
   useEffect(() => {
     if (monacoRef.current) {
-      monacoRef.current.editor.setTheme(theme === 'dark' ? 'codeforge-dark' : 'codeforge-light');
+      // 修复：只要不是 light 模式，都使用深色主题
+      const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
+      monacoRef.current.editor.setTheme(targetTheme);
     }
   }, [theme]);
 
@@ -108,7 +110,9 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
       }
     });
 
-    monaco.editor.setTheme(theme === 'dark' ? 'codeforge-dark' : 'codeforge-light');
+    // 修复：同样修改这里的判断逻辑
+    const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
+    monaco.editor.setTheme(targetTheme);
     editor.onKeyDown((e) => {
       if (!editor.getOption(monaco.editor.EditorOption.readOnly)) return;
 

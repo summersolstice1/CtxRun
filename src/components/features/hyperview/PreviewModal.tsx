@@ -57,7 +57,7 @@ export function PreviewModal() {
             </div>
 
             {/* Content Body */}
-            <div className="flex-1 bg-[#1e1e1e] relative overflow-hidden">
+            <div className="flex-1 bg-card relative overflow-hidden">
                 {isLoading ? (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                         Loading metadata...
