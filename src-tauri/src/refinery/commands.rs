@@ -49,7 +49,9 @@ pub fn get_refinery_history(
     );
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-    // 1. 关键词搜索 - 使用 FTS5 全文搜索（针对文本记录）+ LIKE（针对图片记录）
+    // 1. 关键词搜索 - 统一使用 FTS5 全文搜索
+    // FTS 索引包含 content, title, source_app, preview
+    // 文本记录搜索全部字段，图片记录搜索 title 和 source_app
     if let Some(q) = search_query {
         let q_str = q.trim();
         if !q_str.is_empty() {
@@ -59,21 +61,11 @@ pub fn get_refinery_history(
                 .replace('"', "\"\"")
                 .replace(' ', " AND ");
 
-            // 文本记录：使用 FTS5 搜索 (content, title, source_app, preview)
-            // 图片记录：使用 LIKE 搜索 (source_app, title)
-            sql.push_str(" AND (");
+            // 使用纯 FTS 查询，性能更优
             sql.push_str(&format!(
-                "(kind = 'text' AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH \"{}\"))",
+                " AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH \"{}\")",
                 escaped_query
             ));
-            sql.push_str(" OR ");
-
-            // 图片记录没有 content，只搜索 source_app 和 title
-            let like_pattern = format!("%{}%", q_str);
-            sql.push_str("(kind = 'image' AND (source_app LIKE ? OR title LIKE ?))");
-            params.push(Box::new(like_pattern.clone()));
-            params.push(Box::new(like_pattern));
-            sql.push_str(")");
         }
     }
 
@@ -358,48 +350,69 @@ pub fn clear_refinery_history(
 
 /// 复制文本到剪贴板
 #[tauri::command]
-pub fn copy_refinery_text(text: String, state: State<SelfCopyState>) -> Result<(), String> {
-    let clipboard = clipboard_rs::ClipboardContext::new()
-        .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+pub async fn copy_refinery_text(text: String, state: State<'_, SelfCopyState>) -> Result<(), String> {
+    // 克隆内部的 SelfCopyState（内部是 Arc，克隆很便宜）
+    let self_copy_state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        // 关键：在剪贴板写入之前立即标记，防止监听器记录
+        self_copy_state.mark_self_copy();
 
-    // 标记为自我复制，防止监听器记录
-    state.mark_self_copy();
+        let clipboard = clipboard_rs::ClipboardContext::new()
+            .map_err(|e| format!("Failed to init clipboard: {}", e))?;
 
-    clipboard.set_text(text)
-        .map_err(|e| format!("Failed to copy text: {}", e))?;
-    Ok(())
+        clipboard.set_text(text)
+            .map_err(|e| format!("Failed to copy text: {}", e))?;
+        Ok(())
+    }).await.map_err(|e| e.to_string())?
 }
 
 /// 复制图片到剪贴板
 #[tauri::command]
-pub fn copy_refinery_image(image_path: String, state: State<SelfCopyState>) -> Result<(), String> {
+pub async fn copy_refinery_image(image_path: String, state: State<'_, SelfCopyState>) -> Result<(), String> {
     use clipboard_rs::common::{RustImageData, RustImage};
     use std::path::Path;
 
-    // 读取图片文件
-    let path = Path::new(&image_path);
-    if !path.exists() {
-        return Err(format!("Image file not found: {}", image_path));
-    }
+    // 克隆内部的 SelfCopyState（内部是 Arc，克隆很便宜）
+    let self_copy_state = state.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&image_path);
+        if !path.exists() {
+            return Err(format!("Image file not found: {}", image_path));
+        }
 
-    // 使用 image crate 打开图片
-    let img = image::open(path)
-        .map_err(|e| format!("Failed to open image: {}", e))?;
+        // 使用 image crate 打开图片
+        let img = image::open(path)
+            .map_err(|e| format!("Failed to open image: {}", e))?;
 
-    // 转换为 clipboard_rs 的 RustImageData
-    let rust_image = RustImageData::from_dynamic_image(img);
+        // 优化：原图直接复制，仅对超大图（>4K）进行快速降采样
+        // Triangle 算法比 Lanczos3 快 10 倍以上，对绝大多数场景足够清晰
+        let final_img = if img.width() > 4096 || img.height() > 4096 {
+            // 计算缩放后的尺寸，保持宽高比
+            let (max_w, max_h) = if img.width() > img.height() {
+                (4096, (4096 * img.height() / img.width()).max(1))
+            } else {
+                ((4096 * img.width() / img.height()).max(1), 4096)
+            };
+            img.resize(max_w, max_h, image::imageops::FilterType::Triangle)
+        } else {
+            img
+        };
 
-    // 创建剪贴板上下文并设置图片
-    let clipboard = clipboard_rs::ClipboardContext::new()
-        .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+        // 转换为剪贴板格式
+        let rust_image = RustImageData::from_dynamic_image(final_img);
 
-    // 标记为自我复制，防止监听器记录
-    state.mark_self_copy();
+        // 创建剪贴板上下文
+        let clipboard = clipboard_rs::ClipboardContext::new()
+            .map_err(|e| format!("Failed to init clipboard: {}", e))?;
 
-    clipboard.set_image(rust_image)
-        .map_err(|e| format!("Failed to copy image: {}", e))?;
+        // 关键：在剪贴板写入之前立即标记，防止监听器记录
+        self_copy_state.mark_self_copy();
 
-    Ok(())
+        clipboard.set_image(rust_image)
+            .map_err(|e| format!("Failed to copy image: {}", e))?;
+
+        Ok(())
+    }).await.map_err(|e| e.to_string())?
 }
 
 // ============================================================================

@@ -1,13 +1,15 @@
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { useAppStore } from '@/store/useAppStore';
-import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3 } from 'lucide-react';
+import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { getText } from '@/lib/i18n';
 import type { LangKey } from '@/lib/i18n';
 import { GroupedVirtuoso } from 'react-virtuoso';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState, useEffect } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import { motion } from 'framer-motion';
 
 export function RefineryFeed() {
   const {
@@ -150,7 +152,6 @@ export function RefineryFeed() {
                 return (
                   <div className={cn(isFirstInGroup ? 'mt-4' : '')}>
                     <FeedCard
-                      key={item.id}
                       item={item}
                       isActive={activeId === item.id}
                       onClick={() => setActiveId(item.id)}
@@ -193,7 +194,49 @@ function FeedCard({
   onTogglePin: (e: React.MouseEvent) => void;
 }) {
   const { language } = useAppStore();
+  const { loadItemDetail } = useRefineryStore();
   const { imageUrl, isLoading, error } = useImageLoader(item.kind === 'image' ? item.content : null);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
+
+  // 复制完整内容
+  const handleQuickCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsCopying(true);
+    try {
+      if (item.kind === 'text') {
+        // 如果 content 为空，先加载完整内容
+        let contentToCopy = item.content;
+        if (!contentToCopy) {
+          await loadItemDetail(item.id);
+          // 重新获取 store 中的最新 item
+          const { items } = useRefineryStore.getState();
+          const updatedItem = items.find(i => i.id === item.id);
+          contentToCopy = updatedItem?.content;
+        }
+        if (!contentToCopy) {
+          console.warn('Content not loaded, cannot copy');
+          return;
+        }
+        await invoke('copy_refinery_text', { text: contentToCopy });
+      } else if (item.kind === 'image') {
+        await invoke('copy_refinery_image', { imagePath: item.content });
+      }
+      setCopySuccess(true);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    } finally {
+      setIsCopying(false);
+    }
+  };
+
+  // 复制成功反馈 2 秒后重置
+  useEffect(() => {
+    if (copySuccess) {
+      const timer = setTimeout(() => setCopySuccess(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copySuccess]);
 
   return (
     <div
@@ -247,6 +290,34 @@ function FeedCard({
             title={item.isPinned ? getText('refinery', 'unpin', language) : getText('refinery', 'pin', language)}
           >
             <Pin size={14} className={cn(item.isPinned && 'fill-current')} />
+          </button>
+          <button
+            onClick={handleQuickCopy}
+            disabled={isCopying}
+            className={cn(
+              'p-1.5 rounded-md transition-all hover:bg-secondary relative overflow-hidden',
+              'opacity-0 group-hover:opacity-100',
+              copySuccess ? 'text-green-500' : 'text-muted-foreground',
+              isCopying && 'opacity-100 cursor-wait'
+            )}
+            title={language === 'zh' ? '复制' : 'Copy'}
+          >
+            <div className="relative w-[14px] h-[14px] flex items-center justify-center">
+              {isCopying ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <motion.div
+                  key={copySuccess ? 'check' : 'copy'}
+                  initial={{ scale: 0, rotate: -90, opacity: 0 }}
+                  animate={{ scale: 1, rotate: 0, opacity: 1 }}
+                  exit={{ scale: 0, rotate: 90, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
+                  className="absolute inset-0 flex items-center justify-center"
+                >
+                  {copySuccess ? <Check size={14} /> : <Copy size={14} />}
+                </motion.div>
+              )}
+            </div>
           </button>
           <button className="p-1.5 rounded-md opacity-0 group-hover:opacity-100 hover:bg-secondary transition-colors text-muted-foreground">
             <MoreHorizontal size={14} />

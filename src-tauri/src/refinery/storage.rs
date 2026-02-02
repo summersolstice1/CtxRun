@@ -1,12 +1,13 @@
 use std::fs;
 use std::path::PathBuf;
+use std::io::Cursor;
 use rusqlite::{params, Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 use chrono::Utc;
 use uuid::Uuid;
 use tauri::{AppHandle, Manager};
-use image::DynamicImage;
-use std::io::Cursor;
+use image::{DynamicImage, ImageFormat, ExtendedColorType};
+use image::codecs::jpeg::JpegEncoder;
 
 use super::model::{RefineryKind, RefineryMetadata};
 
@@ -34,13 +35,32 @@ fn ensure_image_dir(app: &AppHandle) -> Result<PathBuf, String> {
 
 /// 保存图片到本地文件系统，返回 (文件路径, 哈希值)
 pub fn save_image_to_disk(app: &AppHandle, image: &DynamicImage) -> Result<(String, String), String> {
-    // 1. 转换为 PNG 字节流以计算统一的 Hash
+    // 优化：使用 JPEG 质量 85 以减少磁盘占用（通常是 PNG 的 1/5）
+    // 对于剪贴板截图，肉眼难以察觉差异
+    // 如果图片包含透明通道，则仍使用 PNG
+    let has_alpha = image.color().has_alpha();
+    let use_jpeg = !has_alpha;
+
     let mut bytes: Vec<u8> = Vec::new();
-    image.write_to(&mut Cursor::new(&mut bytes), image::ImageFormat::Png)
-        .map_err(|e| format!("Failed to encode image: {}", e))?;
+    let ext = if use_jpeg {
+        // 使用 JpegEncoder 设置质量为 85
+        let mut cursor = Cursor::new(&mut bytes);
+        let mut encoder = JpegEncoder::new_with_quality(&mut cursor, 85);
+        encoder.encode(
+            image.as_bytes(),
+            image.width(),
+            image.height(),
+            ExtendedColorType::from(image.color())
+        ).map_err(|e| format!("Failed to encode jpg: {}", e))?;
+        "jpg"
+    } else {
+        image.write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png)
+            .map_err(|e| format!("Failed to encode png: {}", e))?;
+        "png"
+    };
 
     let hash = hash_content(&bytes);
-    let file_name = format!("{}.png", hash);
+    let file_name = format!("{}.{}", hash, ext);
 
     let dir = ensure_image_dir(app)?;
     let file_path = dir.join(&file_name);
