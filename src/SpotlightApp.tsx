@@ -67,7 +67,7 @@ function SpotlightContent() {
         finalHeight = defaultHeight;
       }
     }
-    
+
     appWindow.setSize(new LogicalSize(width, finalHeight));
   }, [mode, chat.messages.length, spotlightAppearance]);
 
@@ -100,7 +100,6 @@ function SpotlightContent() {
             await appWindow.hide();
             setQuery('');
         } catch (e) {
-            console.error("Failed to launch app:", e);
             await message(getText('common', 'failedToLaunch', language, { error: String(e) }), { kind: 'error' });
         }
         return;
@@ -109,11 +108,10 @@ function SpotlightContent() {
     if (item.type === 'url' && item.url) {
         try {
             await open(item.url);
-            invoke('record_url_visit', { url: item.url }).catch(console.error);
+            invoke('record_url_visit', { url: item.url }).catch(() => {});
             await appWindow.hide();
             setQuery('');
         } catch (e) {
-            console.error("Failed to open URL:", e);
             await message(getText('common', 'failedToOpenUrl', language, { error: String(e) }), { kind: 'error' });
         }
         return;
@@ -122,11 +120,10 @@ function SpotlightContent() {
     if (item.type === 'web_search' && item.url) {
         try {
             await open(item.url);
-            invoke('record_url_visit', { url: item.url }).catch(console.error);
+            invoke('record_url_visit', { url: item.url }).catch(() => {});
             await appWindow.hide();
             setQuery('');
         } catch (e) {
-            console.error("Failed to open Web Search:", e);
         }
         return;
     }
@@ -142,13 +139,11 @@ function SpotlightContent() {
         return;
       }
 
-      const executionTask = executeCommand(content, (item.shellType as ShellType) || 'auto', projectRoot)
-        .catch(err => console.error('[Spotlight] Execution failed:', err));
+      const executionTask = executeCommand(content, (item.shellType as ShellType) || 'auto', projectRoot);
 
       let recordTask: Promise<void> | null = null;
       if (item.type === 'shell') {
-        recordTask = invoke<void>('record_shell_command', { command: content })
-          .catch(err => console.error('[Spotlight] Failed to record shell command:', err));
+        recordTask = invoke<void>('record_shell_command', { command: content });
       }
 
       if (recordTask) {
@@ -172,7 +167,6 @@ function SpotlightContent() {
           }
         }, 300);
       } catch (err) {
-        console.error("Failed to copy:", err);
       }
     }
   };
@@ -232,7 +226,7 @@ function SpotlightContent() {
             search.handleNavigation(e);
             return;
         }
-        
+
         if (e.key === 'Enter') {
           e.preventDefault();
           const item = search.results[search.selectedIndex];
@@ -259,13 +253,13 @@ function SpotlightContent() {
   ]);
 
   return (
-    <SpotlightLayout 
+    <SpotlightLayout
       header={<SearchBar />}
       resultCount={search.results.length}
       isStreaming={chat.isStreaming}
     >
       {mode === 'search' ? (
-        <SearchMode 
+        <SearchMode
           results={search.results}
           selectedIndex={search.selectedIndex}
           setSelectedIndex={search.setSelectedIndex}
@@ -273,7 +267,7 @@ function SpotlightContent() {
           copiedId={copiedId}
         />
       ) : (
-        <ChatMode 
+        <ChatMode
           messages={chat.messages}
           isStreaming={chat.isStreaming}
           chatEndRef={chat.chatEndRef}
@@ -310,7 +304,6 @@ export default function SpotlightApp() {
           }
         });
       } catch (err) {
-        console.error('[Shortcut] Registration failed:', err);
       }
     };
 
@@ -319,10 +312,8 @@ export default function SpotlightApp() {
 
   useEffect(() => {
     const root = document.documentElement;
-    // 修复：移除所有主题类，并正确处理 black 主题
     root.classList.remove('light', 'dark', 'black');
     if (theme === 'black') {
-      // black 主题同时添加 dark 和 black，确保 dark: 样式生效
       root.classList.add('dark', 'black');
     } else {
       root.classList.add(theme);
@@ -345,14 +336,14 @@ export default function SpotlightApp() {
         unlistenPromise.then(f => f());
         themeUnlisten.then(f => f());
     };
-  }, [theme]); // 修复：将 theme 加入依赖数组
+  }, [theme]);
 
   return (
     <>
       <SpotlightProvider>
         <SpotlightContent />
       </SpotlightProvider>
-      <GlobalConfirmDialog /> 
+      <GlobalConfirmDialog />
     </>
   );
 }

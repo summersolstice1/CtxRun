@@ -1,5 +1,4 @@
 import { AIProviderConfig } from "@/types/model";
-// 使用 Tauri 的 fetch 绕过 CORS
 import { fetch } from '@tauri-apps/plugin-http';
 
 export interface ChatMessage {
@@ -8,9 +7,6 @@ export interface ChatMessage {
   reasoning?: string;
 }
 
-/**
- * 通用的 SSE 流式请求处理函数
- */
 export async function streamChatCompletion(
   messages: ChatMessage[],
   config: AIProviderConfig,
@@ -80,7 +76,6 @@ export async function streamChatCompletion(
             }
           }
         } catch (e) {
-          console.warn("Failed to parse SSE line", e);
         }
       }
     }
@@ -88,7 +83,6 @@ export async function streamChatCompletion(
     onFinish();
 
   } catch (error: any) {
-    console.error("LLM Request Failed:", error);
     onError(error.message || "Unknown error");
     onFinish();
   }

@@ -127,7 +127,7 @@ export const useAppStore = create<AppState>()(
         enabled: false,
         intervalMinutes: 45
       },
-      windowDestroyDelay: 0,  // 0 = 不自动销毁
+      windowDestroyDelay: 0,
 
       models: DEFAULT_MODELS,
       lastUpdated: 0,
@@ -151,13 +151,12 @@ export const useAppStore = create<AppState>()(
         const root = document.documentElement;
         root.classList.remove('light', 'dark', 'black');
         if (theme === 'black') {
-          // black 主题同时添加 dark 和 black，确保 dark: 样式生效
           root.classList.add('dark', 'black');
         } else {
           root.classList.add(theme);
         }
         if (!skipEmit) {
-            emit('theme-changed', theme).catch(err => console.error(err));
+            emit('theme-changed', theme);
         }
         return { theme };
       }),
@@ -170,7 +169,6 @@ export const useAppStore = create<AppState>()(
         const newConfig = { ...state.aiConfig, ...config };
         const currentProviderId = newConfig.providerId;
 
-        // 切换了 Provider
         if (config.providerId && config.providerId !== state.aiConfig.providerId) {
             const saved = state.savedProviderSettings[config.providerId] || DEFAULT_PROVIDER_SETTINGS[config.providerId] || {
                 apiKey: '',
@@ -190,7 +188,6 @@ export const useAppStore = create<AppState>()(
             };
         }
 
-        // 修改了当前 Provider 的具体配置，自动保存
         const newSavedSettings = { ...state.savedProviderSettings };
         newSavedSettings[currentProviderId] = {
             apiKey: newConfig.apiKey,
@@ -232,30 +229,24 @@ export const useAppStore = create<AppState>()(
           });
 
         } catch (err) {
-          console.warn('[AppStore] All sync sources failed. Keeping local cache.', err);
         }
       },
 
       resetModels: () => set({ models: DEFAULT_MODELS }),
 
-      // --- 新增重命名逻辑 ---
       renameAIProvider: (oldName, newName) => set((state) => {
-        // 1. 简单校验：新名字不能为空，且不能与现有的其他名字重复
         if (!newName.trim() || newName === oldName || state.savedProviderSettings[newName]) {
             return state;
         }
 
-        // 2. 复制旧配置到新键名
         const currentSettings = { ...state.savedProviderSettings };
         const settingData = currentSettings[oldName];
 
         if (!settingData) return state;
 
-        // 3. 删除旧键名，添加新键名
         delete currentSettings[oldName];
         currentSettings[newName] = settingData;
 
-        // 4. 如果当前选中的正是被改名的这个，更新当前选中的 providerId
         let newActiveId = state.aiConfig.providerId;
         if (newActiveId === oldName) {
             newActiveId = newName;
@@ -269,7 +260,6 @@ export const useAppStore = create<AppState>()(
             }
         };
       }),
-      // --- 结束新增逻辑 ---
     }),
     {
       name: 'app-config',

@@ -9,11 +9,9 @@ export function CodeRenderer({ meta }: { meta: FileMeta }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 临时方案：直接读文件。
-    // TODO: 下一阶段改为 Rust Stream 读取，支持超大文件
     const load = async () => {
       try {
-        if (meta.size > 1024 * 1024 * 5) { // > 5MB
+        if (meta.size > 1024 * 1024 * 5) {
              setContent("// File too large for simple preview.\n// Coming in Stage 2: Streaming Reader.");
         } else {
              const text = await readTextFile(meta.path);
@@ -28,7 +26,6 @@ export function CodeRenderer({ meta }: { meta: FileMeta }) {
     load();
   }, [meta.path]);
 
-  // 简单的扩展名映射
   const lang = meta.name.split('.').pop() || 'plaintext';
 
   if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin"/></div>;
@@ -41,7 +38,7 @@ export function CodeRenderer({ meta }: { meta: FileMeta }) {
       theme="vs-dark"
       options={{
         readOnly: true,
-        minimap: { enabled: false }, // 关闭 minimap 提升性能
+        minimap: { enabled: false },
         domReadOnly: true,
         fontSize: 13,
         scrollBeyondLastLine: false,

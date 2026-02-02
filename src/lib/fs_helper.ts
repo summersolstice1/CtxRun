@@ -3,7 +3,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { join } from '@tauri-apps/api/path';
 import { FileNode, IgnoreConfig } from '@/types/context';
 
-// 并发控制队列
 class TaskQueue {
   private running = 0;
   private queue: (() => void)[] = [];
@@ -24,7 +23,7 @@ class TaskQueue {
   }
 }
 
-const scanQueue = new TaskQueue(50); // 限制最大 50 个并发 FS 操作
+const scanQueue = new TaskQueue(50);
 
 export async function scanProject(
   path: string,
@@ -51,8 +50,8 @@ export async function scanProject(
     for (const entry of validEntries) {
         const fullPath = await join(path, entry.name);
         const isDir = entry.isDirectory;
-        
-        if (entry.isSymlink) continue; 
+
+        if (entry.isSymlink) continue;
 
         let children: FileNode[] | undefined = undefined;
         let size = 0;
@@ -61,7 +60,6 @@ export async function scanProject(
             try {
                 children = await scanProject(fullPath, config, visitedPaths);
             } catch (e) {
-                console.warn(`Failed to scan dir: ${fullPath}`, e);
             }
         } else {
             try {
@@ -90,7 +88,6 @@ export async function scanProject(
         });
 
   } catch (err) {
-    console.error(`Error scanning ${path}:`, err);
     throw err;
   }
 }

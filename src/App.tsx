@@ -21,19 +21,16 @@ const appWindow = getCurrentWebviewWindow()
 function App() {
   const { currentView, theme, setTheme, syncModels, lastUpdated, restReminder, language } = useAppStore();
 
-  // 主题初始化：当 theme 从存储加载完成后，正确应用主题
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('light', 'dark', 'black');
     if (theme === 'black') {
-      // black 主题同时添加 dark 和 black，确保 dark: 样式生效
       root.classList.add('dark', 'black');
     } else {
       root.classList.add(theme);
     }
   }, [theme]);
 
-  // 窗口和事件监听器初始化：只在组件挂载时执行一次
   useEffect(() => {
     const unlistenPromise = listen<AppTheme>('theme-changed', (event) => {
         setTheme(event.payload, true);
@@ -98,14 +95,10 @@ function App() {
     }
   }, []);
 
-  // [新增] 将休息提醒配置同步到 Rust 后端
-  // 当配置在 SettingsModal 中被修改，或应用启动时，此 Effect 会自动触发
   useEffect(() => {
     invoke('update_reminder_config', {
       enabled: restReminder.enabled,
-      intervalMinutes: restReminder.intervalMinutes // Tauri 会自动映射为 Rust 的 interval_minutes
-    }).catch(err => {
-      console.error("Failed to sync reminder config to backend:", err);
+      intervalMinutes: restReminder.intervalMinutes
     });
   }, [restReminder.enabled, restReminder.intervalMinutes]);
 
