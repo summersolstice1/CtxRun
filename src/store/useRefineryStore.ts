@@ -12,6 +12,11 @@ interface RefineryStatistics {
   favorites: number;
 }
 
+interface DateRange {
+  start: number | null;  // timestamp
+  end: number | null;    // timestamp
+}
+
 interface RefineryState {
   items: RefineryItemUI[];
   activeId: string | null;
@@ -27,7 +32,7 @@ interface RefineryState {
   // 日历筛选状态
   calendarMonth: number;  // 0-11
   calendarYear: number;
-  selectedDate: number | null;  // day of month, null means no filter
+  dateRange: DateRange;   // 日期范围筛选
 
   // 统计信息
   statistics: RefineryStatistics | null;
@@ -53,7 +58,8 @@ interface RefineryState {
   setCalendarMonth: (month: number) => void;
   setCalendarYear: (year: number) => void;
   navigateMonth: (delta: number) => void;
-  setSelectedDate: (day: number | null) => void;
+  setRangeStart: (day: number) => void;
+  setRangeEnd: (day: number) => void;
   resetDateFilter: () => void;
 
   togglePin: (id: string) => Promise<void>;
@@ -83,7 +89,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   // 日历状态初始化为当前月
   calendarMonth: new Date().getMonth(),
   calendarYear: new Date().getFullYear(),
-  selectedDate: null,
+  dateRange: { start: null, end: null },
 
   statistics: null,
   statisticsLoading: false,
@@ -100,10 +106,10 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     unlistenNewEntry = await listen<string>('refinery://new-entry', async (event) => {
       console.log('[RefineryStore] New entry detected:', event.payload);
 
-      const { page, searchQuery, kindFilter, selectedDate } = get();
+      const { page, searchQuery, kindFilter, dateRange } = get();
 
       // 策略修正：只要没有处于"搜索状态"或"非第一页"，就强制刷新
-      if (page === 1 && !searchQuery.trim() && kindFilter === 'all' && selectedDate === null) {
+      if (page === 1 && !searchQuery.trim() && kindFilter === 'all' && !dateRange.start && !dateRange.end) {
           await get().loadHistory(true);
           await get().loadStatistics(); // 刷新统计
       } else {
@@ -114,9 +120,9 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     // 2. 监听更新 (Update - e.g. duplicate copy touched timestamp)
     unlistenUpdate = await listen<string>('refinery://update', async (event) => {
        console.log('[RefineryStore] Entry updated:', event.payload);
-       const { page, searchQuery, selectedDate } = get();
+       const { page, searchQuery, dateRange } = get();
        // 同样，如果在第一页且没有搜索，就刷新以看到最新的置顶效果
-       if (page === 1 && !searchQuery.trim() && selectedDate === null) {
+       if (page === 1 && !searchQuery.trim() && !dateRange.start && !dateRange.end) {
           await get().loadHistory(true);
           await get().loadStatistics();
        }
@@ -133,7 +139,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   },
 
   loadHistory: async (reset = false) => {
-    const { page, searchQuery, kindFilter, pinnedOnly, selectedDate, calendarYear, calendarMonth, items, isLoading } = get();
+    const { page, searchQuery, kindFilter, pinnedOnly, dateRange, calendarYear, calendarMonth, items, isLoading } = get();
     if (isLoading && !reset) return;
 
     set({ isLoading: true });
@@ -142,15 +148,13 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     const filterArg = kindFilter === 'all' ? null : kindFilter;
     const searchArg = searchQuery.trim() || null;
 
-    // 构建日期筛选参数
-    let startDate: number | null = null;
-    let endDate: number | null = null;
+    // 使用日期范围筛选
+    let startDate: number | null = dateRange.start;
+    let endDate: number | null = dateRange.end;
 
-    if (selectedDate !== null) {
-      // 筛选特定日期
-      const date = new Date(calendarYear, calendarMonth, selectedDate);
-      startDate = date.getTime();
-      endDate = startDate + 24 * 60 * 60 * 1000 - 1; // 当天结束
+    // 如果 end date 没有设置但 start 设置了，将 end 设置为当天结束
+    if (startDate && !endDate) {
+      endDate = startDate + 24 * 60 * 60 * 1000 - 1;
     }
 
     try {
@@ -235,13 +239,43 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     });
   },
 
-  setSelectedDate: (day) => {
-    set({ selectedDate: day });
+  setRangeStart: (day) => {
+    const { calendarYear, calendarMonth, dateRange } = get();
+    const date = new Date(calendarYear, calendarMonth, day);
+    const start = date.getTime();
+
+    // 如果已有结束日期且开始日期晚于结束日期，交换
+    let newStart = start;
+    let newEnd = dateRange.end;
+
+    if (newEnd && newStart > newEnd) {
+      newEnd = newStart + 24 * 60 * 60 * 1000 - 1;
+    }
+
+    set({ dateRange: { start: newStart, end: newEnd } });
+    get().loadHistory(true);
+  },
+
+  setRangeEnd: (day) => {
+    const { calendarYear, calendarMonth, dateRange } = get();
+    const date = new Date(calendarYear, calendarMonth, day);
+    // 设置为当天结束（23:59:59.999）
+    const end = date.getTime() + 24 * 60 * 60 * 1000 - 1;
+
+    // 如果已有开始日期且结束日期早于开始日期，交换
+    let newStart = dateRange.start;
+    let newEnd = end;
+
+    if (newStart && newEnd < newStart) {
+      newStart = date.getTime();
+    }
+
+    set({ dateRange: { start: newStart, end: newEnd } });
     get().loadHistory(true);
   },
 
   resetDateFilter: () => {
-    set({ selectedDate: null });
+    set({ dateRange: { start: null, end: null } });
     get().loadHistory(true);
   },
 

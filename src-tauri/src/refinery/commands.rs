@@ -8,6 +8,7 @@ use serde::Serialize;
 
 use crate::db::DbState;
 use super::model::RefineryItem;
+use super::worker::SelfCopyState;
 
 #[derive(Serialize)]
 pub struct RefineryStatistics {
@@ -270,9 +271,13 @@ pub fn clear_refinery_history(
 
 /// 复制文本到剪贴板
 #[tauri::command]
-pub fn copy_refinery_text(text: String) -> Result<(), String> {
+pub fn copy_refinery_text(text: String, state: State<SelfCopyState>) -> Result<(), String> {
     let clipboard = ClipboardContext::new()
         .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+
+    // 标记为自我复制，防止监听器记录
+    state.mark_self_copy();
+
     clipboard.set_text(text)
         .map_err(|e| format!("Failed to copy text: {}", e))?;
     Ok(())
@@ -280,7 +285,7 @@ pub fn copy_refinery_text(text: String) -> Result<(), String> {
 
 /// 复制图片到剪贴板
 #[tauri::command]
-pub fn copy_refinery_image(image_path: String) -> Result<(), String> {
+pub fn copy_refinery_image(image_path: String, state: State<SelfCopyState>) -> Result<(), String> {
     // 读取图片文件
     let path = Path::new(&image_path);
     if !path.exists() {
@@ -297,6 +302,9 @@ pub fn copy_refinery_image(image_path: String) -> Result<(), String> {
     // 创建剪贴板上下文并设置图片
     let clipboard = ClipboardContext::new()
         .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+
+    // 标记为自我复制，防止监听器记录
+    state.mark_self_copy();
 
     clipboard.set_image(rust_image)
         .map_err(|e| format!("Failed to copy image: {}", e))?;

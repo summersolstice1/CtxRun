@@ -9,13 +9,13 @@ import { getText } from '@/lib/i18n';
 export function RefineryFeed() {
   const {
     items, setActiveId, activeId, togglePin,
-    searchQuery, selectedDate, kindFilter, pinnedOnly,
+    searchQuery, dateRange, kindFilter, pinnedOnly,
     setSearchQuery, resetDateFilter, setKindFilter, togglePinnedOnly
   } = useRefineryStore();
   const { language } = useAppStore();
 
   // 判断是否有活跃的筛选
-  const hasActiveFilter = searchQuery.trim() !== '' || selectedDate !== null || kindFilter !== 'all' || pinnedOnly;
+  const hasActiveFilter = searchQuery.trim() !== '' || dateRange.start !== null || dateRange.end !== null || kindFilter !== 'all' || pinnedOnly;
 
   // 清除所有筛选
   const clearAllFilters = () => {
