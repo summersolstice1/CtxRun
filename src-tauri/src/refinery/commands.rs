@@ -10,6 +10,7 @@ use super::storage::{create_manual_note_db, update_note_db};
 use super::worker::SelfCopyState;
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RefineryStatistics {
     pub total_entries: u32,
     pub this_week: u32,
