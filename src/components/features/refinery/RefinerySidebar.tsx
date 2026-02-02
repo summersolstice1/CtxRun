@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Hash, Star, Type, Image as ImageIcon, Trash2, ChevronLeft, ChevronRight, Search, X, Loader2, Plus } from 'lucide-react';
+import { Hash, Star, Type, Image as ImageIcon, Trash2, ChevronLeft, ChevronRight, Search, X, Loader2, Plus, PenTool } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 export function RefinerySidebar() {
   const {
-    kindFilter, setKindFilter, pinnedOnly, togglePinnedOnly, clearHistory,
+    kindFilter, setKindFilter, pinnedOnly, togglePinnedOnly, manualOnly, toggleManualOnly, clearHistory,
     calendarMonth, calendarYear, dateRange,
     navigateMonth, setRangeStart, setRangeEnd, resetDateFilter,
     statistics, statisticsLoading,
@@ -385,10 +385,11 @@ export function RefinerySidebar() {
         <div className="space-y-2">
           <Label>{getText('refinery', 'filters', language)}</Label>
           <NavBtn
-            active={kindFilter === 'all' && !pinnedOnly}
+            active={kindFilter === 'all' && !pinnedOnly && !manualOnly}
             onClick={() => {
               setKindFilter('all');
               if (pinnedOnly) togglePinnedOnly();
+              if (manualOnly) toggleManualOnly();
             }}
             icon={<Hash size={14} />}
             label={getText('refinery', 'allMemos', language)}
@@ -398,6 +399,12 @@ export function RefinerySidebar() {
             onClick={togglePinnedOnly}
             icon={<Star size={14} />}
             label={getText('refinery', 'favorites', language)}
+          />
+          <NavBtn
+            active={manualOnly}
+            onClick={toggleManualOnly}
+            icon={<PenTool size={14} />}
+            label={language === 'zh' ? '笔记' : 'Notes'}
           />
           <NavBtn
             active={kindFilter === 'text'}

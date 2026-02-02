@@ -1,7 +1,7 @@
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { useAppStore } from '@/store/useAppStore';
-import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X } from 'lucide-react';
+import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { getText } from '@/lib/i18n';
@@ -10,13 +10,13 @@ import type { LangKey } from '@/lib/i18n';
 export function RefineryFeed() {
   const {
     items, setActiveId, activeId, togglePin,
-    searchQuery, dateRange, kindFilter, pinnedOnly,
-    setSearchQuery, resetDateFilter, setKindFilter, togglePinnedOnly
+    searchQuery, dateRange, kindFilter, pinnedOnly, manualOnly,
+    setSearchQuery, resetDateFilter, setKindFilter, togglePinnedOnly, toggleManualOnly
   } = useRefineryStore();
   const { language } = useAppStore();
 
   // 判断是否有活跃的筛选
-  const hasActiveFilter = searchQuery.trim() !== '' || dateRange.start !== null || dateRange.end !== null || kindFilter !== 'all' || pinnedOnly;
+  const hasActiveFilter = searchQuery.trim() !== '' || dateRange.start !== null || dateRange.end !== null || kindFilter !== 'all' || pinnedOnly || manualOnly;
 
   // 清除所有筛选
   const clearAllFilters = () => {
@@ -25,6 +25,9 @@ export function RefineryFeed() {
     setKindFilter('all');
     if (pinnedOnly) {
       togglePinnedOnly();
+    }
+    if (manualOnly) {
+      toggleManualOnly();
     }
   };
 
@@ -121,13 +124,15 @@ function FeedCard({
       onClick={onClick}
       className={cn(
         'group relative bg-card border rounded-xl p-4 cursor-pointer transition-all hover:border-primary/40 hover:shadow-md',
-        isActive ? 'border-primary/60 ring-1 ring-primary/20 shadow-md' : 'border-border/60'
+        isActive ? 'border-primary/60 ring-1 ring-primary/20 shadow-md' : 'border-border/60',
+        // 手动笔记使用不同的背景色
+        item.isManual && 'bg-gradient-to-br from-primary/5 to-transparent'
       )}
     >
-      {/* Pin indicator */}
-      {item.isPinned && (
-        <div className="absolute -top-1 right-8 w-4 h-6 bg-orange-500 rounded-b-sm flex items-center justify-center shadow-sm z-10">
-          <div className="w-1 h-1 bg-white rounded-full" />
+      {/* Manual Note indicator */}
+      {item.isManual && (
+        <div className="absolute -top-1 left-4 px-1.5 py-0.5 bg-blue-500 rounded-b-sm flex items-center gap-0.5 shadow-sm z-10">
+          <PenTool size={8} className="text-white" />
         </div>
       )}
 
@@ -137,11 +142,24 @@ function FeedCard({
           <span className="text-xs text-muted-foreground/70 font-medium">
             {formatTimeAgo(item.updatedAt, language)}
           </span>
-          {item.sourceApp && (
-            <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground/80 border border-border/30">
-              {item.sourceApp}
-            </span>
-          )}
+          {/* 来源/类型标识 */}
+          <div className="flex items-center gap-1">
+            {item.isManual ? (
+              <span className="text-[10px] bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1">
+                <PenTool size={8} />
+                {language === 'zh' ? '笔记' : 'Note'}
+              </span>
+            ) : item.sourceApp ? (
+              <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground/80 border border-border/30">
+                {item.sourceApp}
+              </span>
+            ) : null}
+            {item.isEdited && !item.isManual && (
+              <span className="text-[10px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded border border-orange-500/20 flex items-center gap-1">
+                <Edit3 size={8} />
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-1">
           <button

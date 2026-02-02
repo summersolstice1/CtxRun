@@ -29,6 +29,7 @@ pub fn get_refinery_history(
     search_query: Option<String>,
     kind_filter: Option<String>, // "text" | "image"
     pinned_only: bool,
+    manual_only: bool,
     start_date: Option<i64>,
     end_date: Option<i64>,
 ) -> Result<Vec<RefineryItem>, String> {
@@ -62,6 +63,11 @@ pub fn get_refinery_history(
     // 3. 收藏筛选
     if pinned_only {
         sql.push_str(" AND is_pinned = 1");
+    }
+
+    // 3.5. 笔记筛选 (只显示手动创建的笔记)
+    if manual_only {
+        sql.push_str(" AND is_manual = 1");
     }
 
     // 4. 日期范围筛选

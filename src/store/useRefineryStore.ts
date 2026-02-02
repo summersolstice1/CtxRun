@@ -28,6 +28,7 @@ interface RefineryState {
   searchQuery: string;
   kindFilter: 'all' | 'text' | 'image';
   pinnedOnly: boolean;
+  manualOnly: boolean;
 
   // 日历筛选状态
   calendarMonth: number;  // 0-11
@@ -52,6 +53,7 @@ interface RefineryState {
   setSearchQuery: (q: string) => void;
   setKindFilter: (k: 'all' | 'text' | 'image') => void;
   togglePinnedOnly: () => void;
+  toggleManualOnly: () => void;
   setDrawerOpen: (open: boolean) => void;
 
   // 日历操作
@@ -89,6 +91,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   searchQuery: '',
   kindFilter: 'all',
   pinnedOnly: false,
+  manualOnly: false,
 
   // 日历状态初始化为当前月
   calendarMonth: new Date().getMonth(),
@@ -143,7 +146,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   },
 
   loadHistory: async (reset = false) => {
-    const { page, searchQuery, kindFilter, pinnedOnly, dateRange, items, isLoading } = get();
+    const { page, searchQuery, kindFilter, pinnedOnly, manualOnly, dateRange, items, isLoading } = get();
     if (isLoading && !reset) return;
 
     set({ isLoading: true });
@@ -168,6 +171,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         searchQuery: searchArg,
         kindFilter: filterArg,
         pinnedOnly,
+        manualOnly,
         startDate,
         endDate
       });
@@ -216,6 +220,14 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         const next = !state.pinnedOnly;
         setTimeout(() => get().loadHistory(true), 0);
         return { pinnedOnly: next };
+    });
+  },
+
+  toggleManualOnly: () => {
+    set(state => {
+        const next = !state.manualOnly;
+        setTimeout(() => get().loadHistory(true), 0);
+        return { manualOnly: next };
     });
   },
 
@@ -328,7 +340,14 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         includePinned: false
       });
 
-      // 重新加载
+      // 清除所有筛选条件后重新加载
+      set({
+        searchQuery: '',
+        kindFilter: 'all',
+        pinnedOnly: false,
+        manualOnly: false,
+        dateRange: { start: null, end: null }
+      });
       get().loadHistory(true);
       get().loadStatistics();
     } catch (e) {
