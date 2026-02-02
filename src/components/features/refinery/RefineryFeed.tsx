@@ -1,7 +1,7 @@
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { useAppStore } from '@/store/useAppStore';
-import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3, Copy, Check } from 'lucide-react';
+import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3, Copy, Check, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { getText } from '@/lib/i18n';
@@ -9,6 +9,7 @@ import type { LangKey } from '@/lib/i18n';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { useMemo, useCallback, useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 import { motion } from 'framer-motion';
 
 export function RefineryFeed() {
@@ -273,6 +274,16 @@ function FeedCard({
                 {item.sourceApp}
               </span>
             ) : null}
+            {item.url && (
+              <button
+                onClick={() => item.url && open(item.url)}
+                className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded border border-primary/20 flex items-center gap-1 hover:bg-primary/20 transition-colors max-w-[150px] truncate"
+                title={item.url}
+              >
+                <Globe size={8} />
+                {item.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+              </button>
+            )}
             {item.isEdited && !item.isManual && (
               <span className="text-[10px] bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded border border-orange-500/20 flex items-center gap-1">
                 <Edit3 size={8} />

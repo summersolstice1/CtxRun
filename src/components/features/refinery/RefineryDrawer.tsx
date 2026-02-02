@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  X, Copy, Trash2, Star, Calendar, Monitor,
+  X, Copy, Trash2, Star, Calendar, Monitor, Globe,
   HardDrive, ArrowUpRight, Loader2, Image as ImageIcon,
-  Edit2, Save, PenTool, Check
+  Edit2, Save, Check
 } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-shell';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { cn } from '@/lib/utils';
 import { CodeBlock } from '@/components/ui/CodeBlock';
@@ -130,14 +131,6 @@ export function RefineryDrawer() {
                   >
                     <X size={18} />
                   </button>
-                  <div className="h-4 w-px bg-border/60" />
-                  <span className="text-[10px] flex items-center gap-1.5 uppercase tracking-wider font-bold opacity-70">
-                    {activeItem.isManual ? (
-                      <><PenTool size={12} /> Note</>
-                    ) : (
-                      <><Monitor size={12} /> {activeItem.sourceApp || 'System'}</>
-                    )}
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-1">
@@ -202,7 +195,7 @@ export function RefineryDrawer() {
               </div>
 
               {/* Metadata Bar */}
-              <div className="px-6 py-2 bg-secondary/10 border-t border-border/30 flex items-center gap-4 text-[10px] text-muted-foreground">
+              <div className="px-6 py-2 bg-secondary/10 border-t border-border/30 flex items-center gap-4 text-[10px] text-muted-foreground flex-wrap">
                 <span className="flex items-center gap-1">
                   <Calendar size={10} />
                   {formatTimeAgo(activeItem.createdAt, language)}
@@ -211,6 +204,22 @@ export function RefineryDrawer() {
                   <HardDrive size={10} />
                   {activeItem.sizeInfo}
                 </span>
+                {activeItem.sourceApp && (
+                  <span className="flex items-center gap-1">
+                    <Monitor size={10} />
+                    {activeItem.sourceApp}
+                  </span>
+                )}
+                {activeItem.url && (
+                  <button
+                    onClick={() => activeItem.url && open(activeItem.url)}
+                    className="flex items-center gap-1 hover:text-primary hover:underline max-w-[200px] truncate transition-colors"
+                    title={activeItem.url}
+                  >
+                    <Globe size={10} />
+                    {activeItem.url.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]}
+                  </button>
+                )}
                 {activeItem.isEdited && (
                   <span className="px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-600 border border-orange-500/20">
                     Edited
