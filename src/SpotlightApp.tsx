@@ -328,9 +328,6 @@ export default function SpotlightApp() {
       root.classList.add(theme);
     }
 
-    // Spotlight 窗口需要透明 html 背景以显示圆角
-    document.documentElement.style.backgroundColor = 'transparent';
-
     const unlistenPromise = appWindow.onFocusChanged(async ({ payload: isFocused }) => {
       if (isFocused) {
         await useAppStore.persist.rehydrate();
@@ -347,8 +344,6 @@ export default function SpotlightApp() {
     return () => {
         unlistenPromise.then(f => f());
         themeUnlisten.then(f => f());
-        // 清理时恢复 html 背景色
-        document.documentElement.style.backgroundColor = '';
     };
   }, [theme]); // 修复：将 theme 加入依赖数组
 
