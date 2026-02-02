@@ -17,7 +17,7 @@ import { getText } from '@/lib/i18n';
 export function RefineryDrawer() {
   const {
     activeId, items, isDrawerOpen, setDrawerOpen,
-    deleteItem, togglePin, updateNote
+    deleteItem, togglePin, updateNote, loadItemDetail
   } = useRefineryStore();
   const { language } = useAppStore();
 
@@ -33,6 +33,12 @@ export function RefineryDrawer() {
   // 当选中的 Item 改变时，重置状态
   useEffect(() => {
     if (activeItem) {
+      // 如果是文本类型且 content 为空，加载完整内容
+      if (activeItem.kind === 'text' && !activeItem.content && activeId) {
+        loadItemDetail(activeId);
+        return; // 等待加载完成
+      }
+
       setEditTitle(activeItem.title || '');
       setEditContent(activeItem.content || '');
 
@@ -43,7 +49,7 @@ export function RefineryDrawer() {
         setIsEditing(false);
       }
     }
-  }, [activeItem?.id]);
+  }, [activeItem?.id, activeItem?.content]);
 
   const handleCopy = async () => {
     if (!activeItem) return;
@@ -192,7 +198,7 @@ export function RefineryDrawer() {
             </div>
 
             {/* 2. Content Body */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar bg-background relative">
+            <div className="flex-1 overflow-y-auto custom-scrollbar bg-background relative scrollbar-hide">
               {isImage ? (
                 <div className="p-8 flex flex-col items-center min-h-full justify-center bg-secondary/5">
                   {isLoading ? (

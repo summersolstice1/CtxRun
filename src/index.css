@@ -116,6 +116,24 @@
   }
 }
 
+/* 隐藏滚动条但保留滚动功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Virtuoso 组件滚动器隐藏滚动条 */
+[data-virtuoso-scroller="true"] {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+[data-virtuoso-scroller="true"]::-webkit-scrollbar {
+  display: none;
+}
+
 /* 滚动条适配 */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
 ::-webkit-scrollbar-track { background: transparent; }

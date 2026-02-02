@@ -6,12 +6,15 @@ import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { getText } from '@/lib/i18n';
 import type { LangKey } from '@/lib/i18n';
+import { GroupedVirtuoso } from 'react-virtuoso';
+import { useMemo, useCallback } from 'react';
 
 export function RefineryFeed() {
   const {
-    items, setActiveId, activeId, togglePin,
+    items, setActiveId, activeId, togglePin, isLoading, hasMore,
     searchQuery, dateRange, kindFilter, pinnedOnly, manualOnly,
-    setSearchQuery, resetDateFilter, setKindFilter, togglePinnedOnly, toggleManualOnly
+    setSearchQuery, resetDateFilter, setKindFilter, togglePinnedOnly, toggleManualOnly,
+    loadHistory
   } = useRefineryStore();
   const { language } = useAppStore();
 
@@ -31,22 +34,70 @@ export function RefineryFeed() {
     }
   };
 
-  // Group items by date for timeline effect
-  const groupedItems = items.reduce<Record<string, typeof items>>((acc, item) => {
-    const dateKey = getDateKey(item.updatedAt, language);
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
+  // 将 items 按日期分组，使用 useMemo 优化性能
+  const { groups, flatItems, groupCounts } = useMemo(() => {
+    const groupMap = new Map<string, any[]>();
+
+    // 按日期分组
+    items.forEach(item => {
+      const dateKey = getDateKey(item.updatedAt, language);
+      if (!groupMap.has(dateKey)) {
+        groupMap.set(dateKey, []);
+      }
+      groupMap.get(dateKey)!.push(item);
+    });
+
+    // 转换为数组并按日期降序排序
+    const sortedGroups = Array.from(groupMap.entries())
+      .map(([dateKey, items]) => ({ dateKey, items }))
+      .sort((a, b) => {
+        // 按时间戳降序排序
+        const aTime = a.items[0]?.updatedAt || 0;
+        const bTime = b.items[0]?.updatedAt || 0;
+        return bTime - aTime;
+      });
+
+    // 扁平化 items 和计算 groupCounts
+    const flat: any[] = [];
+    const counts: number[] = [];
+
+    sortedGroups.forEach(group => {
+      flat.push(...group.items);
+      counts.push(group.items.length);
+    });
+
+    return {
+      groups: sortedGroups,
+      flatItems: flat,
+      groupCounts: counts
+    };
+  }, [items, language]);
+
+  // 无限滚动加载更多
+  const loadMore = useCallback(() => {
+    if (!isLoading && hasMore) {
+      loadHistory(false);
     }
-    acc[dateKey].push(item);
-    return acc;
-  }, {});
+  }, [isLoading, hasMore, loadHistory]);
+
+  // 获取分组索引
+  const getGroupIndex = useCallback((itemIndex: number) => {
+    let count = 0;
+    for (let i = 0; i < groupCounts.length; i++) {
+      count += groupCounts[i];
+      if (itemIndex < count) {
+        return i;
+      }
+    }
+    return groupCounts.length - 1;
+  }, [groupCounts]);
 
   return (
-    <div className="flex-1 h-full overflow-y-auto custom-scrollbar bg-background">
-      <div className="max-w-3xl mx-auto py-8 px-6 space-y-6">
+    <div className="flex-1 h-full bg-background">
+      <div className="max-w-3xl mx-auto py-8 px-6 h-full flex flex-col">
         {/* Filter indicator bar */}
         {hasActiveFilter && (
-          <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg">
+          <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mb-4 shrink-0">
             <div className="flex items-center gap-2 text-xs text-primary">
               <Filter size={12} />
               <span>{getText('refinery', 'filteredResults', language)}</span>
@@ -62,8 +113,9 @@ export function RefineryFeed() {
           </div>
         )}
 
+        {/* Virtual list */}
         {items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-32 text-muted-foreground/30 gap-6">
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground/30 gap-6">
             <div className="w-20 h-20 rounded-2xl bg-secondary/20 flex items-center justify-center border border-dashed border-border">
               {hasActiveFilter ? <Search size={32} /> : <FileText size={32} />}
             </div>
@@ -75,30 +127,54 @@ export function RefineryFeed() {
             </p>
           </div>
         ) : (
-          Object.entries(groupedItems).map(([dateKey, dateItems]) => (
-            <div key={dateKey} className="space-y-4">
-              {/* Date Header */}
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 -mx-6 px-6 border-b border-border/30">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                  {dateKey}
-                </span>
-              </div>
+          <div className="flex-1 min-h-0">
+            <GroupedVirtuoso
+              style={{ height: '100%' }}
+              groupCounts={groupCounts}
+              groupContent={index => {
+                const group = groups[index];
+                if (!group) return null;
+                return (
+                  <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 border-b border-border/30">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                      {group.dateKey}
+                    </span>
+                  </div>
+                );
+              }}
+              itemContent={index => {
+                const item = flatItems[index];
+                const groupIndex = getGroupIndex(index);
+                const isFirstInGroup = index === groupCounts.slice(0, groupIndex).reduce((a, b) => a + b, 0);
 
-              {/* Cards for this date */}
-              {dateItems.map((item) => (
-                <FeedCard
-                  key={item.id}
-                  item={item}
-                  isActive={activeId === item.id}
-                  onClick={() => setActiveId(item.id)}
-                  onTogglePin={(e) => {
-                    e.stopPropagation();
-                    togglePin(item.id);
-                  }}
-                />
-              ))}
-            </div>
-          ))
+                return (
+                  <div className={cn(isFirstInGroup ? 'mt-4' : '')}>
+                    <FeedCard
+                      key={item.id}
+                      item={item}
+                      isActive={activeId === item.id}
+                      onClick={() => setActiveId(item.id)}
+                      onTogglePin={(e) => {
+                        e.stopPropagation();
+                        togglePin(item.id);
+                      }}
+                    />
+                  </div>
+                );
+              }}
+              endReached={loadMore}
+              components={{
+                Footer: () => {
+                  if (!isLoading || items.length === 0) return null;
+                  return (
+                    <div className="py-8 flex justify-center">
+                      <Loader2 size={24} className="animate-spin text-primary/50" />
+                    </div>
+                  );
+                }
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
@@ -123,7 +199,7 @@ function FeedCard({
     <div
       onClick={onClick}
       className={cn(
-        'group relative bg-card border rounded-xl p-4 cursor-pointer transition-all hover:border-primary/40 hover:shadow-md',
+        'group relative bg-card border rounded-xl p-4 cursor-pointer transition-all hover:border-primary/40 hover:shadow-md mb-4',
         isActive ? 'border-primary/60 ring-1 ring-primary/20 shadow-md' : 'border-border/60',
         // 手动笔记使用不同的背景色
         item.isManual && 'bg-gradient-to-br from-primary/5 to-transparent'

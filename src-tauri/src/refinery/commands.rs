@@ -1,5 +1,5 @@
 use tauri::{State, Emitter}; // 引入 Emitter 用于通知前端
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 use serde::Serialize;
 use serde_json;
 use clipboard_rs::Clipboard; // 导入 Clipboard trait
@@ -36,19 +36,44 @@ pub fn get_refinery_history(
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let offset = (page - 1) * page_size;
 
-    let mut sql = String::from("SELECT * FROM refinery_history WHERE 1=1");
+    // 列表查询优化：
+    // - 图片类型：返回 content（文件路径，很短）
+    // - 文本类型：不返回 content（可能很长，只在详情时加载）
+    let mut sql = String::from(
+        "SELECT id, kind,
+                CASE WHEN kind = 'image' THEN content ELSE NULL END as content,
+                content_hash, preview, source_app, url, size_info,
+                is_pinned, metadata, created_at, updated_at,
+                title, tags, is_manual, is_edited
+         FROM refinery_history WHERE 1=1"
+    );
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-    // 1. 关键词搜索 (升级：增加对 title 的匹配)
+    // 1. 关键词搜索 - 使用 FTS5 全文搜索（针对文本记录）+ LIKE（针对图片记录）
     if let Some(q) = search_query {
         let q_str = q.trim();
         if !q_str.is_empty() {
-            // 注意：这里暂时使用 LIKE，如果数据量巨大建议改用 FTS Match
-            sql.push_str(" AND (preview LIKE ? OR source_app LIKE ? OR title LIKE ?)");
-            let pattern = format!("%{}%", q_str);
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern.clone()));
-            params.push(Box::new(pattern));
+            // FTS5 MATCH 语法：转义特殊字符
+            let escaped_query = q_str
+                .replace('\\', "\\\\")
+                .replace('"', "\"\"")
+                .replace(' ', " AND ");
+
+            // 文本记录：使用 FTS5 搜索 (content, title, source_app, preview)
+            // 图片记录：使用 LIKE 搜索 (source_app, title)
+            sql.push_str(" AND (");
+            sql.push_str(&format!(
+                "(kind = 'text' AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH \"{}\"))",
+                escaped_query
+            ));
+            sql.push_str(" OR ");
+
+            // 图片记录没有 content，只搜索 source_app 和 title
+            let like_pattern = format!("%{}%", q_str);
+            sql.push_str("(kind = 'image' AND (source_app LIKE ? OR title LIKE ?))");
+            params.push(Box::new(like_pattern.clone()));
+            params.push(Box::new(like_pattern));
+            sql.push_str(")");
         }
     }
 
@@ -95,10 +120,18 @@ pub fn get_refinery_history(
         let tags_str: Option<String> = row.get("tags")?;
         let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
 
+        // content：图片返回路径，文本返回 NULL
+        let kind: String = row.get("kind")?;
+        let content: Option<String> = if kind == "image" {
+            row.get("content")?
+        } else {
+            None
+        };
+
         Ok(RefineryItem {
             id: row.get("id")?,
-            kind: row.get("kind")?,
-            content: row.get("content")?,
+            kind,
+            content,
             content_hash: row.get("content_hash")?,
             preview: row.get("preview")?,
             source_app: row.get("source_app")?,
@@ -122,6 +155,43 @@ pub fn get_refinery_history(
     }
 
     Ok(results)
+}
+
+/// 获取单个条目的完整内容（用于打开抽屉时加载）
+#[tauri::command]
+pub fn get_refinery_item_detail(state: State<DbState>, id: String) -> Result<Option<RefineryItem>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let item = conn.query_row(
+        "SELECT * FROM refinery_history WHERE id = ?",
+        params![id],
+        |row| {
+            // 处理 tags JSON 字符串转 Vec<String>
+            let tags_str: Option<String> = row.get("tags")?;
+            let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
+
+            Ok(RefineryItem {
+                id: row.get("id")?,
+                kind: row.get("kind")?,
+                content: row.get("content")?,
+                content_hash: row.get("content_hash")?,
+                preview: row.get("preview")?,
+                source_app: row.get("source_app")?,
+                url: row.get("url")?,
+                size_info: row.get("size_info")?,
+                is_pinned: row.get("is_pinned")?,
+                metadata: row.get("metadata")?,
+                created_at: row.get("created_at")?,
+                updated_at: row.get("updated_at")?,
+                title: row.get("title")?,
+                tags,
+                is_manual: row.get("is_manual").unwrap_or(false),
+                is_edited: row.get("is_edited").unwrap_or(false),
+            })
+        }
+    ).optional().map_err(|e| e.to_string())?;
+
+    Ok(item)
 }
 
 /// 获取统计信息

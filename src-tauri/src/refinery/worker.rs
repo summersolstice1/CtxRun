@@ -172,9 +172,9 @@ impl RefineryHandler {
         let char_count = content.chars().count();
         let size_info = format!("{} chars", char_count);
 
-        // 预览取前 150 个字符
+        // 预览取前 300 个字符
         let preview_text: String = content.chars()
-            .take(150)
+            .take(300)
             .collect();
         let preview = Some(preview_text);
 

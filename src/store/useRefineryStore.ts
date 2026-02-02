@@ -48,6 +48,7 @@ interface RefineryState {
 
   loadHistory: (reset?: boolean) => Promise<void>;
   loadStatistics: () => Promise<void>;
+  loadItemDetail: (id: string) => Promise<void>;
 
   setActiveId: (id: string | null) => void;
   setSearchQuery: (q: string) => void;
@@ -198,6 +199,21 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     } catch (e) {
       console.error("Failed to load statistics:", e);
       set({ statisticsLoading: false });
+    }
+  },
+
+  loadItemDetail: async (id) => {
+    try {
+      const item = await invoke<RefineryItem>('get_refinery_item_detail', { id });
+      if (!item) return;
+
+      set(state => ({
+        items: state.items.map(i =>
+          i.id === id ? { ...i, content: item.content } : i
+        )
+      }));
+    } catch (e) {
+      console.error('Failed to load item detail:', e);
     }
   },
 

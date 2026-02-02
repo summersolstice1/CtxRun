@@ -157,7 +157,7 @@ pub fn create_manual_note_db(
     let hash = hash_content(content.as_bytes());
     let char_count = content.chars().count();
     let size_info = format!("{} chars", char_count);
-    let preview: String = content.chars().take(150).collect();
+    let preview: String = content.chars().take(300).collect();
 
     let metadata = RefineryMetadata {
         width: None,
