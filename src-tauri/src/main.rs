@@ -304,6 +304,9 @@ fn main() {
             refinery::commands::copy_refinery_image,
             refinery::commands::create_note,
             refinery::commands::update_note,
+            // Refinery Cleanup Commands (V5)
+            refinery::commands::update_cleanup_config,
+            refinery::commands::manual_cleanup,
         ])
         .setup(|app| {
             let system = System::new();
@@ -323,8 +326,16 @@ fn main() {
                 }
             }
 
-            // 启动 Refinery 监听器
-            refinery::init_listener(app.handle().clone());
+            // 启动 Refinery Cleanup Worker
+            use std::sync::Arc as StdArc;
+            use tokio::sync::Mutex as TokioMutex;
+            let cleanup_config = StdArc::new(TokioMutex::new(refinery::cleanup_worker::RefineryCleanupConfig::default()));
+            app.manage(refinery::commands::CleanupConfigState(cleanup_config.clone()));
+            let (cleanup_worker, cleanup_sender) = refinery::cleanup_worker::CleanupWorker::new(cleanup_config);
+            tauri::async_runtime::spawn(cleanup_worker.run(app.handle().clone()));
+
+            // 启动 Refinery 监听器，传入 cleanup sender
+            refinery::init_listener(app.handle().clone(), Some(cleanup_sender));
 
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 

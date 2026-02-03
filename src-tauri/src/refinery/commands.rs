@@ -1,12 +1,15 @@
-use tauri::{State, Emitter}; // 引入 Emitter 用于通知前端
+use tauri::{State, Emitter, Manager}; // 引入 Emitter, Manager 用于通知前端和获取状态
 use rusqlite::{params, OptionalExtension};
 use serde::Serialize;
 use serde_json;
 use clipboard_rs::Clipboard; // 导入 Clipboard trait
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use crate::db::DbState;
 use super::model::RefineryItem;
 use super::storage::{create_manual_note_db, update_note_db};
+use super::cleanup_worker::RefineryCleanupConfig;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -444,4 +447,184 @@ pub fn update_note(
     let _ = app.emit("refinery://update", &id);
 
     Ok(())
+}
+
+// ============================================================================
+// 自动清理功能 (V5 新增)
+// ============================================================================
+
+/// 清理配置状态（用于 Tauri State）
+pub struct CleanupConfigState(pub Arc<Mutex<RefineryCleanupConfig>>);
+
+/// 更新清理配置
+#[tauri::command]
+pub async fn update_cleanup_config(
+    state: State<'_, CleanupConfigState>,
+    config: RefineryCleanupConfig,
+) -> Result<(), String> {
+    let mut state_config = state.0.lock().await;
+    *state_config = config;
+    println!("[Refinery Cleanup] Config updated: enabled={}, strategy={}", state_config.enabled, state_config.strategy);
+    Ok(())
+}
+
+/// 手动触发清理
+#[tauri::command]
+pub async fn manual_cleanup(
+    app: tauri::AppHandle,
+    config_state: State<'_, CleanupConfigState>,
+) -> Result<usize, String> {
+    let config = config_state.0.lock().await.clone();
+
+    if !config.enabled {
+        return Ok(0);
+    }
+
+    match config.strategy.as_str() {
+        "count" => {
+            if let Some(max_count) = config.max_count {
+                execute_count_cleanup(&app, max_count, config.keep_pinned)
+            } else {
+                Ok(0)
+            }
+        }
+        "time" => {
+            if let Some(days) = config.days {
+                execute_time_cleanup(&app, days, config.keep_pinned)
+            } else {
+                Ok(0)
+            }
+        }
+        "both" => {
+            // 先尝试数量清理，如果没有删除则尝试时间清理
+            let count_deleted = if let Some(max_count) = config.max_count {
+                execute_count_cleanup(&app, max_count, config.keep_pinned).unwrap_or(0)
+            } else {
+                0
+            };
+
+            if count_deleted == 0 {
+                if let Some(days) = config.days {
+                    execute_time_cleanup(&app, days, config.keep_pinned)
+                } else {
+                    Ok(0)
+                }
+            } else {
+                Ok(count_deleted)
+            }
+        }
+        _ => Ok(0),
+    }
+}
+
+// ============================================================================
+// 清理逻辑实现
+// ============================================================================
+
+/// 缓冲比例：5%
+const CLEANUP_BUFFER_RATIO: f64 = 0.05;
+
+/// 执行数量清理（带缓冲）
+pub fn execute_count_cleanup(
+    app: &tauri::AppHandle,
+    max_count: u32,
+    keep_pinned: bool,
+) -> Result<usize, String> {
+    use crate::db::DbState;
+
+    let state = app.state::<DbState>();
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    // 计算缓冲阈值
+    let buffer = (max_count as f64 * CLEANUP_BUFFER_RATIO).ceil() as u32;
+    let threshold = max_count + buffer;
+
+    // 查询当前总数（不包括笔记 is_manual=0）
+    let total: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM refinery_history WHERE is_manual = 0",
+        [],
+        |row| row.get(0)
+    ).map_err(|e| e.to_string())?;
+
+    if total <= threshold {
+        return Ok(0);
+    }
+
+    // 需要删除的数量
+    let to_delete = total - max_count;
+
+    // 构建查询：查找最旧的符合条件的记录
+    let mut sql = String::from("
+        SELECT id FROM refinery_history
+        WHERE is_manual = 0
+    ");
+
+    if keep_pinned {
+        sql.push_str(" AND is_pinned = 0");
+    }
+
+    sql.push_str(&format!(" ORDER BY updated_at ASC LIMIT {}", to_delete));
+
+    // 查询待删除的 ID
+    let ids: Vec<String> = conn.prepare(&sql).map_err(|e| e.to_string())?
+        .query_map([], |row| row.get(0))
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    // 执行删除
+    let deleted_count = delete_items_internal(&conn, &ids)?;
+
+    println!(
+        "[Refinery Cleanup] Deleted {} items (total: {}, threshold: {})",
+        deleted_count, total, threshold
+    );
+
+    Ok(deleted_count)
+}
+
+/// 执行时间清理
+pub fn execute_time_cleanup(
+    app: &tauri::AppHandle,
+    days: u32,
+    keep_pinned: bool,
+) -> Result<usize, String> {
+    use crate::db::DbState;
+
+    let state = app.state::<DbState>();
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let cutoff_time = chrono::Utc::now().timestamp_millis() - (days as i64 * 24 * 60 * 60 * 1000);
+
+    let mut sql = String::from("
+        SELECT id FROM refinery_history
+        WHERE is_manual = 0 AND created_at < ?
+    ");
+
+    if keep_pinned {
+        sql.push_str(" AND is_pinned = 0");
+    }
+
+    let ids: Vec<String> = conn.prepare(&sql).map_err(|e| e.to_string())?
+        .query_map(params![cutoff_time], |row| row.get(0))
+        .map_err(|e| e.to_string())?
+        .filter_map(|r| r.ok())
+        .collect();
+
+    if ids.is_empty() {
+        return Ok(0);
+    }
+
+    let deleted_count = delete_items_internal(&conn, &ids)?;
+
+    println!(
+        "[Refinery Cleanup] Time cleanup deleted {} items (older than {} days)",
+        deleted_count, days
+    );
+
+    Ok(deleted_count)
 }

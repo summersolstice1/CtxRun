@@ -26,7 +26,8 @@ export function SettingsModal() {
     restReminder, setRestReminder,
     windowDestroyDelay, setWindowDestroyDelay,
     spotlightAppearance, setSpotlightAppearance,
-    searchSettings, setSearchSettings
+    searchSettings, setSearchSettings,
+    refinerySettings, setRefinerySettings
   } = useAppStore();
 
   const { loadPrompts, refreshGroups, refreshCounts } = usePromptStore();
@@ -56,6 +57,27 @@ export function SettingsModal() {
         renameInputRef.current.focus();
     }
   }, [isRenaming]);
+
+  // 同步 Refinery 配置到后端
+  useEffect(() => {
+    const updateBackendConfig = async () => {
+      try {
+        await invoke('update_cleanup_config', {
+          config: {
+            enabled: refinerySettings.enabled,
+            strategy: refinerySettings.strategy,
+            days: refinerySettings.days,
+            maxCount: refinerySettings.maxCount,
+            keepPinned: refinerySettings.keepPinned,
+          }
+        });
+      } catch (e) {
+        console.error('Failed to update refinery cleanup config:', e);
+      }
+    };
+
+    updateBackendConfig();
+  }, [refinerySettings]);
 
   const handleRenameSubmit = () => {
       if (renameValue.trim()) {
@@ -174,6 +196,16 @@ export function SettingsModal() {
       setImportStatus(`Scan failed: ${e}`);
     } finally {
       setIsScanningApps(false);
+    }
+  };
+
+  // 手动清理 Refinery
+  const handleManualCleanup = async () => {
+    try {
+      const count = await invoke<number>('manual_cleanup');
+      setImportStatus(getText('settings', 'cleanupSuccess', language).replace('{count}', count.toString()));
+    } catch (e) {
+      setImportStatus(getText('settings', 'cleanupFailed', language).replace('{error}', String(e)));
     }
   };
 
@@ -765,6 +797,204 @@ export function SettingsModal() {
                                 {getText('spotlight', 'refreshIndexNow', language)}
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {/* Refinery Cleanup Section */}
+                {activeSection === 'data' && (
+                    <div className="w-full h-px bg-border/50 my-2" />
+                )}
+
+                {activeSection === 'data' && (
+                    <div>
+                        <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
+                            <Database size={18} className="text-purple-600"/>
+                            {getText('settings', 'refineryCleanup', language)}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {getText('settings', 'refineryCleanupDesc', language)}
+                        </p>
+                    </div>
+                )}
+
+                {activeSection === 'data' && (
+                    <div className="bg-secondary/20 border border-border rounded-lg p-4 flex flex-col gap-4">
+                        {/* 启用开关 */}
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <div className="text-sm font-medium text-foreground">
+                                    {getText('settings', 'cleanupEnabled', language)}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                    {getText('settings', 'refineryCleanupDesc', language)}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setRefinerySettings({ enabled: !refinerySettings.enabled })}
+                                className={cn(
+                                    "relative w-11 h-6 rounded-full transition-colors",
+                                    refinerySettings.enabled ? "bg-primary" : "bg-secondary"
+                                )}
+                            >
+                                <div className={cn(
+                                    "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform",
+                                    refinerySettings.enabled ? "translate-x-5" : "translate-x-0"
+                                )} />
+                            </button>
+                        </div>
+
+                        {refinerySettings.enabled && (
+                            <>
+                                {/* 清理策略选择 */}
+                                <div className="space-y-2">
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                        {getText('settings', 'cleanupStrategy', language)}
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                            onClick={() => setRefinerySettings({ strategy: 'time' })}
+                                            className={cn(
+                                                "px-3 py-2 rounded-md text-sm border transition-all",
+                                                refinerySettings.strategy === 'time'
+                                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
+                                            )}
+                                        >
+                                            {getText('settings', 'strategyTime', language)}
+                                        </button>
+                                        <button
+                                            onClick={() => setRefinerySettings({ strategy: 'count' })}
+                                            className={cn(
+                                                "px-3 py-2 rounded-md text-sm border transition-all",
+                                                refinerySettings.strategy === 'count'
+                                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
+                                            )}
+                                        >
+                                            {getText('settings', 'strategyCount', language)}
+                                        </button>
+                                        <button
+                                            onClick={() => setRefinerySettings({ strategy: 'both' })}
+                                            className={cn(
+                                                "px-3 py-2 rounded-md text-sm border transition-all",
+                                                refinerySettings.strategy === 'both'
+                                                    ? "bg-primary/10 border-primary text-primary font-medium"
+                                                    : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
+                                            )}
+                                        >
+                                            {getText('settings', 'strategyBoth', language)}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* 时间限制滑块 */}
+                                {(refinerySettings.strategy === 'time' || refinerySettings.strategy === 'both') && (
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-foreground">{getText('settings', 'timeLimit', language)}</span>
+                                            <span className="font-mono text-muted-foreground">
+                                                {refinerySettings.days || 30} {getText('settings', 'daysLabel', language)}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="7"
+                                            max="90"
+                                            step="1"
+                                            className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                                            value={refinerySettings.days || 30}
+                                            onChange={(e) => setRefinerySettings({ days: parseInt(e.target.value) })}
+                                        />
+                                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                                            <span>7 {getText('settings', 'daysLabel', language)}</span>
+                                            <span>90 {getText('settings', 'daysLabel', language)}</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 数量限制滑块 */}
+                                {(refinerySettings.strategy === 'count' || refinerySettings.strategy === 'both') && (
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-xs">
+                                            <span className="text-foreground">{getText('settings', 'countLimit', language)}</span>
+                                            <span className="font-mono text-muted-foreground">
+                                                {refinerySettings.maxCount || 1000} {getText('settings', 'entriesLabel', language)}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="100"
+                                            max="5000"
+                                            step="100"
+                                            className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                                            value={refinerySettings.maxCount || 1000}
+                                            onChange={(e) => setRefinerySettings({ maxCount: parseInt(e.target.value) })}
+                                        />
+                                        <div className="flex justify-between text-[10px] text-muted-foreground">
+                                            <span>100 {getText('settings', 'entriesLabel', language)}</span>
+                                            <span>5000 {getText('settings', 'entriesLabel', language)}</span>
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground italic">
+                                            {getText('settings', 'bufferInfo', language).replace('{threshold}', Math.ceil((refinerySettings.maxCount || 1000) * 1.05).toString())}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* 保留选项 - 优化版 */}
+                                <div className="space-y-3">
+                                    <div
+                                        /* 1. 将点击事件移到父容器，扩大点击区域 */
+                                        onClick={() => setRefinerySettings({ keepPinned: !refinerySettings.keepPinned })}
+                                        /* 2. 增加 cursor-pointer 和 hover 效果提升交互感 */
+                                        className="flex items-center justify-between p-3 rounded-lg bg-secondary/10 border border-border cursor-pointer hover:bg-secondary/20 transition-colors group"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            {/* 3. 这里的视觉框现在会跟随点击变化 */}
+                                            <div className={cn(
+                                                "w-4 h-4 border-2 rounded flex items-center justify-center transition-colors",
+                                                refinerySettings.keepPinned ? "border-primary bg-primary" : "border-muted-foreground/50"
+                                            )}>
+                                                {refinerySettings.keepPinned && <Check size={12} className="text-primary-foreground" />}
+                                            </div>
+                                            <span className="text-sm text-foreground select-none">
+                                                {getText('settings', 'keepPinned', language)}
+                                            </span>
+                                        </div>
+
+                                        {/* 4. 右侧辅助提示 */}
+                                        <div className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {refinerySettings.keepPinned ? 'ON' : 'OFF'}
+                                        </div>
+                                    </div>
+
+                                    {/* 笔记保护项（只读展示，因为代码里写死了总是保护） */}
+                                    <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/10 border border-border opacity-80">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 border-2 border-green-500 bg-green-500 rounded flex items-center justify-center">
+                                                <Check size={12} className="text-white" />
+                                            </div>
+                                            <span className="text-sm text-foreground">{getText('settings', 'keepNotes', language)}</span>
+                                        </div>
+                                        <span className="text-[10px] text-muted-foreground ml-auto">(Protected)</span>
+                                    </div>
+                                </div>
+
+                                {/* 立即清理按钮 */}
+                                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
+                                    <div>
+                                        <div className="text-sm font-medium text-primary">
+                                            {getText('settings', 'btnCleanupNow', language)}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={handleManualCleanup}
+                                        className="flex items-center gap-2 px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-xs font-medium transition-all shadow-sm"
+                                    >
+                                        <RefreshCw size={14} />
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 

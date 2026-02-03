@@ -57,6 +57,22 @@ export interface RestReminderConfig {
   intervalMinutes: number;
 }
 
+export interface RefinerySettings {
+  enabled: boolean;
+  strategy: 'time' | 'count' | 'both';
+  days?: number;
+  maxCount?: number;
+  keepPinned: boolean;
+}
+
+export const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
+  enabled: false,
+  strategy: 'count',
+  days: 30,
+  maxCount: 1000,
+  keepPinned: true,
+};
+
 export type WindowDestroyDelay = number;
 
 interface AppState {
@@ -86,6 +102,8 @@ interface AppState {
     customUrl: string;
   };
 
+  refinerySettings: RefinerySettings;
+
   setView: (view: AppView) => void;
   toggleSidebar: () => void;
   setSettingsOpen: (open: boolean) => void;
@@ -101,6 +119,7 @@ interface AppState {
   setRestReminder: (config: Partial<RestReminderConfig>) => void;
   setWindowDestroyDelay: (seconds: number) => void;
   setSearchSettings: (config: Partial<AppState['searchSettings']>) => void;
+  setRefinerySettings: (config: Partial<RefinerySettings>) => void;
   syncModels: () => Promise<void>;
   resetModels: () => void;
   setSpotlightAppearance: (config: Partial<SpotlightAppearance>) => void;
@@ -137,6 +156,7 @@ export const useAppStore = create<AppState>()(
         defaultEngine: 'google',
         customUrl: 'https://search.bilibili.com/all?keyword=%s'
       },
+      refinerySettings: DEFAULT_REFINERY_SETTINGS,
       setSpotlightAppearance: (config) => set((state) => ({
         spotlightAppearance: { ...state.spotlightAppearance, ...config }
       })),
@@ -203,6 +223,9 @@ export const useAppStore = create<AppState>()(
       }),
       setSearchSettings: (config) => set((state) => ({
         searchSettings: { ...state.searchSettings, ...config }
+      })),
+      setRefinerySettings: (config) => set((state) => ({
+        refinerySettings: { ...state.refinerySettings, ...config }
       })),
       setLanguage: (language) => set({ language }),
       updateGlobalIgnore: (type, action, value) => set((state) => {
@@ -281,7 +304,8 @@ export const useAppStore = create<AppState>()(
         spotlightAppearance: state.spotlightAppearance,
         restReminder: state.restReminder,
         windowDestroyDelay: state.windowDestroyDelay,
-        searchSettings: state.searchSettings
+        searchSettings: state.searchSettings,
+        refinerySettings: state.refinerySettings
       }),
     }
   )

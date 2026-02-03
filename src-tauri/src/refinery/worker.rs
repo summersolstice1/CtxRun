@@ -7,6 +7,7 @@ use clipboard_rs::{
 };
 use clipboard_rs::common::RustImage;
 use x_win::{get_active_window, get_browser_url};
+use tokio::sync::mpsc;
 
 use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
@@ -18,13 +19,15 @@ const SELF_APP_NAME: &str = "ctxrun";
 struct RefineryHandler {
     app: AppHandle,
     last_hash: String, // 内存中简单的防抖/防循环机制
+    cleanup_sender: Option<mpsc::Sender<()>>, // 通知 cleanup worker
 }
 
 impl RefineryHandler {
-    pub fn new(app: AppHandle) -> Self {
+    pub fn new(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) -> Self {
         Self {
             app,
             last_hash: String::new(),
+            cleanup_sender,
         }
     }
 
@@ -188,6 +191,13 @@ impl RefineryHandler {
 
         println!("[Refinery] Capture Saved: {} (New: {})", id, is_new);
 
+        // 通知 cleanup worker 检查是否需要清理
+        if is_new {
+            if let Some(ref sender) = self.cleanup_sender {
+                let _ = sender.blocking_send(());
+            }
+        }
+
         Ok(())
     }
 }
@@ -201,7 +211,7 @@ impl ClipboardHandler for RefineryHandler {
 }
 
 /// 启动监听器 (在 main.rs 中调用)
-pub fn init_listener(app: AppHandle) {
+pub fn init_listener(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) {
     // 放入独立线程，避免阻塞 Tauri 主循环
     thread::spawn(move || {
         // 适当延迟，等待系统准备好
@@ -212,7 +222,7 @@ pub fn init_listener(app: AppHandle) {
         let manager = ClipboardWatcherContext::new();
         match manager {
             Ok(mut watcher) => {
-                let handler = RefineryHandler::new(app);
+                let handler = RefineryHandler::new(app, cleanup_sender);
 
                 // 添加处理器并开始阻塞监听
                 watcher.add_handler(handler);
