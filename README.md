@@ -1,9 +1,14 @@
 <div align="center">
   <a href="https://github.com/WinriseF/CtxRun">
-    <img src="images/banner.png" alt="CtxRun Logo" width="750" height="500">
+    <img
+      src="images/banner.png"
+      alt="CtxRun Logo"
+      width="750"
+      height="300"
+      style="object-fit: cover; object-position: center;"
+    >
   </a>
 
-  <h1 align="center">CtxRun</h1>
 
   <p align="center">
     <a href="https://github.com/WinriseF/CtxRun/actions">
