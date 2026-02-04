@@ -1,6 +1,6 @@
 <div align="center">
   <a href="https://github.com/WinriseF/CtxRun">
-    <img src="images/banner.png" alt="CtxRun Logo" width="120" height="120">
+    <img src="images/banner.png" alt="CtxRun Logo" width="750" height="500">
   </a>
 
   <h1 align="center">CtxRun</h1>
