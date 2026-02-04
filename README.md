@@ -1,15 +1,9 @@
 <div align="center">
   <a href="https://github.com/WinriseF/CtxRun">
-    <img src="images/logo.png" alt="CtxRun Logo" width="120" height="120">
+    <img src="images/banner.png" alt="CtxRun Logo" width="120" height="120">
   </a>
 
   <h1 align="center">CtxRun</h1>
-
-  <p align="center">
-    <strong>Run with context, AI at your fingertips.</strong>
-    <br />
-    AI-Powered Productivity Tool for Developers: Context Assembly · Prompt Management · Global AI Chat · Code Diff
-  </p>
 
   <p align="center">
     <a href="https://github.com/WinriseF/CtxRun/actions">

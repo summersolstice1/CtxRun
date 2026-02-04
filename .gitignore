@@ -25,7 +25,7 @@ dist-ssr
 *.sw?
 Future.md
 /.claude/
-/images/
+
 /models/
 gen/
 icons/
