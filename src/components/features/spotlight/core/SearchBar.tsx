@@ -214,11 +214,14 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
   };
 
   return (
-    <div data-tauri-drag-region className={cn("h-16 shrink-0 flex items-center px-5 gap-4 border-b transition-colors duration-300 cursor-move relative z-20", mode === 'chat' ? "border-purple-500/20" : "border-border/40")}>
+    <div data-tauri-drag-region className={cn(
+        "h-16 shrink-0 flex items-center px-6 gap-4 border-b transition-all duration-500 cursor-move",
+        mode === 'chat' ? "bg-purple-500/5" : "bg-background/50"
+    )}>
 
       <button onClick={toggleMode} className="w-6 h-6 flex items-center justify-center relative outline-none group" title={getText('spotlight', 'toggleMode', language)}>
-          <SearchIcon className={cn("absolute transition-all duration-300 text-muted-foreground/70 group-hover:text-foreground", mode === 'search' ? "scale-100 opacity-100" : "scale-50 opacity-0 rotate-90")} size={24} />
-          <Bot className={cn("absolute transition-all duration-300 text-purple-500", mode === 'chat' ? "scale-100 opacity-100 rotate-0" : "scale-50 opacity-0 -rotate-90")} size={24} />
+          <SearchIcon strokeWidth={1.5} className={cn("absolute transition-all duration-300 text-muted-foreground/70 group-hover:text-foreground", mode === 'search' ? "scale-100 opacity-100" : "scale-50 opacity-0 rotate-90")} size={24} />
+          <Bot strokeWidth={1.5} className={cn("absolute transition-all duration-300 text-purple-500", mode === 'chat' ? "scale-100 opacity-100 rotate-0" : "scale-50 opacity-0 -rotate-90")} size={24} />
       </button>
 
       {renderLeftTag()}
@@ -235,7 +238,8 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
             ref={inputRef}
             onContextMenu={onContextMenu}
             onKeyDown={handleKeyDown}
-            className="w-full bg-transparent border-none outline-none text-xl placeholder:text-muted-foreground/40 h-full text-foreground caret-primary relative z-10"
+            className="w-full bg-transparent border-none outline-none text-xl font-light placeholder:text-muted-foreground/30 h-full text-foreground caret-primary relative z-10"
+            style={{ letterSpacing: '-0.02em' }}
             placeholder={
                 mode === 'search'
                     ? (searchScope === 'global' ? getText('spotlight', 'searchPlaceholder', language) :
@@ -262,8 +266,8 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
 
       <div className="flex items-center gap-2 relative z-10">
          {mode === 'chat' && (
-            <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded bg-secondary/50 hover:bg-secondary text-[10px] font-medium transition-colors border border-border/50 group" title={getText('spotlight', 'currentProvider', language, { provider: aiConfig.providerId })}>
-                <Zap size={10} className={cn(
+            <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/50 hover:bg-secondary text-[10px] font-mono font-medium transition-colors border border-border/50 group" title={getText('spotlight', 'currentProvider', language, { provider: aiConfig.providerId })}>
+                <Zap strokeWidth={2} size={10} className={cn(
                     aiConfig.providerId.toLowerCase().includes('deepseek') ? "text-blue-500" :
                     aiConfig.providerId.toLowerCase().includes('openai') ? "text-green-500" :
                     aiConfig.providerId.toLowerCase().includes('anthropic') ? "text-purple-500" :
@@ -275,8 +279,8 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
             </button>
          )}
          <div className="flex items-center gap-2 pointer-events-none opacity-50">
-              <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium border transition-colors duration-300", mode === 'chat' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : "bg-secondary text-muted-foreground border-border")}>TAB</span>
-              {mode === 'search' && query && <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground font-medium border border-border">ESC {getText('spotlight', 'clear', language)}</span>}
+              <span className={cn("px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground transition-colors duration-300", mode === 'chat' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : "")}>TAB</span>
+              {mode === 'search' && query && <span className="px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground">ESC {getText('spotlight', 'clear', language)}</span>}
          </div>
       </div>
     </div>

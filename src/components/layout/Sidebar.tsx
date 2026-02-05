@@ -58,7 +58,7 @@ export function Sidebar() {
       </div>
 
       {/* Menu - 核心修改区域 */}
-      <nav className="flex-1 py-4 px-2 space-y-1 overflow-y-auto overflow-x-hidden flex flex-col">
+      <nav className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto overflow-x-hidden flex flex-col">
         {menuItems.map((item) => {
           const isActive = currentView === item.id;
           return (
@@ -67,17 +67,15 @@ export function Sidebar() {
               onClick={() => setView(item.id)}
               title={!isSidebarOpen ? getMenuLabel(item.id, language) : undefined}
               className={cn(
-                "relative flex items-center text-sm font-medium transition-colors group h-10 w-full rounded-lg outline-none",
-                isActive
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                "relative flex items-center h-9 w-full rounded-lg transition-all duration-200 group outline-none",
+                isActive ? "text-primary" : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
               )}
             >
               {/* 悬浮圆角矩形背景动画 */}
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active-pill"
-                  className="absolute inset-0 bg-primary/10 rounded-lg"
+                  className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-lg"
                   transition={{
                     type: "spring",
                     stiffness: 400,
@@ -86,18 +84,18 @@ export function Sidebar() {
                 />
               )}
 
-              <div className="w-12 flex items-center justify-center shrink-0 z-10">
+              <div className="w-10 flex items-center justify-center shrink-0 z-10">
                 <item.icon
-                  size={20}
+                  size={18}
                   className={cn(
-                    "transition-transform duration-300 group-hover:scale-110",
-                    isActive ? "drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" : ""
+                    "transition-transform duration-300",
+                    isActive ? "scale-110" : "group-hover:scale-105"
                   )}
                 />
               </div>
               <span className={cn(
-                  "whitespace-nowrap transition-all duration-300 z-10 origin-left font-semibold",
-                  isSidebarOpen ? "opacity-100 translate-x-0 scale-100" : "opacity-0 -translate-x-4 scale-90"
+                  "text-[13px] font-medium transition-all duration-300 z-10",
+                  isSidebarOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
                 )}
               >
                 {getMenuLabel(item.id, language)}

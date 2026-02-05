@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, cloneElement } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
   CheckCircle2, AlertCircle, FileText, Database, Cpu, Save,
@@ -317,27 +317,32 @@ export function TokenDashboard({
 
 function StatCard({ icon, label, value, rawValue, highlight, className, loading }: any) {
     return (
-      <div className={cn("bg-card border border-border rounded-xl p-4 flex flex-col items-center justify-center text-center gap-2 shadow-sm transition-all hover:shadow-md hover:border-primary/20", highlight && "bg-primary/5 border-primary/20 ring-1 ring-primary/10", className)}>
-        <div className="p-2 bg-background rounded-full shadow-sm border border-border/50">{icon}</div>
-        <div className="space-y-0.5 w-full flex flex-col items-center min-h-[3rem] justify-center">
-          {/* loading 状态下，让 value 变半透明，而不是消失 */}
-          <div className="flex items-center gap-2">
-             <div className={cn(
-                 "text-xl md:text-2xl font-bold tracking-tight text-foreground truncate transition-opacity duration-300",
-                 loading && "opacity-50"
-             )} title={String(value)}>
-                 {typeof rawValue === 'number' ? (
-                    <NumberTicker value={rawValue} />
-                 ) : (
-                    value || "0"
-                 )}
-             </div>
+      <div className={cn(
+        "relative overflow-hidden bg-card border border-border/40 rounded-2xl p-5",
+        "transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 hover:-translate-y-0.5",
+        highlight && "bg-gradient-to-br from-primary/5 to-transparent border-primary/20",
+        className
+      )}>
+        {/* 增加一个极其淡的背景图标装饰 */}
+        <div className="absolute -right-4 -bottom-4 opacity-[0.03] rotate-12 pointer-events-none">
+            {cloneElement(icon, { size: 100, className: icon.props.className })}
+        </div>
 
-             {/* 如果正在加载，显示一个小转圈 */}
-             {loading && <Loader2 size={14} className="animate-spin text-muted-foreground" />}
-          </div>
+        <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-secondary/50 rounded-xl border border-border/50 shadow-inner">
+                {cloneElement(icon, { size: 18, className: icon.props.className })}
+            </div>
+            <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">{label}</div>
+        </div>
 
-          <div className="text-xs font-medium text-muted-foreground uppercase truncate">{label}</div>
+        <div className="flex items-baseline gap-2">
+            <div className={cn(
+                "text-3xl font-light tracking-tight text-foreground",
+                loading && "opacity-50"
+            )}>
+                {typeof rawValue === 'number' ? <NumberTicker value={rawValue} /> : (value || "0")}
+            </div>
+            {loading && <Loader2 size={16} className="animate-spin text-muted-foreground" />}
         </div>
       </div>
     );
