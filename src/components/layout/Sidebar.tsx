@@ -95,22 +95,23 @@ export function Sidebar() {
       </nav>
 
       {/* Footer - 只有设置按钮 */}
-      <div className="border-t border-border shrink-0 flex flex-col overflow-hidden whitespace-nowrap py-2">
+      <div className="shrink-0 flex flex-col overflow-hidden whitespace-nowrap py-2 px-2">
         <button
           onClick={() => setSettingsOpen(true)}
           className={cn(
-            "relative flex items-center h-10 w-full text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors group/btn"
+            "relative flex items-center h-9 w-full text-muted-foreground hover:text-foreground transition-colors group/btn",
+            "rounded-lg hover:bg-secondary/50"
           )}
           title={!isSidebarOpen ? getText('menu', 'settings', language) : undefined}
         >
-          <div className="w-16 flex items-center justify-center shrink-0">
-             <Settings 
-               size={18} 
-               className="transition-transform duration-500 group-hover/btn:rotate-90" 
+          <div className="w-12 flex items-center justify-center shrink-0">
+             <Settings
+               size={18}
+               className="transition-transform duration-500 group-hover/btn:rotate-90"
              />
           </div>
           <span className={cn(
-            "text-sm transition-all duration-300 origin-left", 
+            "text-sm transition-all duration-300 origin-left",
             isSidebarOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
           )}>
             {getText('menu', 'settings', language)}

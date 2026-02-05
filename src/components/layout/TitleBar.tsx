@@ -49,15 +49,15 @@ export function TitleBar() {
     invoke('hide_main_window', { delaySecs: windowDestroyDelay }).catch(console.error);
   };
 
-  const btnClass = "h-full w-10 flex items-center justify-center text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors";
+  const btnClass = "h-7 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-md hover:bg-secondary/50";
 
   return (
-    <div 
-      data-tauri-drag-region 
+    <div
+      data-tauri-drag-region
       className="h-8 bg-background flex items-center justify-between select-none border-b border-border shrink-0 transition-colors duration-300"
     >
       <div className="flex items-center gap-2 px-4 h-full relative">
-        <div 
+        <div
           ref={clockTriggerRef}
           onClick={(e) => {
             e.stopPropagation();
@@ -80,10 +80,10 @@ export function TitleBar() {
         />
       </div>
 
-      <div className="flex h-full">
+      <div className="flex h-full items-center px-1 gap-1">
         <button onClick={() => appWindow.minimize()} className={btnClass}><Minus size={14} /></button>
         <button onClick={toggleMaximize} className={btnClass}>{isMaximized ? <Maximize2 size={12} /> : <Square size={12} />}</button>
-        <button onClick={handleHide} className={cn(btnClass, "hover:bg-destructive hover:text-destructive-foreground")}><X size={14} /></button>
+        <button onClick={handleHide} className={cn(btnClass, "hover:bg-destructive/80 hover:text-destructive-foreground")}><X size={14} /></button>
       </div>
     </div>
   );
