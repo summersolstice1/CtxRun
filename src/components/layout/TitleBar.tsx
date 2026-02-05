@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
-import { Minus, Square, X, Maximize2, Clock } from 'lucide-react';
+import { Minus, X, Maximize2, Copy, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { ClockPopover } from '@/components/ui/ClockPopover';
@@ -82,7 +82,7 @@ export function TitleBar() {
 
       <div className="flex h-full items-center px-1 gap-1">
         <button onClick={() => appWindow.minimize()} className={btnClass}><Minus size={14} /></button>
-        <button onClick={toggleMaximize} className={btnClass}>{isMaximized ? <Maximize2 size={12} /> : <Square size={12} />}</button>
+        <button onClick={toggleMaximize} className={btnClass}>{isMaximized ? <Copy size={12} /> : <Maximize2 size={12} />}</button>
         <button onClick={handleHide} className={cn(btnClass, "hover:bg-destructive/80 hover:text-destructive-foreground")}><X size={14} /></button>
       </div>
     </div>
