@@ -1,10 +1,11 @@
-export type RefineryKind = 'text' | 'image';
+export type RefineryKind = 'text' | 'image' | 'mixed';
 
 export interface RefineryMetadata {
   width?: number;
   height?: number;
   format?: string;
   tokens?: number;
+  image_path?: string; // 混合类型的图片路径
 }
 
 export interface RefineryItem {

@@ -6,6 +6,8 @@ pub enum RefineryKind {
     Text,
     #[serde(rename = "image")]
     Image,
+    #[serde(rename = "mixed")]
+    Mixed,
 }
 
 impl ToString for RefineryKind {
@@ -13,6 +15,7 @@ impl ToString for RefineryKind {
         match self {
             RefineryKind::Text => "text".to_string(),
             RefineryKind::Image => "image".to_string(),
+            RefineryKind::Mixed => "mixed".to_string(),
         }
     }
 }
@@ -23,6 +26,8 @@ pub struct RefineryMetadata {
     pub height: Option<u32>,
     pub format: Option<String>,
     pub tokens: Option<usize>,
+    /// 用于存储混合记录中的图片路径
+    pub image_path: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

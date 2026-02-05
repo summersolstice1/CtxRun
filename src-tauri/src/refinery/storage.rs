@@ -184,6 +184,7 @@ pub fn create_manual_note_db(
         height: None,
         format: None,
         tokens: None,
+        image_path: None,
     };
     let meta_json = serde_json::to_string(&metadata).unwrap_or("{}".to_string());
 

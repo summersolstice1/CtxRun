@@ -15,7 +15,8 @@ use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
 struct RefineryHandler {
     app: AppHandle,
-    last_hash: String, // 内存中简单的防抖/防循环机制
+    last_text_hash: String, // 文本内容防抖
+    last_image_hash: String, // 图片内容防抖
     cleanup_sender: Option<mpsc::Sender<()>>, // 通知 cleanup worker
 }
 
@@ -23,7 +24,8 @@ impl RefineryHandler {
     pub fn new(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) -> Self {
         Self {
             app,
-            last_hash: String::new(),
+            last_text_hash: String::new(),
+            last_image_hash: String::new(),
             cleanup_sender,
         }
     }
@@ -79,96 +81,131 @@ impl RefineryHandler {
         let url = self.get_browser_url();
 
         // 每次变化时，创建一个新的读取上下文
-        // 注意：在某些平台(Linux X11)读取操作可能会超时，这里需要健壮处理
         let ctx = ClipboardContext::new().map_err(|e| e.to_string())?;
 
-        // 优先级策略：图片 > 文本
-        // 因为很多时候复制文本也会伴随 HTML/RTF，但复制图片通常意图明确
+        // 检测内容类型
+        let has_image = ctx.has(ContentFormat::Image);
+        let has_text = ctx.has(ContentFormat::Text);
 
-        if ctx.has(ContentFormat::Image) {
-            return self.handle_image(&ctx, source_app, url);
+        // 分支处理逻辑
+        if has_image && has_text {
+            // === 图文混合 (Mixed) ===
+            self.handle_mixed(&ctx, source_app, url)
+        } else if has_image {
+            // === 纯图片 ===
+            self.handle_image_only(&ctx, source_app, url)
+        } else if has_text {
+            // === 纯文本 ===
+            self.handle_text_only(&ctx, source_app, url)
+        } else {
+            Ok(())
         }
-
-        if ctx.has(ContentFormat::Text) {
-            return self.handle_text(&ctx, source_app, url);
-        }
-
-        Ok(())
     }
 
-    // 更新函数签名，接收 source_app 和 url
-    fn handle_image(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
+    // 处理图文混合内容
+    fn handle_mixed(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
+        // 1. 获取文本
+        let text = ctx.get_text().map_err(|e| e.to_string())?;
+        let trimmed_text = text.trim();
+        if trimmed_text.is_empty() {
+            // 如果文本为空，降级为纯图片处理
+            return self.handle_image_only(ctx, source_app, url);
+        }
+
+        // 2. 处理图片
         let rust_image = ctx.get_image().map_err(|e| e.to_string())?;
+        let dyn_image = rust_image.get_dynamic_image().map_err(|e| e.to_string())?;
 
-        // 转换为 image crate 的 DynamicImage
-        // clipboard-rs 的 RustImageData 提供了 get_dynamic_image() 方法
-        let dyn_image = rust_image.get_dynamic_image().map_err(|e| format!("Failed to convert image: {}", e))?;
-
-        // 1. 保存图片并获取哈希
-        let (file_path, hash) = save_image_to_disk(&self.app, &dyn_image)?;
-
-        // 防抖：如果哈希和上次一样，跳过
-        if hash == self.last_hash {
-            return Ok(());
-        }
-        self.last_hash = hash.clone();
-
-        // 2. 准备元数据
-        let width = dyn_image.width();
-        let height = dyn_image.height();
-        let size_info = format!("{}x{}", width, height);
-
-        // 生成极小的缩略图 Base64 作为 preview (可选，这里暂时存 Path 或者空)
-        // 考虑到性能，preview 字段存 "[Image]" 字符串或者前端直接加载本地文件
-        let preview = Some("[Image]".to_string());
-
-        let metadata = RefineryMetadata {
-            width: Some(width),
-            height: Some(height),
-            format: Some("png".to_string()),
-            tokens: None,
-        };
-
-        // 3. 写入数据库，传入 source_app 和 url
-        self.write_to_db(RefineryKind::Image, Some(file_path), hash, preview, source_app, url, Some(size_info), metadata)
-    }
-
-    // 更新函数签名，接收 source_app 和 url
-    fn handle_text(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
-        let content = ctx.get_text().map_err(|e| e.to_string())?;
-        let trimmed = content.trim();
-
-        if trimmed.is_empty() {
-            return Ok(());
+        // 尺寸检查防崩
+        if dyn_image.width() > 5000 || dyn_image.height() > 5000 {
+            // 图片太大，降级为纯文本处理
+            return self.handle_text_only(ctx, source_app, url);
         }
 
-        // 1. 计算哈希
-        let hash = hash_content(content.as_bytes());
+        // 保存图片到磁盘
+        let (file_path, img_hash) = save_image_to_disk(&self.app, &dyn_image)?;
+
+        // 3. 生成混合哈希 (文本哈希 + 图片哈希)
+        let text_hash = hash_content(text.as_bytes());
+        let combined_hash = hash_content(format!("{}{}", text_hash, img_hash).as_bytes());
 
         // 防抖
-        if hash == self.last_hash {
+        if combined_hash == self.last_text_hash {
             return Ok(());
         }
-        self.last_hash = hash.clone();
+        self.last_text_hash = combined_hash.clone();
 
-        // 2. 准备元数据
-        let char_count = content.chars().count();
-        let size_info = format!("{} chars", char_count);
+        // 4. 准备数据
+        let char_count = text.chars().count();
+        let size_info = format!("{} chars + {}x{}", char_count, dyn_image.width(), dyn_image.height());
+        let preview = Some(text.chars().take(300).collect::<String>());
 
-        // 预览取前 300 个字符
-        let preview_text: String = content.chars()
-            .take(300)
-            .collect();
-        let preview = Some(preview_text);
+        let metadata = RefineryMetadata {
+            width: Some(dyn_image.width()),
+            height: Some(dyn_image.height()),
+            format: Some("png".to_string()),
+            tokens: None,
+            image_path: Some(file_path.clone()), // 图片路径存在这里
+        };
+
+        // 5. 写入数据库 (Type = Mixed, Content = Text)
+        self.write_to_db(RefineryKind::Mixed, Some(text), combined_hash, preview, source_app, url, Some(size_info), metadata)
+    }
+
+    // 纯图片处理
+    fn handle_image_only(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
+        let rust_image = ctx.get_image().map_err(|e| e.to_string())?;
+        let dyn_image = rust_image.get_dynamic_image().map_err(|e| format!("Failed to convert image: {}", e))?;
+
+        // 尺寸检查
+        if dyn_image.width() > 5000 || dyn_image.height() > 5000 {
+            return Ok(());
+        }
+
+        let (file_path, hash) = save_image_to_disk(&self.app, &dyn_image)?;
+
+        if hash == self.last_image_hash {
+            return Ok(());
+        }
+        self.last_image_hash = hash.clone();
+
+        let size_info = format!("{}x{}", dyn_image.width(), dyn_image.height());
+
+        let metadata = RefineryMetadata {
+            width: Some(dyn_image.width()),
+            height: Some(dyn_image.height()),
+            format: Some("png".to_string()),
+            tokens: None,
+            image_path: None,
+        };
+
+        self.write_to_db(RefineryKind::Image, Some(file_path), hash, Some("[Image]".into()), source_app, url, Some(size_info), metadata)
+    }
+
+    // 纯文本处理
+    fn handle_text_only(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
+        let content = ctx.get_text().map_err(|e| e.to_string())?;
+        if content.trim().is_empty() {
+            return Ok(());
+        }
+
+        let hash = hash_content(content.as_bytes());
+        if hash == self.last_text_hash {
+            return Ok(());
+        }
+        self.last_text_hash = hash.clone();
+
+        let size_info = format!("{} chars", content.chars().count());
+        let preview = Some(content.chars().take(300).collect());
 
         let metadata = RefineryMetadata {
             width: None,
             height: None,
             format: None,
-            tokens: None, // 后续可用 tiktoken 计算
+            tokens: None,
+            image_path: None,
         };
 
-        // 3. 写入数据库，传入 source_app 和 url
         self.write_to_db(RefineryKind::Text, Some(content), hash, preview, source_app, url, Some(size_info), metadata)
     }
 

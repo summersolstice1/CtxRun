@@ -1,7 +1,7 @@
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { useAppStore } from '@/store/useAppStore';
-import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3, Copy, Check, Globe } from 'lucide-react';
+import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3, Copy, Check, Globe, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { getText } from '@/lib/i18n';
@@ -196,7 +196,10 @@ function FeedCard({
 }) {
   const { language } = useAppStore();
   const { loadItemDetail } = useRefineryStore();
-  const { imageUrl, isLoading, error } = useImageLoader(item.kind === 'image' ? item.content : null);
+  // 智能判断图片路径：image 类型取 content，mixed 类型取 metaParsed.image_path
+  const imagePath = item.kind === 'image' ? item.content : item.metaParsed?.image_path;
+  const isImageOrMixed = item.kind === 'image' || item.kind === 'mixed';
+  const { imageUrl, isLoading, error } = useImageLoader(imagePath);
   const [copySuccess, setCopySuccess] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
 
@@ -205,7 +208,7 @@ function FeedCard({
     e.stopPropagation();
     setIsCopying(true);
     try {
-      if (item.kind === 'text') {
+      if (item.kind === 'text' || item.kind === 'mixed') {
         // 如果 content 为空，先加载完整内容
         let contentToCopy = item.content;
         if (!contentToCopy) {
@@ -337,34 +340,41 @@ function FeedCard({
       </div>
 
       {/* Content Preview */}
-      <div className="text-sm text-foreground/90 leading-relaxed font-sans break-words">
-        {item.kind === 'image' ? (
-          <div className="rounded-lg overflow-hidden border border-border/30 bg-secondary/20">
-            <div className="w-64 aspect-[4/3] relative">
-              {isLoading ? (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
-                  <Loader2 size={24} className="animate-spin" />
-                </div>
-              ) : error ? (
-                <div className="absolute inset-0 flex items-center justify-center text-destructive/60 text-xs px-4 text-center">
-                  {getText('refinery', 'failedToLoadImage', language)}
-                </div>
-              ) : imageUrl ? (
-                <img
-                  src={imageUrl}
-                  className="absolute inset-0 w-full h-full object-cover"
-                  alt="Preview"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
-                  <ImageIcon size={32} />
-                </div>
-              )}
-            </div>
+      <div className="text-sm text-foreground/90 leading-relaxed font-sans break-words flex flex-col gap-3">
+        {/* 文本部分 (Text 或 Mixed) */}
+        {(item.kind === 'text' || item.kind === 'mixed') && (
+          <div className={cn("whitespace-pre-wrap", item.kind === 'mixed' ? "line-clamp-4" : "line-clamp-[10]")}>
+            {item.preview || getText('refinery', 'emptyContent', language)}
           </div>
-        ) : (
-          <div className="line-clamp-[10] whitespace-pre-wrap">{item.preview || getText('refinery', 'emptyContent', language)}</div>
+        )}
+
+        {/* 图片部分 (Mixed 或 Image) */}
+        {isImageOrMixed && (
+          <div className={cn(
+            "rounded-lg overflow-hidden border border-border/30 bg-secondary/20 relative",
+            item.kind === 'mixed' ? "h-32 w-full" : "w-64 aspect-[4/3]"
+          )}>
+            {isLoading ? (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
+                <Loader2 size={24} className="animate-spin" />
+              </div>
+            ) : error ? (
+              <div className="absolute inset-0 flex items-center justify-center text-destructive/60 text-xs px-4 text-center">
+                {getText('refinery', 'failedToLoadImage', language)}
+              </div>
+            ) : imageUrl ? (
+              <img
+                src={imageUrl}
+                className="absolute inset-0 w-full h-full object-cover"
+                alt="Preview"
+                loading="lazy"
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground/40">
+                <ImageIcon size={32} />
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -374,10 +384,14 @@ function FeedCard({
           <div
             className={cn(
               'w-5 h-5 rounded flex items-center justify-center',
-              item.kind === 'image' ? 'bg-purple-500/10 text-purple-500' : 'bg-blue-500/10 text-blue-500'
+              item.kind === 'image' ? 'bg-purple-500/10 text-purple-500' :
+              item.kind === 'mixed' ? 'bg-indigo-500/10 text-indigo-500' :
+              'bg-blue-500/10 text-blue-500'
             )}
           >
-            {item.kind === 'image' ? <ImageIcon size={12} /> : <FileText size={12} />}
+            {item.kind === 'text' && <FileText size={12} />}
+            {item.kind === 'image' && <ImageIcon size={12} />}
+            {item.kind === 'mixed' && <Layers size={12} />}
           </div>
           <span className="text-[10px] text-muted-foreground/60 font-mono">{item.sizeInfo}</span>
         </div>

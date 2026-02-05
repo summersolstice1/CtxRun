@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Copy, Trash2, ArrowUpRight, Calendar, HardDrive, Globe, Monitor, Clipboard } from 'lucide-react';
+import { Copy, Trash2, ArrowUpRight, Calendar, HardDrive, Globe, Monitor, Clipboard, Image as ImageIcon } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
 import { invoke } from '@tauri-apps/api/core';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 import { readFile } from '@tauri-apps/plugin-fs';
+import { cn } from '@/lib/utils';
 
 export function ContentWorkbench() {
   const { items, activeId, deleteItem } = useRefineryStore();
@@ -16,12 +17,21 @@ export function ContentWorkbench() {
     items.find(i => i.id === activeId),
   [items, activeId]);
 
-  // 当选中图片项时，读取图片文件并转为 Blob URL
+  // 统一处理图片 URL 获取逻辑
+  // 如果是 image 类型，取 content；如果是 mixed 类型，取 metadata.image_path
+  const imagePath = useMemo(() => {
+    if (!activeItem) return null;
+    if (activeItem.kind === 'image') return activeItem.content;
+    if (activeItem.kind === 'mixed') return activeItem.metaParsed?.image_path;
+    return null;
+  }, [activeItem]);
+
+  // 当选中图片项或混合项时，读取图片文件并转为 Blob URL
   useEffect(() => {
     let currentUrl: string | null = null;
 
-    if (activeItem?.kind === 'image' && activeItem.content) {
-      readFile(activeItem.content)
+    if (imagePath) {
+      readFile(imagePath)
         .then((bytes) => {
           const blob = new Blob([bytes], { type: 'image/png' });
           const url = URL.createObjectURL(blob);
@@ -42,7 +52,7 @@ export function ContentWorkbench() {
         URL.revokeObjectURL(currentUrl);
       }
     };
-  }, [activeItem]);
+  }, [imagePath]);
 
   if (!activeItem) {
     return (
@@ -81,7 +91,8 @@ export function ContentWorkbench() {
             <div className="flex flex-col gap-0.5">
                 <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-foreground">
-                        {activeItem.kind === 'image' ? 'Image Asset' : 'Text Snippet'}
+                        {activeItem.kind === 'image' ? 'Image Asset' :
+                         activeItem.kind === 'mixed' ? 'Mixed Content' : 'Text Snippet'}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded border border-primary/20 font-mono">
                         {activeItem.sizeInfo}
@@ -111,46 +122,60 @@ export function ContentWorkbench() {
 
         {/* 2. Content Body */}
         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50/50 dark:bg-card">
-            {activeItem.kind === 'image' ? (
-                <div className="h-full flex items-center justify-center min-h-[300px]">
-                    <div
-                        className="relative group max-w-full max-h-full shadow-lg rounded-lg overflow-hidden border border-border"
-                        style={{
-                            backgroundImage: `
-                                linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
-                                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
-                                linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
-                                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)
-                            `,
-                            backgroundColor: '#ffffff',
-                            backgroundSize: '20px 20px',
-                            backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
-                        }}
-                    >
-                        {imageUrl ? (
-                            <img
-                                src={imageUrl}
-                                alt="Refinery Content"
-                                className="max-w-full max-h-[70vh] object-contain block"
-                            />
-                        ) : (
-                            <div className="flex items-center justify-center h-[70vh] text-muted-foreground">
-                                Loading image...
-                            </div>
-                        )}
-                        <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur text-white text-[10px] p-2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-                            <span>{activeItem.content}</span>
-                            <span>{activeItem.metaParsed.width}x{activeItem.metaParsed.height}</span>
-                        </div>
-                    </div>
-                </div>
-            ) : (
-                <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto flex flex-col gap-6">
+
+                {/* A. 文本部分 (Text 或 Mixed) */}
+                {(activeItem.kind === 'text' || activeItem.kind === 'mixed') && (
                     <CodeBlock language={activeItem.metaParsed.format || 'text'} className="text-sm shadow-sm border border-border/50">
                         {activeItem.content || ''}
                     </CodeBlock>
-                </div>
-            )}
+                )}
+
+                {/* B. 图片部分 (Image 或 Mixed) */}
+                {imagePath && (
+                    <div className="flex flex-col gap-2">
+                        {activeItem.kind === 'mixed' && (
+                            <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider pl-1 flex items-center gap-2">
+                                <ImageIcon size={12} /> Embedded Image
+                            </div>
+                        )}
+                        <div className={cn(
+                            "relative group rounded-lg overflow-hidden border border-border bg-background shadow-sm",
+                            activeItem.kind === 'image' ? "flex items-center justify-center min-h-[300px]" : "w-full"
+                        )}>
+                            {/* 透明棋盘格背景 */}
+                            <div className="absolute inset-0 z-0 opacity-50"
+                                style={{
+                                    backgroundImage: `
+                                        linear-gradient(45deg, #e5e7eb 25%, transparent 25%),
+                                        linear-gradient(-45deg, #e5e7eb 25%, transparent 25%),
+                                        linear-gradient(45deg, transparent 75%, #e5e7eb 75%),
+                                        linear-gradient(-45deg, transparent 75%, #e5e7eb 75%)
+                                    `,
+                                    backgroundSize: '20px 20px',
+                                    backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px'
+                                }}
+                            />
+                            <div className="relative z-10 w-full h-full flex justify-center">
+                                {imageUrl ? (
+                                    <img
+                                        src={imageUrl}
+                                        alt="Refinery Content"
+                                        className="max-w-full max-h-[70vh] object-contain block"
+                                    />
+                                ) : (
+                                    <div className="p-10 text-muted-foreground">Loading image...</div>
+                                )}
+                            </div>
+                            {/* 图片信息浮层 */}
+                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur text-white text-[10px] p-2 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                                <span className="truncate max-w-[70%]">{imagePath}</span>
+                                <span>{activeItem.metaParsed.width}x{activeItem.metaParsed.height}</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
         </div>
 
         {/* 3. Action Bar (Bottom) - Placeholder for Context Action */}
