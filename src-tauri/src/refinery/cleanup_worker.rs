@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 const SCAN_INTERVAL_SECS: u64 = 3600;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RefineryCleanupConfig {
     pub enabled: bool,
     pub strategy: String,      // "time" | "count" | "both"
