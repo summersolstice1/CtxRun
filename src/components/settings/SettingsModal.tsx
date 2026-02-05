@@ -1,5 +1,20 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X, Monitor, Moon, Sun, Circle, Languages, Check, Filter, DownloadCloud, Bot, Bell, Database, Upload, Download, FileSpreadsheet, AlertTriangle, FolderCog, Shield, RefreshCw, AppWindow, Edit3, Info, Search as SearchIcon } from 'lucide-react';
+
+// macOS 风格的弹簧参数
+const MAC_SPRING = {
+  type: "spring" as const,
+  stiffness: 400,
+  damping: 32,
+  mass: 1
+};
+
+const CONTENT_VARIANTS = {
+  initial: { opacity: 0, x: 12, scale: 0.99 },
+  animate: { opacity: 1, x: 0, scale: 1 },
+  exit: { opacity: 0, x: -8, scale: 0.995 },
+};
 import { save, open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '@/store/useAppStore';
@@ -248,11 +263,19 @@ export function SettingsModal() {
             </div>
 
             {/* Main Content Area */}
-            <div className="flex-1 p-0 overflow-hidden min-w-0 flex flex-col relative bg-background">
-                {activeSection === 'about' ? (
-                    <AboutSection />
-                ) : (
-                    <div className="h-full overflow-y-auto custom-scrollbar p-6">
+            <div className="flex-1 overflow-hidden relative min-w-0 bg-background/50">
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeSection}
+                        variants={CONTENT_VARIANTS}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                        transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                        className="h-full w-full overflow-y-auto custom-scrollbar p-6"
+                    >
+                        {activeSection === 'about' && <AboutSection />}
+
                         {activeSection === 'appearance' && (
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
@@ -1002,8 +1025,8 @@ export function SettingsModal() {
                 {activeSection === 'security' && (
                     <IgnoredSecretsManager />
                 )}
-                    </div>
-                )}
+                    </motion.div>
+            </AnimatePresence>
             </div>
         </div>
       </div>
@@ -1013,11 +1036,33 @@ export function SettingsModal() {
 
 function ThemeCard({ active, onClick, icon, label }: any) {
   return (
-    <button onClick={onClick} className={cn("relative flex flex-col items-center justify-center gap-3 p-4 rounded-lg border-2 transition-all duration-200", active ? "border-primary bg-primary/5 text-primary" : "border-border bg-secondary/20 text-muted-foreground hover:bg-secondary/40 hover:border-border/80")}>
-      {active && <div className="absolute top-2 right-2 text-primary"><Check size={16} strokeWidth={3} /></div>}
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={onClick}
+      className={cn(
+        "relative flex flex-col items-center justify-center gap-3 p-4 rounded-lg border-2 transition-all duration-200",
+        active
+          ? "border-primary bg-primary/5 text-primary shadow-[0_0_15px_rgba(0,122,255,0.1)]"
+          : "border-border bg-secondary/20 text-muted-foreground hover:bg-secondary/40 hover:border-border/80"
+      )}
+    >
+      {/* 选中时的小勾选图标带个缩放动画 */}
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            className="absolute top-2 right-2 text-primary"
+          >
+            <Check size={14} strokeWidth={4} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {icon}
-      <span className="font-medium text-sm">{label}</span>
-    </button>
+      <span className="font-medium text-xs tracking-tight">{label}</span>
+    </motion.button>
   );
 }
 
@@ -1032,8 +1077,30 @@ function LangItem({ active, onClick, label, subLabel }: any) {
 
 function NavBtn({ active, onClick, icon, label }: any) {
   return (
-    <button onClick={onClick} className={cn("w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors whitespace-nowrap overflow-hidden text-ellipsis", active ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-secondary hover:text-foreground")}>
-      <div className="shrink-0">{icon}</div> {label}
+    <button
+      onClick={onClick}
+      className={cn(
+        "group relative w-full flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-md transition-colors outline-none",
+        active ? "text-primary" : "text-muted-foreground hover:text-foreground"
+      )}
+    >
+      {/* 核心：选中态的滑动背景 */}
+      {active && (
+        <motion.div
+          layoutId="settings-nav-pill"
+          className="absolute inset-0 bg-primary/10 border border-primary/20 rounded-md"
+          transition={MAC_SPRING}
+        />
+      )}
+
+      <div className={cn(
+        "relative z-10 shrink-0 transition-transform duration-200",
+        active ? "scale-110" : "group-hover:scale-105"
+      )}>
+        {icon}
+      </div>
+
+      <span className="relative z-10 font-medium">{label}</span>
     </button>
   );
 }
