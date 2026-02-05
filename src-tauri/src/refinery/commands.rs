@@ -15,6 +15,7 @@ use crate::db::DbState;
 use super::model::RefineryItem;
 use super::storage::{create_manual_note_db, update_note_db};
 use super::cleanup_worker::RefineryCleanupConfig;
+use super::worker::PASTING_FLAG;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -355,6 +356,85 @@ pub fn clear_refinery_history(
 // 剪贴板操作 (Clipboard)
 // ============================================================================
 
+/// 内部辅助函数：复制文本到剪贴板，并设置"忽略"标记
+/// 此函数用于 spotlight_paste，防止剪贴板监听器记录我们自己触发的粘贴操作
+async fn copy_text_with_ignore_tag(text: String) -> Result<(), String> {
+    // 1. 设置粘贴标志，通知剪贴板监听器跳过此次内容
+    PASTING_FLAG.store(true, std::sync::atomic::Ordering::Release);
+
+    // 2. 写入剪贴板
+    let join_result = tauri::async_runtime::spawn_blocking(move || {
+        let clipboard = clipboard_rs::ClipboardContext::new()
+            .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+
+        clipboard.set_text(text)
+            .map_err(|e| format!("Failed to copy text: {}", e))?;
+
+        Ok::<(), String>(())
+    }).await;
+
+    // 3. 延迟清除标志，确保剪贴板监听器已经处理完此次变化
+    // 使用 50ms 延迟，足够剪贴板事件被触发
+    std::thread::sleep(Duration::from_millis(50));
+    PASTING_FLAG.store(false, std::sync::atomic::Ordering::Release);
+
+    // 检查 spawn_blocking 是否成功完成
+    match join_result {
+        Ok(inner_result) => inner_result,
+        Err(_) => Err("Failed to join clipboard task".to_string()),
+    }
+}
+
+/// 内部辅助函数：复制图片到剪贴板，并设置"忽略"标记
+async fn copy_image_with_ignore_tag(image_path: String) -> Result<(), String> {
+    use clipboard_rs::common::{RustImageData, RustImage};
+    use std::path::Path;
+
+    // 1. 设置粘贴标志
+    PASTING_FLAG.store(true, std::sync::atomic::Ordering::Release);
+
+    // 2. 写入剪贴板
+    let join_result = tauri::async_runtime::spawn_blocking(move || {
+        let path = Path::new(&image_path);
+        if !path.exists() {
+            return Err(format!("Image file not found: {}", image_path));
+        }
+
+        let img = image::open(path)
+            .map_err(|e| format!("Failed to open image: {}", e))?;
+
+        let final_img = if img.width() > 4096 || img.height() > 4096 {
+            let (max_w, max_h) = if img.width() > img.height() {
+                (4096, (4096 * img.height() / img.width()).max(1))
+            } else {
+                ((4096 * img.width() / img.height()).max(1), 4096)
+            };
+            img.resize(max_w, max_h, image::imageops::FilterType::Triangle)
+        } else {
+            img
+        };
+
+        let rust_image = RustImageData::from_dynamic_image(final_img);
+        let clipboard = clipboard_rs::ClipboardContext::new()
+            .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+
+        clipboard.set_image(rust_image)
+            .map_err(|e| format!("Failed to copy image: {}", e))?;
+
+        Ok::<(), String>(())
+    }).await;
+
+    // 3. 延迟清除标志
+    std::thread::sleep(Duration::from_millis(50));
+    PASTING_FLAG.store(false, std::sync::atomic::Ordering::Release);
+
+    // 检查 spawn_blocking 是否成功完成
+    match join_result {
+        Ok(inner_result) => inner_result,
+        Err(_) => Err("Failed to join clipboard task".to_string()),
+    }
+}
+
 /// 复制文本到剪贴板
 #[tauri::command]
 pub async fn copy_refinery_text(text: String) -> Result<(), String> {
@@ -657,15 +737,15 @@ pub async fn spotlight_paste(
         ).map_err(|e| e.to_string())?
     }; // <--- conn 在这里离开作用域并解锁，这是关键！
 
-    // 2. 写入系统剪贴板 (此时已没有锁，可以安全 await)
+    // 2. 写入系统剪贴板 (使用带忽略标记的函数，防止剪贴板监听器记录)
     if kind == "image" {
         if let Some(path) = content {
-            copy_refinery_image(path).await?;
+            copy_image_with_ignore_tag(path).await?;
         }
     } else {
         // text or mixed
         if let Some(text) = content {
-            copy_refinery_text(text).await?;
+            copy_text_with_ignore_tag(text).await?;
         }
     }
 
@@ -676,8 +756,9 @@ pub async fn spotlight_paste(
 
     // 4. 异步执行按键模拟
     tauri::async_runtime::spawn(async move {
-        // 关键延迟：等待窗口动画结束
-        thread::sleep(Duration::from_millis(150));
+        // 关键延迟：等待窗口动画结束，焦点完全切换回目标应用
+        // 80ms 通常足够窗口切换
+        thread::sleep(Duration::from_millis(80));
 
         let mut enigo = match Enigo::new(&Settings::default()) {
             Ok(e) => e,
