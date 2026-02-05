@@ -13,9 +13,6 @@ use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
 use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
-// 自我应用名称，用于跳过自己触发的复制
-const SELF_APP_NAME: &str = "ctxrun";
-
 struct RefineryHandler {
     app: AppHandle,
     last_hash: String, // 内存中简单的防抖/防循环机制
@@ -53,13 +50,28 @@ impl RefineryHandler {
         }
     }
 
+    // 检测是否是自己的应用
+    fn is_self_app(&self, active_app: &str) -> bool {
+        let current = active_app.to_lowercase();
+        // 动态获取当前运行的 exe 名称
+        let self_exe = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
+            .unwrap_or_else(|| "ctxrun".to_string());
+
+        // 适配多种可能性：ctxrun, ctxrun.exe, CtxRun, CtxRun.exe
+        current == self_exe ||
+        current == format!("{}.exe", self_exe) ||
+        current.contains("ctxrun")
+    }
+
     fn process_clipboard(&mut self) -> Result<(), String> {
         // 1. 先捕获当前活动窗口（必须在读取剪贴板之前）
         let source_app = self.get_current_app_name();
 
         // 2. 自我复制检测：如果来源是自己应用，直接跳过
-        if source_app.as_deref() == Some(SELF_APP_NAME) {
-            println!("[Refinery] Skipping self-copy from {}", SELF_APP_NAME);
+        if source_app.as_deref().map_or(false, |app| self.is_self_app(app)) {
+            println!("[Refinery] Skipping self-copy");
             return Ok(());
         }
 

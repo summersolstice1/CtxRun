@@ -47,18 +47,18 @@ impl CleanupWorker {
             tokio::select! {
                 // 接收到剪贴板捕获消息
                 Some(_) = self.rx.recv() => {
-                    self.check_and_cleanup(&app);
+                    self.check_and_cleanup(&app).await;
                 }
                 // 定期扫描（每小时）
                 _ = tokio::time::sleep(Duration::from_secs(SCAN_INTERVAL_SECS)) => {
-                    self.check_and_cleanup(&app);
+                    self.check_and_cleanup(&app).await;
                 }
             }
         }
     }
 
-    fn check_and_cleanup(&self, app: &AppHandle) {
-        let config = self.config.blocking_lock().clone();
+    async fn check_and_cleanup(&self, app: &AppHandle) {
+        let config = self.config.lock().await.clone();
 
         if !config.enabled {
             return;
