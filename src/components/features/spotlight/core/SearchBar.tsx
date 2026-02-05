@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator } from 'lucide-react';
+import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList } from 'lucide-react'; // 引入图标
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from './SpotlightContext';
@@ -216,12 +216,17 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
   return (
     <div data-tauri-drag-region className={cn(
         "h-16 shrink-0 flex items-center px-6 gap-4 border-b transition-all duration-500 cursor-move",
-        mode === 'chat' ? "bg-purple-500/5" : "bg-background/50"
+        mode === 'chat' ? "bg-purple-500/5" :
+        mode === 'clipboard' ? "bg-blue-500/5" : // 剪贴板模式背景色
+        "bg-background/50"
     )}>
 
+      {/* 修改图标切换按钮 */}
       <button onClick={toggleMode} className="w-6 h-6 flex items-center justify-center relative outline-none group" title={getText('spotlight', 'toggleMode', language)}>
           <SearchIcon strokeWidth={1.5} className={cn("absolute transition-all duration-300 text-muted-foreground/70 group-hover:text-foreground", mode === 'search' ? "scale-100 opacity-100" : "scale-50 opacity-0 rotate-90")} size={24} />
           <Bot strokeWidth={1.5} className={cn("absolute transition-all duration-300 text-purple-500", mode === 'chat' ? "scale-100 opacity-100 rotate-0" : "scale-50 opacity-0 -rotate-90")} size={24} />
+          {/* 新增 Clipboard 图标 */}
+          <ClipboardList strokeWidth={1.5} className={cn("absolute transition-all duration-300 text-blue-500", mode === 'clipboard' ? "scale-100 opacity-100 rotate-0" : "scale-50 opacity-0 -rotate-90")} size={24} />
       </button>
 
       {renderLeftTag()}
@@ -247,10 +252,12 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
                        searchScope === 'shell' ? "Shell Command..." :
                        searchScope === 'web' ? "Search..." :
                        `${getText('spotlight', 'filterPlaceholder', language)}...`)
-                    : (activeTemplate ? "" : getText('spotlight', 'chatPlaceholder', language))
+                    : mode === 'chat'
+                        ? (activeTemplate ? "" : getText('spotlight', 'chatPlaceholder', language))
+                        : "Type to search clipboard history..." // 剪贴板模式提示语
             }
-            value={mode === 'search' ? query : chatInput}
-            onChange={mode === 'search' ? handleQueryChange : handleChatInputChange}
+            value={mode === 'search' || mode === 'clipboard' ? query : chatInput}
+            onChange={mode === 'search' || mode === 'clipboard' ? handleQueryChange : handleChatInputChange}
             autoFocus
             spellCheck={false}
           />

@@ -6,6 +6,7 @@ import { useSpotlight } from '../core/SpotlightContext';
 import { getText } from '@/lib/i18n';
 import { evaluateMath } from '@/lib/calculator';
 import { useAppStore } from '@/store/useAppStore';
+import { RefineryItem } from '@/types/refinery'; // 确保引入这个类型
 
 interface AppEntry {
   name: string;
@@ -70,6 +71,43 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
 
   useEffect(() => {
     const performSearch = async () => {
+      // 1. 处理剪贴板模式
+      if (mode === 'clipboard') {
+          setIsLoading(true);
+          try {
+              // 调用后端获取历史记录
+              const data = await invoke<RefineryItem[]>('get_refinery_history', {
+                  page: 1,
+                  pageSize: 20, // 粘贴台可以多显示一点
+                  searchQuery: debouncedQuery.trim() || null,
+                  kindFilter: null,
+                  pinnedOnly: false,
+                  manualOnly: false,
+                  startDate: null,
+                  endDate: null
+              });
+
+              const items: SpotlightItem[] = data.map(item => ({
+                  id: item.id,
+                  title: item.title || (item.kind === 'image' ? '[Image/图片]' : (item.preview || '').replace(/\n/g, ' ')),
+                  description: `${item.sourceApp || 'Unknown'} • ${item.sizeInfo}`,
+                  content: item.content || item.preview, // 这里的 content 对于图片可能是路径
+                  type: 'clipboard',
+                  isImage: item.kind === 'image'
+              }));
+
+              setResults(items);
+              setSelectedIndex(0);
+          } catch (e) {
+              console.error("Failed to load clipboard history", e);
+              setResults([]);
+          } finally {
+              setIsLoading(false);
+          }
+          return;
+      }
+
+      // ... 以下是原有的 search 模式逻辑，保持不变 ...
       const q = debouncedQuery.trim();
 
       if (searchScope === 'math') {
@@ -286,7 +324,8 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
   }, [debouncedQuery, mode, searchScope, searchSettings, language]);
 
   const handleNavigation = useCallback((e: KeyboardEvent) => {
-    if (mode !== 'search') return;
+    // 允许在 clipboard 模式下导航
+    if (mode !== 'search' && mode !== 'clipboard') return;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();

@@ -21,6 +21,10 @@ interface SearchModeProps {
 export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect, copiedId }: SearchModeProps) {
   const { language } = useAppStore();
   const { setQuery, inputRef, setSearchScope } = useSpotlight();
+
+  // 增加一个辅助判断 - 用于显示快捷键提示
+  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+  const shortcutKey = isMac ? '⌘' : 'Alt';
   const { projectRoot } = useContextStore();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -104,7 +108,8 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
         const hasDesc = !!item.description;
 
         let Icon = Sparkles;
-        if (item.type === 'shell_history') Icon = History;
+        if (item.type === 'clipboard') Icon = Check;
+        else if (item.type === 'shell_history') Icon = History;
         if (item.type === 'shell') Icon = Zap;
         else if (item.type === 'math') Icon = Calculator;
         else if (item.type === 'url') Icon = Globe;
@@ -152,7 +157,7 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
             </div>
 
             <div className="flex-1 min-w-0 flex flex-col gap-1">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className={cn(
                   "font-semibold truncate text-sm tracking-tight",
                   isActive ? "text-white" : "text-foreground",
@@ -161,12 +166,21 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
                   {item.title}
                 </span>
 
-                {isActive && !isCopied && (
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* 新增：快捷键提示徽标 - 仅在剪贴板模式且非激活状态下显示 */}
+                  {item.type === 'clipboard' && !isActive && index < 9 && (
+                    <span className="text-[10px] font-mono font-bold text-muted-foreground/50 bg-secondary/50 px-1.5 py-0.5 rounded border border-border/30">
+                      {shortcutKey}{index + 1}
+                    </span>
+                  )}
+
+                  {isActive && !isCopied && (
                   <span className="text-[10px] opacity-70 flex items-center gap-1 font-medium bg-black/10 px-1.5 rounded whitespace-nowrap">
                     <CornerDownLeft size={10} />
-                    {item.type === 'shell_history' ? "Tab / Enter to Complete" : getActionLabel(item)}
+                    {item.type === 'clipboard' ? "Paste" : (item.type === 'shell_history' ? "Tab / Enter to Complete" : getActionLabel(item))}
                   </span>
-                )}
+                  )}
+                </div>
               </div>
 
               {hasDesc && (

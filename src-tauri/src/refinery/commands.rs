@@ -5,6 +5,11 @@ use serde_json;
 use clipboard_rs::Clipboard; // 导入 Clipboard trait
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use std::thread; // 引入 thread 用于 sleep
+use std::time::Duration; // 引入 Duration
+
+// 引入 Enigo 相关模块
+use enigo::{Enigo, Key, Keyboard, Settings, Direction};
 
 use crate::db::DbState;
 use super::model::RefineryItem;
@@ -627,4 +632,82 @@ pub fn execute_time_cleanup(
     );
 
     Ok(deleted_count)
+}
+
+// ============================================================================
+// Spotlight 快速粘贴功能
+// ============================================================================
+
+// --- 新增：Spotlight 快速粘贴指令 ---
+#[tauri::command]
+pub async fn spotlight_paste(
+    app: tauri::AppHandle,
+    state: State<'_, DbState>,
+    item_id: String,
+) -> Result<(), String> {
+    // 1. 从数据库获取内容 (使用独立代码块，确保 MutexGuard 在 await 前释放)
+    let (kind, content) = {
+        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+        // 查询并立即返回数据，不持有连接
+        conn.query_row(
+            "SELECT kind, content FROM refinery_history WHERE id = ?",
+            params![item_id],
+            |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
+        ).map_err(|e| e.to_string())?
+    }; // <--- conn 在这里离开作用域并解锁，这是关键！
+
+    // 2. 写入系统剪贴板 (此时已没有锁，可以安全 await)
+    if kind == "image" {
+        if let Some(path) = content {
+            copy_refinery_image(path).await?;
+        }
+    } else {
+        // text or mixed
+        if let Some(text) = content {
+            copy_refinery_text(text).await?;
+        }
+    }
+
+    // 3. 隐藏 Spotlight 窗口
+    if let Some(window) = app.get_webview_window("spotlight") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+
+    // 4. 异步执行按键模拟
+    tauri::async_runtime::spawn(async move {
+        // 关键延迟：等待窗口动画结束
+        thread::sleep(Duration::from_millis(150));
+
+        let mut enigo = match Enigo::new(&Settings::default()) {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("[CtxRun] Failed to init Enigo: {:?}", e);
+                return;
+            }
+        };
+
+        let mut perform_paste = || -> Result<(), enigo::InputError> {
+            #[cfg(target_os = "macos")]
+            {
+                enigo.key(Key::Meta, Direction::Press)?;
+                enigo.key(Key::Unicode('v'), Direction::Click)?;
+                enigo.key(Key::Meta, Direction::Release)?;
+            }
+
+            #[cfg(not(target_os = "macos"))]
+            {
+                enigo.key(Key::Control, Direction::Press)?;
+                enigo.key(Key::Unicode('v'), Direction::Click)?;
+                enigo.key(Key::Control, Direction::Release)?;
+            }
+            Ok(())
+        };
+
+        if let Err(e) = perform_paste() {
+            eprintln!("[CtxRun] Enigo paste failed: {:?}", e);
+        }
+    });
+
+    Ok(())
 }

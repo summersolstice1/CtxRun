@@ -74,6 +74,18 @@ function SpotlightContent() {
   const handleItemSelect = async (item: SpotlightItem) => {
     if (!item) return;
 
+    // 1. 处理剪贴板粘贴
+    if (item.type === 'clipboard') {
+        try {
+            await invoke('spotlight_paste', { itemId: item.id });
+            setQuery('');
+            // 注意：不需要手动 hide，因为 rust 端已经 hide 了
+        } catch (e) {
+            console.error("Paste failed", e);
+        }
+        return;
+    }
+
     if (item.type === 'shell_history') {
       const command = item.historyCommand?.trim() || '';
       if (command) {
@@ -186,19 +198,36 @@ function SpotlightContent() {
         return;
       }
 
+      // 处理数字键快速粘贴 (仅在 clipboard 模式)
+      // 修复：必须配合 Alt (Windows/Linux) 或 Meta (macOS) 键使用，避免与文本输入冲突
+      const isModifierPressed = navigator.platform.includes('Mac') ? e.metaKey : e.altKey;
+
+      if (mode === 'clipboard' && /^[1-9]$/.test(e.key) && isModifierPressed) {
+          e.preventDefault();
+          const index = parseInt(e.key) - 1;
+          const item = search.results[index];
+          if (item) {
+              handleItemSelect(item);
+          }
+          return;
+      }
+
       if (e.key === 'Escape') {
         e.preventDefault();
 
-        if (mode === 'search') {
+        // 修改处：将 clipboard 模式也纳入 query 的处理逻辑
+        if (mode === 'search' || mode === 'clipboard') {
             if (query.length > 0) {
-                setQuery('');
+                setQuery(''); // 有内容先清空
                 return;
             }
-            if (searchScope !== 'global') {
+            // 仅在 search 模式下重置 scope（剪贴板模式不需要这个逻辑）
+            if (mode === 'search' && searchScope !== 'global') {
                 setSearchScope('global');
                 return;
             }
         } else {
+            // Chat 模式处理 chatInput
             if (chatInput.length > 0) {
                 setChatInput('');
                 return;
@@ -221,7 +250,7 @@ function SpotlightContent() {
         return;
       }
 
-      if (mode === 'search') {
+      if (mode === 'search' || mode === 'clipboard') { // 允许 clipboard 模式导航
         if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
             search.handleNavigation(e);
             return;
@@ -258,7 +287,8 @@ function SpotlightContent() {
       resultCount={search.results.length}
       isStreaming={chat.isStreaming}
     >
-      {mode === 'search' ? (
+      {/* 渲染判断：剪贴板模式也复用 SearchMode 组件 */}
+      {(mode === 'search' || mode === 'clipboard') ? (
         <SearchMode
           results={search.results}
           selectedIndex={search.selectedIndex}
@@ -339,11 +369,11 @@ export default function SpotlightApp() {
   }, [theme]);
 
   return (
-    <>
+    <div className="spotlight-window h-full">
       <SpotlightProvider>
         <SpotlightContent />
       </SpotlightProvider>
       <GlobalConfirmDialog />
-    </>
+    </div>
   );
 }

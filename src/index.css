@@ -55,7 +55,7 @@
     --card-foreground: 228 20% 92%;
     --popover: 233 11% 16%;
     --popover-foreground: 228 20% 92%;
-    --primary: 217 89% 82%; 
+    --primary: 217 89% 82%;
     --primary-foreground: 225 20% 8%;
     --secondary: 235 12% 19%;
     --secondary-foreground: 228 20% 92%;
@@ -68,6 +68,27 @@
     --border: 225 8% 19%;
     --input: 225 8% 19%;
     --ring: 217 89% 82%;
+  }
+
+  /* Spotlight 窗口专属暗色主题 - 降低亮度，更加深邃 */
+  .black .spotlight-window {
+    /* 1. 大幅调低 Primary 的亮度：从 82% 降到 20% 左右 */
+    --primary: 217 70% 20%;
+
+    /* 2. 调整前景文字：背景深了，文字就要浅一点，用淡蓝色提高可读性 */
+    --primary-foreground: 217 100% 85%;
+
+    /* 3. 调整 Secondary：让非选中的项悬浮时几乎不可见，只留一丝痕迹 */
+    --secondary: 0 0% 5%;
+
+    /* 4. 重点：调整 Accent 变量 */
+    --accent: 217 50% 12%;
+  }
+
+  /* 针对 Spotlight 内容预览区的特殊暗化处理 */
+  .black .spotlight-window .bg-black\/20 {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
   @layer utilities {

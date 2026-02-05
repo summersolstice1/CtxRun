@@ -50,7 +50,9 @@ export function SpotlightProvider({ children }: { children: ReactNode }) {
   const toggleMode = useCallback(() => {
     setModeState(prev => {
         setActiveTemplate(null);
-        return prev === 'search' ? 'chat' : 'search';
+        if (prev === 'search') return 'chat';
+        if (prev === 'chat') return 'clipboard'; // 增加这一步
+        return 'search';
     });
     focusInput();
   }, [focusInput]);

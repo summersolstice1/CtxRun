@@ -304,6 +304,8 @@ fn main() {
             refinery::commands::copy_refinery_image,
             refinery::commands::create_note,
             refinery::commands::update_note,
+            // --- 新增：注册粘贴命令 ---
+            refinery::commands::spotlight_paste,
             // Refinery Cleanup Commands (V5)
             refinery::commands::update_cleanup_config,
             refinery::commands::manual_cleanup,
