@@ -96,8 +96,8 @@ export function RefineryFeed() {
   }, [groupCounts]);
 
   return (
-    <div className="flex-1 h-full bg-background">
-      <div className="max-w-3xl mx-auto py-8 px-6 h-full flex flex-col">
+    <div className="flex-1 h-full bg-background py-8">
+      <div className="max-w-3xl mx-auto px-6 h-full flex flex-col">
         {/* Filter indicator bar */}
         {hasActiveFilter && (
           <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mb-4 shrink-0">
@@ -167,10 +167,9 @@ export function RefineryFeed() {
               endReached={loadMore}
               components={{
                 Footer: () => {
-                  if (!isLoading || items.length === 0) return null;
                   return (
-                    <div className="py-8 flex justify-center">
-                      <Loader2 size={24} className="animate-spin text-primary/50" />
+                    <div className={cn("py-4 flex justify-center", !isLoading && items.length > 0 ? "opacity-0" : "")}>
+                      <Loader2 size={24} className={cn("animate-spin text-primary/50", !isLoading && "hidden")} />
                     </div>
                   );
                 }
