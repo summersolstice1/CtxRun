@@ -254,7 +254,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
                        `${getText('spotlight', 'filterPlaceholder', language)}...`)
                     : mode === 'chat'
                         ? (activeTemplate ? "" : getText('spotlight', 'chatPlaceholder', language))
-                        : "Type to search clipboard history..." // 剪贴板模式提示语
+                        : getText('spotlight', 'clipboardPlaceholder', language)
             }
             value={mode === 'search' || mode === 'clipboard' ? query : chatInput}
             onChange={mode === 'search' || mode === 'clipboard' ? handleQueryChange : handleChatInputChange}

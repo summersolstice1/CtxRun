@@ -356,6 +356,7 @@ const translations = {
     spotlight: {
       searchPlaceholder: "Search commands...",
       chatPlaceholder: "Ask AI anything...",
+      clipboardPlaceholder: "Type to search clipboard history...",
       noCommands: "No matching commands.",
       filterPlaceholder: "Filter by",
       aiReady: "AI Assistant Ready",
@@ -952,6 +953,7 @@ const translations = {
     spotlight: {
       searchPlaceholder: "搜索指令...",
       chatPlaceholder: "询问 AI...",
+      clipboardPlaceholder: "输入搜索剪贴板历史...",
       noCommands: "没有匹配的指令。",
       filterPlaceholder: "筛选",
       aiReady: "AI 助手就绪",
