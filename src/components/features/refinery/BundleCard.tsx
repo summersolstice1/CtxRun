@@ -39,19 +39,19 @@ export function BundleCard({ items, activeId, onItemClick, onTogglePin, FeedCard
   };
 
   return (
-    // 关键修改 1：动态 Margin
-    // 折叠时：mb-10 (约40px)，为 translate-y-8 (32px) 的底层卡片留出物理空间，防止被下方列表项遮挡
-    // 展开时：mb-4，回归正常的列表间距
+    // 关键：外层容器使用 relative 但不设置 z-index（默认为 auto）
+    // 这样 BundleCard 作为一个整体在主层叠上下文中，不会与日期标题竞争
+    // 内部的 absolute 元素相对于外层容器定位，z 值只在内部比较
     <div className={cn(
       "relative transition-all duration-300",
-      isExpanded ? "mb-4 z-0" : "mb-10 hover:z-10" // hover:z-10 确保鼠标放上去时，这一叠卡片浮在所有兄弟元素之上
+      isExpanded ? "mb-4" : "mb-10"
     )}>
 
       {/* --- 折叠态 (堆叠效果) --- */}
       {!isExpanded && (
         <div
           onClick={handleCoverClick}
-          className="group relative cursor-pointer select-none"
+          className="group relative z-0 cursor-pointer select-none"
         >
           {/* Layer 3 (最底层) - 偏移量很大 */}
           <div className={cn(

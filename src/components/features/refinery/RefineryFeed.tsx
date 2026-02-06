@@ -141,7 +141,7 @@ export function RefineryFeed() {
                 const group = groups[index];
                 if (!group) return null;
                 return (
-                  <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 border-b border-border/30">
+                  <div className="sticky top-0 z-[100] bg-background/95 backdrop-blur-sm py-2 border-b border-border/30">
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                       {group.dateKey}
                     </span>
