@@ -16,9 +16,13 @@ interface SearchModeProps {
   setSelectedIndex: (index: number) => void;
   onSelect: (item: SpotlightItem) => void;
   copiedId: string | null;
+  // --- 新增 Props ---
+  hasMore?: boolean;
+  loadMore?: () => void;
+  isLoading?: boolean;
 }
 
-export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect, copiedId }: SearchModeProps) {
+export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect, copiedId, hasMore, loadMore, isLoading }: SearchModeProps) {
   const { language } = useAppStore();
   const { setQuery, inputRef, setSearchScope } = useSpotlight();
 
@@ -27,6 +31,24 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
   const shortcutKey = isMac ? '⌘' : 'Alt';
   const { projectRoot } = useContextStore();
   const listRef = useRef<HTMLDivElement>(null);
+  const loaderRef = useRef<HTMLDivElement>(null); // 哨兵元素
+
+  // 核心逻辑：无限滚动监听
+  useEffect(() => {
+    if (!loadMore || !hasMore) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && !isLoading) {
+        loadMore();
+      }
+    }, { threshold: 0.5 });
+
+    if (loaderRef.current) {
+      observer.observe(loaderRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [loadMore, hasMore, isLoading, results.length]);
 
   useEffect(() => {
     if (listRef.current && results.length > 0) {
@@ -202,6 +224,16 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
           </div>
         );
       })}
+
+      {/* 底部哨兵和加载动画 */}
+      <div ref={loaderRef} className="h-10 w-full flex items-center justify-center py-4">
+        {isLoading && results.length > 0 && (
+          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/50 uppercase font-bold tracking-widest">
+            <div className="w-3 h-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            Loading more...
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Prompt } from '@/types/prompt';
 import { SpotlightItem } from '@/types/spotlight';
@@ -69,259 +69,285 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
+  // --- 新增状态 ---
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const pageRef = useRef(page); // 使用 ref 避免依赖 page
+
+  // 同步 page 到 ref
   useEffect(() => {
-    const performSearch = async () => {
-      // 1. 处理剪贴板模式
-      if (mode === 'clipboard') {
-          setIsLoading(true);
-          try {
-              // 调用后端获取历史记录
-              const data = await invoke<RefineryItem[]>('get_refinery_history', {
-                  page: 1,
-                  pageSize: 20, // 粘贴台可以多显示一点
-                  searchQuery: debouncedQuery.trim() || null,
-                  kindFilter: null,
-                  pinnedOnly: false,
-                  manualOnly: false,
-                  startDate: null,
-                  endDate: null
-              });
+    pageRef.current = page;
+  }, [page]);
 
-              const items: SpotlightItem[] = data.map(item => ({
-                  id: item.id,
-                  title: item.title || (item.kind === 'image' ? '[Image/图片]' : (item.preview || '').replace(/\n/g, ' ')),
-                  description: `${item.sourceApp || 'Unknown'} • ${item.sizeInfo}`,
-                  content: item.content || item.preview, // 这里的 content 对于图片可能是路径
-                  type: 'clipboard',
-                  isImage: item.kind === 'image'
-              }));
+  // 当搜索词变化时，重置页码和列表
+  useEffect(() => {
+    setPage(1);
+    setHasMore(true);
+    setResults([]); // 清空旧数据，避免闪烁
+  }, [debouncedQuery, mode]);
 
-              setResults(items);
-              setSelectedIndex(0);
-          } catch (e) {
-              console.error("Failed to load clipboard history", e);
-              setResults([]);
-          } finally {
-              setIsLoading(false);
-          }
-          return;
-      }
+  const performSearch = useCallback(async (isLoadMore = false) => {
+    const currentPage = isLoadMore ? pageRef.current + 1 : 1;
+    const q = debouncedQuery.trim();
 
-      // ... 以下是原有的 search 模式逻辑，保持不变 ...
-      const q = debouncedQuery.trim();
-
-      if (searchScope === 'math') {
-          if (!q) {
-              setResults([]);
-              return;
-          }
-          const mathResult = evaluateMath(q);
-          if (mathResult) {
-              setResults([{
-                  id: 'math-result',
-                  title: mathResult,
-                  description: `${getText('spotlight', 'mathResult', language) || 'Result'} (${q})`,
-                  content: mathResult,
-                  type: 'math',
-                  mathResult: mathResult
-              }]);
-              setSelectedIndex(0);
-          } else {
-              setResults([]);
-          }
-          setIsLoading(false);
-          return;
-      }
-
-      if (searchScope === 'shell') {
-          const currentShellItem: SpotlightItem = {
-            id: 'shell-exec-current',
-            title: q
-              ? `${getText('spotlight', 'executeCommand', language) || 'Execute'}: ${q}`
-              : getText('spotlight', 'shellPlaceholder', language) || 'Type a command to run...',
-            description: getText('spotlight', 'runInTerminal', language) || 'Run in Terminal',
-            content: q,
-            type: 'shell',
-            shellCmd: q,
-            isExecutable: true,
-            shellType: 'auto'
-          };
-
-          let shellResults: SpotlightItem[] = [currentShellItem];
-
-          try {
-            let historyEntries: ShellHistoryEntry[] = [];
-            if (q === '') {
-              historyEntries = await invoke<ShellHistoryEntry[]>('get_recent_shell_history', { limit: 10 });
-            } else {
-              historyEntries = await invoke<ShellHistoryEntry[]>('search_shell_history', { query: q, limit: 10 });
-            }
-
-            const historyItems: SpotlightItem[] = historyEntries.map(entry => ({
-              id: `shell-history-${entry.id}`,
-              title: entry.command,
-              description: `History • Used ${entry.execution_count} times`,
-              content: entry.command,
-              type: 'shell_history',
-              historyCommand: entry.command,
-              isExecutable: false,
-            }));
-
-            shellResults = [...shellResults, ...historyItems];
-          } catch (err) {
-            console.error("Failed to load shell history:", err);
-          }
-
-          setResults(shellResults);
-          setSelectedIndex(0);
-          setIsLoading(false);
-          return;
-      }
-
-      if (searchScope === 'web') {
-          if (!q) {
-              setResults([]);
-              return;
-          }
-
-          const { defaultEngine, customUrl } = searchSettings;
-
-          const baseOrder: ('google' | 'bing' | 'custom' | 'baidu')[] = ['google', 'bing', 'custom', 'baidu'];
-
-          const sortedEngines = [
-              defaultEngine,
-              ...baseOrder.filter(e => e !== defaultEngine)
-          ];
-
-          const webItems: SpotlightItem[] = sortedEngines.map(key => {
-              const config = SEARCH_TEMPLATES[key];
-              const template = key === 'custom' ? customUrl : config.url;
-
-              const finalUrl = template.includes('%s')
-                ? template.replace('%s', encodeURIComponent(q))
-                : `${template}${encodeURIComponent(q)}`;
-
-              return {
-                  id: `web-search-${key}`,
-                  title: `Search ${config.name}: ${q}`,
-                  description: key === 'custom' ? `Custom: ${template.substring(0, 30)}...` : `Open in default browser`,
-                  content: q,
-                  type: 'web_search',
-                  url: finalUrl,
-                  icon: key
-              };
-          });
-
-          setResults(webItems);
-          setSelectedIndex(0);
-          setIsLoading(false);
-          return;
-      }
-
+    // 如果是剪贴板模式
+    if (mode === 'clipboard') {
       setIsLoading(true);
       try {
-        let finalResults: SpotlightItem[] = [];
-        const promises = [];
+        const data = await invoke<RefineryItem[]>('get_refinery_history', {
+          page: currentPage,
+          pageSize: 20,
+          searchQuery: q || null,
+          kindFilter: null,
+          pinnedOnly: false,
+          manualOnly: false,
+          startDate: null,
+          endDate: null
+        });
 
-        if (searchScope === 'global' || searchScope === 'command' || searchScope === 'prompt') {
-            const categoryFilter = searchScope === 'global' ? null : searchScope;
-            promises.push(
-                q ? invoke<Prompt[]>('search_prompts', {
-                    query: q,
-                    page: 1,
-                    pageSize: 10,
-                    category: categoryFilter
-                }) : invoke<Prompt[]>('get_prompts', {
-                    page: 1,
-                    pageSize: 10,
-                    group: 'all',
-                    category: categoryFilter
-                })
-            );
-        } else {
-            promises.push(Promise.resolve([]));
-        }
-
-        if (searchScope === 'global') {
-            promises.push(invoke<UrlHistoryRecord[]>('search_url_history', { query: q }));
-        } else {
-            promises.push(Promise.resolve([]));
-        }
-
-        if (searchScope === 'global' || searchScope === 'app') {
-            promises.push(q ? invoke<AppEntry[]>('search_apps_in_db', { query: q }) : Promise.resolve([]));
-        } else {
-            promises.push(Promise.resolve([]));
-        }
-
-        const [promptsData, urlHistoryData, appsData] = await Promise.all(promises);
-
-        let dynamicUrlItem: SpotlightItem | null = null;
-        if (searchScope === 'global' && isValidUrl(q)) {
-            const url = normalizeUrl(q);
-            const existsInHistory = (urlHistoryData as UrlHistoryRecord[]).some(h => normalizeUrl(h.url) === url);
-            if (!existsInHistory) {
-                dynamicUrlItem = {
-                    id: `dynamic-url-${q}`,
-                    title: `${getText('spotlight', 'openLink', language)} ${q}`,
-                    description: "Open in default browser",
-                    content: url,
-                    type: 'url',
-                    url: url
-                };
-            }
-        }
-
-        const appItems: SpotlightItem[] = (appsData as AppEntry[]).map(app => ({
-            id: `app-${app.path}`,
-            title: app.name,
-            description: getText('spotlight', 'application', language),
-            content: app.path,
-            type: 'app',
-            appPath: app.path
+        const newItems: SpotlightItem[] = data.map(item => ({
+          id: item.id,
+          title: item.title || (item.kind === 'image' ? '[Image/图片]' : (item.preview || '').replace(/\n/g, ' ')),
+          description: `${item.sourceApp || 'Unknown'} • ${item.sizeInfo}`,
+          content: item.content || item.preview,
+          type: 'clipboard',
+          isImage: item.kind === 'image'
         }));
 
-        const historyItems: SpotlightItem[] = (urlHistoryData as UrlHistoryRecord[]).map(h => ({
-            id: `history-${h.url}`,
-            title: h.title && h.title.length > 0 ? h.title : h.url,
-            description: h.title ? h.url : getText('spotlight', 'visitedTimes', language, { count: String(h.visit_count) }),
-            content: h.url,
-            type: 'url',
-            url: h.url
-        }));
-
-        const promptItems: SpotlightItem[] = (promptsData as Prompt[]).map(p => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          content: p.content,
-          type: p.type === 'command' ? 'command' : 'prompt',
-          originalData: p,
-          isExecutable: p.isExecutable,
-          shellType: p.shellType
-        }));
-
-        if (searchScope === 'app') {
-            finalResults = [...appItems];
-        } else if (searchScope === 'command' || searchScope === 'prompt') {
-            finalResults = [...promptItems];
-        } else {
-            if (dynamicUrlItem) finalResults.push(dynamicUrlItem);
-            finalResults = [...finalResults, ...appItems, ...historyItems, ...promptItems];
-        }
-
-        setResults(finalResults);
-        setSelectedIndex(0);
-      } catch (err) {
-        console.error("Search failed:", err);
+        setResults(prev => isLoadMore ? [...prev, ...newItems] : newItems);
+        setPage(currentPage);
+        setHasMore(data.length === 20);
+        if (!isLoadMore) setSelectedIndex(0);
+      } catch (e) {
+        console.error("Failed to load clipboard history", e);
         setResults([]);
       } finally {
         setIsLoading(false);
       }
-    };
+      return;
+    }
 
-    performSearch();
+    // ... 以下是原有的 search 模式逻辑，保持不变 ...
+    if (searchScope === 'math') {
+      if (!q) {
+        setResults([]);
+        return;
+      }
+      const mathResult = evaluateMath(q);
+      if (mathResult) {
+        setResults([{
+          id: 'math-result',
+          title: mathResult,
+          description: `${getText('spotlight', 'mathResult', language) || 'Result'} (${q})`,
+          content: mathResult,
+          type: 'math',
+          mathResult: mathResult
+        }]);
+        setSelectedIndex(0);
+      } else {
+        setResults([]);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    if (searchScope === 'shell') {
+      const currentShellItem: SpotlightItem = {
+        id: 'shell-exec-current',
+        title: q
+          ? `${getText('spotlight', 'executeCommand', language) || 'Execute'}: ${q}`
+          : getText('spotlight', 'shellPlaceholder', language) || 'Type a command to run...',
+        description: getText('spotlight', 'runInTerminal', language) || 'Run in Terminal',
+        content: q,
+        type: 'shell',
+        shellCmd: q,
+        isExecutable: true,
+        shellType: 'auto'
+      };
+
+      let shellResults: SpotlightItem[] = [currentShellItem];
+
+      try {
+        let historyEntries: ShellHistoryEntry[] = [];
+        if (q === '') {
+          historyEntries = await invoke<ShellHistoryEntry[]>('get_recent_shell_history', { limit: 10 });
+        } else {
+          historyEntries = await invoke<ShellHistoryEntry[]>('search_shell_history', { query: q, limit: 10 });
+        }
+
+        const historyItems: SpotlightItem[] = historyEntries.map(entry => ({
+          id: `shell-history-${entry.id}`,
+          title: entry.command,
+          description: `History • Used ${entry.execution_count} times`,
+          content: entry.command,
+          type: 'shell_history',
+          historyCommand: entry.command,
+          isExecutable: false,
+        }));
+
+        shellResults = [...shellResults, ...historyItems];
+      } catch (err) {
+        console.error("Failed to load shell history:", err);
+      }
+
+      setResults(shellResults);
+      setSelectedIndex(0);
+      setIsLoading(false);
+      return;
+    }
+
+    if (searchScope === 'web') {
+      if (!q) {
+        setResults([]);
+        return;
+      }
+
+      const { defaultEngine, customUrl } = searchSettings;
+
+      const baseOrder: ('google' | 'bing' | 'custom' | 'baidu')[] = ['google', 'bing', 'custom', 'baidu'];
+
+      const sortedEngines = [
+        defaultEngine,
+        ...baseOrder.filter(e => e !== defaultEngine)
+      ];
+
+      const webItems: SpotlightItem[] = sortedEngines.map(key => {
+        const config = SEARCH_TEMPLATES[key];
+        const template = key === 'custom' ? customUrl : config.url;
+
+        const finalUrl = template.includes('%s')
+          ? template.replace('%s', encodeURIComponent(q))
+          : `${template}${encodeURIComponent(q)}`;
+
+        return {
+          id: `web-search-${key}`,
+          title: `Search ${config.name}: ${q}`,
+          description: key === 'custom' ? `Custom: ${template.substring(0, 30)}...` : `Open in default browser`,
+          content: q,
+          type: 'web_search',
+          url: finalUrl,
+          icon: key
+        };
+      });
+
+      setResults(webItems);
+      setSelectedIndex(0);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      let finalResults: SpotlightItem[] = [];
+      const promises = [];
+
+      if (searchScope === 'global' || searchScope === 'command' || searchScope === 'prompt') {
+        const categoryFilter = searchScope === 'global' ? null : searchScope;
+        promises.push(
+          q ? invoke<Prompt[]>('search_prompts', {
+            query: q,
+            page: 1,
+            pageSize: 10,
+            category: categoryFilter
+          }) : invoke<Prompt[]>('get_prompts', {
+            page: 1,
+            pageSize: 10,
+            group: 'all',
+            category: categoryFilter
+          })
+        );
+      } else {
+        promises.push(Promise.resolve([]));
+      }
+
+      if (searchScope === 'global') {
+        promises.push(invoke<UrlHistoryRecord[]>('search_url_history', { query: q }));
+      } else {
+        promises.push(Promise.resolve([]));
+      }
+
+      if (searchScope === 'global' || searchScope === 'app') {
+        promises.push(q ? invoke<AppEntry[]>('search_apps_in_db', { query: q }) : Promise.resolve([]));
+      } else {
+        promises.push(Promise.resolve([]));
+      }
+
+      const [promptsData, urlHistoryData, appsData] = await Promise.all(promises);
+
+      let dynamicUrlItem: SpotlightItem | null = null;
+      if (searchScope === 'global' && isValidUrl(q)) {
+        const url = normalizeUrl(q);
+        const existsInHistory = (urlHistoryData as UrlHistoryRecord[]).some(h => normalizeUrl(h.url) === url);
+        if (!existsInHistory) {
+          dynamicUrlItem = {
+            id: `dynamic-url-${q}`,
+            title: `${getText('spotlight', 'openLink', language)} ${q}`,
+            description: "Open in default browser",
+            content: url,
+            type: 'url',
+            url: url
+          };
+        }
+      }
+
+      const appItems: SpotlightItem[] = (appsData as AppEntry[]).map(app => ({
+        id: `app-${app.path}`,
+        title: app.name,
+        description: getText('spotlight', 'application', language),
+        content: app.path,
+        type: 'app',
+        appPath: app.path
+      }));
+
+      const historyItems: SpotlightItem[] = (urlHistoryData as UrlHistoryRecord[]).map(h => ({
+        id: `history-${h.url}`,
+        title: h.title && h.title.length > 0 ? h.title : h.url,
+        description: h.title ? h.url : getText('spotlight', 'visitedTimes', language, { count: String(h.visit_count) }),
+        content: h.url,
+        type: 'url',
+        url: h.url
+      }));
+
+      const promptItems: SpotlightItem[] = (promptsData as Prompt[]).map(p => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        content: p.content,
+        type: p.type === 'command' ? 'command' : 'prompt',
+        originalData: p,
+        isExecutable: p.isExecutable,
+        shellType: p.shellType
+      }));
+
+      if (searchScope === 'app') {
+        finalResults = [...appItems];
+      } else if (searchScope === 'command' || searchScope === 'prompt') {
+        finalResults = [...promptItems];
+      } else {
+        if (dynamicUrlItem) finalResults.push(dynamicUrlItem);
+        finalResults = [...finalResults, ...appItems, ...historyItems, ...promptItems];
+      }
+
+      setResults(finalResults);
+      setSelectedIndex(0);
+    } catch (err) {
+      console.error("Search failed:", err);
+      setResults([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [debouncedQuery, mode, searchScope, searchSettings, language]);
+
+  useEffect(() => {
+    performSearch(false);
+  }, [performSearch]);
+
+  // --- 暴露 loadMore 函数 ---
+  const loadMore = useCallback(() => {
+    if (!isLoading && hasMore && mode === 'clipboard') {
+      performSearch(true);
+    }
+  }, [isLoading, hasMore, mode, performSearch]);
 
   const handleNavigation = useCallback((e: KeyboardEvent) => {
     // 允许在 clipboard 模式下导航
@@ -346,6 +372,8 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
     results,
     selectedIndex,
     isLoading,
+    hasMore, // 暴露给 UI
+    loadMore, // 暴露给 UI
     handleNavigation,
     setSelectedIndex
   };

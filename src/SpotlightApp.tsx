@@ -295,6 +295,10 @@ function SpotlightContent() {
           setSelectedIndex={search.setSelectedIndex}
           onSelect={handleItemSelect}
           copiedId={copiedId}
+          // --- 传递新增的属性 ---
+          hasMore={search.hasMore}
+          loadMore={search.loadMore}
+          isLoading={search.isLoading}
         />
       ) : (
         <ChatMode

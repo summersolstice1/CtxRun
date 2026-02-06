@@ -15,6 +15,19 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
   const { mode } = useSpotlight();
   const { language } = useAppStore();
 
+  // 辅助函数：获取左侧状态文字
+  const getStatusText = () => {
+    switch (mode) {
+      case 'search':
+        return `${resultCount} ${getText('spotlight', 'results', language)}`;
+      case 'clipboard':
+        return getText('spotlight', 'clipboardConsole', language);
+      case 'chat':
+      default:
+        return getText('spotlight', 'console', language);
+    }
+  };
+
   return (
     <div className="w-screen h-screen flex flex-col items-center bg-transparent font-sans overflow-hidden">
       <div className="w-full h-full flex flex-col bg-background backdrop-blur border border-border/50 rounded-lg shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-300 relative overflow-hidden">
@@ -36,18 +49,23 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
         {/* 底部 Footer */}
         <div data-tauri-drag-region className="h-8 shrink-0 bg-secondary/30 border-t border-border/40 flex items-center justify-between px-4 text-[10px] text-muted-foreground/60 select-none backdrop-blur-sm cursor-move relative z-10">
             <span className="pointer-events-none flex items-center gap-2">
-                {mode === 'search' ? `${resultCount} ${getText('spotlight', 'results', language)}` : getText('spotlight', 'console', language)}
-                {isStreaming && <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />}
+                {getStatusText()}
+                {/* 只有在 AI 模式且正在生成时才显示呼吸灯 */}
+                {mode === 'chat' && isStreaming && <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />}
             </span>
             <div className="flex gap-4 pointer-events-none">
-                {mode === 'search' ? (
+                {/* 模式 1 & 3：搜索和剪贴板共用类似的导航提示 */}
+                {(mode === 'search' || mode === 'clipboard') ? (
                     <>
                         <span>{getText('spotlight', 'nav', language)} ↑↓</span>
-                        <span>{getText('spotlight', 'copy', language)} / {getText('actions', 'run', language)} ↵</span>
+                        {/* 剪贴板模式提示 Alt + Number */}
+                        {mode === 'clipboard' && <span className="text-blue-500/80 font-bold">Alt + 1~9 Quick Paste</span>}
+                        <span>{mode === 'clipboard' ? 'Paste' : getText('spotlight', 'copy', language)} ↵</span>
                     </>
                 ) : (
+                    /* 模式 2：AI 聊天提示 */
                     <>
-                    <span className={cn(isStreaming && "opacity-30")}>{getText('spotlight', 'clear', language)} Ctrl+K</span> 
+                    <span className={cn(isStreaming && "opacity-30")}>{getText('spotlight', 'clear', language)} Ctrl+K</span>
                     <span>{getText('spotlight', 'send', language)} ↵</span>
                     </>
                 )}
