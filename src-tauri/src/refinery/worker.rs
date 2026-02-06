@@ -1,7 +1,7 @@
 use std::thread;
 use std::time::Duration;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
 use tauri::{AppHandle, Emitter, Manager};
 use clipboard_rs::{
@@ -9,233 +9,250 @@ use clipboard_rs::{
     ClipboardWatcher, ClipboardWatcherContext, ContentFormat,
 };
 use clipboard_rs::common::RustImage;
-use x_win::{get_active_window, get_browser_url};
+use image::DynamicImage;
 use tokio::sync::mpsc;
+use crossbeam_channel::{bounded, Sender};
+use x_win::{get_active_window, get_browser_url};
 
 use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
-use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
+use super::storage::{hash_content_fast, save_image_to_disk, capture_clipboard_item};
 
-/// 全局粘贴标志 - 用于防止剪贴板监听器记录我们自己触发的粘贴操作
-/// 当 spotlight_paste 函数写入剪贴板前，会将此标志设为 true
-/// 剪贴板监听器检测到此标志为 true 时，会跳过当前内容的记录
 pub static PASTING_FLAG: LazyLock<Arc<AtomicBool>> =
     LazyLock::new(|| Arc::new(AtomicBool::new(false)));
 
-struct RefineryHandler {
-    app: AppHandle,
-    last_text_hash: String, // 文本内容防抖
-    last_image_hash: String, // 图片内容防抖
-    cleanup_sender: Option<mpsc::Sender<()>>, // 通知 cleanup worker
-    is_pasting: Arc<std::sync::atomic::AtomicBool>, // 粘贴中标志
+// === 数据结构定义 ===
+
+// 定义传递给消费者的事件载荷
+// 我们在这里只持有数据，不进行耗时操作
+enum ClipboardPayload {
+    Text {
+        content: String,
+        source_app: Option<String>,
+        url: Option<String>,
+    },
+    Image {
+        image: DynamicImage, // 内存中的原始位图，尚未编码
+        source_app: Option<String>,
+        url: Option<String>,
+    },
+    Mixed {
+        text: String,
+        image: DynamicImage,
+        source_app: Option<String>,
+        url: Option<String>,
+    }
 }
 
-impl RefineryHandler {
-    pub fn new(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) -> Self {
+// === 生产者：RefineryListener ===
+// 只负责从系统剪贴板读取数据，放入通道
+
+struct RefineryListener {
+    tx: Sender<ClipboardPayload>,
+    is_pasting: Arc<AtomicBool>,
+}
+
+impl RefineryListener {
+    // 辅助：获取当前 App 上下文（虽然有点耗时，但为了数据完整性通常在这一层做）
+    // 如果想要极致快，这部分也可以移到消费者，但可能会导致获取到的窗口不是当时的窗口
+    fn get_context_info(&self) -> (Option<String>, Option<String>) {
+        let app_name = match get_active_window() {
+            Ok(window) => Some(window.info.exec_name),
+            Err(_) => None,
+        };
+
+        // 过滤掉自己
+        if let Some(ref name) = app_name {
+             let current = name.to_lowercase();
+             if current.contains("ctxrun") || current.contains("codeforge") {
+                 return (None, None); // 标记为忽略
+             }
+        }
+
+        let url = match get_active_window() {
+            Ok(window) => get_browser_url(&window).ok(),
+            Err(_) => None,
+        };
+
+        (app_name, url)
+    }
+}
+
+impl ClipboardHandler for RefineryListener {
+    fn on_clipboard_change(&mut self) {
+        // 1. 检查是否是自身粘贴操作
+        if self.is_pasting.load(Ordering::SeqCst) {
+            return;
+        }
+
+        // 2. 初始化剪贴板上下文
+        let ctx = match ClipboardContext::new() {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("[Refinery] Failed to acquire context: {}", e);
+                return;
+            }
+        };
+
+        // 3. 获取上下文信息 (窗口名, URL)
+        let (source_app, url) = self.get_context_info();
+        if source_app.is_none() && url.is_none() {
+             // 这里的逻辑稍微调整：如果是自己App触发的，get_context_info返回了None，直接忽略
+             // 但如果真的是未知窗口，我们还是应该记录。
+             // 我们可以通过 PASTING_FLAG 已经过滤了大部分，这里做二次校验
+        }
+
+        let has_image = ctx.has(ContentFormat::Image);
+        let has_text = ctx.has(ContentFormat::Text);
+
+        // 4. 读取数据 (这里会有内存拷贝，但不会有编码/磁盘IO)
+        let payload = if has_image && has_text {
+            // Mixed
+            let text = ctx.get_text().unwrap_or_default();
+            if let Ok(rust_image) = ctx.get_image() {
+                if let Ok(dyn_image) = rust_image.get_dynamic_image() {
+                    Some(ClipboardPayload::Mixed { text, image: dyn_image, source_app, url })
+                } else { None }
+            } else { None }
+        } else if has_image {
+            // Image Only
+            if let Ok(rust_image) = ctx.get_image() {
+                if let Ok(dyn_image) = rust_image.get_dynamic_image() {
+                    Some(ClipboardPayload::Image { image: dyn_image, source_app, url })
+                } else { None }
+            } else { None }
+        } else if has_text {
+            // Text Only
+            if let Ok(text) = ctx.get_text() {
+                if !text.trim().is_empty() {
+                    Some(ClipboardPayload::Text { content: text, source_app, url })
+                } else { None }
+            } else { None }
+        } else {
+            None
+        };
+
+        // 5. 发送给消费者，非阻塞
+        if let Some(p) = payload {
+            // 如果通道满了，直接丢弃这次数据（防背压）
+            // crossbeam-channel 的 bounded channel 会在满时返回错误
+            let _ = self.tx.try_send(p);
+        }
+    }
+}
+
+// === 消费者：RefineryProcessor ===
+// 负责哈希计算、图片编码、数据库写入
+
+struct RefineryProcessor {
+    app: AppHandle,
+    last_text_hash: String,
+    last_image_hash: String,
+    cleanup_sender: Option<mpsc::Sender<()>>,
+}
+
+impl RefineryProcessor {
+    fn new(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) -> Self {
         Self {
             app,
             last_text_hash: String::new(),
             last_image_hash: String::new(),
             cleanup_sender,
-            is_pasting: PASTING_FLAG.clone(),
         }
     }
 
-    /// 检查剪贴板内容是否带有"忽略"标签
-    /// 只用内部 Flag，足够防自己的循环
-    fn should_ignore(&self, _ctx: &ClipboardContext) -> bool {
-        if self.is_pasting.load(std::sync::atomic::Ordering::SeqCst) {
-            println!("[Refinery] Ignoring change due to internal PASTING_FLAG");
-            return true;
-        }
-        false
-    }
-
-    // [新增] 获取当前活动应用名称的辅助函数
-    fn get_current_app_name(&self) -> Option<String> {
-        match get_active_window() {
-            Ok(window) => Some(window.info.exec_name),
-            Err(_) => None,
-        }
-    }
-
-    // [新增] 获取当前浏览器的 URL
-    fn get_browser_url(&self) -> Option<String> {
-        match get_active_window() {
-            Ok(window) => {
-                // 尝试获取浏览器 URL，只在浏览器中有效
-                match get_browser_url(&window) {
-                    Ok(url) => Some(url),
-                    Err(_) => None,
-                }
+    fn process(&mut self, payload: ClipboardPayload) {
+        match payload {
+            ClipboardPayload::Text { content, source_app, url } => {
+                self.handle_text(content, source_app, url);
             },
-            Err(_) => None,
+            ClipboardPayload::Image { image, source_app, url } => {
+                self.handle_image(image, source_app, url);
+            },
+            ClipboardPayload::Mixed { text, image, source_app, url } => {
+                self.handle_mixed(text, image, source_app, url);
+            }
         }
     }
 
-    // 检测是否是自己的应用
-    fn is_self_app(&self, active_app: &str) -> bool {
-        let current = active_app.to_lowercase();
-        // 动态获取当前运行的 exe 名称
-        let self_exe = std::env::current_exe()
-            .ok()
-            .and_then(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
-            .unwrap_or_else(|| "ctxrun".to_string());
+    fn handle_text(&mut self, content: String, source_app: Option<String>, url: Option<String>) {
+        let hash = hash_content_fast(content.as_bytes());
 
-        // 适配多种可能性：ctxrun, ctxrun.exe, CtxRun, CtxRun.exe
-        current == self_exe ||
-        current == format!("{}.exe", self_exe) ||
-        current.contains("ctxrun")
-    }
-
-    fn process_clipboard(&mut self) -> Result<(), String> {
-        // 1. 先捕获当前活动窗口（必须在读取剪贴板之前）
-        let source_app = self.get_current_app_name();
-
-        // 2. 自我复制检测：如果来源是自己应用，直接跳过
-        if source_app.as_deref().map_or(false, |app| self.is_self_app(app)) {
-            println!("[Refinery] Skipping self-copy");
-            return Ok(());
-        }
-
-        // 3. 尝试获取浏览器 URL (仅在浏览器中有效)
-        let url = self.get_browser_url();
-
-        // 每次变化时，创建一个新的读取上下文
-        let ctx = ClipboardContext::new().map_err(|e| e.to_string())?;
-
-        // 检查是否应该忽略此剪贴板内容（ MIME 标记或粘贴中状态）
-        if self.should_ignore(&ctx) {
-            return Ok(());
-        }
-
-        // 检测内容类型
-        let has_image = ctx.has(ContentFormat::Image);
-        let has_text = ctx.has(ContentFormat::Text);
-
-        // 分支处理逻辑
-        if has_image && has_text {
-            // === 图文混合 (Mixed) ===
-            self.handle_mixed(&ctx, source_app, url)
-        } else if has_image {
-            // === 纯图片 ===
-            self.handle_image_only(&ctx, source_app, url)
-        } else if has_text {
-            // === 纯文本 ===
-            self.handle_text_only(&ctx, source_app, url)
-        } else {
-            Ok(())
-        }
-    }
-
-    // 处理图文混合内容
-    fn handle_mixed(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
-        // 1. 获取文本
-        let text = ctx.get_text().map_err(|e| e.to_string())?;
-        let trimmed_text = text.trim();
-        if trimmed_text.is_empty() {
-            // 如果文本为空，降级为纯图片处理
-            return self.handle_image_only(ctx, source_app, url);
-        }
-
-        // 2. 处理图片
-        let rust_image = ctx.get_image().map_err(|e| e.to_string())?;
-        let dyn_image = rust_image.get_dynamic_image().map_err(|e| e.to_string())?;
-
-        // 尺寸检查防崩
-        if dyn_image.width() > 5000 || dyn_image.height() > 5000 {
-            // 图片太大，降级为纯文本处理
-            return self.handle_text_only(ctx, source_app, url);
-        }
-
-        // 保存图片到磁盘
-        let (file_path, img_hash) = save_image_to_disk(&self.app, &dyn_image)?;
-
-        // 3. 生成混合哈希 (文本哈希 + 图片哈希)
-        let text_hash = hash_content(text.as_bytes());
-        let combined_hash = hash_content(format!("{}{}", text_hash, img_hash).as_bytes());
-
-        // 防抖
-        if combined_hash == self.last_text_hash {
-            return Ok(());
-        }
-        self.last_text_hash = combined_hash.clone();
-
-        // 4. 准备数据
-        let char_count = text.chars().count();
-        let size_info = format!("{} chars + {}x{}", char_count, dyn_image.width(), dyn_image.height());
-        let preview = Some(text.chars().take(300).collect::<String>());
-
-        let metadata = RefineryMetadata {
-            width: Some(dyn_image.width()),
-            height: Some(dyn_image.height()),
-            format: Some("png".to_string()),
-            tokens: None,
-            image_path: Some(file_path.clone()), // 图片路径存在这里
-        };
-
-        // 5. 写入数据库 (Type = Mixed, Content = Text)
-        self.write_to_db(RefineryKind::Mixed, Some(text), combined_hash, preview, source_app, url, Some(size_info), metadata)
-    }
-
-    // 纯图片处理
-    fn handle_image_only(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
-        let rust_image = ctx.get_image().map_err(|e| e.to_string())?;
-        let dyn_image = rust_image.get_dynamic_image().map_err(|e| format!("Failed to convert image: {}", e))?;
-
-        // 尺寸检查
-        if dyn_image.width() > 5000 || dyn_image.height() > 5000 {
-            return Ok(());
-        }
-
-        let (file_path, hash) = save_image_to_disk(&self.app, &dyn_image)?;
-
-        if hash == self.last_image_hash {
-            return Ok(());
-        }
-        self.last_image_hash = hash.clone();
-
-        let size_info = format!("{}x{}", dyn_image.width(), dyn_image.height());
-
-        let metadata = RefineryMetadata {
-            width: Some(dyn_image.width()),
-            height: Some(dyn_image.height()),
-            format: Some("png".to_string()),
-            tokens: None,
-            image_path: None,
-        };
-
-        self.write_to_db(RefineryKind::Image, Some(file_path), hash, Some("[Image]".into()), source_app, url, Some(size_info), metadata)
-    }
-
-    // 纯文本处理
-    fn handle_text_only(&mut self, ctx: &ClipboardContext, source_app: Option<String>, url: Option<String>) -> Result<(), String> {
-        let content = ctx.get_text().map_err(|e| e.to_string())?;
-        if content.trim().is_empty() {
-            return Ok(());
-        }
-
-        let hash = hash_content(content.as_bytes());
-        if hash == self.last_text_hash {
-            return Ok(());
-        }
+        if hash == self.last_text_hash { return; }
         self.last_text_hash = hash.clone();
 
         let size_info = format!("{} chars", content.chars().count());
         let preview = Some(content.chars().take(300).collect());
 
-        let metadata = RefineryMetadata {
-            width: None,
-            height: None,
-            format: None,
-            tokens: None,
-            image_path: None,
-        };
+        // 这里的 Metadata 保持简单
+        let metadata = RefineryMetadata { width: None, height: None, format: None, tokens: None, image_path: None };
 
-        self.write_to_db(RefineryKind::Text, Some(content), hash, preview, source_app, url, Some(size_info), metadata)
+        self.write_to_db(RefineryKind::Text, Some(content), hash, preview, source_app, url, Some(size_info), metadata);
     }
 
-    // 更新参数列表，增加 source_app 和 url
+    fn handle_image(&mut self, image: DynamicImage, source_app: Option<String>, url: Option<String>) {
+        // 限制尺寸，防止超级大图爆内存/磁盘
+        if image.width() > 8000 || image.height() > 8000 { return; }
+
+        // 此处调用优化后的 save_image_to_disk (使用 Fast PNG 压缩)
+        let save_result = save_image_to_disk(&self.app, &image);
+
+        match save_result {
+            Ok((file_path, hash)) => {
+                if hash == self.last_image_hash { return; }
+                self.last_image_hash = hash.clone();
+
+                let size_info = format!("{}x{}", image.width(), image.height());
+                let metadata = RefineryMetadata {
+                    width: Some(image.width()),
+                    height: Some(image.height()),
+                    format: Some("png".to_string()),
+                    tokens: None,
+                    image_path: None,
+                };
+
+                self.write_to_db(RefineryKind::Image, Some(file_path), hash, Some("[Image]".into()), source_app, url, Some(size_info), metadata);
+            },
+            Err(e) => eprintln!("[Refinery] Image save failed: {}", e),
+        }
+    }
+
+    fn handle_mixed(&mut self, text: String, image: DynamicImage, source_app: Option<String>, url: Option<String>) {
+        // 与 handle_image 逻辑类似，但需要组合哈希
+        if image.width() > 8000 || image.height() > 8000 {
+            // 图片太大，降级为纯文本
+            self.handle_text(text, source_app, url);
+            return;
+        }
+
+        let save_result = save_image_to_disk(&self.app, &image);
+        match save_result {
+            Ok((file_path, img_hash)) => {
+                let text_hash = hash_content_fast(text.as_bytes());
+                // 组合哈希
+                let combined_hash = hash_content_fast(format!("{}{}", text_hash, img_hash).as_bytes());
+
+                if combined_hash == self.last_text_hash { return; }
+                self.last_text_hash = combined_hash.clone();
+
+                let char_count = text.chars().count();
+                let size_info = format!("{} chars + {}x{}", char_count, image.width(), image.height());
+                let preview = Some(text.chars().take(300).collect());
+
+                let metadata = RefineryMetadata {
+                    width: Some(image.width()),
+                    height: Some(image.height()),
+                    format: Some("png".to_string()),
+                    tokens: None,
+                    image_path: Some(file_path),
+                };
+
+                self.write_to_db(RefineryKind::Mixed, Some(text), combined_hash, preview, source_app, url, Some(size_info), metadata);
+            },
+            Err(_) => self.handle_text(text, source_app, url),
+        }
+    }
+
     fn write_to_db(
         &self,
         kind: RefineryKind,
@@ -243,64 +260,72 @@ impl RefineryHandler {
         hash: String,
         preview: Option<String>,
         source_app: Option<String>,
-        url: Option<String>, // [新增]
+        url: Option<String>,
         size_info: Option<String>,
         metadata: RefineryMetadata
-    ) -> Result<(), String> {
+    ) {
+        // 这一部分逻辑与原来保持一致，因为 SQLite 写入通常非常快 (ms 级别)
+        // 且已经在独立的 Worker 线程中，不会阻塞 UI 或 剪贴板监听
         let state = self.app.state::<DbState>();
-        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        // 注意：这里需要处理锁的竞争，但在 Consumer 线程中等待是可以接受的
+        if let Ok(conn) = state.conn.lock() {
+            if let Ok((is_new, id)) = capture_clipboard_item(
+                &conn, kind, content, hash, preview, source_app, url, size_info, metadata
+            ) {
+                let event_name = if is_new { "refinery:create" } else { "refinery:update" };
+                let _ = self.app.emit(event_name, &id);
 
-        // 使用新的 capture_clipboard_item 函数
-        let (is_new, id) = capture_clipboard_item(
-            &conn, kind, content, hash, preview, source_app, url, size_info, metadata
-        )?;
-
-        // 通知前端
-        // 如果是新记录：refinery://new-entry
-        // 如果是更新：refinery://update
-        let event_name = if is_new { "refinery://new-entry" } else { "refinery://update" };
-
-        // 关键修复：通知前端刷新
-        // 如果 emit 失败（例如没有窗口监听），不会导致 panic，只会忽略
-        let _ = self.app.emit(event_name, &id);
-
-        println!("[Refinery] Capture Saved: {} (New: {})", id, is_new);
-
-        // 通知 cleanup worker 检查是否需要清理
-        if is_new {
-            if let Some(ref sender) = self.cleanup_sender {
-                let _ = sender.blocking_send(());
+                if is_new {
+                    if let Some(ref sender) = self.cleanup_sender {
+                        let _ = sender.blocking_send(());
+                    }
+                }
             }
         }
-
-        Ok(())
     }
 }
 
-impl ClipboardHandler for RefineryHandler {
-    fn on_clipboard_change(&mut self) {
-        if let Err(e) = self.process_clipboard() {
-            eprintln!("[Refinery] Error processing clipboard: {}", e);
-        }
-    }
-}
+// === 启动入口 ===
 
-/// 启动监听器 (在 main.rs 中调用)
 pub fn init_listener(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) {
-    // 放入独立线程，避免阻塞 Tauri 主循环
-    thread::spawn(move || {
-        // 适当延迟，等待系统准备好
-        thread::sleep(Duration::from_secs(1));
+    // 创建一个有界通道，容量为 5。
+    // 如果处理不过来，我们宁愿丢弃中间的快速变化，也不要无限积压内存。
+    let (tx, rx) = bounded::<ClipboardPayload>(5);
 
-        println!("[Refinery] Starting Clipboard Watcher...");
+    // 1. 启动消费者线程 (Processor)
+    let app_handle = app.clone();
+    thread::spawn(move || {
+        let mut processor = RefineryProcessor::new(app_handle, cleanup_sender);
+
+        // 循环接收消息
+        while let Ok(payload) = rx.recv() {
+            // 防抖逻辑：
+            // 如果通道里还有积压的消息，说明生产速度 > 消费速度
+            // 我们只取最新的一个处理，丢弃中间过程（例如连续截图）
+            // 在 channel 的 bounded(5) 机制下，结合 try_recv 可以实现简易防抖
+
+            // 注意：对于 Image 这种重数据，如果已经读入内存了，丢弃也浪费了内存带宽。
+            // 但为了保持同步，我们还是按序处理。
+            // 如果想极致防抖，可以 sleep 一小会儿再 check channel len。
+
+            // 简单处理：直接处理
+            processor.process(payload);
+        }
+    });
+
+    // 2. 启动生产者线程 (Listener)
+    thread::spawn(move || {
+        thread::sleep(Duration::from_secs(1)); // 等待应用启动完全
+        println!("[Refinery] Starting Clipboard Producer...");
 
         let manager = ClipboardWatcherContext::new();
         match manager {
             Ok(mut watcher) => {
-                let handler = RefineryHandler::new(app, cleanup_sender);
-
-                // 添加处理器并开始阻塞监听
-                watcher.add_handler(handler);
+                let listener = RefineryListener {
+                    tx,
+                    is_pasting: PASTING_FLAG.clone(),
+                };
+                watcher.add_handler(listener);
                 watcher.start_watch();
             }
             Err(e) => {

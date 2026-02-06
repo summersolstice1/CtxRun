@@ -1,26 +1,39 @@
 use std::fs;
 use std::path::PathBuf;
-use std::io::Cursor;
+use std::io::BufWriter;
 use rusqlite::{params, Connection, OptionalExtension};
 use sha2::{Digest, Sha256};
 use chrono::Utc;
 use uuid::Uuid;
 use tauri::{AppHandle, Manager};
-use image::{DynamicImage, ImageFormat, ExtendedColorType};
-use image::codecs::jpeg::JpegEncoder;
+use image::{DynamicImage, ImageEncoder};
+use image::codecs::png::{PngEncoder, CompressionType, FilterType};
+use xxhash_rust::xxh3::xxh3_64;
 
 use super::model::{RefineryKind, RefineryMetadata};
 
 const IMAGE_FOLDER: &str = "refinery_images";
 
-/// 计算文本内容的 SHA256
+// 辅助函数：计算原始像素的哈希（极快）
+pub fn hash_dynamic_image(image: &DynamicImage) -> String {
+    let raw_bytes = image.as_bytes();
+    let hash_val = xxh3_64(raw_bytes);
+    format!("{:016x}", hash_val) // 输出 16 位 hex
+}
+
+// 辅助函数：文本哈希
+pub fn hash_content_fast(content: &[u8]) -> String {
+    let hash_val = xxh3_64(content);
+    format!("{:016x}", hash_val)
+}
+
+/// 计算文本内容的 SHA256（保留用于其他模块）
 pub fn hash_content(content: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(content);
     hex::encode(hasher.finalize())
 }
 
-/// 确保图片存储目录存在
 fn ensure_image_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let app_dir = app.path().app_local_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
@@ -33,47 +46,42 @@ fn ensure_image_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(image_dir)
 }
 
-/// 保存图片到本地文件系统，返回 (文件路径, 哈希值)
+// 核心优化：使用 Fast 压缩模式保存 PNG
 pub fn save_image_to_disk(app: &AppHandle, image: &DynamicImage) -> Result<(String, String), String> {
-    // 优化：使用 JPEG 质量 85 以减少磁盘占用（通常是 PNG 的 1/5）
-    // 对于剪贴板截图，肉眼难以察觉差异
-    // 如果图片包含透明通道，则仍使用 PNG
-    let has_alpha = image.color().has_alpha();
-    let use_jpeg = !has_alpha;
+    // 1. 先计算哈希 (基于原始像素，极快)
+    let hash = hash_dynamic_image(image);
 
-    let mut bytes: Vec<u8> = Vec::new();
-    let ext = if use_jpeg {
-        // 使用 JpegEncoder 设置质量为 85
-        let mut cursor = Cursor::new(&mut bytes);
-        let mut encoder = JpegEncoder::new_with_quality(&mut cursor, 85);
-        encoder.encode(
-            image.as_bytes(),
-            image.width(),
-            image.height(),
-            ExtendedColorType::from(image.color())
-        ).map_err(|e| format!("Failed to encode jpg: {}", e))?;
-        "jpg"
-    } else {
-        image.write_to(&mut Cursor::new(&mut bytes), ImageFormat::Png)
-            .map_err(|e| format!("Failed to encode png: {}", e))?;
-        "png"
-    };
-
-    let hash = hash_content(&bytes);
-    let file_name = format!("{}.{}", hash, ext);
-
+    // 2. 检查文件是否存在
     let dir = ensure_image_dir(app)?;
+    let file_name = format!("{}.png", hash);
     let file_path = dir.join(&file_name);
     let file_path_str = file_path.to_string_lossy().to_string();
 
-    // 如果文件已存在，直接返回路径（相当于去重）
     if file_path.exists() {
+        // 命中缓存，直接返回，跳过编码
         return Ok((file_path_str, hash));
     }
 
-    // 写入文件
-    fs::write(&file_path, &bytes)
-        .map_err(|e| format!("Failed to write image file: {}", e))?;
+    // 3. 只有新图片才进行编码写入
+    // 使用 BufWriter 包装 File，减少磁盘 I/O 次数
+    let file = fs::File::create(&file_path).map_err(|e| e.to_string())?;
+    let ref_writer = BufWriter::new(file);
+
+    // 4. 配置 PNG 编码器
+    // CompressionType::Fast 是关键！牺牲一点体积换取速度，依然无损。
+    // FilterType::Adaptive 是默认的，通常平衡性较好
+    let encoder = PngEncoder::new_with_quality(
+        ref_writer,
+        CompressionType::Fast,
+        FilterType::Adaptive
+    );
+
+    encoder.write_image(
+        image.as_bytes(),
+        image.width(),
+        image.height(),
+        image.color().into()
+    ).map_err(|e| format!("Failed to encode png: {}", e))?;
 
     Ok((file_path_str, hash))
 }
