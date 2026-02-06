@@ -11,6 +11,8 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { motion } from 'framer-motion';
+import { bundleItems, FeedItemType } from '@/lib/bundler';
+import { BundleCard } from './BundleCard';
 
 export function RefineryFeed() {
   const {
@@ -37,33 +39,34 @@ export function RefineryFeed() {
     }
   };
 
-  // 将 items 按日期分组，使用 useMemo 优化性能
-  const { groups, flatItems, groupCounts } = useMemo(() => {
-    const groupMap = new Map<string, any[]>();
+  // 将 items 先进行折叠，再按日期分组，使用 useMemo 优化性能
+  const { groups, flatFeedItems, groupCounts } = useMemo(() => {
+    // 1. 先进行折叠 (Bundling)
+    const bundledItems = bundleItems(items);
 
-    // 按日期分组
-    items.forEach(item => {
-      const dateKey = getDateKey(item.updatedAt, language);
+    const groupMap = new Map<string, FeedItemType[]>();
+
+    // 2. 按日期分组 (注意时间戳获取方式)
+    bundledItems.forEach(feedItem => {
+      const ts = feedItem.type === 'single' ? feedItem.item.updatedAt : feedItem.timestamp;
+      const dateKey = getDateKey(ts, language);
       if (!groupMap.has(dateKey)) {
         groupMap.set(dateKey, []);
       }
-      groupMap.get(dateKey)!.push(item);
+      groupMap.get(dateKey)!.push(feedItem);
     });
 
-    // 转换为数组并按日期降序排序
+    // 3. 排序
     const sortedGroups = Array.from(groupMap.entries())
       .map(([dateKey, items]) => ({ dateKey, items }))
       .sort((a, b) => {
-        // 按时间戳降序排序
-        const aTime = a.items[0]?.updatedAt || 0;
-        const bTime = b.items[0]?.updatedAt || 0;
-        return bTime - aTime;
+        const getTs = (i: FeedItemType) => i.type === 'single' ? i.item.updatedAt : i.timestamp;
+        return getTs(b.items[0]) - getTs(a.items[0]);
       });
 
-    // 扁平化 items 和计算 groupCounts
-    const flat: any[] = [];
+    // 4. 展平
+    const flat: FeedItemType[] = [];
     const counts: number[] = [];
-
     sortedGroups.forEach(group => {
       flat.push(...group.items);
       counts.push(group.items.length);
@@ -71,7 +74,7 @@ export function RefineryFeed() {
 
     return {
       groups: sortedGroups,
-      flatItems: flat,
+      flatFeedItems: flat,
       groupCounts: counts
     };
   }, [items, language]);
@@ -146,21 +149,32 @@ export function RefineryFeed() {
                 );
               }}
               itemContent={index => {
-                const item = flatItems[index];
+                const feedItem = flatFeedItems[index];
                 const groupIndex = getGroupIndex(index);
                 const isFirstInGroup = index === groupCounts.slice(0, groupIndex).reduce((a, b) => a + b, 0);
 
                 return (
                   <div className={cn(isFirstInGroup ? 'mt-4' : '')}>
-                    <FeedCard
-                      item={item}
-                      isActive={activeId === item.id}
-                      onClick={() => setActiveId(item.id)}
-                      onTogglePin={(e) => {
-                        e.stopPropagation();
-                        togglePin(item.id);
-                      }}
-                    />
+                    {feedItem.type === 'single' ? (
+                      <FeedCard
+                        item={feedItem.item}
+                        isActive={activeId === feedItem.item.id}
+                        onClick={() => setActiveId(feedItem.item.id)}
+                        onTogglePin={(e) => {
+                          e.stopPropagation();
+                          togglePin(feedItem.item.id);
+                        }}
+                      />
+                    ) : (
+                      <BundleCard
+                        key={feedItem.id}
+                        items={feedItem.items}
+                        activeId={activeId}
+                        onItemClick={setActiveId}
+                        onTogglePin={togglePin}
+                        FeedCardComponent={FeedCard}
+                      />
+                    )}
                   </div>
                 );
               }}
@@ -182,16 +196,21 @@ export function RefineryFeed() {
   );
 }
 
-function FeedCard({
+// 导出 FeedCard 供 BundleCard 使用，增加 extraBadge 和 className 参数
+export function FeedCard({
   item,
   isActive,
   onClick,
-  onTogglePin
+  onTogglePin,
+  extraBadge,
+  className
 }: {
   item: any;
   isActive: boolean;
   onClick: () => void;
   onTogglePin: (e: React.MouseEvent) => void;
+  extraBadge?: React.ReactNode;
+  className?: string;
 }) {
   const { language } = useAppStore();
   const { loadItemDetail } = useRefineryStore();
@@ -245,7 +264,9 @@ function FeedCard({
     <div
       onClick={onClick}
       className={cn(
-        'group relative bg-card border rounded-xl p-4 cursor-pointer transition-all hover:border-primary/40 hover:shadow-md mb-4',
+        'group relative bg-card border rounded-xl p-4 cursor-pointer transition-all duration-200 hover:border-primary/40 hover:shadow-md',
+        // 如果没有传入 className，则使用默认的 mb-4，否则使用传入的
+        className ? className : 'mb-4',
         isActive ? 'border-primary/60 ring-1 ring-primary/20 shadow-md' : 'border-border/60',
         // 手动笔记使用不同的背景色
         item.isManual && 'bg-gradient-to-br from-primary/5 to-transparent'
@@ -291,6 +312,8 @@ function FeedCard({
                 <Edit3 size={8} />
               </span>
             )}
+            {/* 新增：在这里插入额外的 Badge (比如堆叠数量) */}
+            {extraBadge}
           </div>
         </div>
         <div className="flex items-center gap-1">
