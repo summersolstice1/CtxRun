@@ -91,6 +91,10 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
   }
 
+  .black .spotlight-window input {
+    caret-color: #a9aadc !important; 
+  }
+
   @layer utilities {
     .diagonal-stripes {
       background-image: repeating-linear-gradient(
