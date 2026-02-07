@@ -38,6 +38,8 @@ interface RefineryState {
 
   isDrawerOpen: boolean;
 
+  _unlistenFns: UnlistenFn[];
+
   init: () => Promise<void>;
   unlisten: () => void;
 
@@ -72,9 +74,6 @@ const transformItem = (item: RefineryItem): RefineryItemUI => ({
   metaParsed: parseMetadata(item.metadata)
 });
 
-let unlistenNewEntry: UnlistenFn | null = null;
-let unlistenUpdate: UnlistenFn | null = null;
-
 export const useRefineryStore = create<RefineryState>((set, get) => ({
   items: [],
   activeId: null,
@@ -95,10 +94,12 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   isDrawerOpen: false,
 
-  init: async () => {
-    if (unlistenNewEntry) return;
+  _unlistenFns: [],
 
-    unlistenNewEntry = await listen<string>('refinery://new-entry', async () => {
+  init: async () => {
+    if (get()._unlistenFns.length > 0) return;
+
+    const unlistenNewEntry = await listen<string>('refinery://new-entry', async () => {
       const { page, searchQuery, kindFilter, dateRange } = get();
 
       if (page === 1 && !searchQuery.trim() && kindFilter === 'all' && !dateRange.start && !dateRange.end) {
@@ -107,7 +108,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
       }
     });
 
-    unlistenUpdate = await listen<string>('refinery://update', async () => {
+    const unlistenUpdate = await listen<string>('refinery://update', async () => {
        const { page, searchQuery, dateRange } = get();
        if (page === 1 && !searchQuery.trim() && !dateRange.start && !dateRange.end) {
           await get().loadHistory(true);
@@ -115,13 +116,18 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
        }
     });
 
+    set({ _unlistenFns: [unlistenNewEntry, unlistenUpdate] });
+
     await get().loadHistory(true);
     await get().loadStatistics();
   },
 
   unlisten: () => {
-    if (unlistenNewEntry) { unlistenNewEntry(); unlistenNewEntry = null; }
-    if (unlistenUpdate) { unlistenUpdate(); unlistenUpdate = null; }
+    const { _unlistenFns } = get();
+
+    _unlistenFns.forEach(fn => fn());
+
+    set({ _unlistenFns: [] });
   },
 
   loadHistory: async (reset = false) => {

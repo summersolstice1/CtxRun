@@ -58,8 +58,7 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
                 {(mode === 'search' || mode === 'clipboard') ? (
                     <>
                         <span>{getText('spotlight', 'nav', language)} ↑↓</span>
-                        {/* 剪贴板模式提示 Alt + Number */}
-                        {mode === 'clipboard' && <span className="text-blue-500/80 font-bold">Alt + 1~9 Quick Paste</span>}
+                        {/* 已移除：Alt + 1~9 Quick Paste 提示 */}
                         <span>{mode === 'clipboard' ? 'Paste' : getText('spotlight', 'copy', language)} ↵</span>
                     </>
                 ) : (

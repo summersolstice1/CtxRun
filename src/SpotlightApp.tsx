@@ -35,7 +35,8 @@ function SpotlightContent() {
     query, setQuery,
     chatInput, setChatInput,
     searchScope, setSearchScope,
-    activeTemplate, setActiveTemplate
+    activeTemplate, setActiveTemplate,
+    setMode
   } = useSpotlight();
   const { language, spotlightAppearance } = useAppStore();
   const { projectRoot } = useContextStore();
@@ -198,18 +199,25 @@ function SpotlightContent() {
         return;
       }
 
-      // 处理数字键快速粘贴 (仅在 clipboard 模式)
-      // 修复：必须配合 Alt (Windows/Linux) 或 Meta (macOS) 键使用，避免与文本输入冲突
       const isModifierPressed = navigator.platform.includes('Mac') ? e.metaKey : e.altKey;
 
-      if (mode === 'clipboard' && /^[1-9]$/.test(e.key) && isModifierPressed) {
+      // Alt + 1/2/3 切换模式
+      if (isModifierPressed) {
+        if (e.key === '1') {
           e.preventDefault();
-          const index = parseInt(e.key) - 1;
-          const item = search.results[index];
-          if (item) {
-              handleItemSelect(item);
-          }
+          setMode('search');
           return;
+        }
+        if (e.key === '2') {
+          e.preventDefault();
+          setMode('chat');
+          return;
+        }
+        if (e.key === '3') {
+          e.preventDefault();
+          setMode('clipboard');
+          return;
+        }
       }
 
       if (e.key === 'Escape') {
@@ -278,7 +286,8 @@ function SpotlightContent() {
     search.selectedIndex,
     chat.isStreaming,
     chat.sendMessage,
-    toggleMode
+    toggleMode,
+    setMode
   ]);
 
   return (
