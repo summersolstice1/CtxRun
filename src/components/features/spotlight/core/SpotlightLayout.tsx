@@ -29,8 +29,9 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
   };
 
   return (
-    <div className="w-screen h-screen flex flex-col items-center bg-transparent font-sans overflow-hidden">
-      <div className="w-full h-full flex flex-col bg-background backdrop-blur border border-border/50 rounded-lg shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-300 relative overflow-hidden">
+    // 外层透明包裹：p-[1px] 给 border/ring 留出渲染空间，防止圆角边缘被系统窗口裁切产生锯齿
+    <div className="w-screen h-screen flex flex-col items-center bg-transparent font-sans overflow-hidden p-[1px]">
+      <div className="w-full h-full flex flex-col bg-background/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-300 relative overflow-hidden">
         
         {/* 背景特效 */}
         <div className={cn("absolute inset-0 pointer-events-none transition-opacity duration-1000 ease-in-out", mode === 'chat' ? "opacity-100" : "opacity-0")}>
