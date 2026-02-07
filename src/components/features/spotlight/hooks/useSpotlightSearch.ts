@@ -6,7 +6,8 @@ import { useSpotlight } from '../core/SpotlightContext';
 import { getText } from '@/lib/i18n';
 import { evaluateMath } from '@/lib/calculator';
 import { useAppStore } from '@/store/useAppStore';
-import { RefineryItem } from '@/types/refinery'; // 确保引入这个类型
+import { RefineryItem } from '@/types/refinery';
+import { formatTimeAgo } from '@/lib/refinery_utils';
 
 interface AppEntry {
   name: string;
@@ -108,7 +109,7 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
         const newItems: SpotlightItem[] = data.map(item => ({
           id: item.id,
           title: item.title || (item.kind === 'image' ? '[Image/图片]' : (item.preview || '').replace(/\n/g, ' ')),
-          description: `${item.sourceApp || 'Unknown'} • ${item.sizeInfo}`,
+          description: `${formatTimeAgo(item.createdAt, language)} • ${item.sourceApp || 'Unknown'} • ${item.sizeInfo}`,
           content: item.content || item.preview,
           type: 'clipboard',
           isImage: item.kind === 'image'

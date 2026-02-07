@@ -18,7 +18,7 @@ interface SearchBarProps {
 export function SearchBar({ onKeyDown }: SearchBarProps) {
   const {
     mode, query, chatInput, searchScope, activeTemplate,
-    setQuery, setChatInput, inputRef, setSearchScope, setActiveTemplate, setMode
+    setQuery, setChatInput, inputRef, setSearchScope, setActiveTemplate, toggleMode
   } = useSpotlight();
 
   const { language, aiConfig, setAIConfig, savedProviderSettings, searchSettings } = useAppStore();
@@ -221,18 +221,37 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
         "bg-background/50"
     )}>
 
-      {/* 模式切换按钮 - 独立的三个按钮，支持 Alt+1/2/3 切换 */}
-      <div className="w-6 h-6 flex items-center justify-center relative outline-none group mr-4">
-        <button onClick={() => setMode('search')} className={cn("absolute transition-all duration-300 outline-none", mode === 'search' ? "scale-100 opacity-100" : "scale-50 opacity-0")} title="Search (Alt+1)">
-          <SearchIcon strokeWidth={1.5} className="text-foreground" size={24} />
-        </button>
-        <button onClick={() => setMode('chat')} className={cn("absolute transition-all duration-300 outline-none", mode === 'chat' ? "scale-100 opacity-100" : "scale-50 opacity-0")} title="AI Chat (Alt+2)">
-          <Bot strokeWidth={1.5} className="text-purple-500" size={24} />
-        </button>
-        <button onClick={() => setMode('clipboard')} className={cn("absolute transition-all duration-300 outline-none", mode === 'clipboard' ? "scale-100 opacity-100" : "scale-50 opacity-0")} title="Clipboard (Alt+3)">
-          <ClipboardList strokeWidth={1.5} className="text-blue-500" size={24} />
-        </button>
-      </div>
+      {/* 模式切换按钮 - 单按钮循环切换，支持 Alt+1/2/3 快捷键 */}
+      <button
+        onClick={toggleMode}
+        className="w-6 h-6 flex items-center justify-center relative outline-none group mr-4 cursor-pointer"
+        title={getText('spotlight', 'toggleMode', language)}
+      >
+        <SearchIcon
+          strokeWidth={1.5}
+          className={cn(
+            "absolute transition-all duration-300 text-muted-foreground/70 group-hover:text-foreground",
+            mode === 'search' ? "scale-100 opacity-100" : "scale-50 opacity-0 rotate-90"
+          )}
+          size={24}
+        />
+        <Bot
+          strokeWidth={1.5}
+          className={cn(
+            "absolute transition-all duration-300 text-purple-500",
+            mode === 'chat' ? "scale-100 opacity-100 rotate-0" : "scale-50 opacity-0 -rotate-90"
+          )}
+          size={24}
+        />
+        <ClipboardList
+          strokeWidth={1.5}
+          className={cn(
+            "absolute transition-all duration-300 text-blue-500",
+            mode === 'clipboard' ? "scale-100 opacity-100 rotate-0" : "scale-50 opacity-0 -rotate-90"
+          )}
+          size={24}
+        />
+      </button>
 
       {renderLeftTag()}
 
