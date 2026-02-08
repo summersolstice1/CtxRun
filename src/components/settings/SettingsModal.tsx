@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Monitor, Moon, Sun, Circle, Languages, Check, Filter, DownloadCloud, Bot, Bell, Database, Upload, Download, FileSpreadsheet, AlertTriangle, FolderCog, Shield, RefreshCw, AppWindow, Edit3, Info, Search as SearchIcon } from 'lucide-react';
 
-// macOS 风格的弹簧参数
+// 动画弹簧参数
 const MAC_SPRING = {
   type: "spring" as const,
   stiffness: 400,
@@ -958,7 +958,7 @@ export function SettingsModal() {
                                             <span>5000 {getText('settings', 'entriesLabel', language)}</span>
                                         </div>
                                         <div className="text-[10px] text-muted-foreground italic">
-                                            {getText('settings', 'bufferInfo', language).replace('{threshold}', Math.ceil((refinerySettings.maxCount || 1000) * 1.05).toString())}
+                                            {getText('settings', 'bufferInfo', language).replace('{threshold}', Math.ceil(Number(((refinerySettings.maxCount || 1000) * 1.1).toFixed(2))).toString())}
                                         </div>
                                     </div>
                                 )}

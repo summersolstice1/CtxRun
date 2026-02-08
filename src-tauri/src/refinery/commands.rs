@@ -527,8 +527,8 @@ pub async fn manual_cleanup(
 // 清理逻辑实现
 // ============================================================================
 
-/// 缓冲比例：5%
-const CLEANUP_BUFFER_RATIO: f64 = 0.05;
+/// 缓冲比例：10%
+const CLEANUP_BUFFER_RATIO: f64 = 0.10;
 
 /// 执行数量清理（带缓冲）
 pub fn execute_count_cleanup(

@@ -99,11 +99,6 @@ struct SystemInfo {
 }
 
 #[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
-#[tauri::command]
 fn get_file_size(path: String) -> u64 {
     match fs::metadata(path) {
         Ok(meta) => meta.len(),
@@ -241,7 +236,6 @@ fn main() {
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
-            greet,
             get_file_size,
             get_system_info,
             check_python_env,
@@ -304,9 +298,7 @@ fn main() {
             refinery::commands::copy_refinery_image,
             refinery::commands::create_note,
             refinery::commands::update_note,
-            // --- 新增：注册粘贴命令 ---
             refinery::commands::spotlight_paste,
-            // Refinery Cleanup Commands (V5)
             refinery::commands::update_cleanup_config,
             refinery::commands::manual_cleanup,
         ])
