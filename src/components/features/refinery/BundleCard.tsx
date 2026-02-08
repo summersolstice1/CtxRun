@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 interface FeedCardProps {
   item: RefineryItemUI;
   isActive: boolean;
-  onClick: () => void;
+  onClick: () => void; // 这里定义是不带参数的
   onTogglePin: (e: React.MouseEvent) => void;
   extraBadge?: React.ReactNode;
   className?: string;
@@ -22,6 +22,14 @@ interface BundleCardPropsExtended {
   FeedCardComponent: React.ComponentType<FeedCardProps>;
 }
 
+// 修复点 2: 添加 as const，确保类型被锁定为字面量 "spring"
+const transitionConfig = {
+  type: "spring",
+  stiffness: 400,
+  damping: 30,
+  restDelta: 0.01
+} as const;
+
 export function BundleCard({ items, activeId, onItemClick, onTogglePin, FeedCardComponent }: BundleCardPropsExtended) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { language } = useAppStore();
@@ -29,140 +37,115 @@ export function BundleCard({ items, activeId, onItemClick, onTogglePin, FeedCard
   const coverItem = items[0];
   const count = items.length;
 
-  const handleCoverClick = () => {
-    setIsExpanded(true);
-  };
-
-  const handleCollapse = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsExpanded(false);
+  // 这里的 e: React.MouseEvent 仅在当前组件内部处理逻辑
+  const handleToggle = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setIsExpanded(!isExpanded);
   };
 
   return (
-    // 关键：外层容器使用 relative 但不设置 z-index（默认为 auto）
-    // 这样 BundleCard 作为一个整体在主层叠上下文中，不会与日期标题竞争
-    // 内部的 absolute 元素相对于外层容器定位，z 值只在内部比较
-    <div className={cn(
-      "relative transition-all duration-300",
-      isExpanded ? "mb-4" : "mb-10"
-    )}>
+    <motion.div 
+      layout
+      initial={false}
+      className={cn(
+        "relative w-full overflow-visible transition-all duration-300",
+        isExpanded ? "mb-6" : "mb-12"
+      )}
+    >
+      <AnimatePresence>
+        {!isExpanded && (
+          <div className="absolute inset-0 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0, y: 0 }}
+              animate={{ opacity: 1, y: 12, scale: 0.96 }}
+              exit={{ opacity: 0, y: 0 }}
+              className="absolute inset-0 bg-secondary/80 border border-border/60 rounded-xl z-[5]"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 0 }}
+              animate={{ opacity: 1, y: 24, scale: 0.92 }}
+              exit={{ opacity: 0, y: 0 }}
+              className="absolute inset-0 bg-secondary/40 border border-border/40 rounded-xl z-[0]"
+            />
+          </div>
+        )}
+      </AnimatePresence>
 
-      {/* --- 折叠态 (堆叠效果) --- */}
-      {!isExpanded && (
-        <div
-          onClick={handleCoverClick}
-          className="group relative z-0 cursor-pointer select-none"
-        >
-          {/* Layer 3 (最底层) - 偏移量很大 */}
-          <div className={cn(
-            "absolute left-0 w-full h-full rounded-xl z-0",
-            // 稍微调深一点颜色，增加质感
-            "bg-gradient-to-br from-indigo-500/20 via-purple-500/15 to-sky-500/20",
-            "border border-indigo-500/30",
-            "shadow-md",
-            "transform transition-all duration-300 ease-out",
-            // 默认向下偏移 8 (32px)
-            "translate-y-8 scale-[0.90]",
-            // Hover 时继续向下探
-            "group-hover:translate-y-9"
-          )} />
-
-          {/* Layer 2 (中间层) */}
-          <div className={cn(
-            "absolute left-0 w-full h-full rounded-xl z-10",
-            "bg-gradient-to-br from-secondary via-secondary/90 to-muted",
-            "border border-border/80",
-            "shadow-sm",
-            "transform transition-all duration-300 ease-out",
-            "translate-y-4 scale-[0.95]",
-            "group-hover:translate-y-5"
-          )} />
-
-          {/* Layer 1 (顶层真实内容) */}
-          <div className="relative z-20 transform transition-all duration-300 ease-out group-hover:-translate-y-1">
+      <div className="relative z-10">
+        {!isExpanded ? (
+          <motion.div
+            key="cover"
+            initial={false}
+            whileHover={{ y: -2 }}
+            onClick={() => handleToggle()} // 修复点 1: 包装一层，不传递事件对象
+            className="cursor-pointer active:scale-[0.99] transition-transform"
+          >
             <FeedCardComponent
               item={coverItem}
               isActive={false}
-              onClick={handleCoverClick}
+              onClick={() => handleToggle()} // 修复点 1: 确保符合 () => void 签名
               onTogglePin={(e) => { e.stopPropagation(); onTogglePin(coverItem.id); }}
-              className="mb-0 shadow-lg border-border ring-1 ring-black/5 dark:ring-white/5" 
               extraBadge={
-                <span className="flex items-center gap-1 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-full ml-2 shadow-sm">
+                <span className="flex items-center gap-1 text-[10px] font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-full ml-2">
                   <Layers size={10} /> {count}
                 </span>
               }
             />
-          </div>
-        </div>
-      )}
-
-      {/* --- 展开态 (列表模式) --- */}
-      <AnimatePresence>
-        {isExpanded && (
+          </motion.div>
+        ) : (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="relative"
+            key="list"
+            className="flex flex-col gap-3"
           >
-            {/* 左侧连接线装饰 */}
-            <div className="absolute top-3 bottom-3 left-[-12px] w-0.5 bg-gradient-to-b from-primary/30 to-transparent rounded-full" />
-
-            {/* 头部控制栏 */}
-            <div className="flex justify-between items-center mb-3 pl-1 pr-2 animate-in fade-in slide-in-from-top-1 duration-200">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 bg-secondary/50 px-2 py-1 rounded-md border border-border/50">
+            <motion.div 
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-between items-center px-1 mb-1"
+            >
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-2">
                 <Layers size={12} className="text-primary" />
-                {items[0].sourceApp || 'Unknown'} Group ({count})
+                {items[0].sourceApp || 'Unknown'} · {count} Items
               </span>
               <button
-                onClick={handleCollapse}
-                className="flex items-center gap-1 text-[10px] bg-secondary hover:bg-secondary/80 text-foreground px-2 py-1 rounded transition-colors shadow-sm border border-border"
+                onClick={() => handleToggle()} // 包装一层
+                className="p-1 hover:bg-secondary rounded-md text-muted-foreground transition-colors"
               >
-                {language === 'zh' ? '收起' : 'Collapse'} <ChevronUp size={10} />
+                <ChevronUp size={16} />
               </button>
-            </div>
+            </motion.div>
 
-            {/* 列表内容 */}
-            <div className="space-y-3">
-              {items.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ 
-                    duration: 0.3, 
-                    delay: index * 0.05, 
-                    type: "spring",
-                    stiffness: 300,
-                    damping: 25
-                  }}
-                >
-                  <FeedCardComponent
-                    item={item}
-                    isActive={activeId === item.id}
-                    onClick={() => onItemClick(item.id)}
-                    onTogglePin={(e) => { e.stopPropagation(); onTogglePin(item.id); }}
-                    className="mb-0" 
-                  />
-                </motion.div>
-              ))}
-            </div>
-
-            {/* 底部收起条 */}
-            {items.length > 2 && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                onClick={handleCollapse}
-                className="h-6 mt-3 flex items-center justify-center cursor-pointer hover:bg-secondary/50 rounded-lg transition-colors text-muted-foreground/40 hover:text-primary/80 group border border-transparent hover:border-border/50"
+            {items.map((item, index) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ 
+                  opacity: 1, 
+                  y: 0,
+                  transition: { ...transitionConfig, delay: index * 0.03 } 
+                }}
+                style={{ willChange: "transform, opacity" }}
               >
-                <ChevronUp size={14} className="transition-transform group-hover:-translate-y-0.5" />
+                <FeedCardComponent
+                  item={item}
+                  isActive={activeId === item.id}
+                  onClick={() => onItemClick(item.id)}
+                  onTogglePin={(e) => { e.stopPropagation(); onTogglePin(item.id); }}
+                  className="mb-0"
+                />
               </motion.div>
-            )}
+            ))}
+
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => handleToggle()} // 包装一层
+              className="py-2 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors flex items-center justify-center gap-1 uppercase font-bold"
+            >
+              <ChevronUp size={12} /> {language === 'zh' ? '收起' : 'Collapse'}
+            </motion.button>
           </motion.div>
         )}
-      </AnimatePresence>
-    </div>
+      </div>
+    </motion.div>
   );
 }
