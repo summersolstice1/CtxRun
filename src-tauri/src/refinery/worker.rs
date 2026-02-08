@@ -16,7 +16,7 @@ use x_win::{get_active_window, get_browser_url};
 
 use crate::db::DbState;
 use super::model::{RefineryKind, RefineryMetadata};
-use super::storage::{hash_content_fast, save_image_to_disk, capture_clipboard_item};
+use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
 pub static PASTING_FLAG: LazyLock<Arc<AtomicBool>> =
     LazyLock::new(|| Arc::new(AtomicBool::new(false)));
@@ -187,7 +187,7 @@ impl RefineryProcessor {
     }
 
     fn handle_text(&mut self, content: String, source_app: Option<String>, url: Option<String>) {
-        let hash = hash_content_fast(content.as_bytes());
+        let hash = hash_content(content.as_bytes());
 
         if hash == self.last_text_hash { return; }
         self.last_text_hash = hash.clone();
@@ -207,7 +207,7 @@ impl RefineryProcessor {
 
     fn handle_files(&mut self, paths: Vec<String>, source_app: Option<String>) {
         let content = paths.join("\n");
-        let hash = hash_content_fast(content.as_bytes());
+        let hash = hash_content(content.as_bytes());
 
         if hash == self.last_text_hash { return; }
         self.last_text_hash = hash.clone();
@@ -263,8 +263,8 @@ impl RefineryProcessor {
         let save_result = save_image_to_disk(&self.app, &image);
         match save_result {
             Ok((file_path, img_hash)) => {
-                let text_hash = hash_content_fast(text.as_bytes());
-                let combined_hash = hash_content_fast(format!("{}{}", text_hash, img_hash).as_bytes());
+                let text_hash = hash_content(text.as_bytes());
+                let combined_hash = hash_content(format!("{}{}", text_hash, img_hash).as_bytes());
 
                 if combined_hash == self.last_text_hash { return; }
                 self.last_text_hash = combined_hash.clone();

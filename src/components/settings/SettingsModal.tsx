@@ -21,6 +21,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { usePromptStore } from '@/store/usePromptStore';
 import { getText } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { formatRefineryBufferThreshold } from '@/lib/calculator';
 import { FilterManager } from '../features/context/FilterManager';
 import { PromptLibraryManager } from './PromptLibraryManager';
 import { IgnoredSecretsManager } from './IgnoredSecretsManager';
@@ -958,7 +959,7 @@ export function SettingsModal() {
                                             <span>5000 {getText('settings', 'entriesLabel', language)}</span>
                                         </div>
                                         <div className="text-[10px] text-muted-foreground italic">
-                                            {getText('settings', 'bufferInfo', language).replace('{threshold}', Math.ceil(Number(((refinerySettings.maxCount || 1000) * 1.1).toFixed(2))).toString())}
+                                            {getText('settings', 'bufferInfo', language).replace('{threshold}', formatRefineryBufferThreshold(refinerySettings.maxCount || 1000).toString())}
                                         </div>
                                     </div>
                                 )}

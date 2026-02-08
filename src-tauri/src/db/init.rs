@@ -12,7 +12,7 @@ pub struct DbState {
     pub conn: Mutex<Connection>,
 }
 
-// 辅助函数：检查列是否存在
+// 检查列是否存在（用于遗留数据库升级）
 fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
     let query = format!("PRAGMA table_info({})", table);
     let mut stmt = match conn.prepare(&query) {
@@ -30,10 +30,10 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
     exists
 }
 
-// 核心：处理遗留数据库（Patch Legacy）
-// 在 Refinery 运行前，先把老用户的数据库补齐成 V1 的样子
-fn patch_legacy_database(conn: &Connection) -> rusqlite::Result<()> {
-    // 检查是否是老用户：有 prompts 表，但没有 refinery 表
+// 处理遗留数据库：为老用户的 prompts 表添加缺失的列
+// 注意：表结构创建完全由 refinery 迁移管理，此处仅处理列升级
+fn migrate_legacy_columns(conn: &Connection) -> rusqlite::Result<()> {
+    // 检查是否是老用户：有 prompts 表，但没有 refinery 历史记录
     let has_prompts = conn.query_row(
         "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='prompts'",
         [],
@@ -46,59 +46,25 @@ fn patch_legacy_database(conn: &Connection) -> rusqlite::Result<()> {
         |r| r.get::<_, i32>(0)
     ).unwrap_or(0) > 0;
 
-    // 如果不是老用户环境（要么是全新的，要么已经是 Refinery 管理的），直接返回
+    // 新用户或已迁移用户：跳过
     if !has_prompts || has_refinery {
         return Ok(());
     }
 
-    println!("[Database] Legacy database detected. Applying patches to match V1 baseline...");
+    println!("[Database] Legacy prompts table detected. Adding new columns...");
 
-    // 逐个检查 V1 中包含但老用户可能没有的字段
+    // 添加新列（如果不存在）
     if !column_exists(conn, "prompts", "is_executable") {
-        println!("[Database] Patching: adding is_executable");
         conn.execute("ALTER TABLE prompts ADD COLUMN is_executable INTEGER DEFAULT 0", [])?;
     }
-
     if !column_exists(conn, "prompts", "shell_type") {
-        println!("[Database] Patching: adding shell_type");
         conn.execute("ALTER TABLE prompts ADD COLUMN shell_type TEXT", [])?;
     }
-
     if !column_exists(conn, "prompts", "use_as_chat_template") {
-        println!("[Database] Patching: adding use_as_chat_template");
         conn.execute("ALTER TABLE prompts ADD COLUMN use_as_chat_template INTEGER DEFAULT 0", [])?;
     }
 
-    // 确保其他表也存在
-    conn.execute_batch("
-        CREATE TABLE IF NOT EXISTS url_history (
-            url TEXT PRIMARY KEY,
-            title TEXT,
-            visit_count INTEGER DEFAULT 1,
-            last_visit INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS project_configs (
-            path TEXT PRIMARY KEY,
-            config TEXT NOT NULL,
-            updated_at INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS ignored_secrets (
-            id TEXT PRIMARY KEY,
-            value TEXT NOT NULL UNIQUE,
-            rule_id TEXT,
-            created_at INTEGER
-        );
-        CREATE TABLE IF NOT EXISTS apps (
-            path TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            keywords TEXT,
-            icon TEXT,
-            usage_count INTEGER DEFAULT 0,
-            last_used_at INTEGER DEFAULT 0
-        );
-    ")?;
-
-    println!("[Database] Legacy database patched successfully.");
+    println!("[Database] Legacy columns added successfully.");
     Ok(())
 }
 
@@ -117,11 +83,12 @@ pub fn init_db(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error:
         PRAGMA synchronous = NORMAL;
     ")?;
 
-    // --- 关键步骤：先手动补齐老数据 ---
-    if let Err(e) = patch_legacy_database(&conn) {
-        eprintln!("[Database] Failed to patch legacy database: {}", e);
+    // 处理遗留数据库的列升级（表结构由 refinery 迁移管理）
+    if let Err(e) = migrate_legacy_columns(&conn) {
+        eprintln!("[Database] Failed to migrate legacy columns: {}", e);
     }
 
+    // 运行 refinery 迁移
     match migrations::runner().run(&mut conn) {
         Ok(report) => {
             let applied = report.applied_migrations();

@@ -205,7 +205,7 @@ export function TokenDashboard({
                    <div key={lang.name} className="flex items-center gap-1.5 text-xs">
                       <div className={cn("w-2 h-2 rounded-full", lang.color)} />
                       <span className="text-muted-foreground">{lang.name}</span>
-                      <span className="font-mono opacity-50">{Math.round(lang.percentage)}%</span>
+                      <span className="font-mono opacity-50">{lang.percentage.toFixed(1)}%</span>
                    </div>
                  ))}
               </div>

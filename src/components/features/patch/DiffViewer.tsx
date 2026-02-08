@@ -4,11 +4,12 @@ import { Columns, Rows, FileCode, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { getText } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { getMonacoLanguage } from '@/lib/langs';
 
 interface DiffViewerProps {
   original: string;
   modified: string;
-  fileName?: string; 
+  fileName?: string;
   placeholder?: string;
 }
 
@@ -18,26 +19,7 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
   const { language: appLang } = useAppStore();
   const monacoRef = useRef<any>(null);
 
-  const getLanguage = (path: string) => {
-    const ext = path.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'ts': case 'tsx': return 'typescript';
-      case 'js': case 'jsx': return 'javascript';
-      case 'json': return 'json';
-      case 'css': return 'css';
-      case 'html': return 'html';
-      case 'py': return 'python';
-      case 'rs': return 'rust';
-      case 'go': return 'go';
-      case 'java': return 'java';
-      case 'md': return 'markdown';
-      case 'sql': return 'sql';
-      case 'yml': case 'yaml': return 'yaml';
-      default: return 'plaintext';
-    }
-  };
-
-  const language = getLanguage(fileName);
+  const monacoLanguage = getMonacoLanguage(fileName);
 
   const handleEditorDidMount: DiffOnMount = (_editor, monaco) => {
     monacoRef.current = monaco;
@@ -107,7 +89,7 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
             <FileCode size={14} className="text-primary" />
             <span className="opacity-80">{fileName || 'Unsaved Draft'}</span>
             <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">
-                {language}
+                {monacoLanguage}
             </span>
          </div>
 
@@ -136,7 +118,7 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
       <div className="flex-1 relative group">
          <DiffEditor
             height="100%"
-            language={getLanguage(fileName)}
+            language={monacoLanguage}
             original={original}
             modified={modified}
             onMount={handleEditorDidMount}

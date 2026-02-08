@@ -8,8 +8,3 @@ static BPE: Lazy<CoreBPE> = Lazy::new(|| {
 pub fn count_tokens(text: &str) -> usize {
     BPE.encode_ordinary(text).len()
 }
-
-#[allow(dead_code)]
-pub fn estimate_tokens(text: &str) -> usize {
-    text.len() / 4
-}

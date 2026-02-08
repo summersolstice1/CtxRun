@@ -2,7 +2,6 @@ use std::fs;
 use std::path::PathBuf;
 use std::io::BufWriter;
 use rusqlite::{params, Connection, OptionalExtension};
-use sha2::{Digest, Sha256};
 use chrono::Utc;
 use uuid::Uuid;
 use tauri::{AppHandle, Manager};
@@ -21,17 +20,10 @@ pub fn hash_dynamic_image(image: &DynamicImage) -> String {
     format!("{:016x}", hash_val) // 输出 16 位 hex
 }
 
-// 辅助函数：文本哈希
-pub fn hash_content_fast(content: &[u8]) -> String {
+// 辅助函数：统一的内容哈希（使用 xxHash）
+pub fn hash_content(content: &[u8]) -> String {
     let hash_val = xxh3_64(content);
     format!("{:016x}", hash_val)
-}
-
-/// 计算文本内容的 SHA256（保留用于其他模块）
-pub fn hash_content(content: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(content);
-    hex::encode(hasher.finalize())
 }
 
 fn ensure_image_dir(app: &AppHandle) -> Result<PathBuf, String> {

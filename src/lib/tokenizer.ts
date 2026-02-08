@@ -17,7 +17,3 @@ export function countTokens(text: string): number {
     return 0;
   }
 }
-
-export function estimateTokens(byteSize: number): number {
-  return Math.ceil(byteSize / 4);
-}

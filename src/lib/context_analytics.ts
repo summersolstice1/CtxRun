@@ -1,5 +1,6 @@
 import { FileNode } from '@/types/context';
-import { AIModelConfig } from '@/types/model'; 
+import { AIModelConfig } from '@/types/model';
+import { getLanguageInfo } from '@/lib/langs';
 
 export interface LanguageStat {
   name: string;
@@ -23,28 +24,6 @@ export interface AnalyticsData {
   modelCosts: ModelCostStat[]; // 动态数组
 }
 
-// 语言颜色映射
-const LANG_MAP: Record<string, { name: string; color: string }> = {
-  ts: { name: 'TypeScript', color: 'bg-blue-500' },
-  tsx: { name: 'TypeScript JSX', color: 'bg-blue-400' },
-  js: { name: 'JavaScript', color: 'bg-yellow-400' },
-  jsx: { name: 'JavaScript JSX', color: 'bg-yellow-300' },
-  json: { name: 'JSON', color: 'bg-gray-400' },
-  css: { name: 'CSS', color: 'bg-sky-300' },
-  html: { name: 'HTML', color: 'bg-orange-500' },
-  rs: { name: 'Rust', color: 'bg-orange-700' },
-  py: { name: 'Python', color: 'bg-blue-600' },
-  md: { name: 'Markdown', color: 'bg-white' },
-  yml: { name: 'YAML', color: 'bg-purple-400' },
-  java: { name: 'Java', color: 'bg-amber-600' },
-  go: { name: 'Go', color: 'bg-cyan-500' },
-  c: { name: 'C', color: 'bg-blue-800' },
-  cpp: { name: 'C++', color: 'bg-blue-700' },
-  h: { name: 'C/C++ Header', color: 'bg-blue-900' },
-  kt: { name: 'Kotlin', color: 'bg-purple-500' },
-  sql: { name: 'SQL', color: 'bg-pink-500' },
-};
-
 function getFlatSelectedFiles(nodes: FileNode[]): FileNode[] {
   let files: FileNode[] = [];
   for (const node of nodes) {
@@ -62,36 +41,42 @@ function getFlatSelectedFiles(nodes: FileNode[]): FileNode[] {
  * 动态分析函数
  */
 export function analyzeContext(
-  nodes: FileNode[], 
-  totalTokens: number, 
+  nodes: FileNode[],
+  totalTokens: number,
   models: AIModelConfig[] // 必传参数
 ): AnalyticsData {
   const files = getFlatSelectedFiles(nodes);
   const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
 
-  // 1. 语言分布
-  const langStats: Record<string, { count: number; size: number }> = {};
+  // 1. 语言分布 - 按扩展名分组
+  const langStats: Record<string, { count: number; size: number; ext: string }> = {};
   files.forEach(f => {
-    const ext = f.name.split('.').pop()?.toLowerCase() || 'other';
-    const key = LANG_MAP[ext] ? ext : 'other';
-    if (!langStats[key]) langStats[key] = { count: 0, size: 0 };
-    langStats[key].count++;
-    langStats[key].size += (f.size || 0);
+    const ext = f.name.split('.').pop()?.toLowerCase() || 'unknown';
+    const info = getLanguageInfo(f.name);
+
+    // 将未识别的文件类型归为 "Other"
+    const langName = info.name === 'Unknown' ? 'Other' : info.name;
+
+    if (!langStats[langName]) {
+      langStats[langName] = { count: 0, size: 0, ext };
+    }
+    langStats[langName].count++;
+    langStats[langName].size += (f.size || 0);
   });
 
   const languages: LanguageStat[] = Object.entries(langStats)
-    .map(([key, stat]) => {
-      const info = LANG_MAP[key] || { name: 'Other', color: 'bg-slate-500' };
+    .map(([name, stat]) => {
+      const info = getLanguageInfo(`test.${stat.ext}`);
       return {
-        name: info.name,
+        name,
         count: stat.count,
         size: stat.size,
-        color: info.color,
-        percentage: totalSize > 0 ? (stat.size / totalSize) * 100 : 0
+        color: name === 'Other' ? 'bg-slate-500' : info.color,
+        percentage: totalSize > 0 ? parseFloat((stat.size / totalSize * 100).toFixed(1)) : 0
       };
     })
-    .sort((a, b) => b.size - a.size)
-    .slice(0, 5);
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
 
   const topFiles = [...files]
     .sort((a, b) => (b.size || 0) - (a.size || 0))
@@ -105,7 +90,7 @@ export function analyzeContext(
     limit: model.contextLimit,
     cost: millions * model.inputPricePerMillion
   }));
-  
+
   return {
     languages,
     topFiles,

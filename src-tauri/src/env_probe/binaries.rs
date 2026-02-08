@@ -77,13 +77,3 @@ pub fn probe_by_category(target_category: &str) -> Vec<ToolInfo> {
         })
         .collect()
 }
-
-#[allow(dead_code)]
-pub fn probe_all_flat() -> Vec<ToolInfo> {
-    BINARY_LIST
-        .par_iter()
-        .map(|cfg| {
-            common::generic_probe(cfg.name, cfg.bin, cfg.args, None)
-        })
-        .collect()
-}
