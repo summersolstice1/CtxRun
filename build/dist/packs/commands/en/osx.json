@@ -1740,12 +1740,132 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-osx-mole-0",
+    "type": "command",
+    "title": "mole - Open the main menu",
+    "content": "mole",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Open the main menu)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-1",
+    "type": "command",
+    "title": "mole - Free up disk space",
+    "content": "mole clean",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Free up disk space)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-2",
+    "type": "command",
+    "title": "mole - Preview cleanup without making changes",
+    "content": "mole clean --dry-run",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Preview cleanup without making changes)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-3",
+    "type": "command",
+    "title": "mole - Remove apps completely",
+    "content": "mole uninstall",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Remove apps completely)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-4",
+    "type": "command",
+    "title": "mole - Check and maintain system",
+    "content": "mole optimize",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Check and maintain system)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-5",
+    "type": "command",
+    "title": "mole - Explore disk usage",
+    "content": "mole analyze",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Explore disk usage)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-6",
+    "type": "command",
+    "title": "mole - Monitor system health",
+    "content": "mole status",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Monitor system health)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-mole-7",
+    "type": "command",
+    "title": "mole - Remove old project artifacts",
+    "content": "mole purge",
+    "group": "macOS",
+    "description": "mole: Deep clean and optimize your Mac. (Remove old project artifacts)",
+    "tags": [
+      "osx",
+      "mole",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-osx-scutil-0",
     "type": "command",
     "title": "scutil - Display DNS Configuration",
     "content": "scutil --dns",
     "group": "macOS",
-    "description": "scutil: Manage system configuration parameters. Require root privileges when setting configuration. (Display DNS Configuration)",
+    "description": "scutil: Manage system configuration parameters. (Display DNS Configuration)",
     "tags": [
       "osx",
       "scutil",
@@ -1760,7 +1880,7 @@
     "title": "scutil - Display proxy configuration",
     "content": "scutil --proxy",
     "group": "macOS",
-    "description": "scutil: Manage system configuration parameters. Require root privileges when setting configuration. (Display proxy configuration)",
+    "description": "scutil: Manage system configuration parameters. (Display proxy configuration)",
     "tags": [
       "osx",
       "scutil",
@@ -1775,7 +1895,7 @@
     "title": "scutil - Get computer name",
     "content": "scutil --get ComputerName",
     "group": "macOS",
-    "description": "scutil: Manage system configuration parameters. Require root privileges when setting configuration. (Get computer name)",
+    "description": "scutil: Manage system configuration parameters. (Get computer name)",
     "tags": [
       "osx",
       "scutil",
@@ -1790,7 +1910,7 @@
     "title": "scutil - Set computer name",
     "content": "sudo scutil --set ComputerName {{computer_name}}",
     "group": "macOS",
-    "description": "scutil: Manage system configuration parameters. Require root privileges when setting configuration. (Set computer name)",
+    "description": "scutil: Manage system configuration parameters. (Set computer name)",
     "tags": [
       "osx",
       "scutil",
@@ -1805,7 +1925,7 @@
     "title": "scutil - Get hostname",
     "content": "scutil --get HostName",
     "group": "macOS",
-    "description": "scutil: Manage system configuration parameters. Require root privileges when setting configuration. (Get hostname)",
+    "description": "scutil: Manage system configuration parameters. (Get hostname)",
     "tags": [
       "osx",
       "scutil",
@@ -1820,7 +1940,7 @@
     "title": "scutil - Set hostname",
     "content": "scutil --set HostName {{hostname}}",
     "group": "macOS",
-    "description": "scutil: Manage system configuration parameters. Require root privileges when setting configuration. (Set hostname)",
+    "description": "scutil: Manage system configuration parameters. (Set hostname)",
     "tags": [
       "osx",
       "scutil",
@@ -6465,6 +6585,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-osx-mo-0",
+    "type": "command",
+    "title": "mo - View documentation for the original command",
+    "content": "tldr mole",
+    "group": "macOS",
+    "description": "mo: This command is an alias of `mole`. (View documentation for the original command)",
+    "tags": [
+      "osx",
+      "mo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-osx-gtelnet-0",
     "type": "command",
     "title": "gtelnet - View documentation for the original command",
@@ -8105,7 +8240,7 @@
     "title": "tmutil - Set an HFS+ drive as the backup destination",
     "content": "sudo tmutil setdestination {{path/to/disk_mount_point}}",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Set an HFS+ drive as the backup destination)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Set an HFS+ drive as the backup destination)",
     "tags": [
       "osx",
       "tmutil",
@@ -8120,7 +8255,7 @@
     "title": "tmutil - Set an APF share or SMB share as the backup destination",
     "content": "sudo tmutil setdestination \"{{protocol://user[:password]@host/share}}\"",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Set an APF share or SMB share as the backup destination)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Set an APF share or SMB share as the backup destination)",
     "tags": [
       "osx",
       "tmutil",
@@ -8135,7 +8270,7 @@
     "title": "tmutil - Append the given destination to the list of destinations",
     "content": "sudo tmutil setdestination -a {{destination}}",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Append the given destination to the list of destinations)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Append the given destination to the list of destinations)",
     "tags": [
       "osx",
       "tmutil",
@@ -8150,7 +8285,7 @@
     "title": "tmutil - Enable automatic backups",
     "content": "sudo tmutil enable",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Enable automatic backups)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Enable automatic backups)",
     "tags": [
       "osx",
       "tmutil",
@@ -8165,7 +8300,7 @@
     "title": "tmutil - Disable automatic backups",
     "content": "sudo tmutil disable",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Disable automatic backups)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Disable automatic backups)",
     "tags": [
       "osx",
       "tmutil",
@@ -8180,7 +8315,7 @@
     "title": "tmutil - Start a backup, if one is not running already, and release control of the shell",
     "content": "sudo tmutil startbackup",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Start a backup, if one is not running already, and release control of the shell)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Start a backup, if one is not running already, and release control of the shell)",
     "tags": [
       "osx",
       "tmutil",
@@ -8195,7 +8330,7 @@
     "title": "tmutil - Start a backup and block until the backup is finished",
     "content": "sudo tmutil startbackup -b",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Start a backup and block until the backup is finished)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Start a backup and block until the backup is finished)",
     "tags": [
       "osx",
       "tmutil",
@@ -8210,7 +8345,7 @@
     "title": "tmutil - Stop a backup",
     "content": "sudo tmutil stopbackup",
     "group": "macOS",
-    "description": "tmutil: Utility for managing Time Machine backups. Most verbs require root privileges. (Stop a backup)",
+    "description": "tmutil: Utility for managing Time Machine backups. (Stop a backup)",
     "tags": [
       "osx",
       "tmutil",
@@ -11795,7 +11930,7 @@
     "title": "route - Add a route to a destination through a gateway",
     "content": "sudo route add \"{{destination_ip_address}}\" \"{{gateway_address}}\"",
     "group": "macOS",
-    "description": "route: Manually manipulate the routing tables. Requires root privileges. (Add a route to a destination through a gateway)",
+    "description": "route: Manually manipulate the routing tables. (Add a route to a destination through a gateway)",
     "tags": [
       "osx",
       "route",
@@ -11810,7 +11945,7 @@
     "title": "route - Add a route to a /24 subnet through a gateway",
     "content": "sudo route add \"{{subnet_ip_address}}/24\" \"{{gateway_address}}\"",
     "group": "macOS",
-    "description": "route: Manually manipulate the routing tables. Requires root privileges. (Add a route to a /24 subnet through a gateway)",
+    "description": "route: Manually manipulate the routing tables. (Add a route to a /24 subnet through a gateway)",
     "tags": [
       "osx",
       "route",
@@ -11825,7 +11960,7 @@
     "title": "route - Run in test mode (does not do anything, just print)",
     "content": "sudo route -t add \"{{destination_ip_address}}/24\" \"{{gateway_address}}\"",
     "group": "macOS",
-    "description": "route: Manually manipulate the routing tables. Requires root privileges. (Run in test mode (does not do anything, just print))",
+    "description": "route: Manually manipulate the routing tables. (Run in test mode (does not do anything, just print))",
     "tags": [
       "osx",
       "route",
@@ -11840,7 +11975,7 @@
     "title": "route - Remove all routes",
     "content": "sudo route flush",
     "group": "macOS",
-    "description": "route: Manually manipulate the routing tables. Requires root privileges. (Remove all routes)",
+    "description": "route: Manually manipulate the routing tables. (Remove all routes)",
     "tags": [
       "osx",
       "route",
@@ -11855,7 +11990,7 @@
     "title": "route - Delete a specific route",
     "content": "sudo route delete \"{{destination_ip_address}}/24\"",
     "group": "macOS",
-    "description": "route: Manually manipulate the routing tables. Requires root privileges. (Delete a specific route)",
+    "description": "route: Manually manipulate the routing tables. (Delete a specific route)",
     "tags": [
       "osx",
       "route",
@@ -11870,7 +12005,7 @@
     "title": "route - Lookup and display the route for a destination (hostname or IP address)",
     "content": "sudo route get \"{{destination}}\"",
     "group": "macOS",
-    "description": "route: Manually manipulate the routing tables. Requires root privileges. (Lookup and display the route for a destination (hostname or IP address))",
+    "description": "route: Manually manipulate the routing tables. (Lookup and display the route for a destination (hostname or IP address))",
     "tags": [
       "osx",
       "route",

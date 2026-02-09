@@ -5595,6 +5595,96 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-windows-copy-0",
+    "type": "command",
+    "title": "copy - Copy a file to another location",
+    "content": "copy {{path\\to\\source_file}} {{path\\to\\target_file}}",
+    "group": "Windows",
+    "description": "copy: Copy files from one location to another. In PowerShell, this command is an alias of `Copy-Item`. This documentation is based on the Command Prompt (`cmd`) version of `copy`. (Copy a file to another location)",
+    "tags": [
+      "windows",
+      "copy",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-copy-1",
+    "type": "command",
+    "title": "copy - Copy a file into another directory, keeping the filename",
+    "content": "copy {{path\\to\\source_file}} {{path\\to\\target_directory}}",
+    "group": "Windows",
+    "description": "copy: Copy files from one location to another. In PowerShell, this command is an alias of `Copy-Item`. This documentation is based on the Command Prompt (`cmd`) version of `copy`. (Copy a file into another directory, keeping the filename)",
+    "tags": [
+      "windows",
+      "copy",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-copy-2",
+    "type": "command",
+    "title": "copy - Copy multiple files to a directory",
+    "content": "copy {{path\\to\\file1 path\\to\\file2 ...}} {{path\\to\\target_directory}}",
+    "group": "Windows",
+    "description": "copy: Copy files from one location to another. In PowerShell, this command is an alias of `Copy-Item`. This documentation is based on the Command Prompt (`cmd`) version of `copy`. (Copy multiple files to a directory)",
+    "tags": [
+      "windows",
+      "copy",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-copy-3",
+    "type": "command",
+    "title": "copy - Copy all files from one directory to another directory",
+    "content": "copy {{path\\to\\source_directory\\*}} {{path\\to\\target_directory}}",
+    "group": "Windows",
+    "description": "copy: Copy files from one location to another. In PowerShell, this command is an alias of `Copy-Item`. This documentation is based on the Command Prompt (`cmd`) version of `copy`. (Copy all files from one directory to another directory)",
+    "tags": [
+      "windows",
+      "copy",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-copy-4",
+    "type": "command",
+    "title": "copy - Copy files with a specific extension",
+    "content": "copy {{path\\to\\source_directory\\*.ext}} {{path\\to\\target_directory}}",
+    "group": "Windows",
+    "description": "copy: Copy files from one location to another. In PowerShell, this command is an alias of `Copy-Item`. This documentation is based on the Command Prompt (`cmd`) version of `copy`. (Copy files with a specific extension)",
+    "tags": [
+      "windows",
+      "copy",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-copy-5",
+    "type": "command",
+    "title": "copy - Copy a file and prompt before overwriting",
+    "content": "copy /-y {{path\\to\\source_file}} {{path\\to\\target_file}}",
+    "group": "Windows",
+    "description": "copy: Copy files from one location to another. In PowerShell, this command is an alias of `Copy-Item`. This documentation is based on the Command Prompt (`cmd`) version of `copy`. (Copy a file and prompt before overwriting)",
+    "tags": [
+      "windows",
+      "copy",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-windows-cls-0",
     "type": "command",
     "title": "cls - View the documentation of the equivalent PowerShell command",

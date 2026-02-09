@@ -2000,7 +2000,7 @@
     "title": "yadm-enter - 使用所有 Git 变量设置运行一个子 Shell",
     "content": "yadm enter",
     "group": "通用工具 (Common)",
-    "description": "yadm-enter: 使用所有 Git 变量设置运行一个子 Shell。这个子 Shell 可以用于使用 Git 命令方便地与本地 `yadm` 仓库交互。 如果你正在使用一个直接使用 Git 的工具，这可能会很有用。 (使用所有 Git 变量设置运行一个子 Shell)",
+    "description": "yadm-enter: 使用所有 Git 变量设置运行一个子 Shell。这个子 Shell 可以用于使用 Git 命令方便地与本地 yadm 仓库交互。 如果你正在使用一个直接使用 Git 的工具，这可能会很有用。 (使用所有 Git 变量设置运行一个子 Shell)",
     "tags": [
       "common",
       "yadm-enter",
@@ -2015,7 +2015,7 @@
     "title": "yadm-enter - 退出子 Shell",
     "content": "exit",
     "group": "通用工具 (Common)",
-    "description": "yadm-enter: 使用所有 Git 变量设置运行一个子 Shell。这个子 Shell 可以用于使用 Git 命令方便地与本地 `yadm` 仓库交互。 如果你正在使用一个直接使用 Git 的工具，这可能会很有用。 (退出子 Shell)",
+    "description": "yadm-enter: 使用所有 Git 变量设置运行一个子 Shell。这个子 Shell 可以用于使用 Git 命令方便地与本地 yadm 仓库交互。 如果你正在使用一个直接使用 Git 的工具，这可能会很有用。 (退出子 Shell)",
     "tags": [
       "common",
       "yadm-enter",
@@ -2402,115 +2402,10 @@
   {
     "id": "tldr-zh-common-helix-0",
     "type": "command",
-    "title": "helix - 打开文件",
-    "content": "helix {{路径/到/文件}}",
+    "title": "helix - 查看原命令的文档",
+    "content": "tldr hx",
     "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (打开文件)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-1",
-    "type": "command",
-    "title": "helix - 并排打开多个文件",
-    "content": "helix --vsplit {{路径/到/文件1 路径/到/文件2}}",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (并排打开多个文件)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-2",
-    "type": "command",
-    "title": "helix - 显示 Helix 教程（也可以在 Helix 中按 `<Esc>` 后输入 `<:>tutor<Enter>` 访问）",
-    "content": "helix --tutor",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (显示 Helix 教程（也可以在 Helix 中按 `<Esc>` 后输入 `<:>tutor<Enter>` 访问）)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-3",
-    "type": "command",
-    "title": "helix - 更改 Helix 主题",
-    "content": "<:>theme {{主题名称}}<Enter>",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (更改 Helix 主题)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-4",
-    "type": "command",
-    "title": "helix - 保存并退出",
-    "content": "<:>wq<Enter>",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (保存并退出)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-5",
-    "type": "command",
-    "title": "helix - 强制退出并不保存",
-    "content": "<:>q!<Enter>",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (强制退出并不保存)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-6",
-    "type": "command",
-    "title": "helix - 撤销上次操作",
-    "content": "<u>",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (撤销上次操作)",
-    "tags": [
-      "common",
-      "helix",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-common-helix-7",
-    "type": "command",
-    "title": "helix - 搜索文件中的关键字（按 `<n>`/`<N>` 前往下一个/上一个匹配）",
-    "content": "</>{{搜索模式}}<Enter>",
-    "group": "通用工具 (Common)",
-    "description": "helix: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (搜索文件中的关键字（按 `<n>`/`<N>` 前往下一个/上一个匹配）)",
+    "description": "helix: 此命令为 `hx` 的别名。 (查看原命令的文档)",
     "tags": [
       "common",
       "helix",
@@ -4335,6 +4230,126 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-tcpdump-0",
+    "type": "command",
+    "title": "tcpdump - 列出所有可用的网络接口",
+    "content": "tcpdump {{[-D|--list-interfaces]}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (列出所有可用的网络接口)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-1",
+    "type": "command",
+    "title": "tcpdump - 捕获特定网络接口的流量",
+    "content": "sudo tcpdump {{[-i|--interface]}} {{eth0}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (捕获特定网络接口的流量)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-2",
+    "type": "command",
+    "title": "tcpdump - 捕获所有 TCP 流量，并在控制台显示其内容（ASCII 编码）",
+    "content": "sudo tcpdump -A tcp",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (捕获所有 TCP 流量，并在控制台显示其内容（ASCII 编码）)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-3",
+    "type": "command",
+    "title": "tcpdump - 捕获发往或来自特定主机的流量",
+    "content": "sudo tcpdump host {{www.example.com}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (捕获发往或来自特定主机的流量)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-4",
+    "type": "command",
+    "title": "tcpdump - 捕获来自特定接口、源、目的地且目的端口正确的流量",
+    "content": "sudo tcpdump {{[-i|--interface]}} {{eth0}} src {{192.168.1.1}} and dst {{192.168.1.2}} and dst port {{80}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (捕获来自特定接口、源、目的地且目的端口正确的流量)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-5",
+    "type": "command",
+    "title": "tcpdump - 捕获特定网络的流量",
+    "content": "sudo tcpdump net {{192.168.1.0/24}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (捕获特定网络的流量)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-6",
+    "type": "command",
+    "title": "tcpdump - 捕获除 22 端口以外的所有流量，并写入转储文件",
+    "content": "sudo tcpdump -w {{dumpfile.pcap}} port not {{22}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (捕获除 22 端口以外的所有流量，并写入转储文件)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-tcpdump-7",
+    "type": "command",
+    "title": "tcpdump - 从给定的转储文件中读取内容",
+    "content": "tcpdump -r {{dumpfile.pcap}}",
+    "group": "通用工具 (Common)",
+    "description": "tcpdump: 转储网络上的流量。 (从给定的转储文件中读取内容)",
+    "tags": [
+      "common",
+      "tcpdump",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-bpytop-0",
     "type": "command",
     "title": "bpytop - 运行 bpytop",
@@ -4445,7 +4460,7 @@
     "title": "zerotier-one - 启动 ZeroTier One [d] 守护进程",
     "content": "sudo zerotier-one -d",
     "group": "通用工具 (Common)",
-    "description": "zerotier-one: 启动 ZeroTier One 守护进程。 (启动 ZeroTier One [d] 守护进程)",
+    "description": "zerotier-one: 启动 ZeroTier One 守护进程。 另请参阅：`zerotier-cli`, `zerotier-idtool`。 (启动 ZeroTier One [d] 守护进程)",
     "tags": [
       "common",
       "zerotier-one",
@@ -5540,7 +5555,7 @@
     "title": "yadm-introspect - 输出命令",
     "content": "yadm introspect commands",
     "group": "通用工具 (Common)",
-    "description": "yadm-introspect: 查看由 `yadm` 管理的数据。 内省的目的是支持命令行补全。 (输出命令)",
+    "description": "yadm-introspect: 查看由 yadm 管理的数据。 内省的目的是支持命令行补全。 (输出命令)",
     "tags": [
       "common",
       "yadm-introspect",
@@ -5555,7 +5570,7 @@
     "title": "yadm-introspect - 输出配置",
     "content": "yadm introspect configs",
     "group": "通用工具 (Common)",
-    "description": "yadm-introspect: 查看由 `yadm` 管理的数据。 内省的目的是支持命令行补全。 (输出配置)",
+    "description": "yadm-introspect: 查看由 yadm 管理的数据。 内省的目的是支持命令行补全。 (输出配置)",
     "tags": [
       "common",
       "yadm-introspect",
@@ -5567,10 +5582,10 @@
   {
     "id": "tldr-zh-common-yadm-introspect-2",
     "type": "command",
-    "title": "yadm-introspect - 为主 `yadm` 命令输出开关",
+    "title": "yadm-introspect - 为主 yadm 命令输出开关",
     "content": "yadm introspect switches",
     "group": "通用工具 (Common)",
-    "description": "yadm-introspect: 查看由 `yadm` 管理的数据。 内省的目的是支持命令行补全。 (为主 `yadm` 命令输出开关)",
+    "description": "yadm-introspect: 查看由 yadm 管理的数据。 内省的目的是支持命令行补全。 (为主 yadm 命令输出开关)",
     "tags": [
       "common",
       "yadm-introspect",
@@ -5585,7 +5600,7 @@
     "title": "yadm-introspect - 输出仓库",
     "content": "yadm introspect repo",
     "group": "通用工具 (Common)",
-    "description": "yadm-introspect: 查看由 `yadm` 管理的数据。 内省的目的是支持命令行补全。 (输出仓库)",
+    "description": "yadm-introspect: 查看由 yadm 管理的数据。 内省的目的是支持命令行补全。 (输出仓库)",
     "tags": [
       "common",
       "yadm-introspect",
@@ -6483,7 +6498,7 @@
     "id": "tldr-zh-common-ansible-playbook-4",
     "type": "command",
     "title": "ansible-playbook - 执行 playbook 中的指定标签的任务",
-    "content": "ansible-playbook {{playbook}} {{[-t|--tags|]}} {{标签1,标签2}}",
+    "content": "ansible-playbook {{playbook}} {{[-t|--tags]}} {{标签1,标签2}}",
     "group": "通用工具 (Common)",
     "description": "ansible-playbook: 通过 SSH 协议在远程计算机上执行 playbook 中定义的任务。 (执行 playbook 中的指定标签的任务)",
     "tags": [
@@ -6513,7 +6528,7 @@
     "id": "tldr-zh-common-ansible-playbook-6",
     "type": "command",
     "title": "ansible-playbook - 以不做任何更改（试执行）方式执行 playbook 中的任务",
-    "content": "ansible-playbook {{playbook}} {{[-C|--check|]}} {{[-D|--diff|]}}",
+    "content": "ansible-playbook {{playbook}} {{[-C|--check]}} {{[-D|--diff]}}",
     "group": "通用工具 (Common)",
     "description": "ansible-playbook: 通过 SSH 协议在远程计算机上执行 playbook 中定义的任务。 (以不做任何更改（试执行）方式执行 playbook 中的任务)",
     "tags": [
@@ -8615,7 +8630,7 @@
     "title": "nmap - 使用不同的详细（[v]erbosity）级别扫描远程主机的前 1000 个端口",
     "content": "nmap -v{{1|2|3}} {{ip或主机名}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (使用不同的详细（[v]erbosity）级别扫描远程主机的前 1000 个端口)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (使用不同的详细（[v]erbosity）级别扫描远程主机的前 1000 个端口)",
     "tags": [
       "common",
       "nmap",
@@ -8630,7 +8645,7 @@
     "title": "nmap - 对整个子网或单个主机进行非常激进的 ping 扫描",
     "content": "nmap -T5 -sn {{192.168.0.0/24|ip或主机名1,ip或主机名2,...}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (对整个子网或单个主机进行非常激进的 ping 扫描)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (对整个子网或单个主机进行非常激进的 ping 扫描)",
     "tags": [
       "common",
       "nmap",
@@ -8645,7 +8660,7 @@
     "title": "nmap - 对来自文件的主机启用操作系统检测、版本检测、脚本扫描和路由跟踪",
     "content": "sudo nmap -A -iL {{路径/到/文件.txt}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (对来自文件的主机启用操作系统检测、版本检测、脚本扫描和路由跟踪)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (对来自文件的主机启用操作系统检测、版本检测、脚本扫描和路由跟踪)",
     "tags": [
       "common",
       "nmap",
@@ -8660,7 +8675,7 @@
     "title": "nmap - 扫描特定的端口列表（使用 `-p-` 扫描从 1 到 65535 的所有端口）",
     "content": "nmap -p {{端口1,端口2,...}} {{ip或主机名1,ip或主机名2,...}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (扫描特定的端口列表（使用 `-p-` 扫描从 1 到 65535 的所有端口）)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (扫描特定的端口列表（使用 `-p-` 扫描从 1 到 65535 的所有端口）)",
     "tags": [
       "common",
       "nmap",
@@ -8675,7 +8690,7 @@
     "title": "nmap - 使用默认 NSE 脚本执行前 1000 个端口的服务和版本检测，将结果（`-oA`）写入输出文件",
     "content": "nmap -sC -sV -oA {{top-1000-ports}} {{ip或主机名1,ip或主机名2,...}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (使用默认 NSE 脚本执行前 1000 个端口的服务和版本检测，将结果（`-oA`）写入输出文件)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (使用默认 NSE 脚本执行前 1000 个端口的服务和版本检测，将结果（`-oA`）写入输出文件)",
     "tags": [
       "common",
       "nmap",
@@ -8690,7 +8705,7 @@
     "title": "nmap - 使用 `default and safe` NSE 脚本谨慎地扫描目标",
     "content": "nmap --script \"default and safe\" {{ip或主机名1,ip或主机名2,...}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (使用 `default and safe` NSE 脚本谨慎地扫描目标)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (使用 `default and safe` NSE 脚本谨慎地扫描目标)",
     "tags": [
       "common",
       "nmap",
@@ -8705,7 +8720,7 @@
     "title": "nmap - 使用所有可用的 `http-*` NSE 脚本扫描在标准端口 80 和 443 上运行的 Web 服务器",
     "content": "nmap --script \"http-*\" {{ip或主机名1,ip或主机名2,...}} -p 80,443",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (使用所有可用的 `http-*` NSE 脚本扫描在标准端口 80 和 443 上运行的 Web 服务器)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (使用所有可用的 `http-*` NSE 脚本扫描在标准端口 80 和 443 上运行的 Web 服务器)",
     "tags": [
       "common",
       "nmap",
@@ -8720,7 +8735,7 @@
     "title": "nmap - 尝试通过使用极慢扫描（`-T0`）、诱饵源地址（`-D`）、分段（[f]ragmented）数据包、随机数据和其他方法来规避 IDS/IPS 检测",
     "content": "sudo nmap -T0 -D {{诱饵ip1,诱饵ip2,...}} --source-port {{53}} -f --data-length {{16}} -Pn {{ip或主机名}}",
     "group": "通用工具 (Common)",
-    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 (尝试通过使用极慢扫描（`-T0`）、诱饵源地址（`-D`）、分段（[f]ragmented）数据包、随机数据和其他方法来规避 IDS/IPS 检测)",
+    "description": "nmap: 网络探索工具和安全/端口扫描程序。 某些功能（如 SYN 扫描）仅当以 root 权限运行 `nmap` 时才能激活。 另请参阅：`hping3`, `masscan`, `naabu`, `rustscan`, `zmap`。 (尝试通过使用极慢扫描（`-T0`）、诱饵源地址（`-D`）、分段（[f]ragmented）数据包、随机数据和其他方法来规避 IDS/IPS 检测)",
     "tags": [
       "common",
       "nmap",
@@ -16592,10 +16607,10 @@
   {
     "id": "tldr-zh-common-yadm-config-0",
     "type": "command",
-    "title": "yadm-config - 设置或更新 `yadm` 的 Git 配置",
+    "title": "yadm-config - 设置或更新 yadm 的 Git 配置",
     "content": "yadm config {{键.内键}} {{值}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-config: 传递选项给 `yadm` 的配置文件。更改由 `yadm` 管理的仓库的 `.config`。 (设置或更新 `yadm` 的 Git 配置)",
+    "description": "yadm-config: 传递选项给 yadm 的配置文件。更改由 yadm 管理的仓库的 `.config`。 (设置或更新 yadm 的 Git 配置)",
     "tags": [
       "common",
       "yadm-config",
@@ -16607,10 +16622,10 @@
   {
     "id": "tldr-zh-common-yadm-config-1",
     "type": "command",
-    "title": "yadm-config - 从 `yadm` 的 Git 配置中获取一个值",
+    "title": "yadm-config - 从 yadm 的 Git 配置中获取一个值",
     "content": "yadm config --get {{键}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-config: 传递选项给 `yadm` 的配置文件。更改由 `yadm` 管理的仓库的 `.config`。 (从 `yadm` 的 Git 配置中获取一个值)",
+    "description": "yadm-config: 传递选项给 yadm 的配置文件。更改由 yadm 管理的仓库的 `.config`。 (从 yadm 的 Git 配置中获取一个值)",
     "tags": [
       "common",
       "yadm-config",
@@ -16622,10 +16637,10 @@
   {
     "id": "tldr-zh-common-yadm-config-2",
     "type": "command",
-    "title": "yadm-config - 在 `yadm` 的 Git 配置中取消设置一个值",
+    "title": "yadm-config - 在 yadm 的 Git 配置中取消设置一个值",
     "content": "yadm config --unset {{键}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-config: 传递选项给 `yadm` 的配置文件。更改由 `yadm` 管理的仓库的 `.config`。 (在 `yadm` 的 Git 配置中取消设置一个值)",
+    "description": "yadm-config: 传递选项给 yadm 的配置文件。更改由 yadm 管理的仓库的 `.config`。 (在 yadm 的 Git 配置中取消设置一个值)",
     "tags": [
       "common",
       "yadm-config",
@@ -16637,10 +16652,10 @@
   {
     "id": "tldr-zh-common-yadm-config-3",
     "type": "command",
-    "title": "yadm-config - 列出 `yadm` 的 Git 配置中的所有值",
+    "title": "yadm-config - 列出 yadm 的 Git 配置中的所有值",
     "content": "yadm config --list",
     "group": "通用工具 (Common)",
-    "description": "yadm-config: 传递选项给 `yadm` 的配置文件。更改由 `yadm` 管理的仓库的 `.config`。 (列出 `yadm` 的 Git 配置中的所有值)",
+    "description": "yadm-config: 传递选项给 yadm 的配置文件。更改由 yadm 管理的仓库的 `.config`。 (列出 yadm 的 Git 配置中的所有值)",
     "tags": [
       "common",
       "yadm-config",
@@ -17327,10 +17342,10 @@
   {
     "id": "tldr-zh-common-yadm-0",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 目录。`yadm` 会相对于此目录存储其配置",
+    "title": "yadm - 覆盖 yadm 目录。yadm 会相对于此目录存储其配置",
     "content": "yadm --yadm-dir",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 目录。`yadm` 会相对于此目录存储其配置)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 目录。yadm 会相对于此目录存储其配置)",
     "tags": [
       "common",
       "yadm",
@@ -17342,10 +17357,10 @@
   {
     "id": "tldr-zh-common-yadm-1",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 数据目录：`yadm` 会相对于此目录存储其数据",
+    "title": "yadm - 覆盖 yadm 数据目录：yadm 会相对于此目录存储其数据",
     "content": "yadm --yadm-data",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 数据目录：`yadm` 会相对于此目录存储其数据)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 数据目录：yadm 会相对于此目录存储其数据)",
     "tags": [
       "common",
       "yadm",
@@ -17357,10 +17372,10 @@
   {
     "id": "tldr-zh-common-yadm-2",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 仓库的位置",
+    "title": "yadm - 覆盖 yadm 仓库的位置",
     "content": "yadm --yadm-repo",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 仓库的位置)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 仓库的位置)",
     "tags": [
       "common",
       "yadm",
@@ -17372,10 +17387,10 @@
   {
     "id": "tldr-zh-common-yadm-3",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 配置文件的位置",
+    "title": "yadm - 覆盖 yadm 配置文件的位置",
     "content": "yadm --yadm-config",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 配置文件的位置)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 配置文件的位置)",
     "tags": [
       "common",
       "yadm",
@@ -17387,10 +17402,10 @@
   {
     "id": "tldr-zh-common-yadm-4",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 加密配置的位置",
+    "title": "yadm - 覆盖 yadm 加密配置的位置",
     "content": "yadm --yadm-encrypt",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 加密配置的位置)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 加密配置的位置)",
     "tags": [
       "common",
       "yadm",
@@ -17402,10 +17417,10 @@
   {
     "id": "tldr-zh-common-yadm-5",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 加密文件归档的位置",
+    "title": "yadm - 覆盖 yadm 加密文件归档的位置",
     "content": "yadm --yadm-archive",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 加密文件归档的位置)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 加密文件归档的位置)",
     "tags": [
       "common",
       "yadm",
@@ -17417,10 +17432,10 @@
   {
     "id": "tldr-zh-common-yadm-6",
     "type": "command",
-    "title": "yadm - 覆盖 `yadm` 引导程序的位置",
+    "title": "yadm - 覆盖 yadm 引导程序的位置",
     "content": "yadm --yadm-bootstrap",
     "group": "通用工具 (Common)",
-    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 `yadm` 引导程序的位置)",
+    "description": "yadm: 一个通过使用 `git` 来管理 dotfiles 的工具。 此命令也有关于其子命令的文件，例如：`init`、`clone`、`push` 和 `pull`。 (覆盖 yadm 引导程序的位置)",
     "tags": [
       "common",
       "yadm",
@@ -20825,7 +20840,7 @@
     "title": "yadm-gitconfig - 更新或设置一个 Git 配置值",
     "content": "yadm gitconfig {{键.内键}} {{值}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 `yadm` 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (更新或设置一个 Git 配置值)",
+    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 yadm 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (更新或设置一个 Git 配置值)",
     "tags": [
       "common",
       "yadm-gitconfig",
@@ -20837,10 +20852,10 @@
   {
     "id": "tldr-zh-common-yadm-gitconfig-1",
     "type": "command",
-    "title": "yadm-gitconfig - 从 `yadm` 的 Git 配置中获取一个值",
+    "title": "yadm-gitconfig - 从 yadm 的 Git 配置中获取一个值",
     "content": "yadm gitconfig --get {{键}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 `yadm` 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (从 `yadm` 的 Git 配置中获取一个值)",
+    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 yadm 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (从 yadm 的 Git 配置中获取一个值)",
     "tags": [
       "common",
       "yadm-gitconfig",
@@ -20852,10 +20867,10 @@
   {
     "id": "tldr-zh-common-yadm-gitconfig-2",
     "type": "command",
-    "title": "yadm-gitconfig - 在 `yadm` 的 Git 配置中取消设置一个值",
+    "title": "yadm-gitconfig - 在 yadm 的 Git 配置中取消设置一个值",
     "content": "yadm gitconfig --unset {{键}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 `yadm` 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (在 `yadm` 的 Git 配置中取消设置一个值)",
+    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 yadm 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (在 yadm 的 Git 配置中取消设置一个值)",
     "tags": [
       "common",
       "yadm-gitconfig",
@@ -20867,10 +20882,10 @@
   {
     "id": "tldr-zh-common-yadm-gitconfig-3",
     "type": "command",
-    "title": "yadm-gitconfig - 列出 `yadm` 的 Git 配置中的所有值",
+    "title": "yadm-gitconfig - 列出 yadm 的 Git 配置中的所有值",
     "content": "yadm gitconfig --list",
     "group": "通用工具 (Common)",
-    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 `yadm` 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (列出 `yadm` 的 Git 配置中的所有值)",
+    "description": "yadm-gitconfig: 向 `git config` 传递选项。更改由 yadm 管理的仓库的 `.gitconfig`。 另请参阅：`git config`。 (列出 yadm 的 Git 配置中的所有值)",
     "tags": [
       "common",
       "yadm-gitconfig",
@@ -21320,7 +21335,7 @@
     "title": "picocom - 使用默认波特率 9600 连接到串行控制台",
     "content": "sudo picocom {{/dev/ttyXYZ}}",
     "group": "通用工具 (Common)",
-    "description": "picocom: 模拟串行端口的极简程序。 (使用默认波特率 9600 连接到串行控制台)",
+    "description": "picocom: 模拟串行端口的极简程序。 另请参阅：`minicom`, `cu`, `tio`。 (使用默认波特率 9600 连接到串行控制台)",
     "tags": [
       "common",
       "picocom",
@@ -21335,7 +21350,7 @@
     "title": "picocom - 以指定波特率连接到串行控制台",
     "content": "sudo picocom {{/dev/ttyXYZ}} {{[-b|--baud]}} {{波特率}}",
     "group": "通用工具 (Common)",
-    "description": "picocom: 模拟串行端口的极简程序。 (以指定波特率连接到串行控制台)",
+    "description": "picocom: 模拟串行端口的极简程序。 另请参阅：`minicom`, `cu`, `tio`。 (以指定波特率连接到串行控制台)",
     "tags": [
       "common",
       "picocom",
@@ -21350,7 +21365,7 @@
     "title": "picocom - 映射特殊字符（例如：将 `LF` 映射为 `CRLF`）",
     "content": "sudo picocom {{/dev/ttyXYZ}} --imap {{lfcrlf}}",
     "group": "通用工具 (Common)",
-    "description": "picocom: 模拟串行端口的极简程序。 (映射特殊字符（例如：将 `LF` 映射为 `CRLF`）)",
+    "description": "picocom: 模拟串行端口的极简程序。 另请参阅：`minicom`, `cu`, `tio`。 (映射特殊字符（例如：将 `LF` 映射为 `CRLF`）)",
     "tags": [
       "common",
       "picocom",
@@ -21365,7 +21380,7 @@
     "title": "picocom - 退出 picocom",
     "content": "<Ctrl a><Ctrl x>",
     "group": "通用工具 (Common)",
-    "description": "picocom: 模拟串行端口的极简程序。 (退出 picocom)",
+    "description": "picocom: 模拟串行端口的极简程序。 另请参阅：`minicom`, `cu`, `tio`。 (退出 picocom)",
     "tags": [
       "common",
       "picocom",
@@ -21380,7 +21395,7 @@
     "title": "picocom - 显示帮助",
     "content": "picocom {{[-h|--help]}}",
     "group": "通用工具 (Common)",
-    "description": "picocom: 模拟串行端口的极简程序。 (显示帮助)",
+    "description": "picocom: 模拟串行端口的极简程序。 另请参阅：`minicom`, `cu`, `tio`。 (显示帮助)",
     "tags": [
       "common",
       "picocom",
@@ -23405,7 +23420,7 @@
     "title": "yadm-decrypt - 解密文件",
     "content": "yadm decrypt",
     "group": "通用工具 (Common)",
-    "description": "yadm-decrypt: 解密由 `yadm` 加密的文件。 激活此命令时，系统会提示你输入密码。 (解密文件)",
+    "description": "yadm-decrypt: 解密由 yadm 加密的文件。 激活此命令时，系统会提示你输入密码。 (解密文件)",
     "tags": [
       "common",
       "yadm-decrypt",
@@ -33423,7 +33438,7 @@
     "id": "tldr-zh-common-join-1",
     "type": "command",
     "title": "join - 使用逗号（而不是空格）作为字段分隔符合并两个文件",
-    "content": "join -t {{','}} {{路径/到/文件1}} {{路径/到/文件2}}",
+    "content": "join -t ',' {{路径/到/文件1}} {{路径/到/文件2}}",
     "group": "通用工具 (Common)",
     "description": "join: 在两个已排序的文件中根据一个公共字段合并行。 (使用逗号（而不是空格）作为字段分隔符合并两个文件)",
     "tags": [
@@ -34355,7 +34370,7 @@
     "title": "zerotier-cli - 加入一个网络",
     "content": "sudo zerotier-cli join {{网络 ID}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 (加入一个网络)",
+    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 另请参阅：`zerotier-idtool`, `zerotier-one`。 (加入一个网络)",
     "tags": [
       "common",
       "zerotier-cli",
@@ -34370,7 +34385,7 @@
     "title": "zerotier-cli - 列出网络",
     "content": "sudo zerotier-cli listnetworks",
     "group": "通用工具 (Common)",
-    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 (列出网络)",
+    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 另请参阅：`zerotier-idtool`, `zerotier-one`。 (列出网络)",
     "tags": [
       "common",
       "zerotier-cli",
@@ -34385,7 +34400,7 @@
     "title": "zerotier-cli - 以可读格式列出对等节点",
     "content": "sudo zerotier-cli peers",
     "group": "通用工具 (Common)",
-    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 (以可读格式列出对等节点)",
+    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 另请参阅：`zerotier-idtool`, `zerotier-one`。 (以可读格式列出对等节点)",
     "tags": [
       "common",
       "zerotier-cli",
@@ -34400,7 +34415,7 @@
     "title": "zerotier-cli - 离开一个网络",
     "content": "sudo zerotier-cli leave {{网络 ID}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 (离开一个网络)",
+    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 另请参阅：`zerotier-idtool`, `zerotier-one`。 (离开一个网络)",
     "tags": [
       "common",
       "zerotier-cli",
@@ -34415,7 +34430,7 @@
     "title": "zerotier-cli - 显示 ZeroTier One 的状态",
     "content": "sudo zerotier-cli {{[info|status]}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 (显示 ZeroTier One 的状态)",
+    "description": "zerotier-cli: 控制本地的 ZeroTier 虚拟网络服务。 另请参阅：`zerotier-idtool`, `zerotier-one`。 (显示 ZeroTier One 的状态)",
     "tags": [
       "common",
       "zerotier-cli",
@@ -34832,10 +34847,10 @@
   {
     "id": "tldr-zh-common-yadm-list-0",
     "type": "command",
-    "title": "yadm-list - 打印当前目录中由 `yadm` 管理的文件列表",
+    "title": "yadm-list - 打印当前目录中由 yadm 管理的文件列表",
     "content": "yadm list",
     "group": "通用工具 (Common)",
-    "description": "yadm-list: 打印由 `yadm` 管理的文件列表。 (打印当前目录中由 `yadm` 管理的文件列表)",
+    "description": "yadm-list: 打印由 yadm 管理的文件列表。 (打印当前目录中由 yadm 管理的文件列表)",
     "tags": [
       "common",
       "yadm-list",
@@ -34847,10 +34862,10 @@
   {
     "id": "tldr-zh-common-yadm-list-1",
     "type": "command",
-    "title": "yadm-list - 列出所有由 `yadm` 完全管理的文件",
+    "title": "yadm-list - 列出所有由 yadm 完全管理的文件",
     "content": "yadm list -a",
     "group": "通用工具 (Common)",
-    "description": "yadm-list: 打印由 `yadm` 管理的文件列表。 (列出所有由 `yadm` 完全管理的文件)",
+    "description": "yadm-list: 打印由 yadm 管理的文件列表。 (列出所有由 yadm 完全管理的文件)",
     "tags": [
       "common",
       "yadm-list",
@@ -34985,7 +35000,7 @@
     "title": "gpg - 交互地创建 GPG 公钥和私钥",
     "content": "gpg {{[--full-gen-key|--full-generate-key]}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (交互地创建 GPG 公钥和私钥)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (交互地创建 GPG 公钥和私钥)",
     "tags": [
       "common",
       "gpg",
@@ -35000,7 +35015,7 @@
     "title": "gpg - 不加密，仅对 `doc.txt` 进行签名（生成 `doc.txt.asc`，格式为 ASCII 码形式）",
     "content": "gpg --clearsign {{doc.txt}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (不加密，仅对 `doc.txt` 进行签名（生成 `doc.txt.asc`，格式为 ASCII 码形式）)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (不加密，仅对 `doc.txt` 进行签名（生成 `doc.txt.asc`，格式为 ASCII 码形式）)",
     "tags": [
       "common",
       "gpg",
@@ -35015,7 +35030,7 @@
     "title": "gpg - 为接收者 alice@example.com 和 bob@example.com 签名并加密 `doc.txt`（生成 `doc.txt.gpg`）",
     "content": "gpg {{[-es|--encrypt --sign]}} {{[-r|--recipient]}} {{alice@example.com}} {{[-r|--recipient]}} {{bob@example.com}} {{doc.txt}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (为接收者 alice@example.com 和 bob@example.com 签名并加密 `doc.txt`（生成 `doc.txt.gpg`）)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (为接收者 alice@example.com 和 bob@example.com 签名并加密 `doc.txt`（生成 `doc.txt.gpg`）)",
     "tags": [
       "common",
       "gpg",
@@ -35030,7 +35045,7 @@
     "title": "gpg - 只用密码加密 `doc.txt`（生成 `doc.txt.gpg`）",
     "content": "gpg {{[-c|--symmetric]}} {{doc.txt}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (只用密码加密 `doc.txt`（生成 `doc.txt.gpg`）)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (只用密码加密 `doc.txt`（生成 `doc.txt.gpg`）)",
     "tags": [
       "common",
       "gpg",
@@ -35045,7 +35060,7 @@
     "title": "gpg - 解密 `doc.txt.gpg`（输出到标准输出）",
     "content": "gpg {{[-d|--decrypt]}} {{doc.txt.gpg}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (解密 `doc.txt.gpg`（输出到标准输出）)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (解密 `doc.txt.gpg`（输出到标准输出）)",
     "tags": [
       "common",
       "gpg",
@@ -35060,7 +35075,7 @@
     "title": "gpg - 导入一个公钥",
     "content": "gpg --import {{public.gpg}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (导入一个公钥)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (导入一个公钥)",
     "tags": [
       "common",
       "gpg",
@@ -35075,7 +35090,7 @@
     "title": "gpg - 导出 alice@example.com 的公钥（输出到标准输出）",
     "content": "gpg --export {{[-a|--armor]}} {{alice@example.com}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (导出 alice@example.com 的公钥（输出到标准输出）)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (导出 alice@example.com 的公钥（输出到标准输出）)",
     "tags": [
       "common",
       "gpg",
@@ -35090,7 +35105,7 @@
     "title": "gpg - 导出 alice@example.com 的私钥（输出到标准输出）",
     "content": "gpg --export-secret-keys {{[-a|--armor]}} {{alice@example.com}}",
     "group": "通用工具 (Common)",
-    "description": "gpg: GNU Privacy Guard。 (导出 alice@example.com 的私钥（输出到标准输出）)",
+    "description": "gpg: GNU Privacy Guard。 另请参阅：`sq`。 (导出 alice@example.com 的私钥（输出到标准输出）)",
     "tags": [
       "common",
       "gpg",
@@ -36032,10 +36047,115 @@
   {
     "id": "tldr-zh-common-hx-0",
     "type": "command",
-    "title": "hx - 查看原命令的文档",
-    "content": "tldr helix",
+    "title": "hx - 打开文件",
+    "content": "hx {{路径/到/文件}}",
     "group": "通用工具 (Common)",
-    "description": "hx: 此命令为 `helix` 的别名。 (查看原命令的文档)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (打开文件)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-1",
+    "type": "command",
+    "title": "hx - 并排打开多个文件",
+    "content": "hx --vsplit {{路径/到/文件1 路径/到/文件2}}",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (并排打开多个文件)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-2",
+    "type": "command",
+    "title": "hx - 显示 Helix 教程（也可以在 Helix 中按 `<Esc>` 后输入 `<:>tutor<Enter>` 访问）",
+    "content": "hx --tutor",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (显示 Helix 教程（也可以在 Helix 中按 `<Esc>` 后输入 `<:>tutor<Enter>` 访问）)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-3",
+    "type": "command",
+    "title": "hx - 更改 Helix 主题",
+    "content": "<:>theme {{主题名称}}<Enter>",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (更改 Helix 主题)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-4",
+    "type": "command",
+    "title": "hx - 保存并退出",
+    "content": "<:>wq<Enter>",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (保存并退出)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-5",
+    "type": "command",
+    "title": "hx - 强制退出并不保存",
+    "content": "<:>q!<Enter>",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (强制退出并不保存)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-6",
+    "type": "command",
+    "title": "hx - 撤销上次操作",
+    "content": "<u>",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (撤销上次操作)",
+    "tags": [
+      "common",
+      "hx",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-hx-7",
+    "type": "command",
+    "title": "hx - 搜索文件中的关键字（按 `<n>`/`<N>` 前往下一个/上一个匹配）",
+    "content": "</>{{搜索模式}}<Enter>",
+    "group": "通用工具 (Common)",
+    "description": "hx: Helix，一个后现代的文本编辑器，为不同类型的文本操作提供了几种模式。 按 `` 进入插入模式。按 `` 进入正常模式，并且可以使用 Helix 命令。 (搜索文件中的关键字（按 `<n>`/`<N>` 前往下一个/上一个匹配）)",
     "tags": [
       "common",
       "hx",
@@ -37950,6 +38070,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-impacket-rdp_check-0",
+    "type": "command",
+    "title": "impacket-rdp_check - 查看原命令的文档",
+    "content": "tldr rdp_check.py",
+    "group": "通用工具 (Common)",
+    "description": "impacket-rdp_check: 此命令为 `rdp_check.py` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "impacket-rdp_check",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-brew-rm-0",
     "type": "command",
     "title": "brew-rm - 查看原命令的文档",
@@ -38435,7 +38570,7 @@
     "title": "zerotier-idtool - 生成一个新的 ZeroTier 身份，并将私钥部分输出到 `stdout`",
     "content": "zerotier-idtool generate",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (生成一个新的 ZeroTier 身份，并将私钥部分输出到 `stdout`)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (生成一个新的 ZeroTier 身份，并将私钥部分输出到 `stdout`)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38450,7 +38585,7 @@
     "title": "zerotier-idtool - 生成一个新的 ZeroTier 身份，并将私钥和公钥部分保存到文件中",
     "content": "zerotier-idtool generate {{路径/到/identity.secret}} {{路径/到/identity.public}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (生成一个新的 ZeroTier 身份，并将私钥和公钥部分保存到文件中)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (生成一个新的 ZeroTier 身份，并将私钥和公钥部分保存到文件中)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38465,7 +38600,7 @@
     "title": "zerotier-idtool - 生成一个具有指定十六进制靓号前缀的 ZeroTier 身份（可能需要很长时间）",
     "content": "zerotier-idtool generate {{路径/到/identity.secret}} {{路径/到/identity.public}} {{靓号_前缀}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (生成一个具有指定十六进制靓号前缀的 ZeroTier 身份（可能需要很长时间）)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (生成一个具有指定十六进制靓号前缀的 ZeroTier 身份（可能需要很长时间）)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38480,7 +38615,7 @@
     "title": "zerotier-idtool - 从私钥身份中提取公钥部分",
     "content": "zerotier-idtool getpublic {{路径/到/identity.secret}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (从私钥身份中提取公钥部分)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (从私钥身份中提取公钥部分)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38495,7 +38630,7 @@
     "title": "zerotier-idtool - 使用私钥身份对文件进行签名",
     "content": "zerotier-idtool sign {{路径/到/identity.secret}} {{路径/到/文件}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (使用私钥身份对文件进行签名)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (使用私钥身份对文件进行签名)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38510,7 +38645,7 @@
     "title": "zerotier-idtool - 使用公钥身份和一个十六进制签名来验证已签名的文件",
     "content": "zerotier-idtool verify {{路径/到/identity.public}} {{路径/到/文件}} {{签名_十六进制}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (使用公钥身份和一个十六进制签名来验证已签名的文件)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (使用公钥身份和一个十六进制签名来验证已签名的文件)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38525,7 +38660,7 @@
     "title": "zerotier-idtool - 在本地验证一个身份的密钥和工作量证明",
     "content": "zerotier-idtool validate {{路径/到/identity.public}}",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (在本地验证一个身份的密钥和工作量证明)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (在本地验证一个身份的密钥和工作量证明)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -38540,7 +38675,7 @@
     "title": "zerotier-idtool - 显示帮助",
     "content": "zerotier-idtool help",
     "group": "通用工具 (Common)",
-    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 (显示帮助)",
+    "description": "zerotier-idtool: 创建和操作 ZeroTier 身份。 另请参阅：`zerotier-cli`, `zerotier-one`。 (显示帮助)",
     "tags": [
       "common",
       "zerotier-idtool",
@@ -45120,6 +45255,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-impacket-gettgt-0",
+    "type": "command",
+    "title": "impacket-gettgt - 查看原命令的文档",
+    "content": "tldr getTGT.py",
+    "group": "通用工具 (Common)",
+    "description": "impacket-gettgt: 此命令为 `getTGT.py` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "impacket-gettgt",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-git-commits-since-0",
     "type": "command",
     "title": "git-commits-since - 显示从昨天以来的所有提交",
@@ -45602,10 +45752,10 @@
   {
     "id": "tldr-zh-common-yadm-clone-3",
     "type": "command",
-    "title": "yadm-clone - 更改 `yadm` 在克隆时使用的工作树",
+    "title": "yadm-clone - 更改 yadm 在克隆时使用的工作树",
     "content": "yadm clone {{远程_仓库_位置}} --w {{工作树_文件}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-clone: 功能就像 `git clone`。此外，你还可以传递额外的标志来配置你的仓库。 如果仓库中有一个引导文件，将提示你执行它。 另请参阅：`git clone`。 (更改 `yadm` 在克隆时使用的工作树)",
+    "description": "yadm-clone: 功能就像 `git clone`。此外，你还可以传递额外的标志来配置你的仓库。 如果仓库中有一个引导文件，将提示你执行它。 另请参阅：`git clone`。 (更改 yadm 在克隆时使用的工作树)",
     "tags": [
       "common",
       "yadm-clone",
@@ -45617,10 +45767,10 @@
   {
     "id": "tldr-zh-common-yadm-clone-4",
     "type": "command",
-    "title": "yadm-clone - 更改 `yadm` 用于获取文件的分支",
+    "title": "yadm-clone - 更改 yadm 用于获取文件的分支",
     "content": "yadm clone {{远程_仓库_位置}} -b {{分支}}",
     "group": "通用工具 (Common)",
-    "description": "yadm-clone: 功能就像 `git clone`。此外，你还可以传递额外的标志来配置你的仓库。 如果仓库中有一个引导文件，将提示你执行它。 另请参阅：`git clone`。 (更改 `yadm` 用于获取文件的分支)",
+    "description": "yadm-clone: 功能就像 `git clone`。此外，你还可以传递额外的标志来配置你的仓库。 如果仓库中有一个引导文件，将提示你执行它。 另请参阅：`git clone`。 (更改 yadm 用于获取文件的分支)",
     "tags": [
       "common",
       "yadm-clone",
@@ -47435,7 +47585,7 @@
     "title": "zmap - 扫描一个子网或整个 IPv4 地址空间上的指定 TCP 端口（默认：80）",
     "content": "zmap {{SUBNETS}} {{[-p|--target-ports]}} {{端口}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (扫描一个子网或整个 IPv4 地址空间上的指定 TCP 端口（默认：80）)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (扫描一个子网或整个 IPv4 地址空间上的指定 TCP 端口（默认：80）)",
     "tags": [
       "common",
       "zmap",
@@ -47450,7 +47600,7 @@
     "title": "zmap - 在一个子网中扫描指定的端口或端口范围",
     "content": "zmap {{[-p|--target-ports]}} {{端口1, 端口2-端口3,...}} {{SUBNETS}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (在一个子网中扫描指定的端口或端口范围)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (在一个子网中扫描指定的端口或端口范围)",
     "tags": [
       "common",
       "zmap",
@@ -47465,7 +47615,7 @@
     "title": "zmap - 将结果输出到包含自定义字段的 CSV 文件中",
     "content": "zmap {{[-o|--output-file]}} {{路径/到/输出文件.csv}} {{[-f|--output-fields]}} \"{{saddr, daddr, sport, dport}}\" {{SUBNETS}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (将结果输出到包含自定义字段的 CSV 文件中)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (将结果输出到包含自定义字段的 CSV 文件中)",
     "tags": [
       "common",
       "zmap",
@@ -47480,7 +47630,7 @@
     "title": "zmap - 将扫描速率限制为每秒指定数量的数据包",
     "content": "zmap {{[-r|--rate]}} {{每秒数据包数}} {{SUBNETS}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (将扫描速率限制为每秒指定数量的数据包)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (将扫描速率限制为每秒指定数量的数据包)",
     "tags": [
       "common",
       "zmap",
@@ -47495,7 +47645,7 @@
     "title": "zmap - 执行一次不发送任何数据包的空跑",
     "content": "zmap {{[-d|--dryrun]}} {{SUBNETS}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (执行一次不发送任何数据包的空跑)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (执行一次不发送任何数据包的空跑)",
     "tags": [
       "common",
       "zmap",
@@ -47510,7 +47660,7 @@
     "title": "zmap - 使用 CIDR 表示法的阻止列表文件来排除子网",
     "content": "zmap {{[-b|--blocklist-file]}} {{路径/到/阻止列表.txt}} {{SUBNETS}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (使用 CIDR 表示法的阻止列表文件来排除子网)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (使用 CIDR 表示法的阻止列表文件来排除子网)",
     "tags": [
       "common",
       "zmap",
@@ -47525,7 +47675,7 @@
     "title": "zmap - 为扫描数据包设置指定的源 IP 地址",
     "content": "zmap {{[-S|--source-ip]}} {{源_IP}} {{SUBNETS}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (为扫描数据包设置指定的源 IP 地址)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (为扫描数据包设置指定的源 IP 地址)",
     "tags": [
       "common",
       "zmap",
@@ -47540,7 +47690,7 @@
     "title": "zmap - 限制要探测的目标数量或百分比（例如 1000 个 IP/端口组合）",
     "content": "zmap {{[-n|--max-targets]}} {{1000}} {{SUBNETS}} {{[-p|--target-ports]}} {{端口1, 端口2-端口3}}",
     "group": "通用工具 (Common)",
-    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 (限制要探测的目标数量或百分比（例如 1000 个 IP/端口组合）)",
+    "description": "zmap: 用于全网范围调查的快速、开源网络扫描器。 另请参阅：`hping3`, `masscan`, `naabu`, `nmap`, `rustscan`。 (限制要探测的目标数量或百分比（例如 1000 个 IP/端口组合）)",
     "tags": [
       "common",
       "zmap",
@@ -47582,10 +47732,10 @@
   {
     "id": "tldr-zh-common-yadm-upgrade-0",
     "type": "command",
-    "title": "yadm-upgrade - 将 `yadm` 升级到最新版本",
+    "title": "yadm-upgrade - 将 yadm 升级到最新版本",
     "content": "yadm upgrade",
     "group": "通用工具 (Common)",
-    "description": "yadm-upgrade: 将 `yadm` 升级到最新版本。 升级将尝试将你的子模块反初始化并重新初始化。 (将 `yadm` 升级到最新版本)",
+    "description": "yadm-upgrade: 将 yadm 升级到最新版本。 升级将尝试将你的子模块反初始化并重新初始化。 (将 yadm 升级到最新版本)",
     "tags": [
       "common",
       "yadm-upgrade",
@@ -47600,7 +47750,7 @@
     "title": "yadm-upgrade - 强制升级，无论有无更改",
     "content": "yadm upgrade -f",
     "group": "通用工具 (Common)",
-    "description": "yadm-upgrade: 将 `yadm` 升级到最新版本。 升级将尝试将你的子模块反初始化并重新初始化。 (强制升级，无论有无更改)",
+    "description": "yadm-upgrade: 将 yadm 升级到最新版本。 升级将尝试将你的子模块反初始化并重新初始化。 (强制升级，无论有无更改)",
     "tags": [
       "common",
       "yadm-upgrade",
@@ -51725,7 +51875,7 @@
     "title": "diff - 比较文件 （列出从`原文件`到`新文件`的修改）",
     "content": "diff {{原文件}} {{新文件}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (比较文件 （列出从`原文件`到`新文件`的修改）)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (比较文件 （列出从`原文件`到`新文件`的修改）)",
     "tags": [
       "common",
       "diff",
@@ -51740,7 +51890,7 @@
     "title": "diff - 比较文件，忽视空白字符",
     "content": "diff {{[-w|--ignore-all-space]}} {{原文件}} {{新文件}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (比较文件，忽视空白字符)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (比较文件，忽视空白字符)",
     "tags": [
       "common",
       "diff",
@@ -51755,7 +51905,7 @@
     "title": "diff - 比较文件，并排展示文件差异",
     "content": "diff {{[-y|--side-by-side]}} {{原文件}} {{新文件}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (比较文件，并排展示文件差异)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (比较文件，并排展示文件差异)",
     "tags": [
       "common",
       "diff",
@@ -51770,7 +51920,7 @@
     "title": "diff - 比较文件，以统一形式展示不同区别 （ 形式同 `git diff`）",
     "content": "diff {{[-u|--unified]}} {{源文件}} {{新文件}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (比较文件，以统一形式展示不同区别 （ 形式同 `git diff`）)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (比较文件，以统一形式展示不同区别 （ 形式同 `git diff`）)",
     "tags": [
       "common",
       "diff",
@@ -51785,7 +51935,7 @@
     "title": "diff - 递归地比较目录 （展示不同文件和目录的名字和差异）",
     "content": "diff {{[-r|--recursive]}} {{old_directory}} {{new_directory}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (递归地比较目录 （展示不同文件和目录的名字和差异）)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (递归地比较目录 （展示不同文件和目录的名字和差异）)",
     "tags": [
       "common",
       "diff",
@@ -51800,7 +51950,7 @@
     "title": "diff - 比较目录（只展示不同文件的文件名）",
     "content": "diff {{[-r|--recursive]}} {{[-q|--brief]}} {{old_directory}} {{new_directory}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (比较目录（只展示不同文件的文件名）)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (比较目录（只展示不同文件的文件名）)",
     "tags": [
       "common",
       "diff",
@@ -51815,7 +51965,7 @@
     "title": "diff - 根据两个文本文件的差异，为 Git 创建补丁文件，不存在的文件会被视为空文件",
     "content": "diff {{[-a|--text]}} {{[-u|--unified]}} {{[-N|--new-file]}} {{原文件}} {{新文件}} > {{diff.patch}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (根据两个文本文件的差异，为 Git 创建补丁文件，不存在的文件会被视为空文件)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (根据两个文本文件的差异，为 Git 创建补丁文件，不存在的文件会被视为空文件)",
     "tags": [
       "common",
       "diff",
@@ -51830,7 +51980,7 @@
     "title": "diff - 比较文件，打印彩色的输出，并尽可能找出最小的改变",
     "content": "diff {{[-d|--minimal]}} --color=always {{原文件}} {{新文件}}",
     "group": "通用工具 (Common)",
-    "description": "diff: 比较文件或目录。 (比较文件，打印彩色的输出，并尽可能找出最小的改变)",
+    "description": "diff: 比较文件或目录。 另请参阅：`delta`, `difft`。 (比较文件，打印彩色的输出，并尽可能找出最小的改变)",
     "tags": [
       "common",
       "diff",
@@ -51920,7 +52070,7 @@
     "title": "yadm-perms - 修改文件权限",
     "content": "yadm perms",
     "group": "通用工具 (Common)",
-    "description": "yadm-perms: 更新权限。 通常不需要运行此命令，因为 `yadm` 默认会自动处理权限。这种自动行为可以通过将配置 `yadm.auto-perms` 设置为 `\"false\"` 来禁用。 (修改文件权限)",
+    "description": "yadm-perms: 更新权限。 通常不需要运行此命令，因为 yadm 默认会自动处理权限。这种自动行为可以通过将配置 `yadm.auto-perms` 设置为 `\"false\"` 来禁用。 (修改文件权限)",
     "tags": [
       "common",
       "yadm-perms",

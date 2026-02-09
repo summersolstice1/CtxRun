@@ -3315,6 +3315,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-osx-mo-0",
+    "type": "command",
+    "title": "mo - 查看原命令的文档",
+    "content": "tldr mole",
+    "group": "macOS",
+    "description": "mo: 此命令为 `mole` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "osx",
+      "mo",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-osx-gtelnet-0",
     "type": "command",
     "title": "gtelnet - 原命令的文档在",

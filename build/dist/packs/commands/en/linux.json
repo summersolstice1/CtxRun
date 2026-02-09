@@ -11285,7 +11285,7 @@
     "title": "dmidecode - Show all DMI table contents",
     "content": "sudo dmidecode",
     "group": "Linux Ops",
-    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. Requires root privileges. (Show all DMI table contents)",
+    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. (Show all DMI table contents)",
     "tags": [
       "linux",
       "dmidecode",
@@ -11300,7 +11300,7 @@
     "title": "dmidecode - Show the BIOS version",
     "content": "sudo dmidecode {{[-s|--string]}} bios-version",
     "group": "Linux Ops",
-    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. Requires root privileges. (Show the BIOS version)",
+    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. (Show the BIOS version)",
     "tags": [
       "linux",
       "dmidecode",
@@ -11315,7 +11315,7 @@
     "title": "dmidecode - Show the system's serial number",
     "content": "sudo dmidecode {{[-s|--string]}} system-serial-number",
     "group": "Linux Ops",
-    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. Requires root privileges. (Show the system's serial number)",
+    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. (Show the system's serial number)",
     "tags": [
       "linux",
       "dmidecode",
@@ -11330,7 +11330,7 @@
     "title": "dmidecode - Show BIOS information",
     "content": "sudo dmidecode {{[-t|--type]}} bios",
     "group": "Linux Ops",
-    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. Requires root privileges. (Show BIOS information)",
+    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. (Show BIOS information)",
     "tags": [
       "linux",
       "dmidecode",
@@ -11345,7 +11345,7 @@
     "title": "dmidecode - Show CPU information",
     "content": "sudo dmidecode {{[-t|--type]}} processor",
     "group": "Linux Ops",
-    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. Requires root privileges. (Show CPU information)",
+    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. (Show CPU information)",
     "tags": [
       "linux",
       "dmidecode",
@@ -11360,7 +11360,7 @@
     "title": "dmidecode - Show memory information",
     "content": "sudo dmidecode {{[-t|--type]}} memory",
     "group": "Linux Ops",
-    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. Requires root privileges. (Show memory information)",
+    "description": "dmidecode: Display the DMI (alternatively known as SMBIOS) table contents in a human-readable format. (Show memory information)",
     "tags": [
       "linux",
       "dmidecode",
@@ -11694,6 +11694,96 @@
     "tags": [
       "linux",
       "apt-moo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-amdgpu_top-0",
+    "type": "command",
+    "title": "amdgpu_top - Display a list of AMDGPU devices",
+    "content": "amdgpu_top --list",
+    "group": "Linux Ops",
+    "description": "amdgpu_top: Tool to display AMD GPU utilization and hardware metrics using the AMDGPU driver. (Display a list of AMDGPU devices)",
+    "tags": [
+      "linux",
+      "amdgpu_top",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-amdgpu_top-1",
+    "type": "command",
+    "title": "amdgpu_top - Dump all GPU processes and per-process memory usage",
+    "content": "amdgpu_top {{[-p|--process]}}",
+    "group": "Linux Ops",
+    "description": "amdgpu_top: Tool to display AMD GPU utilization and hardware metrics using the AMDGPU driver. (Dump all GPU processes and per-process memory usage)",
+    "tags": [
+      "linux",
+      "amdgpu_top",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-amdgpu_top-2",
+    "type": "command",
+    "title": "amdgpu_top - Select a specific GPU by PCI bus",
+    "content": "amdgpu_top --pci \"{{0000:01:00.0}}\"",
+    "group": "Linux Ops",
+    "description": "amdgpu_top: Tool to display AMD GPU utilization and hardware metrics using the AMDGPU driver. (Select a specific GPU by PCI bus)",
+    "tags": [
+      "linux",
+      "amdgpu_top",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-amdgpu_top-3",
+    "type": "command",
+    "title": "amdgpu_top - Launch the interactive TUI monitor",
+    "content": "amdgpu_top",
+    "group": "Linux Ops",
+    "description": "amdgpu_top: Tool to display AMD GPU utilization and hardware metrics using the AMDGPU driver. (Launch the interactive TUI monitor)",
+    "tags": [
+      "linux",
+      "amdgpu_top",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-amdgpu_top-4",
+    "type": "command",
+    "title": "amdgpu_top - Launch the GUI monitor",
+    "content": "amdgpu_top --gui",
+    "group": "Linux Ops",
+    "description": "amdgpu_top: Tool to display AMD GPU utilization and hardware metrics using the AMDGPU driver. (Launch the GUI monitor)",
+    "tags": [
+      "linux",
+      "amdgpu_top",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-amdgpu_top-5",
+    "type": "command",
+    "title": "amdgpu_top - Launch a simple SMI-like TUI view",
+    "content": "amdgpu_top --smi",
+    "group": "Linux Ops",
+    "description": "amdgpu_top: Tool to display AMD GPU utilization and hardware metrics using the AMDGPU driver. (Launch a simple SMI-like TUI view)",
+    "tags": [
+      "linux",
+      "amdgpu_top",
       "tldr",
       "en"
     ],
@@ -21858,9 +21948,9 @@
     "id": "tldr-en-linux-runuser-0",
     "type": "command",
     "title": "runuser - Run command as a different user",
-    "content": "runuser {{user}} {{[-c|--command]}} '{{command}}'",
+    "content": "sudo runuser {{user}} {{[-c|--command]}} '{{command}}'",
     "group": "Linux Ops",
-    "description": "runuser: Run commands as a user and group without asking for password (needs root privileges). (Run command as a different user)",
+    "description": "runuser: Run commands as a user and group without asking for password. (Run command as a different user)",
     "tags": [
       "linux",
       "runuser",
@@ -21873,9 +21963,9 @@
     "id": "tldr-en-linux-runuser-1",
     "type": "command",
     "title": "runuser - Run command as a different user and group",
-    "content": "runuser {{user}} {{[-g|--group]}} {{group}} {{[-c|--command]}} '{{command}}'",
+    "content": "sudo runuser {{user}} {{[-g|--group]}} {{group}} {{[-c|--command]}} '{{command}}'",
     "group": "Linux Ops",
-    "description": "runuser: Run commands as a user and group without asking for password (needs root privileges). (Run command as a different user and group)",
+    "description": "runuser: Run commands as a user and group without asking for password. (Run command as a different user and group)",
     "tags": [
       "linux",
       "runuser",
@@ -21888,9 +21978,9 @@
     "id": "tldr-en-linux-runuser-2",
     "type": "command",
     "title": "runuser - Start a login shell as a specific user",
-    "content": "runuser {{user}} {{[-l|--login]}}",
+    "content": "sudo runuser {{user}} {{[-l|--login]}}",
     "group": "Linux Ops",
-    "description": "runuser: Run commands as a user and group without asking for password (needs root privileges). (Start a login shell as a specific user)",
+    "description": "runuser: Run commands as a user and group without asking for password. (Start a login shell as a specific user)",
     "tags": [
       "linux",
       "runuser",
@@ -21903,9 +21993,9 @@
     "id": "tldr-en-linux-runuser-3",
     "type": "command",
     "title": "runuser - Specify a shell for running instead of the default shell (also works for login)",
-    "content": "runuser {{user}} {{[-s|--shell]}} {{/bin/sh}}",
+    "content": "sudo runuser {{user}} {{[-s|--shell]}} {{/bin/sh}}",
     "group": "Linux Ops",
-    "description": "runuser: Run commands as a user and group without asking for password (needs root privileges). (Specify a shell for running instead of the default shell (also works for login))",
+    "description": "runuser: Run commands as a user and group without asking for password. (Specify a shell for running instead of the default shell (also works for login))",
     "tags": [
       "linux",
       "runuser",
@@ -21918,9 +22008,9 @@
     "id": "tldr-en-linux-runuser-4",
     "type": "command",
     "title": "runuser - Preserve the entire environment of root (only if `--login` is not specified)",
-    "content": "runuser {{user}} {{[-p|--preserve-environment]}} {{[-c|--command]}} '{{command}}'",
+    "content": "sudo runuser {{user}} {{[-p|--preserve-environment]}} {{[-c|--command]}} '{{command}}'",
     "group": "Linux Ops",
-    "description": "runuser: Run commands as a user and group without asking for password (needs root privileges). (Preserve the entire environment of root (only if `--login` is not specified))",
+    "description": "runuser: Run commands as a user and group without asking for password. (Preserve the entire environment of root (only if `--login` is not specified))",
     "tags": [
       "linux",
       "runuser",
@@ -25734,6 +25824,111 @@
     "tags": [
       "linux",
       "hollywood",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-0",
+    "type": "command",
+    "title": "nvtop - Launch the interactive GPU monitor",
+    "content": "nvtop",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Launch the interactive GPU monitor)",
+    "tags": [
+      "linux",
+      "nvtop",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-1",
+    "type": "command",
+    "title": "nvtop - Set the update delay in tenths of a second (for example, 2 = 0.2 seconds)",
+    "content": "nvtop {{[-d|--delay]}} {{2}}",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Set the update delay in tenths of a second (for example, 2 = 0.2 seconds))",
+    "tags": [
+      "linux",
+      "nvtop",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-2",
+    "type": "command",
+    "title": "nvtop - Run in monochrome (no color) mode",
+    "content": "nvtop {{[-C|--no-color]}}",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Run in monochrome (no color) mode)",
+    "tags": [
+      "linux",
+      "nvtop",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-3",
+    "type": "command",
+    "title": "nvtop - Use Fahrenheit for temperature display",
+    "content": "nvtop {{[-f|--freedom-unit]}}",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Use Fahrenheit for temperature display)",
+    "tags": [
+      "linux",
+      "nvtop",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-4",
+    "type": "command",
+    "title": "nvtop - Always show encoder/decoder meters, disabling auto-hide",
+    "content": "nvtop {{[-E|--encode-hide]}} -1",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Always show encoder/decoder meters, disabling auto-hide)",
+    "tags": [
+      "linux",
+      "nvtop",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-5",
+    "type": "command",
+    "title": "nvtop - Show a single combined bar plot instead of per-GPU plots",
+    "content": "nvtop {{[-p|--no-plot]}}",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Show a single combined bar plot instead of per-GPU plots)",
+    "tags": [
+      "linux",
+      "nvtop",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-nvtop-6",
+    "type": "command",
+    "title": "nvtop - Show the program version",
+    "content": "nvtop {{[-v|--version]}}",
+    "group": "Linux Ops",
+    "description": "nvtop: Interactive ncurses-based GPU process and status viewer for AMD, Intel, and NVIDIA GPUs. (Show the program version)",
+    "tags": [
+      "linux",
+      "nvtop",
       "tldr",
       "en"
     ],
@@ -40835,7 +41030,7 @@
     "title": "hwclock - Display the current time as reported by the hardware clock",
     "content": "sudo hwclock",
     "group": "Linux Ops",
-    "description": "hwclock: Read or change the hardware clock. Usually requires root. (Display the current time as reported by the hardware clock)",
+    "description": "hwclock: Read or change the hardware clock. (Display the current time as reported by the hardware clock)",
     "tags": [
       "linux",
       "hwclock",
@@ -40850,7 +41045,7 @@
     "title": "hwclock - Write the current software clock time to the hardware clock (sometimes used during system setup)",
     "content": "sudo hwclock {{[-w|--systohc]}}",
     "group": "Linux Ops",
-    "description": "hwclock: Read or change the hardware clock. Usually requires root. (Write the current software clock time to the hardware clock (sometimes used during system setup))",
+    "description": "hwclock: Read or change the hardware clock. (Write the current software clock time to the hardware clock (sometimes used during system setup))",
     "tags": [
       "linux",
       "hwclock",
@@ -40865,7 +41060,7 @@
     "title": "hwclock - Write the current hardware clock time to the software clock",
     "content": "sudo hwclock {{[-s|--hctosys]}}",
     "group": "Linux Ops",
-    "description": "hwclock: Read or change the hardware clock. Usually requires root. (Write the current hardware clock time to the software clock)",
+    "description": "hwclock: Read or change the hardware clock. (Write the current hardware clock time to the software clock)",
     "tags": [
       "linux",
       "hwclock",
@@ -49395,12 +49590,42 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-fbgrab-0",
+    "type": "command",
+    "title": "fbgrab - Generate a screenshot from the current TTY",
+    "content": "sudo fbgrab {{path/to/file}}.png",
+    "group": "Linux Ops",
+    "description": "fbgrab: Generate screenshots directly from the framebuffer. (Generate a screenshot from the current TTY)",
+    "tags": [
+      "linux",
+      "fbgrab",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-fbgrab-1",
+    "type": "command",
+    "title": "fbgrab - Specify which TTY to capture",
+    "content": "sudo fbgrab -c {{number}} {{path/to/file}}.png",
+    "group": "Linux Ops",
+    "description": "fbgrab: Generate screenshots directly from the framebuffer. (Specify which TTY to capture)",
+    "tags": [
+      "linux",
+      "fbgrab",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-cpufreq-aperf-0",
     "type": "command",
     "title": "cpufreq-aperf - Start calculating, defaulting to all CPU cores and 1 second refresh interval",
     "content": "sudo cpufreq-aperf",
     "group": "Linux Ops",
-    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. Requires root privileges. (Start calculating, defaulting to all CPU cores and 1 second refresh interval)",
+    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. (Start calculating, defaulting to all CPU cores and 1 second refresh interval)",
     "tags": [
       "linux",
       "cpufreq-aperf",
@@ -49415,7 +49640,7 @@
     "title": "cpufreq-aperf - Start calculating for CPU 1 only",
     "content": "sudo cpufreq-aperf {{[-c|--cpu]}} {{1}}",
     "group": "Linux Ops",
-    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. Requires root privileges. (Start calculating for CPU 1 only)",
+    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. (Start calculating for CPU 1 only)",
     "tags": [
       "linux",
       "cpufreq-aperf",
@@ -49430,7 +49655,7 @@
     "title": "cpufreq-aperf - Start calculating with a 3 second refresh interval for all CPU cores",
     "content": "sudo cpufreq-aperf {{[-i|--interval]}} {{3}}",
     "group": "Linux Ops",
-    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. Requires root privileges. (Start calculating with a 3 second refresh interval for all CPU cores)",
+    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. (Start calculating with a 3 second refresh interval for all CPU cores)",
     "tags": [
       "linux",
       "cpufreq-aperf",
@@ -49445,7 +49670,7 @@
     "title": "cpufreq-aperf - Calculate only once",
     "content": "sudo cpufreq-aperf {{[-o|--once]}}",
     "group": "Linux Ops",
-    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. Requires root privileges. (Calculate only once)",
+    "description": "cpufreq-aperf: Calculate the average CPU frequency over a time period. (Calculate only once)",
     "tags": [
       "linux",
       "cpufreq-aperf",
@@ -69165,6 +69390,126 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-apptainer-cache-0",
+    "type": "command",
+    "title": "apptainer-cache - List all cached container images",
+    "content": "apptainer cache list",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (List all cached container images)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-1",
+    "type": "command",
+    "title": "apptainer-cache - List cached container images with detailed information",
+    "content": "apptainer cache list {{[-v|--verbose]}}",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (List cached container images with detailed information)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-2",
+    "type": "command",
+    "title": "apptainer-cache - List only a specific cache type",
+    "content": "apptainer cache list {{[-T|--type]}} {{library|oci|shub|blob|...}}",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (List only a specific cache type)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-3",
+    "type": "command",
+    "title": "apptainer-cache - Clean the entire cache",
+    "content": "apptainer cache clean",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (Clean the entire cache)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-4",
+    "type": "command",
+    "title": "apptainer-cache - Clean only a specific cache type",
+    "content": "apptainer cache clean {{[-T|--type]}} {{library|oci|shub|blob|...}}",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (Clean only a specific cache type)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-5",
+    "type": "command",
+    "title": "apptainer-cache - Clean cache entries older than a specific number of days",
+    "content": "apptainer cache clean {{[-D|--days]}} {{days}}",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (Clean cache entries older than a specific number of days)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-6",
+    "type": "command",
+    "title": "apptainer-cache - Preview what would be cleaned without removing anything",
+    "content": "apptainer cache clean {{[-n|--dry-run]}}",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (Preview what would be cleaned without removing anything)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-cache-7",
+    "type": "command",
+    "title": "apptainer-cache - Force clean without confirmation",
+    "content": "apptainer cache clean {{[-f|--force]}}",
+    "group": "Linux Ops",
+    "description": "apptainer-cache: Manage the local Apptainer cache. (Force clean without confirmation)",
+    "tags": [
+      "linux",
+      "apptainer-cache",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-postconf-0",
     "type": "command",
     "title": "postconf - Specify the directory of the `main.cf` configuration file instead of the default configuration directory",
@@ -73509,6 +73854,36 @@
     "tags": [
       "linux",
       "apx-subsystems",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-drm_info-0",
+    "type": "command",
+    "title": "drm_info - Dump DRM information",
+    "content": "drm_info",
+    "group": "Linux Ops",
+    "description": "drm_info: Dump information about DRM devices. (Dump DRM information)",
+    "tags": [
+      "linux",
+      "drm_info",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-drm_info-1",
+    "type": "command",
+    "title": "drm_info - Dump DRM information in [j]SON format",
+    "content": "drm_info -j",
+    "group": "Linux Ops",
+    "description": "drm_info: Dump information about DRM devices. (Dump DRM information in [j]SON format)",
+    "tags": [
+      "linux",
+      "drm_info",
       "tldr",
       "en"
     ],
@@ -81633,7 +82008,7 @@
     "id": "tldr-en-linux-ss-0",
     "type": "command",
     "title": "ss - Show all TCP/UDP/RAW/UNIX sockets",
-    "content": "ss {{[-a|--all]}} {{-t|-u|-w|-x}}",
+    "content": "ss {{[-a|--all]}} {{--tcp|--udp|--raw|--unix}}",
     "group": "Linux Ops",
     "description": "ss: Utility to investigate sockets. (Show all TCP/UDP/RAW/UNIX sockets)",
     "tags": [
@@ -88770,6 +89145,126 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-neo-0",
+    "type": "command",
+    "title": "neo - Set scroll speed and asynchronous columns",
+    "content": "neo {{[-S|--speed]}} {{12}} {{[-a|--async]}}",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Set scroll speed and asynchronous columns)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-1",
+    "type": "command",
+    "title": "neo - Change text color and colormode",
+    "content": "neo {{[-c|--color]}} {{green}} --colormode {{256}}",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Change text color and colormode)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-2",
+    "type": "command",
+    "title": "neo - Display a centered message",
+    "content": "neo {{[-m|--message]}} \"{{Hello World}}\"",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Display a centered message)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-3",
+    "type": "command",
+    "title": "neo - Set droplet density and glitch percentage",
+    "content": "neo {{[-d|--density]}} {{2.0}} {{[-G|--glitchpct]}} {{20.0}}",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Set droplet density and glitch percentage)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-4",
+    "type": "command",
+    "title": "neo - Use a specific charset",
+    "content": "neo --charset {{ascii|greek|cyrillic|arabic|braille|runic|...}}",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Use a specific charset)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-5",
+    "type": "command",
+    "title": "neo - Clear the screen",
+    "content": "<Space>",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Clear the screen)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-6",
+    "type": "command",
+    "title": "neo - Exit neo",
+    "content": "{{<Esc>|<q>}}",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Exit neo)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-neo-7",
+    "type": "command",
+    "title": "neo - Display help",
+    "content": "neo {{[-h|--help]}}",
+    "group": "Linux Ops",
+    "description": "neo: Simulate the digital rain from \"The Matrix\". (Display help)",
+    "tags": [
+      "linux",
+      "neo",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-bwa-0",
     "type": "command",
     "title": "bwa - Index the reference genome",
@@ -92601,6 +93096,21 @@
     "content": "sudo dhcpcd {{[-n|--rebind]}}",
     "group": "Linux Ops",
     "description": "dhcpcd: DHCP client. (Request the DHCP server for new leases)",
+    "tags": [
+      "linux",
+      "dhcpcd",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-dhcpcd-2",
+    "type": "command",
+    "title": "dhcpcd - Print (dump) the last acquired lease for a given interface and exit",
+    "content": "sudo dhcpcd {{[-U|--dumplease]}} {{interface_name}}",
+    "group": "Linux Ops",
+    "description": "dhcpcd: DHCP client. (Print (dump) the last acquired lease for a given interface and exit)",
     "tags": [
       "linux",
       "dhcpcd",

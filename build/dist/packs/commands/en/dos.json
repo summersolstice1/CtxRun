@@ -345,6 +345,36 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-dos-ren-0",
+    "type": "command",
+    "title": "ren - Rename file",
+    "content": "REN {{path/to/file}} {{new_name}}",
+    "group": "Dos",
+    "description": "ren: Rename files (use for moving too). (Rename file)",
+    "tags": [
+      "dos",
+      "ren",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-dos-type-0",
+    "type": "command",
+    "title": "type - Show file",
+    "content": "TYPE {{path/to/file.txt}}",
+    "group": "Dos",
+    "description": "type: Display the contents of a text file. (Show file)",
+    "tags": [
+      "dos",
+      "type",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-dos-chdir-0",
     "type": "command",
     "title": "chdir - View documentation for the original command",
@@ -690,6 +720,36 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-dos-set-0",
+    "type": "command",
+    "title": "set - Set variable",
+    "content": "SET {{VAR}}={{value}}",
+    "group": "Dos",
+    "description": "set: Set/display environment variables. (Set variable)",
+    "tags": [
+      "dos",
+      "set",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-dos-rescan-0",
+    "type": "command",
+    "title": "rescan - Refresh mounted drives",
+    "content": "RESCAN",
+    "group": "Dos",
+    "description": "rescan: Refresh mounted drives (like CTRL-F4). (Refresh mounted drives)",
+    "tags": [
+      "dos",
+      "rescan",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-dos-loadfix-0",
     "type": "command",
     "title": "loadfix - Start a program with 64KB allocated memory",
@@ -819,6 +879,21 @@
     "tags": [
       "dos",
       "path",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-dos-ver-0",
+    "type": "command",
+    "title": "ver - Set version",
+    "content": "VER set {{major_version}} {{minor_version}}",
+    "group": "Dos",
+    "description": "ver: View/set reported DOS version. (Set version)",
+    "tags": [
+      "dos",
+      "ver",
       "tldr",
       "en"
     ],
