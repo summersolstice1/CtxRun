@@ -32,6 +32,7 @@ mod context;
 mod hyperview;
 mod scheduler;
 mod refinery;
+mod automator;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -301,6 +302,10 @@ fn main() {
             refinery::commands::spotlight_paste,
             refinery::commands::update_cleanup_config,
             refinery::commands::manual_cleanup,
+            // === 新增 Automator 命令 ===
+            automator::commands::start_clicker,
+            automator::commands::stop_clicker,
+            automator::commands::get_mouse_position,
         ])
         .setup(|app| {
             let system = System::new();
@@ -319,6 +324,9 @@ fn main() {
                     panic!("[Database] Critical Error: Failed to initialize database: {}", e);
                 }
             }
+
+            // === 初始化 Automator 状态 ===
+            app.manage(automator::AutomatorState::new());
 
             // 启动 Refinery Cleanup Worker
             use std::sync::Arc as StdArc;

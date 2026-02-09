@@ -6,7 +6,7 @@ import { emit } from '@tauri-apps/api/event';
 import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, DEFAULT_PROVIDER_SETTINGS } from '@/types/model';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 
-export type AppView = 'prompts' | 'context' | 'patch' | 'refinery';
+export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator';
 export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';

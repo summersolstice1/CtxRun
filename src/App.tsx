@@ -2,11 +2,13 @@ import { useEffect, Suspense, lazy } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import { register, unregister } from '@tauri-apps/plugin-global-shortcut';
 import { Loader2 } from 'lucide-react';
 import { TitleBar } from "@/components/layout/TitleBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { useAppStore, AppTheme } from "@/store/useAppStore";
+import { useAutomatorStore } from "@/store/useAutomatorStore";
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
 import { getText } from '@/lib/i18n';
 import { PreviewModal } from "@/components/features/hyperview";
@@ -14,12 +16,14 @@ const PromptView = lazy(() => import('@/components/features/prompts/PromptView')
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
 const PatchView = lazy(() => import('@/components/features/patch/PatchView').then(module => ({ default: module.PatchView })));
 const RefineryView = lazy(() => import('@/components/features/refinery/RefineryView').then(module => ({ default: module.RefineryView })));
+const AutomatorView = lazy(() => import('@/components/features/automator/AutomatorView').then(module => ({ default: module.AutomatorView })));
 const SystemMonitorModal = lazy(() => import('@/components/features/monitor/SystemMonitorModal').then(module => ({ default: module.SystemMonitorModal })));
 
 const appWindow = getCurrentWebviewWindow()
 
 function App() {
   const { currentView, theme, setTheme, syncModels, lastUpdated, restReminder, language } = useAppStore();
+  const { toggle: toggleClicker } = useAutomatorStore();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -102,6 +106,33 @@ function App() {
     });
   }, [restReminder.enabled, restReminder.intervalMinutes]);
 
+  useEffect(() => {
+    const setupAutomatorShortcut = async () => {
+      try {
+        // 定义快捷键，这里暂定为 F1，后续可以在 Settings 中做成可配置
+        const shortcut = 'F1';
+
+        // 先尝试注销，防止热重载导致的重复注册错误
+        await unregister(shortcut).catch(() => {});
+
+        await register(shortcut, (event) => {
+          if (event.state === 'Pressed') {
+            toggleClicker();
+          }
+        });
+      } catch (e) {
+        console.error('Failed to register automator shortcut:', e);
+      }
+    };
+
+    setupAutomatorShortcut();
+
+    // 清理函数
+    return () => {
+      unregister('F1').catch(() => {});
+    };
+  }, []);
+
   return (
     <>
       <style>{`
@@ -124,6 +155,7 @@ function App() {
             {currentView === 'context' && <ContextView />}
             {currentView === 'patch' && <PatchView />}
             {currentView === 'refinery' && <RefineryView />}
+            {currentView === 'automator' && <AutomatorView />}
           </Suspense>
         </main>
       </div>

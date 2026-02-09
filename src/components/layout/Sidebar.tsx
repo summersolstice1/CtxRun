@@ -1,7 +1,7 @@
 // src/components/layout/Sidebar.tsx
 
 import { motion } from "framer-motion";
-import { BookOpen, FileJson, GitMerge, Factory, Settings, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, FileJson, GitMerge, Factory, Settings, ChevronLeft, ChevronRight, MousePointerClick } from 'lucide-react';
 import { useAppStore, AppView } from '@/store/useAppStore';
 import { getMenuLabel, getText } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -18,6 +18,7 @@ export function Sidebar() {
     { id: 'context', icon: FileJson },
     { id: 'patch', icon: GitMerge },
     { id: 'refinery', icon: Factory },
+    { id: 'automator', icon: MousePointerClick },
   ];
 
   return (
