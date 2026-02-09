@@ -1,0 +1,15 @@
+[package]
+name = "ctxrun-plugin-automator"
+version = "0.1.0"
+description = "Automator plugin for CtxRun"
+edition = "2024"
+links = "ctxrun-plugin-automator" 
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
+enigo = "0.6.1"
+
+[build-dependencies]
+tauri-plugin = "2"

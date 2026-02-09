@@ -6,7 +6,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { message } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
-import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
+import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 
 import { useAppStore, AppTheme } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
@@ -329,9 +329,18 @@ export default function SpotlightApp() {
 
     const setupShortcut = async () => {
       try {
-        await unregisterAll();
-        if (!spotlightShortcut) return;
-        await register(spotlightShortcut, async (event) => {
+        const shortcut = spotlightShortcut; // 比如 Alt+S
+        if (!shortcut) return;
+
+        // 1. 【关键修改】停止使用 unregisterAll()！！
+        // 只注销当前设置的这个快捷键
+        const alreadyRegistered = await isRegistered(shortcut);
+        if (alreadyRegistered) {
+          await unregister(shortcut);
+        }
+
+        // 2. 注册
+        await register(shortcut, async (event) => {
           if (event.state === 'Pressed') {
             const windows = await getAllWebviewWindows();
             const spotlight = windows.find(w => w.label === 'spotlight');
@@ -347,10 +356,17 @@ export default function SpotlightApp() {
           }
         });
       } catch (err) {
+        console.warn('Spotlight shortcut sync issue:', err);
       }
     };
 
     setupShortcut();
+
+    return () => {
+      if (spotlightShortcut) {
+        unregister(spotlightShortcut).catch(() => {});
+      }
+    };
   }, [spotlightShortcut]);
 
   useEffect(() => {

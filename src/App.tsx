@@ -2,7 +2,7 @@ import { useEffect, Suspense, lazy } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
-import { register, unregister } from '@tauri-apps/plugin-global-shortcut';
+import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { Loader2 } from 'lucide-react';
 import { TitleBar } from "@/components/layout/TitleBar";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -23,7 +23,6 @@ const appWindow = getCurrentWebviewWindow()
 
 function App() {
   const { currentView, theme, setTheme, syncModels, lastUpdated, restReminder, language } = useAppStore();
-  const { toggle: toggleClicker } = useAutomatorStore();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -107,29 +106,42 @@ function App() {
   }, [restReminder.enabled, restReminder.intervalMinutes]);
 
   useEffect(() => {
+    const shortcut = 'F1';
+    
     const setupAutomatorShortcut = async () => {
       try {
-        // 定义快捷键，这里暂定为 F1，后续可以在 Settings 中做成可配置
-        const shortcut = 'F1';
+        // 1. 只检查并注销 F1，不影响 Alt+S
+        const alreadyRegistered = await isRegistered(shortcut);
+        if (alreadyRegistered) {
+          await unregister(shortcut);
+        }
 
-        // 先尝试注销，防止热重载导致的重复注册错误
-        await unregister(shortcut).catch(() => {});
-
-        await register(shortcut, (event) => {
+        // 2. 重新注册
+        await register(shortcut, async (event) => {
           if (event.state === 'Pressed') {
-            toggleClicker();
+            const state = useAutomatorStore.getState();
+            if (state.isRunning) {
+              await state.stop();
+            } else {
+              // 兜底：尝试启动前发送停止指令确保后端干净
+              await invoke('plugin:ctxrun-plugin-automator|stop_clicker').catch(() => {});
+              await state.start();
+            }
           }
         });
       } catch (e) {
-        console.error('Failed to register automator shortcut:', e);
+        // 仅记录非冲突类的错误
+        if (!String(e).includes('already registered')) {
+          console.error('F1 registration error:', e);
+        }
       }
     };
 
     setupAutomatorShortcut();
 
-    // 清理函数
     return () => {
-      unregister('F1').catch(() => {});
+      // 卸载时也只注销自己的快捷键
+      unregister(shortcut).catch(() => {});
     };
   }, []);
 

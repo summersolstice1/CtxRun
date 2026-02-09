@@ -62,6 +62,10 @@
       ]
     },
     "core:app:allow-identifier",
-    "notification:default"
+    "notification:default",
+
+    "ctxrun-plugin-automator:allow-start-clicker",
+    "ctxrun-plugin-automator:allow-stop-clicker",
+    "ctxrun-plugin-automator:allow-get-mouse-position"
   ]
 }

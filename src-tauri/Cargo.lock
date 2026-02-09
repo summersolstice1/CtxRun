@@ -982,6 +982,7 @@ dependencies = [
  "clipboard-rs",
  "crossbeam-channel",
  "csv",
+ "ctxrun-plugin-automator",
  "enigo",
  "entropy",
  "futures",
@@ -1026,6 +1027,17 @@ dependencies = [
  "windows 0.61.3",
  "x-win",
  "xxhash-rust",
+]
+
+[[package]]
+name = "ctxrun-plugin-automator"
+version = "0.1.0"
+dependencies = [
+ "enigo",
+ "serde",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
 ]
 
 [[package]]

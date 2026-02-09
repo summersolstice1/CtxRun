@@ -32,7 +32,6 @@ mod context;
 mod hyperview;
 mod scheduler;
 mod refinery;
-mod automator;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -67,7 +66,6 @@ fn ensure_main_window(app: &AppHandle) {
 async fn hide_main_window(app: AppHandle, window: WebviewWindow, delay_secs: u64) -> Result<(), String> {
     window.hide().map_err(|e| e.to_string())?;
 
-    // 如果延迟为 0，表示不自动销毁窗口
     if delay_secs == 0 {
         return Ok(());
     }
@@ -169,17 +167,14 @@ async fn scan_for_secrets(
     state: State<'_, db::DbState>,
     content: String
 ) -> Result<Vec<gitleaks::SecretMatch>, String> {
-    // 1. 先从数据库获取白名单 (在主线程/异步线程做，避免阻塞 rayon 线程池)
     let ignored_set = {
         let conn = state.conn.lock().map_err(|e| e.to_string())?;
         db::secrets::get_all_ignored_values_internal(&conn).map_err(|e| e.to_string())?
     };
 
-    // 2. 执行扫描 (CPU 密集型，放入 blocking 线程)
     let matches = tauri::async_runtime::spawn_blocking(move || {
         let raw_matches = gitleaks::scan_text(&content);
 
-        // 3. 内存过滤：移除在白名单中的项
         if ignored_set.is_empty() {
             raw_matches
         } else {
@@ -234,6 +229,8 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             ensure_main_window(app);
         }))
+        .plugin(ctxrun_plugin_automator::init())
+        
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
@@ -288,7 +285,6 @@ fn main() {
             context::commands::get_ignored_by_protocol,
             hyperview::get_file_meta,
             scheduler::update_reminder_config,
-            // Refinery Commands
             refinery::commands::get_refinery_history,
             refinery::commands::get_refinery_item_detail,
             refinery::commands::get_refinery_statistics,
@@ -302,10 +298,6 @@ fn main() {
             refinery::commands::spotlight_paste,
             refinery::commands::update_cleanup_config,
             refinery::commands::manual_cleanup,
-            // === 新增 Automator 命令 ===
-            automator::commands::start_clicker,
-            automator::commands::stop_clicker,
-            automator::commands::get_mouse_position,
         ])
         .setup(|app| {
             let system = System::new();
@@ -325,10 +317,6 @@ fn main() {
                 }
             }
 
-            // === 初始化 Automator 状态 ===
-            app.manage(automator::AutomatorState::new());
-
-            // 启动 Refinery Cleanup Worker
             use std::sync::Arc as StdArc;
             use tokio::sync::Mutex as TokioMutex;
             let cleanup_config = StdArc::new(TokioMutex::new(refinery::cleanup_worker::RefineryCleanupConfig::default()));
@@ -336,7 +324,6 @@ fn main() {
             let (cleanup_worker, cleanup_sender) = refinery::cleanup_worker::CleanupWorker::new(cleanup_config);
             tauri::async_runtime::spawn(cleanup_worker.run(app.handle().clone()));
 
-            // 启动 Refinery 监听器，传入 cleanup sender
             refinery::init_listener(app.handle().clone(), Some(cleanup_sender));
 
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
@@ -376,7 +363,6 @@ fn main() {
                     if window.is_visible().unwrap_or(true) {
                         api.prevent_close();
                         let _ = window.hide();
-                        // 注意：自动销毁逻辑已移至前端通过 hide_main_window 命令控制
                     }
                 } else if label == "spotlight" {
                     api.prevent_close();

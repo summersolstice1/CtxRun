@@ -5,11 +5,14 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { fileStorage } from '@/lib/storage';
 import { ClickerConfig, DEFAULT_CLICKER_CONFIG } from '@/types/automator';
 
+// 定义插件调用的前缀
+const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-automator|';
+
 interface AutomatorState {
   config: ClickerConfig;
   isRunning: boolean;
   clickCount: number;
-  isPicking: boolean; // 是否正在倒计时拾取坐标
+  isPicking: boolean;
 
   // Actions
   setConfig: (config: Partial<ClickerConfig>) => void;
@@ -17,7 +20,7 @@ interface AutomatorState {
   stop: () => Promise<void>;
   toggle: () => Promise<void>;
   pickLocation: () => Promise<void>;
-
+  
   // Lifecycle
   initListeners: () => Promise<void>;
   unlisten: () => void;
@@ -40,7 +43,7 @@ export const useAutomatorStore = create<AutomatorState>()(
       initListeners: async () => {
         if (get()._unlistenFns.length > 0) return;
 
-        // 监听运行状态变化（例如被后端死人开关强制停止）
+        // 监听运行状态 (事件名称保持不变，因为 Rust 端是全局 emit)
         const unlistenStatus = await listen<boolean>('automator:status', (event) => {
           set({ isRunning: event.payload });
         });
@@ -61,9 +64,9 @@ export const useAutomatorStore = create<AutomatorState>()(
       start: async () => {
         const { config } = get();
         try {
-          // 重置计数
           set({ clickCount: 0 });
-          await invoke('start_clicker', { config });
+          // [修改点] 添加插件前缀
+          await invoke(`${PLUGIN_PREFIX}start_clicker`, { config });
         } catch (e) {
           console.error("Failed to start clicker:", e);
         }
@@ -71,7 +74,8 @@ export const useAutomatorStore = create<AutomatorState>()(
 
       stop: async () => {
         try {
-          await invoke('stop_clicker');
+          // [修改点] 添加插件前缀
+          await invoke(`${PLUGIN_PREFIX}stop_clicker`);
         } catch (e) {
           console.error("Failed to stop clicker:", e);
         }
@@ -88,11 +92,11 @@ export const useAutomatorStore = create<AutomatorState>()(
 
       pickLocation: async () => {
         set({ isPicking: true });
-
-        // 给予用户 3 秒时间移动鼠标
+        
         setTimeout(async () => {
           try {
-            const [x, y] = await invoke<[number, number]>('get_mouse_position');
+            // [修改点] 添加插件前缀
+            const [x, y] = await invoke<[number, number]>(`${PLUGIN_PREFIX}get_mouse_position`);
             set((state) => ({
               isPicking: false,
               config: {
@@ -112,7 +116,6 @@ export const useAutomatorStore = create<AutomatorState>()(
     {
       name: 'automator-config',
       storage: createJSONStorage(() => fileStorage),
-      // 只持久化配置，不持久化运行状态
       partialize: (state) => ({ config: state.config }),
     }
   )

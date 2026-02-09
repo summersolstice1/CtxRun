@@ -8,10 +8,18 @@ repository = ""
 edition = "2024"
 rust-version = "1.91"
 
+
+[workspace]
+members = ["crates/*"]
+
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
+
+ctxrun-plugin-automator = { path = "crates/automator" }
+
 tauri-plugin-single-instance = { version = "2" }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
