@@ -4479,6 +4479,54 @@
           "markdownDescription": "Denies the scan_for_secrets command without any pre-configured scope."
         },
         {
+          "description": "Enables the export_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-export-git-diff",
+          "markdownDescription": "Enables the export_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_git_commits command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-get-git-commits",
+          "markdownDescription": "Enables the get_git_commits command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-get-git-diff",
+          "markdownDescription": "Enables the get_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_git_diff_text command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-get-git-diff-text",
+          "markdownDescription": "Enables the get_git_diff_text command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-export-git-diff",
+          "markdownDescription": "Denies the export_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_git_commits command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-get-git-commits",
+          "markdownDescription": "Denies the get_git_commits command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-get-git-diff",
+          "markdownDescription": "Denies the get_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_git_diff_text command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-get-git-diff-text",
+          "markdownDescription": "Denies the get_git_diff_text command without any pre-configured scope."
+        },
+        {
           "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-ask`\n- `allow-confirm`\n- `allow-message`\n- `allow-save`\n- `allow-open`",
           "type": "string",
           "const": "dialog:default",

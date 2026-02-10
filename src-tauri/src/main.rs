@@ -21,8 +21,6 @@ use tauri::{
 };
 use tokio::time::sleep;
 
-mod git;
-mod export;
 use ctxrun_db as db;
 mod monitor;
 mod env_probe;
@@ -160,35 +158,6 @@ async fn check_python_env() -> Result<String, String> {
     .map_err(|e| e.to_string())?
 }
 
-#[tauri::command]
-async fn export_git_diff(
-    project_path: String,
-    old_hash: String,
-    new_hash: String,
-    format: export::ExportFormat,
-    layout: export::ExportLayout,
-    save_path: String,
-    selected_paths: Vec<String>,
-) -> Result<(), String> {
-    
-    let all_files = git::get_git_diff(project_path, old_hash, new_hash)?;
-    
-    let filtered_files: Vec<git::GitDiffFile> = all_files
-        .into_iter()
-        .filter(|f| selected_paths.contains(&f.path))
-        .collect();
-
-    if filtered_files.is_empty() {
-        return Err("No files selected for export.".to_string());
-    }
-
-    let content = export::generate_export_content(filtered_files, format, layout);
-
-    fs::write(&save_path, content).map_err(|e| format!("Failed to write file: {}", e))?;
-
-    Ok(())
-}
-
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -204,6 +173,7 @@ fn main() {
         }))
         .plugin(ctxrun_plugin_automator::init())
         .plugin(ctxrun_plugin_context::init())
+        .plugin(ctxrun_plugin_git::init())
 
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
@@ -211,10 +181,6 @@ fn main() {
             get_file_size,
             get_system_info,
             check_python_env,
-            git::get_git_commits,
-            git::get_git_diff,
-            git::get_git_diff_text,
-            export_git_diff,
             db::prompts::get_prompts,
             db::prompts::search_prompts,
             db::prompts::import_prompt_pack,

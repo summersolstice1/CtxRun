@@ -985,6 +985,7 @@ dependencies = [
  "ctxrun-db",
  "ctxrun-plugin-automator",
  "ctxrun-plugin-context",
+ "ctxrun-plugin-git",
  "enigo",
  "entropy",
  "futures",
@@ -1075,6 +1076,21 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "tiktoken-rs",
+]
+
+[[package]]
+name = "ctxrun-plugin-git"
+version = "1.5.4"
+dependencies = [
+ "chrono",
+ "git2",
+ "rayon",
+ "serde",
+ "serde_json",
+ "similar",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.17",
 ]
 
 [[package]]

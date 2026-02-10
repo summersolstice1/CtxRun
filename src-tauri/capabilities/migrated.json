@@ -73,6 +73,10 @@
     "ctxrun-plugin-context:allow-copy-context-to-clipboard",
     "ctxrun-plugin-context:allow-save-context-to-file",
     "ctxrun-plugin-context:allow-has-ignore-files",
-    "ctxrun-plugin-context:allow-get-ignored-by-protocol"
+    "ctxrun-plugin-context:allow-get-ignored-by-protocol",
+    "ctxrun-plugin-git:allow-get-git-commits",
+    "ctxrun-plugin-git:allow-get-git-diff",
+    "ctxrun-plugin-git:allow-get-git-diff-text",
+    "ctxrun-plugin-git:allow-export-git-diff"
   ]
 }
