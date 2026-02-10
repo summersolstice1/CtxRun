@@ -181,6 +181,7 @@ export function ContextView() {
               await writeClipboard(text);
               triggerToast(getText('context', 'toastCopied', language), 'success');
           } else if (action === 'save') {
+              // --- 核心修复：如果还没选择保存路径，先让用户选择 ---
               let filePath = savePath;
               if (!filePath) {
                   const defaultPath = await getDefaultSavePath();
@@ -190,13 +191,21 @@ export function ContextView() {
                   }) || undefined;
               }
 
-              if (!filePath) return;
+              if (!filePath) {
+                  setIsGenerating(false);
+                  return;
+              }
 
               await writeTextFile(filePath, text);
               triggerToast(getText('context', 'toastSaved', language), 'success');
           }
       } catch (err) {
           triggerToast(action === 'copy' ? getText('context', 'toastCopyFail', language) : getText('context', 'toastSaveFail', language), 'error');
+      } finally {
+          // 确保在保存操作完成后重置 loading 状态
+          if (action === 'save') {
+              setIsGenerating(false);
+          }
       }
   };
 
@@ -289,21 +298,24 @@ export function ContextView() {
       const paths = getSelectedPaths(fileTree);
       const header = generateHeader(fileTree, removeComments);
 
-      const defaultPath = await getDefaultSavePath();
-      const filePath = await save({
-        filters: [{ name: 'Text File', extensions: ['txt', 'md', 'json'] }],
-        defaultPath: defaultPath
-      });
-
-      if (!filePath) {
-        setIsGenerating(false);
-        return;
-      }
-
+      // --- 核心修复：先进行安全检查，再选择保存位置 ---
       if (detectSecrets) {
         const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, { paths, header, removeComments });
-        await processWithSecurityCheck(text, 'save', filePath);
+        // 传入 undefined 作为 filePath，让 processWithSecurityCheck 知道还没选择路径
+        await processWithSecurityCheck(text, 'save', undefined);
       } else {
+        // 如果没有开启安全检测，直接选择路径并保存
+        const defaultPath = await getDefaultSavePath();
+        const filePath = await save({
+          filters: [{ name: 'Text File', extensions: ['txt', 'md', 'json'] }],
+          defaultPath: defaultPath
+        });
+
+        if (!filePath) {
+          setIsGenerating(false);
+          return;
+        }
+
         await invoke(`${CONTEXT_PLUGIN_PREFIX}save_context_to_file`, {
           paths,
           header,
