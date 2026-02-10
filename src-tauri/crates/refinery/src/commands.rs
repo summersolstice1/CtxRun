@@ -307,13 +307,24 @@ pub fn update_note<R: Runtime>(
 pub struct CleanupConfigState(pub Arc<Mutex<RefineryCleanupConfig>>);
 
 #[tauri::command]
-pub async fn update_cleanup_config(
+pub async fn update_cleanup_config<R: Runtime>(
+    app: AppHandle<R>,
     state: State<'_, CleanupConfigState>,
     config: RefineryCleanupConfig,
 ) -> Result<(), String> {
-    let mut state_config = state.0.lock().await;
-    *state_config = config;
-    println!("[Refinery Cleanup] Config updated");
+    let is_enabled = config.enabled;
+    {
+        let mut state_config = state.0.lock().await;
+        *state_config = config;
+    }
+
+    // --- 核心修复：如果用户开启了清理，立即执行一次检查 ---
+    if is_enabled {
+        // 这样即使当前已经 117 条，只要配置一同步，马上就会清理掉多出的 17 条
+        let _ = manual_cleanup(app, state).await;
+    }
+
+    println!("[Refinery Cleanup] Config synced and check performed.");
     Ok(())
 }
 

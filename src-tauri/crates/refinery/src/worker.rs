@@ -292,10 +292,9 @@ impl<R: Runtime> RefineryProcessor<R> {
                 let event_name = if is_new { "refinery:create" } else { "refinery:update" };
                 let _ = self.app.emit(event_name, &id);
 
-                if is_new {
-                    if let Some(ref sender) = self.cleanup_sender {
-                        let _ = sender.blocking_send(());
-                    }
+                // --- 核心修复：无论是新内容还是旧内容置顶，只要操作了数据库，就触发清理信号 ---
+                if let Some(ref sender) = self.cleanup_sender {
+                    let _ = sender.blocking_send(());
                 }
             }
         }

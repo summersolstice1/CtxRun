@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { RefineryItem, RefineryItemUI } from '@/types/refinery';
 import { parseMetadata } from '@/lib/refinery_utils';
+import { useAppStore } from './useAppStore';
 
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
@@ -119,6 +120,28 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     });
 
     set({ _unlistenFns: [unlistenNewEntry, unlistenUpdate] });
+
+    // --- 核心修复：启动时将 localStorage 中的配置推送到 Rust 后端 ---
+    // 从持久化存储中获取当前的清理配置（根据你实际的存储结构调整）
+    // 如果你用了 Zustand 的 persist，配置就在当前 state 里
+    try {
+        // 这里需要确保获取的是最新的 persisted state
+        const refinerySettings = useAppStore.getState().refinerySettings;
+        const configToSync = {
+            enabled: refinerySettings.enabled,
+            strategy: refinerySettings.strategy,
+            maxCount: refinerySettings.maxCount,
+            keepPinned: refinerySettings.keepPinned,
+            days: refinerySettings.days,
+        };
+
+        // 调用后端指令，强制刷新后端的 enabled 状态
+        await invoke(`${REFINERY_PLUGIN_PREFIX}update_cleanup_config`, {
+            config: configToSync
+        });
+    } catch (e) {
+        console.error("Failed to sync cleanup config to Rust", e);
+    }
 
     await get().loadHistory(true);
     await get().loadStatistics();
