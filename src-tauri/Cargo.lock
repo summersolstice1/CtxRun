@@ -1031,7 +1031,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun-plugin-automator"
-version = "0.1.0"
+version = "1.5.4"
 dependencies = [
  "enigo",
  "serde",

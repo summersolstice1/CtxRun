@@ -1,29 +1,25 @@
+[workspace.package]
+version = "1.5.4"
+edition = "2024"
+
 [package]
 name = "ctxrun"
-version = "1.5.4"
+version.workspace = true
 description = "A Tool"
 authors = ["Winrisef"]
 license = ""
 repository = ""
-edition = "2024"
+edition.workspace = true
 rust-version = "1.91"
 
 
 [workspace]
 members = ["crates/*"]
 
-
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
-
-[dependencies]
-
-ctxrun-plugin-automator = { path = "crates/automator" }
-
-tauri-plugin-single-instance = { version = "2" }
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
+[workspace.dependencies]
+# Tauri
 tauri = { version = "2", features = ["tray-icon"] }
+tauri-build = { version = "2" }
 tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
@@ -31,6 +27,39 @@ tauri-plugin-http = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-os = "2"
 tauri-plugin-notification = "2"
+tauri-plugin-single-instance = { version = "2" }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin = "2"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Automation
+enigo = "0.6.1"
+
+[build-dependencies]
+tauri-build = { workspace = true }
+
+[dependencies]
+
+ctxrun-plugin-automator = { path = "crates/automator" }
+
+tauri-plugin-single-instance = { workspace = true }
+serde_json = "1.0"
+serde = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-shell = { workspace = true }
+tauri-plugin-fs = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
+tauri-plugin-http = { workspace = true }
+tauri-plugin-clipboard-manager = { workspace = true }
+tauri-plugin-os = { workspace = true }
+tauri-plugin-notification = { workspace = true }
 sysinfo = "0.37"
 git2 = "0.19"
 chrono = "0.4"
@@ -53,8 +82,8 @@ wait-timeout = "0.2"
 csv = "1.4"
 walkdir = "2"
 genai = "0.5.1"
-tokio = { version = "1", features = ["full"] }
-futures = "0.3"
+tokio = { workspace = true }
+futures = { workspace = true }
 infer = "0.19"
 mime_guess = "2.0"
 url = "2.5"
@@ -66,10 +95,10 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
 base64 = "0.22"
 x-win = "5.5"
-enigo = "0.6.1"
+enigo = { workspace = true }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-global-shortcut = "2"
+tauri-plugin-global-shortcut = { workspace = true }
 
 [features]
 default = [ "custom-protocol" ]
