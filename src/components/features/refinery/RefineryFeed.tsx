@@ -14,6 +14,8 @@ import { motion } from 'framer-motion';
 import { bundleItems, FeedItemType } from '@/lib/bundler';
 import { BundleCard } from './BundleCard';
 
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
+
 export function RefineryFeed() {
   const {
     items, setActiveId, activeId, togglePin, isLoading, hasMore,
@@ -240,9 +242,9 @@ export function FeedCard({
           console.warn('Content not loaded, cannot copy');
           return;
         }
-        await invoke('copy_refinery_text', { text: contentToCopy });
+        await invoke(`${REFINERY_PLUGIN_PREFIX}copy_refinery_text`, { text: contentToCopy });
       } else if (item.kind === 'image') {
-        await invoke('copy_refinery_image', { imagePath: item.content });
+        await invoke(`${REFINERY_PLUGIN_PREFIX}copy_refinery_image`, { imagePath: item.content });
       }
       setCopySuccess(true);
     } catch (err) {

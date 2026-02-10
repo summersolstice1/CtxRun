@@ -4,6 +4,8 @@ import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { RefineryItem, RefineryItemUI } from '@/types/refinery';
 import { parseMetadata } from '@/lib/refinery_utils';
 
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
+
 const PAGE_SIZE = 20;
 
 interface RefineryStatistics {
@@ -148,7 +150,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     }
 
     try {
-      const res = await invoke<RefineryItem[]>('get_refinery_history', {
+      const res = await invoke<RefineryItem[]>(`${REFINERY_PLUGIN_PREFIX}get_refinery_history`, {
         page: currentPage,
         pageSize: PAGE_SIZE,
         searchQuery: searchArg,
@@ -175,7 +177,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   loadStatistics: async () => {
     set({ statisticsLoading: true });
     try {
-      const stats = await invoke<RefineryStatistics>('get_refinery_statistics');
+      const stats = await invoke<RefineryStatistics>(`${REFINERY_PLUGIN_PREFIX}get_refinery_statistics`);
       set({ statistics: stats, statisticsLoading: false });
     } catch (e) {
       set({ statisticsLoading: false });
@@ -184,7 +186,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   loadItemDetail: async (id) => {
     try {
-      const item = await invoke<RefineryItem>('get_refinery_item_detail', { id });
+      const item = await invoke<RefineryItem>(`${REFINERY_PLUGIN_PREFIX}get_refinery_item_detail`, { id });
       if (!item) return;
 
       set(state => ({
@@ -292,7 +294,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
           item.id === id ? { ...item, isPinned: !item.isPinned } : item
         )
       }));
-      await invoke('toggle_refinery_pin', { id });
+      await invoke(`${REFINERY_PLUGIN_PREFIX}toggle_refinery_pin`, { id });
       get().loadStatistics();
     } catch (e) {
     }
@@ -300,7 +302,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   deleteItem: async (id) => {
     try {
-      await invoke('delete_refinery_items', { ids: [id] });
+      await invoke(`${REFINERY_PLUGIN_PREFIX}delete_refinery_items`, { ids: [id] });
       set(state => ({
         items: state.items.filter(item => item.id !== id),
         activeId: state.activeId === id ? null : state.activeId
@@ -319,7 +321,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         timestamp = date.getTime();
       }
 
-      await invoke('clear_refinery_history', {
+      await invoke(`${REFINERY_PLUGIN_PREFIX}clear_refinery_history`, {
         beforeTimestamp: timestamp,
         includePinned: false
       });
@@ -339,7 +341,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   createNote: async () => {
     try {
-      const id = await invoke<string>('create_note', {
+      const id = await invoke<string>(`${REFINERY_PLUGIN_PREFIX}create_note`, {
         content: '',
         title: 'New Note'
       });
@@ -367,7 +369,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         })
       }));
 
-      await invoke('update_note', {
+      await invoke(`${REFINERY_PLUGIN_PREFIX}update_note`, {
         id,
         content: content || null,
         title: title || null

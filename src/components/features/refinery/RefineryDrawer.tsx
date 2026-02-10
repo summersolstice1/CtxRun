@@ -13,6 +13,8 @@ import { formatTimeAgo } from '@/lib/refinery_utils';
 import { cn } from '@/lib/utils';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { useImageLoader } from '@/hooks/useImageLoader';
+
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 import { getText } from '@/lib/i18n';
 
 export function RefineryDrawer() {
@@ -58,9 +60,9 @@ export function RefineryDrawer() {
     try {
       if (activeItem.kind === 'text') {
         // 如果在编辑模式，复制编辑中的内容
-        await invoke('copy_refinery_text', { text: isEditing ? editContent : activeItem.content });
+        await invoke(`${REFINERY_PLUGIN_PREFIX}copy_refinery_text`, { text: isEditing ? editContent : activeItem.content });
       } else if (activeItem.kind === 'image' && activeItem.content) {
-        await invoke('copy_refinery_image', { imagePath: activeItem.content });
+        await invoke(`${REFINERY_PLUGIN_PREFIX}copy_refinery_image`, { imagePath: activeItem.content });
       }
       setCopySuccess(true);
     } catch (e) {

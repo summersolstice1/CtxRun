@@ -9,6 +9,8 @@ import { useAppStore } from '@/store/useAppStore';
 import { RefineryItem } from '@/types/refinery';
 import { formatTimeAgo } from '@/lib/refinery_utils';
 
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
+
 interface AppEntry {
   name: string;
   path: string;
@@ -95,7 +97,7 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
     if (mode === 'clipboard') {
       setIsLoading(true);
       try {
-        const data = await invoke<RefineryItem[]>('get_refinery_history', {
+        const data = await invoke<RefineryItem[]>(`${REFINERY_PLUGIN_PREFIX}get_refinery_history`, {
           page: currentPage,
           pageSize: 20,
           searchQuery: q || null,

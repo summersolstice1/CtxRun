@@ -27,7 +27,6 @@ mod env_probe;
 mod apps;
 mod hyperview;
 mod scheduler;
-mod refinery;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -174,6 +173,7 @@ fn main() {
         .plugin(ctxrun_plugin_automator::init())
         .plugin(ctxrun_plugin_context::init())
         .plugin(ctxrun_plugin_git::init())
+        .plugin(ctxrun_plugin_refinery::init())
 
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
@@ -218,19 +218,6 @@ fn main() {
             monitor::get_ai_context,
             hyperview::get_file_meta,
             scheduler::update_reminder_config,
-            refinery::commands::get_refinery_history,
-            refinery::commands::get_refinery_item_detail,
-            refinery::commands::get_refinery_statistics,
-            refinery::commands::toggle_refinery_pin,
-            refinery::commands::delete_refinery_items,
-            refinery::commands::clear_refinery_history,
-            refinery::commands::copy_refinery_text,
-            refinery::commands::copy_refinery_image,
-            refinery::commands::create_note,
-            refinery::commands::update_note,
-            refinery::commands::spotlight_paste,
-            refinery::commands::update_cleanup_config,
-            refinery::commands::manual_cleanup,
         ])
         .setup(|app| {
             let system = System::new();
@@ -249,15 +236,6 @@ fn main() {
                     panic!("[Database] Critical Error: Failed to initialize database: {}", e);
                 }
             }
-
-            use std::sync::Arc as StdArc;
-            use tokio::sync::Mutex as TokioMutex;
-            let cleanup_config = StdArc::new(TokioMutex::new(refinery::cleanup_worker::RefineryCleanupConfig::default()));
-            app.manage(refinery::commands::CleanupConfigState(cleanup_config.clone()));
-            let (cleanup_worker, cleanup_sender) = refinery::cleanup_worker::CleanupWorker::new(cleanup_config);
-            tauri::async_runtime::spawn(cleanup_worker.run(app.handle().clone()));
-
-            refinery::init_listener(app.handle().clone(), Some(cleanup_sender));
 
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 

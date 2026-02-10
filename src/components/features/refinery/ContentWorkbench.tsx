@@ -8,6 +8,8 @@ import { formatTimeAgo } from '@/lib/refinery_utils';
 import { readFile } from '@tauri-apps/plugin-fs';
 import { cn } from '@/lib/utils';
 
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
+
 export function ContentWorkbench() {
   const { items, activeId, deleteItem } = useRefineryStore();
   const { language } = useAppStore();
@@ -68,9 +70,9 @@ export function ContentWorkbench() {
   const handleCopy = async () => {
       try {
           if (activeItem.kind === 'text') {
-              await invoke('copy_refinery_text', { text: activeItem.content || '' });
+              await invoke(`${REFINERY_PLUGIN_PREFIX}copy_refinery_text`, { text: activeItem.content || '' });
           } else if (activeItem.kind === 'image' && activeItem.content) {
-              await invoke('copy_refinery_image', { imagePath: activeItem.content });
+              await invoke(`${REFINERY_PLUGIN_PREFIX}copy_refinery_image`, { imagePath: activeItem.content });
           }
       } catch (e) {
           console.error('Failed to copy:', e);

@@ -979,20 +979,17 @@ dependencies = [
  "arboard",
  "base64 0.22.1",
  "chrono",
- "clipboard-rs",
- "crossbeam-channel",
  "csv",
  "ctxrun-db",
  "ctxrun-plugin-automator",
  "ctxrun-plugin-context",
  "ctxrun-plugin-git",
- "enigo",
+ "ctxrun-plugin-refinery",
  "entropy",
  "futures",
  "genai",
  "git2",
  "ignore",
- "image",
  "infer",
  "listeners",
  "mime_guess",
@@ -1028,8 +1025,6 @@ dependencies = [
  "walkdir",
  "which",
  "windows 0.61.3",
- "x-win",
- "xxhash-rust",
 ]
 
 [[package]]
@@ -1091,6 +1086,27 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "thiserror 2.0.17",
+]
+
+[[package]]
+name = "ctxrun-plugin-refinery"
+version = "1.5.4"
+dependencies = [
+ "chrono",
+ "clipboard-rs",
+ "crossbeam-channel",
+ "ctxrun-db",
+ "enigo",
+ "image",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
+ "uuid",
+ "x-win",
+ "xxhash-rust",
 ]
 
 [[package]]

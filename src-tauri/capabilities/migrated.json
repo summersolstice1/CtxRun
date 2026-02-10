@@ -77,6 +77,19 @@
     "ctxrun-plugin-git:allow-get-git-commits",
     "ctxrun-plugin-git:allow-get-git-diff",
     "ctxrun-plugin-git:allow-get-git-diff-text",
-    "ctxrun-plugin-git:allow-export-git-diff"
+    "ctxrun-plugin-git:allow-export-git-diff",
+    "ctxrun-plugin-refinery:allow-get-refinery-history",
+    "ctxrun-plugin-refinery:allow-get-refinery-item-detail",
+    "ctxrun-plugin-refinery:allow-get-refinery-statistics",
+    "ctxrun-plugin-refinery:allow-toggle-refinery-pin",
+    "ctxrun-plugin-refinery:allow-delete-refinery-items",
+    "ctxrun-plugin-refinery:allow-clear-refinery-history",
+    "ctxrun-plugin-refinery:allow-copy-refinery-text",
+    "ctxrun-plugin-refinery:allow-copy-refinery-image",
+    "ctxrun-plugin-refinery:allow-create-note",
+    "ctxrun-plugin-refinery:allow-update-note",
+    "ctxrun-plugin-refinery:allow-spotlight-paste",
+    "ctxrun-plugin-refinery:allow-update-cleanup-config",
+    "ctxrun-plugin-refinery:allow-manual-cleanup"
   ]
 }

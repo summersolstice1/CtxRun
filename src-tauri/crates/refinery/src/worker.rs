@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager, Runtime}; // 引入 Runtime
 use clipboard_rs::{
     Clipboard, ClipboardContext, ClipboardHandler,
     ClipboardWatcher, ClipboardWatcherContext, ContentFormat,
@@ -14,8 +14,8 @@ use tokio::sync::mpsc;
 use crossbeam_channel::{bounded, Sender};
 use x_win::{get_active_window, get_browser_url};
 
-use crate::db::DbState;
-use super::model::{RefineryKind, RefineryMetadata};
+use ctxrun_db::DbState; // 修正引用
+use super::models::{RefineryKind, RefineryMetadata}; // 注意 model -> models
 use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
 pub static PASTING_FLAG: LazyLock<Arc<AtomicBool>> =
@@ -54,17 +54,13 @@ struct RefineryListener {
 }
 
 impl RefineryListener {
-    // 恢复原先健壮的检测逻辑
     fn is_self_app(&self, active_app: &str) -> bool {
         let current = active_app.to_lowercase();
-
-        // 动态获取当前运行的 exe 名称
         let self_exe = std::env::current_exe()
             .ok()
             .and_then(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
             .unwrap_or_else(|| "ctxrun".to_string());
 
-        // 匹配 Exe 名称 或 包含 ctxrun 关键字
         current == self_exe ||
         current == format!("{}.exe", self_exe) ||
         current.contains("ctxrun")
@@ -73,28 +69,21 @@ impl RefineryListener {
 
 impl ClipboardHandler for RefineryListener {
     fn on_clipboard_change(&mut self) {
-        // 1. 内部标志位检测 (用于 spotlight_paste 等内部操作)
         if self.is_pasting.load(Ordering::SeqCst) {
             return;
         }
 
-        // 2. 获取当前活动窗口信息
-        // 注意：x_win 在某些系统可能略有耗时，但为了过滤必须在读取剪贴板前执行
         let active_window = get_active_window().ok();
         let app_name = active_window.as_ref().map(|w| w.info.exec_name.clone());
 
-        // 3. 核心修复：如果是自身应用，直接中断！
         if let Some(ref name) = app_name {
             if self.is_self_app(name) {
-                // 这里不做任何操作，直接返回，不读取剪贴板
                 return;
             }
         }
 
-        // 4. 获取 URL (仅当不是自身时才尝试获取)
         let url = active_window.as_ref().and_then(|w| get_browser_url(w).ok());
 
-        // 5. 初始化剪贴板上下文
         let ctx = match ClipboardContext::new() {
             Ok(c) => c,
             Err(e) => {
@@ -103,7 +92,6 @@ impl ClipboardHandler for RefineryListener {
             }
         };
 
-        // 6. 优先检查文件列表 (Files)
         if ctx.has(ContentFormat::Files) {
             if let Ok(paths) = ctx.get_files() {
                 if !paths.is_empty() {
@@ -116,7 +104,6 @@ impl ClipboardHandler for RefineryListener {
             }
         }
 
-        // 7. 图片/混合内容处理
         let has_image = ctx.has(ContentFormat::Image);
         let has_text = ctx.has(ContentFormat::Text);
 
@@ -143,7 +130,6 @@ impl ClipboardHandler for RefineryListener {
             None
         };
 
-        // 8. 发送给消费者
         if let Some(p) = payload {
             let _ = self.tx.try_send(p);
         }
@@ -152,15 +138,15 @@ impl ClipboardHandler for RefineryListener {
 
 // === 消费者：RefineryProcessor ===
 
-struct RefineryProcessor {
-    app: AppHandle,
+struct RefineryProcessor<R: Runtime> {
+    app: AppHandle<R>,
     last_text_hash: String,
     last_image_hash: String,
     cleanup_sender: Option<mpsc::Sender<()>>,
 }
 
-impl RefineryProcessor {
-    fn new(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) -> Self {
+impl<R: Runtime> RefineryProcessor<R> {
+    fn new(app: AppHandle<R>, cleanup_sender: Option<mpsc::Sender<()>>) -> Self {
         Self {
             app,
             last_text_hash: String::new(),
@@ -318,10 +304,9 @@ impl RefineryProcessor {
 
 // === 启动入口 ===
 
-pub fn init_listener(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) {
+pub fn init_listener<R: Runtime>(app: AppHandle<R>, cleanup_sender: Option<mpsc::Sender<()>>) {
     let (tx, rx) = bounded::<ClipboardPayload>(5);
 
-    // 1. 启动消费者线程 (Processor)
     let app_handle = app.clone();
     thread::spawn(move || {
         let mut processor = RefineryProcessor::new(app_handle, cleanup_sender);
@@ -331,7 +316,6 @@ pub fn init_listener(app: AppHandle, cleanup_sender: Option<mpsc::Sender<()>>) {
         }
     });
 
-    // 2. 启动生产者线程 (Listener)
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(1));
         println!("[Refinery] Starting Clipboard Producer...");

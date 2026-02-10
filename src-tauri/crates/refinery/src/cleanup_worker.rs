@@ -1,17 +1,16 @@
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
-use tauri::AppHandle;
+use tauri::{AppHandle, Runtime}; // 引入 Runtime
 use serde::{Deserialize, Serialize};
 
-/// 定期扫描间隔：1 小时
 const SCAN_INTERVAL_SECS: u64 = 3600;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RefineryCleanupConfig {
     pub enabled: bool,
-    pub strategy: String,      // "time" | "count" | "both"
+    pub strategy: String,      
     pub days: Option<u32>,
     pub max_count: Option<u32>,
     pub keep_pinned: bool,
@@ -37,20 +36,16 @@ pub struct CleanupWorker {
 impl CleanupWorker {
     pub fn new(config: Arc<Mutex<RefineryCleanupConfig>>) -> (Self, mpsc::Sender<()>) {
         let (tx, rx) = mpsc::channel(100);
-        (
-            Self { config, rx },
-            tx,
-        )
+        (Self { config, rx }, tx)
     }
 
-    pub async fn run(mut self, app: AppHandle) {
+    // 核心修复：添加 <R: Runtime>
+    pub async fn run<R: Runtime>(mut self, app: AppHandle<R>) {
         loop {
             tokio::select! {
-                // 接收到剪贴板捕获消息
                 Some(_) = self.rx.recv() => {
                     self.check_and_cleanup(&app).await;
                 }
-                // 定期扫描（每小时）
                 _ = tokio::time::sleep(Duration::from_secs(SCAN_INTERVAL_SECS)) => {
                     self.check_and_cleanup(&app).await;
                 }
@@ -58,12 +53,10 @@ impl CleanupWorker {
         }
     }
 
-    async fn check_and_cleanup(&self, app: &AppHandle) {
+    // 核心修复：添加 <R: Runtime>
+    async fn check_and_cleanup<R: Runtime>(&self, app: &AppHandle<R>) {
         let config = self.config.lock().await.clone();
-
-        if !config.enabled {
-            return;
-        }
+        if !config.enabled { return; }
 
         match config.strategy.as_str() {
             "count" => {
@@ -83,9 +76,7 @@ impl CleanupWorker {
             "both" => {
                 let count_triggered = if let Some(max_count) = config.max_count {
                     super::commands::execute_count_cleanup(app, max_count, config.keep_pinned).unwrap_or(0) > 0
-                } else {
-                    false
-                };
+                } else { false };
 
                 if !count_triggered {
                     if let Some(days) = config.days {

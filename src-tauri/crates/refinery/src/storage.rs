@@ -4,29 +4,27 @@ use std::io::BufWriter;
 use rusqlite::{params, Connection, OptionalExtension};
 use chrono::Utc;
 use uuid::Uuid;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Runtime}; // 引入 Runtime
 use image::{DynamicImage, ImageEncoder};
 use image::codecs::png::{PngEncoder, CompressionType, FilterType};
 use xxhash_rust::xxh3::xxh3_64;
 
-use super::model::{RefineryKind, RefineryMetadata};
+use super::models::{RefineryKind, RefineryMetadata}; // model -> models
 
 const IMAGE_FOLDER: &str = "refinery_images";
 
-// 辅助函数：计算原始像素的哈希（极快）
 pub fn hash_dynamic_image(image: &DynamicImage) -> String {
     let raw_bytes = image.as_bytes();
     let hash_val = xxh3_64(raw_bytes);
-    format!("{:016x}", hash_val) // 输出 16 位 hex
+    format!("{:016x}", hash_val) 
 }
 
-// 辅助函数：统一的内容哈希（使用 xxHash）
 pub fn hash_content(content: &[u8]) -> String {
     let hash_val = xxh3_64(content);
     format!("{:016x}", hash_val)
 }
 
-fn ensure_image_dir(app: &AppHandle) -> Result<PathBuf, String> {
+fn ensure_image_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
     let app_dir = app.path().app_local_data_dir()
         .map_err(|e| format!("Failed to get app data dir: {}", e))?;
 
@@ -38,30 +36,21 @@ fn ensure_image_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(image_dir)
 }
 
-// 核心优化：使用 Fast 压缩模式保存 PNG
-pub fn save_image_to_disk(app: &AppHandle, image: &DynamicImage) -> Result<(String, String), String> {
-    // 1. 先计算哈希 (基于原始像素，极快)
+pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) -> Result<(String, String), String> {
     let hash = hash_dynamic_image(image);
 
-    // 2. 检查文件是否存在
     let dir = ensure_image_dir(app)?;
     let file_name = format!("{}.png", hash);
     let file_path = dir.join(&file_name);
     let file_path_str = file_path.to_string_lossy().to_string();
 
     if file_path.exists() {
-        // 命中缓存，直接返回，跳过编码
         return Ok((file_path_str, hash));
     }
 
-    // 3. 只有新图片才进行编码写入
-    // 使用 BufWriter 包装 File，减少磁盘 I/O 次数
     let file = fs::File::create(&file_path).map_err(|e| e.to_string())?;
     let ref_writer = BufWriter::new(file);
 
-    // 4. 配置 PNG 编码器
-    // CompressionType::Fast 是关键！牺牲一点体积换取速度，依然无损。
-    // FilterType::Adaptive 是默认的，通常平衡性较好
     let encoder = PngEncoder::new_with_quality(
         ref_writer,
         CompressionType::Fast,
@@ -78,11 +67,6 @@ pub fn save_image_to_disk(app: &AppHandle, image: &DynamicImage) -> Result<(Stri
     Ok((file_path_str, hash))
 }
 
-/// 场景 A：剪贴板捕获逻辑 (Worker 使用)
-/// 逻辑：
-/// 1. 计算哈希，在数据库中查找最近的一条相同哈希的记录。
-/// 2. 如果存在 -> 更新时间，使其置顶 (Bump)。
-/// 3. 如果不存在 -> 插入新记录。
 pub fn capture_clipboard_item(
     conn: &Connection,
     kind: RefineryKind,
@@ -96,16 +80,13 @@ pub fn capture_clipboard_item(
 ) -> Result<(bool, String), String> {
     let now = Utc::now().timestamp_millis();
 
-    // 1. 查找是否存在相同内容的记录 (按时间倒序取最新的)
     let existing_id: Option<String> = conn.query_row(
         "SELECT id FROM refinery_history WHERE content_hash = ? ORDER BY updated_at DESC LIMIT 1",
         params![&hash],
-        |row| row.get(0)
+        |row: &rusqlite::Row| row.get(0) // 显式类型
     ).optional().map_err(|e| e.to_string())?;
 
     if let Some(id) = existing_id {
-        // 2. 存在 -> 仅仅更新时间戳和来源信息 (Bump)
-        // 注意：不覆盖用户可能已经编辑过的 title 或 tags
         match (&source_app, &url) {
             (Some(app), Some(u)) => {
                 conn.execute(
@@ -134,7 +115,6 @@ pub fn capture_clipboard_item(
         }
         Ok((false, id))
     } else {
-        // 3. 不存在 -> 插入新记录
         let new_id = Uuid::new_v4().to_string();
         let meta_json = serde_json::to_string(&metadata).unwrap_or("{}".to_string());
 
@@ -163,8 +143,6 @@ pub fn capture_clipboard_item(
     }
 }
 
-/// 场景 B：用户手动创建笔记 (Command 使用)
-/// 逻辑：直接插入，不检查去重。
 pub fn create_manual_note_db(
     conn: &Connection,
     content: String,
@@ -173,7 +151,6 @@ pub fn create_manual_note_db(
     let now = Utc::now().timestamp_millis();
     let new_id = Uuid::new_v4().to_string();
 
-    // 计算哈希和预览
     let hash = hash_content(content.as_bytes());
     let char_count = content.chars().count();
     let size_info = format!("{} chars", char_count);
@@ -209,7 +186,6 @@ pub fn create_manual_note_db(
     Ok(new_id)
 }
 
-/// 场景 C：用户更新笔记内容或标题 (Command 使用)
 pub fn update_note_db(
     conn: &Connection,
     id: &str,
@@ -219,7 +195,6 @@ pub fn update_note_db(
     let now = Utc::now().timestamp_millis();
 
     if let Some(new_content) = content {
-        // 如果更新了内容，必须重新计算 Hash、Size 和 Preview
         let hash = hash_content(new_content.as_bytes());
         let char_count = new_content.chars().count();
         let size_info = format!("{} chars", char_count);
@@ -238,7 +213,6 @@ pub fn update_note_db(
             params![new_content, hash, preview, size_info, title, now, id]
         ).map_err(|e| e.to_string())?;
     } else if let Some(new_title) = title {
-        // 只更新标题
         conn.execute(
             "UPDATE refinery_history SET title = ?1, updated_at = ?2 WHERE id = ?3",
             params![new_title, now, id]
