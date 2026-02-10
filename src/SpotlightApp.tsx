@@ -28,6 +28,7 @@ import { SpotlightItem } from '@/types/spotlight';
 import { ShellType } from '@/types/prompt';
 
 const appWindow = getCurrentWebviewWindow();
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
 function SpotlightContent() {
   const {
@@ -78,7 +79,7 @@ function SpotlightContent() {
     // 1. 处理剪贴板粘贴
     if (item.type === 'clipboard') {
         try {
-            await invoke('spotlight_paste', { itemId: item.id });
+            await invoke(`${REFINERY_PLUGIN_PREFIX}spotlight_paste`, { itemId: item.id });
             setQuery('');
             // 注意：不需要手动 hide，因为 rust 端已经 hide 了
         } catch (e) {
