@@ -23,7 +23,7 @@ use tokio::time::sleep;
 
 mod git;
 mod export;
-mod db;
+use ctxrun_db as db;
 mod monitor;
 mod env_probe;
 mod apps;

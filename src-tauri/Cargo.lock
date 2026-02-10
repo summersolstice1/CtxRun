@@ -982,6 +982,7 @@ dependencies = [
  "clipboard-rs",
  "crossbeam-channel",
  "csv",
+ "ctxrun-db",
  "ctxrun-plugin-automator",
  "ctxrun-plugin-context",
  "enigo",

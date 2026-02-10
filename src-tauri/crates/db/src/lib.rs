@@ -8,5 +8,6 @@ pub mod apps;
 pub mod shell_history;
 
 // 重新导出核心状态，方便其他模块引用
+pub use init::init_db; 
 pub use init::DbState;
 pub use models::*;

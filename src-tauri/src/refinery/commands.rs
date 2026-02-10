@@ -115,7 +115,7 @@ pub fn get_refinery_history(
     // 转换参数类型以匹配 rusqlite api
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-    let iter = stmt.query_map(param_refs.as_slice(), |row| {
+    let iter = stmt.query_map(param_refs.as_slice(), |row: &rusqlite::Row| {
         // 处理 tags JSON 字符串转 Vec<String>
         let tags_str: Option<String> = row.get("tags")?;
         let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
@@ -165,7 +165,7 @@ pub fn get_refinery_item_detail(state: State<DbState>, id: String) -> Result<Opt
     let item = conn.query_row(
         "SELECT * FROM refinery_history WHERE id = ?",
         params![id],
-        |row| {
+        |row: &rusqlite::Row| {
             // 处理 tags JSON 字符串转 Vec<String>
             let tags_str: Option<String> = row.get("tags")?;
             let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
@@ -260,7 +260,7 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
             .map_err(|e| e.to_string())?;
 
         for id in ids {
-            let rows = stmt.query_map(params![id], |row| {
+            let rows = stmt.query_map(params![id], |row: &rusqlite::Row| {
                 let kind: String = row.get(0)?;
                 let content: String = row.get(1)?;
                 Ok((kind, content))
@@ -339,7 +339,7 @@ pub fn clear_refinery_history(
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-    let ids: Vec<String> = stmt.query_map(param_refs.as_slice(), |row| row.get(0))
+    let ids: Vec<String> = stmt.query_map(param_refs.as_slice(), |row: &rusqlite::Row| row.get(0))
         .map_err(|e| e.to_string())?
         .filter_map(|r| r.ok())
         .collect();
@@ -573,7 +573,7 @@ pub fn execute_count_cleanup(
 
     // 查询待删除的 ID
     let ids: Vec<String> = conn.prepare(&sql).map_err(|e| e.to_string())?
-        .query_map([], |row| row.get(0))
+        .query_map([], |row: &rusqlite::Row| row.get(0))
         .map_err(|e| e.to_string())?
         .filter_map(|r| r.ok())
         .collect();
@@ -616,7 +616,7 @@ pub fn execute_time_cleanup(
     }
 
     let ids: Vec<String> = conn.prepare(&sql).map_err(|e| e.to_string())?
-        .query_map(params![cutoff_time], |row| row.get(0))
+        .query_map(params![cutoff_time], |row: &rusqlite::Row| row.get(0))
         .map_err(|e| e.to_string())?
         .filter_map(|r| r.ok())
         .collect();

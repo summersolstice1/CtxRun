@@ -67,6 +67,8 @@ tauri-build = { workspace = true }
 ctxrun-plugin-automator = { path = "crates/automator" }
 ctxrun-plugin-context = { path = "crates/context" }
 
+ctxrun-db = { workspace = true } 
+
 tauri-plugin-single-instance = { workspace = true }
 serde_json = "1.0"
 serde = { workspace = true }

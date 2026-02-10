@@ -1,4 +1,4 @@
-use crate::db::{AppEntry, DbState};
+use ctxrun_db::{AppEntry, DbState};
 use tauri::State;
 use std::path::Path;
 
@@ -10,7 +10,7 @@ use std::os::windows::process::CommandExt;
 
 #[tauri::command]
 pub async fn refresh_apps(state: State<'_, DbState>) -> Result<String, String> {
-    let items = tauri::async_runtime::spawn_blocking(move || {
+    let items = tauri::async_runtime::spawn_blocking(move || -> Vec<AppEntry> {
         scan_system()
     }).await.map_err(|e| e.to_string())?;
 
@@ -18,7 +18,7 @@ pub async fn refresh_apps(state: State<'_, DbState>) -> Result<String, String> {
 
     // 同步到数据库
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
-    crate::db::apps::sync_scanned_apps(&conn, items).map_err(|e| e.to_string())?;
+    ctxrun_db::apps::sync_scanned_apps(&conn, items).map_err(|e| e.to_string())?;
 
     Ok(format!("Scanned {} applications", count))
 }
@@ -53,7 +53,7 @@ pub async fn open_app(path: String, state: State<'_, DbState>) -> Result<(), Str
     }
 
     // 2. 异步更新使用计数
-    let _ = crate::db::apps::record_app_usage(state, path);
+    let _ = ctxrun_db::apps::record_app_usage(state, path);
 
     Ok(())
 }
