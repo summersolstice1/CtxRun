@@ -1031,6 +1031,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctxrun-db"
+version = "1.5.4"
+dependencies = [
+ "chrono",
+ "csv",
+ "refinery",
+ "regex",
+ "reqwest 0.12.24",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "serde_rusqlite",
+ "tauri",
+ "uuid",
+]
+
+[[package]]
 name = "ctxrun-plugin-automator"
 version = "1.5.4"
 dependencies = [

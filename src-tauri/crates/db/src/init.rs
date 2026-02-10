@@ -6,7 +6,7 @@ use tauri::{AppHandle, Manager};
 use refinery::embed_migrations;
 
 // 编译时嵌入 migrations 文件夹中的 SQL 文件
-embed_migrations!("./migrations");
+embed_migrations!("migrations");
 
 pub struct DbState {
     pub conn: Mutex<Connection>,
