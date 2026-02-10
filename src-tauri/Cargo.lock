@@ -1063,6 +1063,8 @@ name = "ctxrun-plugin-context"
 version = "1.5.4"
 dependencies = [
  "arboard",
+ "ctxrun-db",
+ "entropy",
  "ignore",
  "once_cell",
  "rayon",

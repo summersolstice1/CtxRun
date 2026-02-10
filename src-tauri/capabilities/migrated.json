@@ -68,6 +68,7 @@
     "ctxrun-plugin-automator:allow-stop-clicker",
     "ctxrun-plugin-automator:allow-get-mouse-position",
     "ctxrun-plugin-context:allow-calculate-context-stats",
+    "ctxrun-plugin-context:allow-scan-for-secrets",
     "ctxrun-plugin-context:allow-get-context-content",
     "ctxrun-plugin-context:allow-copy-context-to-clipboard",
     "ctxrun-plugin-context:allow-save-context-to-file",

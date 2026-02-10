@@ -162,4 +162,30 @@ Denies the save_context_to_file command without any pre-configured scope.
 
 </td>
 </tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-context:allow-scan-for-secrets`
+
+</td>
+<td>
+
+Enables the scan_for_secrets command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-context:deny-scan-for-secrets`
+
+</td>
+<td>
+
+Denies the scan_for_secrets command without any pre-configured scope.
+
+</td>
+</tr>
 </table>

@@ -4431,6 +4431,12 @@
           "markdownDescription": "Enables the save_context_to_file command without any pre-configured scope."
         },
         {
+          "description": "Enables the scan_for_secrets command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-scan-for-secrets",
+          "markdownDescription": "Enables the scan_for_secrets command without any pre-configured scope."
+        },
+        {
           "description": "Denies the calculate_context_stats command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-context:deny-calculate-context-stats",
@@ -4465,6 +4471,12 @@
           "type": "string",
           "const": "ctxrun-plugin-context:deny-save-context-to-file",
           "markdownDescription": "Denies the save_context_to_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the scan_for_secrets command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-scan-for-secrets",
+          "markdownDescription": "Denies the scan_for_secrets command without any pre-configured scope."
         },
         {
           "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-ask`\n- `allow-confirm`\n- `allow-message`\n- `allow-save`\n- `allow-open`",

@@ -23,7 +23,6 @@ use tokio::time::sleep;
 
 mod git;
 mod export;
-mod gitleaks;
 mod db;
 mod monitor;
 mod env_probe;
@@ -162,31 +161,6 @@ async fn check_python_env() -> Result<String, String> {
 }
 
 #[tauri::command]
-async fn scan_for_secrets(
-    state: State<'_, db::DbState>,
-    content: String
-) -> Result<Vec<gitleaks::SecretMatch>, String> {
-    let ignored_set = {
-        let conn = state.conn.lock().map_err(|e| e.to_string())?;
-        db::secrets::get_all_ignored_values_internal(&conn).map_err(|e| e.to_string())?
-    };
-
-    let matches = tauri::async_runtime::spawn_blocking(move || {
-        let raw_matches = gitleaks::scan_text(&content);
-
-        if ignored_set.is_empty() {
-            raw_matches
-        } else {
-            raw_matches.into_iter()
-                .filter(|m| !ignored_set.contains(&m.value))
-                .collect()
-        }
-    }).await.map_err(|e| e.to_string())?;
-
-    Ok(matches)
-}
-
-#[tauri::command]
 async fn export_git_diff(
     project_path: String,
     old_hash: String,
@@ -241,7 +215,6 @@ fn main() {
             git::get_git_diff,
             git::get_git_diff_text,
             export_git_diff,
-            scan_for_secrets,
             db::prompts::get_prompts,
             db::prompts::search_prompts,
             db::prompts::import_prompt_pack,

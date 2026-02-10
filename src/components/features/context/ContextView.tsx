@@ -207,7 +207,7 @@ export function ContextView() {
       }
 
       try {
-          const results = await invoke<SecretMatch[]>('scan_for_secrets', { content: text });
+          const results = await invoke<SecretMatch[]>(`${CONTEXT_PLUGIN_PREFIX}scan_for_secrets`, { content: text });
 
           if (results && results.length > 0) {
               setScanState({

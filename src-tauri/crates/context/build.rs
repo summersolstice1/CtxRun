@@ -5,6 +5,7 @@ const COMMANDS: &[&str] = &[
     "save_context_to_file",
     "has_ignore_files",
     "get_ignored_by_protocol",
+    "scan_for_secrets",
 ];
 
 fn main() {
