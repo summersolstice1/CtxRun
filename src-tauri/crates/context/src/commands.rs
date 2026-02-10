@@ -6,7 +6,8 @@ use arboard::Clipboard;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 
 #[tauri::command]
-pub async fn calculate_context_stats(
+pub async fn calculate_context_stats<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     remove_comments: bool
 ) -> Result<ContextStats, String> {
@@ -18,7 +19,8 @@ pub async fn calculate_context_stats(
 }
 
 #[tauri::command]
-pub async fn get_context_content(
+pub async fn get_context_content<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     header: String,
     remove_comments: bool
@@ -31,7 +33,8 @@ pub async fn get_context_content(
 }
 
 #[tauri::command]
-pub async fn copy_context_to_clipboard(
+pub async fn copy_context_to_clipboard<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     header: String,
     remove_comments: bool
@@ -46,7 +49,8 @@ pub async fn copy_context_to_clipboard(
 }
 
 #[tauri::command]
-pub async fn save_context_to_file(
+pub async fn save_context_to_file<R: tauri::Runtime>(
+    _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     header: String,
     remove_comments: bool,

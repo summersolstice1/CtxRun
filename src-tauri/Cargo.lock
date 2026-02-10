@@ -983,6 +983,7 @@ dependencies = [
  "crossbeam-channel",
  "csv",
  "ctxrun-plugin-automator",
+ "ctxrun-plugin-context",
  "enigo",
  "entropy",
  "futures",
@@ -1038,6 +1039,22 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "tokio",
+]
+
+[[package]]
+name = "ctxrun-plugin-context"
+version = "1.5.4"
+dependencies = [
+ "arboard",
+ "ignore",
+ "once_cell",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "tiktoken-rs",
 ]
 
 [[package]]

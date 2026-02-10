@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-has-ignore-files"
+description = "Enables the has_ignore_files command without any pre-configured scope."
+commands.allow = ["has_ignore_files"]
+
+[[permission]]
+identifier = "deny-has-ignore-files"
+description = "Denies the has_ignore_files command without any pre-configured scope."
+commands.deny = ["has_ignore_files"]

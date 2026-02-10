@@ -5,6 +5,8 @@ import { basename } from '@tauri-apps/api/path';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
 import { invoke } from '@tauri-apps/api/core';
+
+const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 import {
   FolderOpen, RefreshCw, Loader2, FileJson,
   PanelLeft, Search, ArrowRight, SlidersHorizontal, ChevronUp,
@@ -267,10 +269,10 @@ export function ContextView() {
       const header = generateHeader(fileTree, removeComments);
 
       if (detectSecrets) {
-        const text = await invoke<string>('get_context_content', { paths, header, removeComments });
+        const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, { paths, header, removeComments });
         await processWithSecurityCheck(text, 'copy');
       } else {
-        await invoke('copy_context_to_clipboard', { paths, header, removeComments });
+        await invoke(`${CONTEXT_PLUGIN_PREFIX}copy_context_to_clipboard`, { paths, header, removeComments });
         triggerToast(getText('context', 'toastCopied', language), 'success');
       }
     } catch (err) {
@@ -299,10 +301,10 @@ export function ContextView() {
       }
 
       if (detectSecrets) {
-        const text = await invoke<string>('get_context_content', { paths, header, removeComments });
+        const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, { paths, header, removeComments });
         await processWithSecurityCheck(text, 'save', filePath);
       } else {
-        await invoke('save_context_to_file', {
+        await invoke(`${CONTEXT_PLUGIN_PREFIX}save_context_to_file`, {
           paths,
           header,
           removeComments,

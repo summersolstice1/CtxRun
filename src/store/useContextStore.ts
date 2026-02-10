@@ -4,6 +4,8 @@ import { fileStorage } from '@/lib/storage';
 import { IgnoreConfig, DEFAULT_PROJECT_IGNORE, FileNode } from '@/types/context';
 import { invoke } from '@tauri-apps/api/core';
 
+const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
+
 const setAllChildren = (node: FileNode, isSelected: boolean): FileNode => {
   const newNode = { ...node, isSelected };
   if (newNode.children) {
@@ -186,7 +188,7 @@ export const useContextStore = create<ContextState>()(
         // 如果开启了同步，从后端获取被 ignore 命中的所有路径
         if (isIgnoreSyncActive && projectRoot) {
           const allPaths = collectAllPaths(fileTree);
-          protocolIgnoredPaths = await invoke<string[]>('get_ignored_by_protocol', {
+          protocolIgnoredPaths = await invoke<string[]>(`${CONTEXT_PLUGIN_PREFIX}get_ignored_by_protocol`, {
             projectRoot,
             paths: allPaths
           });
@@ -262,7 +264,7 @@ export const useContextStore = create<ContextState>()(
       checkIgnoreFiles: async () => {
         const state = get();
         if (!state.projectRoot) return;
-        const hasFiles = await invoke<boolean>('has_ignore_files', { projectRoot: state.projectRoot });
+        const hasFiles = await invoke<boolean>(`${CONTEXT_PLUGIN_PREFIX}has_ignore_files`, { projectRoot: state.projectRoot });
         set({ hasProjectIgnoreFiles: hasFiles });
       },
     }),

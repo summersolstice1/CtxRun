@@ -10,6 +10,8 @@ import { getText } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
 
+const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
+
 interface ContextPreviewProps {
   fileTree: FileNode[];
 }
@@ -40,7 +42,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
       setIsLoading(true);
       try {
         const header = generateHeader(fileTree, removeComments);
-        const text = await invoke<string>('get_context_content', {
+        const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, {
             paths,
             header,
             removeComments

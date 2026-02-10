@@ -28,7 +28,6 @@ mod db;
 mod monitor;
 mod env_probe;
 mod apps;
-mod context;
 mod hyperview;
 mod scheduler;
 mod refinery;
@@ -230,7 +229,8 @@ fn main() {
             ensure_main_window(app);
         }))
         .plugin(ctxrun_plugin_automator::init())
-        
+        .plugin(ctxrun_plugin_context::init())
+
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
@@ -277,12 +277,6 @@ fn main() {
             monitor::get_env_info,
             monitor::diagnose_network,
             monitor::get_ai_context,
-            context::commands::calculate_context_stats,
-            context::commands::get_context_content,
-            context::commands::copy_context_to_clipboard,
-            context::commands::save_context_to_file,
-            context::commands::has_ignore_files,
-            context::commands::get_ignored_by_protocol,
             hyperview::get_file_meta,
             scheduler::update_reminder_config,
             refinery::commands::get_refinery_history,
