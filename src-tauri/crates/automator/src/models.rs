@@ -25,3 +25,14 @@ pub struct ClickerConfig {
     pub fixed_x: i32,
     pub fixed_y: i32,
 }
+
+// [新增] 用于解析 Zustand 生成的 automator-config.json
+#[derive(Debug, Deserialize)]
+pub struct AutomatorStoreRoot {
+    pub state: AutomatorStoreState,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AutomatorStoreState {
+    pub config: ClickerConfig,
+}

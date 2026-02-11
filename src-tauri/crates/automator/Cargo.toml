@@ -3,11 +3,12 @@ name = "ctxrun-plugin-automator"
 version.workspace = true
 description = "Automator plugin for CtxRun"
 edition.workspace = true
-links = "ctxrun-plugin-automator" 
+links = "ctxrun-plugin-automator"
 
 [dependencies]
 tauri = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }
 enigo = { workspace = true }
 

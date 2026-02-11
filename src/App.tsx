@@ -7,7 +7,6 @@ import { TitleBar } from "@/components/layout/TitleBar";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { useAppStore, AppTheme } from "@/store/useAppStore";
-import { useAutomatorStore } from "@/store/useAutomatorStore";
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
 import { getText } from '@/lib/i18n';
 import { PreviewModal } from "@/components/features/hyperview";
@@ -103,17 +102,6 @@ function App() {
       intervalMinutes: restReminder.intervalMinutes
     });
   }, [restReminder.enabled, restReminder.intervalMinutes]);
-
-  useEffect(() => {
-    // 监听来自 Rust 后端的 Alt+F1 事件
-    const unlisten = listen('automator:toggle-request', async () => {
-      const state = useAutomatorStore.getState();
-      // 前端调用 toggle，或者调用 Rust 命令
-      await state.toggle();
-    });
-
-    return () => { unlisten.then(f => f()); };
-  }, []);
 
   return (
     <>

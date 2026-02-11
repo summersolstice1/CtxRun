@@ -1050,6 +1050,7 @@ version = "1.5.4"
 dependencies = [
  "enigo",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-plugin",
  "tokio",

@@ -1,9 +1,12 @@
 use std::fs;
 use std::sync::Mutex;
 use std::collections::HashMap;
-use tauri::{AppHandle, Manager, Runtime, Emitter};
+use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use serde::Deserialize;
+
+// [新增] 引入 automator 插件
+use ctxrun_plugin_automator;
 
 // 1. 定义与前端 Zustand store 匹配的 JSON 结构
 #[derive(Deserialize, Debug)]
@@ -112,16 +115,9 @@ fn handle_trigger<R: Runtime>(app: &AppHandle<R>, action: &ShortcutAction) {
             }
         }
         ShortcutAction::ToggleAutomator => {
-            // 这里利用事件总线通知后端插件或前端
-            // 最佳实践：直接调用 Automator 插件的逻辑（需要插件暴露 pub 接口）
-            // 降级方案：发送事件，由 App.tsx (如果活着) 响应，或者 Automator 插件在 Rust 侧监听此事件
-
-            // 发送给前端（兼容现有逻辑）
-            let _ = app.emit("automator:toggle-request", ());
-
-            // 如果你想完全在后端处理 Alt+F1（即使前端已销毁），你需要修改 automator crate，
-            // 让它监听一个 Rust 内部的 Channel 或直接调用它的状态管理。
-            // 鉴于目前架构，emit 是最安全的改动。
+            // [修改] 直接调用后端逻辑，不依赖前端
+            println!("[Shortcut] F1 pressed - Toggling Automator via Backend");
+            ctxrun_plugin_automator::toggle(app);
         }
     }
 }
