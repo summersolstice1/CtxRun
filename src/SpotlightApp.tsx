@@ -1,12 +1,11 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { getCurrentWebviewWindow, getAllWebviewWindows } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { LogicalSize } from '@tauri-apps/api/dpi';
 import { listen } from '@tauri-apps/api/event';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { message } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
-import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 
 import { useAppStore, AppTheme } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
@@ -322,53 +321,8 @@ function SpotlightContent() {
 }
 
 export default function SpotlightApp() {
-  const { setTheme, theme, spotlightShortcut } = useAppStore();
+  const { setTheme, theme } = useAppStore();
   const { fetchChatTemplates } = usePromptStore();
-
-  useEffect(() => {
-    if (appWindow.label !== 'spotlight') return;
-
-    const setupShortcut = async () => {
-      try {
-        const shortcut = spotlightShortcut; // 比如 Alt+S
-        if (!shortcut) return;
-
-        // 1. 【关键修改】停止使用 unregisterAll()！！
-        // 只注销当前设置的这个快捷键
-        const alreadyRegistered = await isRegistered(shortcut);
-        if (alreadyRegistered) {
-          await unregister(shortcut);
-        }
-
-        // 2. 注册
-        await register(shortcut, async (event) => {
-          if (event.state === 'Pressed') {
-            const windows = await getAllWebviewWindows();
-            const spotlight = windows.find(w => w.label === 'spotlight');
-            if (spotlight) {
-              const isVisible = await spotlight.isVisible();
-              if (isVisible) {
-                await spotlight.hide();
-              } else {
-                await spotlight.show();
-                await spotlight.setFocus();
-              }
-            }
-          }
-        });
-      } catch (err) {
-        console.warn('Spotlight shortcut sync issue:', err);
-      }
-    };
-
-    setupShortcut();
-
-    return () => {
-      if (spotlightShortcut) {
-        unregister(spotlightShortcut).catch(() => {});
-      }
-    };
-  }, [spotlightShortcut]);
 
   useEffect(() => {
     const root = document.documentElement;

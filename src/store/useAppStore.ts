@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStorage } from '@/lib/storage';
 import { IgnoreConfig, DEFAULT_GLOBAL_IGNORE } from '@/types/context';
 import { emit } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, DEFAULT_PROVIDER_SETTINGS } from '@/types/model';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 
@@ -180,7 +181,15 @@ export const useAppStore = create<AppState>()(
         }
         return { theme };
       }),
-      setSpotlightShortcut: (shortcut) => set({ spotlightShortcut: shortcut }),
+      setSpotlightShortcut: (shortcut) => {
+        // 1. 更新本地 State (这将触发 persist 写入 app-config.json)
+        set({ spotlightShortcut: shortcut });
+
+        // 2. 通知后端读取最新的 JSON 文件并重新注册
+        // 注意：由于 persist 是异步写入磁盘的，虽然我们在 Rust 里加了 100ms 延迟，
+        // 但为了保险，这里不需要 await，让它由 UI 驱动即可
+        invoke('refresh_shortcuts').catch(err => console.error("Failed to refresh shortcuts:", err));
+      },
       setRestReminder: (config) => set((state) => ({
         restReminder: { ...state.restReminder, ...config }
       })),

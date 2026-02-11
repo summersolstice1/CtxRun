@@ -27,6 +27,7 @@ mod env_probe;
 mod apps;
 mod hyperview;
 mod scheduler;
+mod shortcuts;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
@@ -157,6 +158,17 @@ async fn check_python_env() -> Result<String, String> {
     .map_err(|e| e.to_string())?
 }
 
+#[tauri::command]
+fn refresh_shortcuts(app: tauri::AppHandle) {
+    // 异步执行，避免阻塞前端，同时给文件写入留出微小缓冲
+    tauri::async_runtime::spawn(async move {
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        if let Some(manager) = app.try_state::<shortcuts::ShortcutManager>() {
+            manager.refresh(&app);
+        }
+    });
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -181,6 +193,7 @@ fn main() {
             get_file_size,
             get_system_info,
             check_python_env,
+            refresh_shortcuts,
             db::prompts::get_prompts,
             db::prompts::search_prompts,
             db::prompts::import_prompt_pack,
@@ -236,6 +249,13 @@ fn main() {
                     panic!("[Database] Critical Error: Failed to initialize database: {}", e);
                 }
             }
+
+            // 初始化快捷键管理器
+            let shortcut_manager = shortcuts::ShortcutManager::new();
+            // 初始加载配置并注册
+            shortcut_manager.refresh(app.handle());
+            // 注入 State
+            app.manage(shortcut_manager);
 
             let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
 

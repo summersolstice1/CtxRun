@@ -2,7 +2,6 @@ import { useEffect, Suspense, lazy } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
-import { register, unregister, isRegistered } from '@tauri-apps/plugin-global-shortcut';
 import { Loader2 } from 'lucide-react';
 import { TitleBar } from "@/components/layout/TitleBar";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -106,43 +105,14 @@ function App() {
   }, [restReminder.enabled, restReminder.intervalMinutes]);
 
   useEffect(() => {
-    const shortcut = 'F1';
-    
-    const setupAutomatorShortcut = async () => {
-      try {
-        // 1. 只检查并注销 F1，不影响 Alt+S
-        const alreadyRegistered = await isRegistered(shortcut);
-        if (alreadyRegistered) {
-          await unregister(shortcut);
-        }
+    // 监听来自 Rust 后端的 Alt+F1 事件
+    const unlisten = listen('automator:toggle-request', async () => {
+      const state = useAutomatorStore.getState();
+      // 前端调用 toggle，或者调用 Rust 命令
+      await state.toggle();
+    });
 
-        // 2. 重新注册
-        await register(shortcut, async (event) => {
-          if (event.state === 'Pressed') {
-            const state = useAutomatorStore.getState();
-            if (state.isRunning) {
-              await state.stop();
-            } else {
-              // 兜底：尝试启动前发送停止指令确保后端干净
-              await invoke('plugin:ctxrun-plugin-automator|stop_clicker').catch(() => {});
-              await state.start();
-            }
-          }
-        });
-      } catch (e) {
-        // 仅记录非冲突类的错误
-        if (!String(e).includes('already registered')) {
-          console.error('F1 registration error:', e);
-        }
-      }
-    };
-
-    setupAutomatorShortcut();
-
-    return () => {
-      // 卸载时也只注销自己的快捷键
-      unregister(shortcut).catch(() => {});
-    };
+    return () => { unlisten.then(f => f()); };
   }, []);
 
   return (
