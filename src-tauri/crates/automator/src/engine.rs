@@ -2,11 +2,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter, Runtime}; // 引入 Runtime
+use tauri::{AppHandle, Emitter, Runtime};
 use enigo::{Enigo, Mouse, Button, Coordinate, Settings, Direction};
 use crate::models::{ClickerConfig, ClickType, StopCondition};
 
-// 全局运行状态锁
 pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
 }
@@ -19,9 +18,8 @@ impl AutomatorState {
     }
 }
 
-// 这里也需要加上泛型 <R: Runtime>
 pub fn run_clicker_task<R: Runtime>(
-    app: AppHandle<R>, // 修改为 AppHandle<R>
+    app: AppHandle<R>,
     config: ClickerConfig,
     running_flag: Arc<AtomicBool>
 ) {
@@ -46,26 +44,20 @@ pub fn run_clicker_task<R: Runtime>(
         println!("[Automator] Started. Interval: {}ms", config.interval_ms);
 
         while running_flag.load(Ordering::SeqCst) {
-            // 1. 检查坐标锁定
             if config.use_fixed_location {
                 let _ = enigo.move_mouse(config.fixed_x, config.fixed_y, Coordinate::Abs);
             }
 
-            // 2. 执行点击
             let _ = enigo.button(button, Direction::Click);
-            
-            // 3. 更新计数并通知前端
+
             count += 1;
             let _ = app.emit("automator:count", count);
 
-            // 4. 检查停止条件
             if let StopCondition::MaxCount(max) = config.stop_condition {
                 if count >= max {
                     break;
                 }
             }
-
-            // 5. 等待
             if config.interval_ms > 100 {
                 let chunks = config.interval_ms / 50;
                 for _ in 0..chunks {
@@ -78,7 +70,6 @@ pub fn run_clicker_task<R: Runtime>(
             }
         }
 
-        // 任务结束，重置状态
         running_flag.store(false, Ordering::SeqCst);
         let _ = app.emit("automator:status", false);
         println!("[Automator] Stopped. Total clicks: {}", count);

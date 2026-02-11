@@ -28,7 +28,6 @@ export function Sidebar() {
         isSidebarOpen ? "w-48" : "w-16"
       )}
     >
-      {/* Header */}
       <div className="h-14 flex items-center border-b border-border shrink-0 overflow-hidden">
         <div className="h-full flex items-center min-w-[256px] pl-5">
           <div className={cn(
@@ -58,7 +57,6 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Menu - 核心修改区域 */}
       <nav className="flex-1 py-6 px-3 space-y-1.5 overflow-y-auto overflow-x-hidden flex flex-col">
         {menuItems.map((item) => {
           const isActive = currentView === item.id;
@@ -72,7 +70,6 @@ export function Sidebar() {
                 isActive ? "text-primary" : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
               )}
             >
-              {/* 悬浮圆角矩形背景动画 */}
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active-pill"
@@ -106,7 +103,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="shrink-0 px-2 flex flex-col overflow-hidden whitespace-nowrap py-2">
         <button
           onClick={() => setSettingsOpen(true)}

@@ -267,7 +267,6 @@ pub async fn export_git_diff(
 ) -> Result<(), String> {
 
     tauri::async_runtime::spawn_blocking(move || {
-        // get_git_diff 是同步函数，不需要 await
         let all_files = get_git_diff(project_path, old_hash, new_hash)?;
 
         let filtered_files: Vec<GitDiffFile> = all_files

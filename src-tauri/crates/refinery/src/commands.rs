@@ -275,7 +275,6 @@ pub async fn copy_refinery_image(image_path: String) -> Result<(), String> {
     }).await.map_err(|e| e.to_string())?
 }
 
-// 注意：这里需要 <R: Runtime>，因为 AppHandle 在这里被用作了参数
 #[tauri::command]
 pub fn create_note<R: Runtime>(
     app: AppHandle<R>,
@@ -289,7 +288,6 @@ pub fn create_note<R: Runtime>(
     Ok(new_id)
 }
 
-// 注意：这里需要 <R: Runtime>
 #[tauri::command]
 pub fn update_note<R: Runtime>(
     app: AppHandle<R>,
@@ -318,17 +316,13 @@ pub async fn update_cleanup_config<R: Runtime>(
         *state_config = config;
     }
 
-    // --- 核心修复：如果用户开启了清理，立即执行一次检查 ---
     if is_enabled {
-        // 这样即使当前已经 117 条，只要配置一同步，马上就会清理掉多出的 17 条
         let _ = manual_cleanup(app, state).await;
     }
 
     println!("[Refinery Cleanup] Config synced and check performed.");
     Ok(())
 }
-
-// 注意：这里需要 <R: Runtime>
 #[tauri::command]
 pub async fn manual_cleanup<R: Runtime>(
     app: AppHandle<R>,
@@ -386,7 +380,6 @@ pub fn execute_time_cleanup<R: Runtime>(app: &AppHandle<R>, days: u32, keep_pinn
     delete_items_internal(&conn, &ids)
 }
 
-// 注意：这里需要 <R: Runtime>
 #[tauri::command]
 pub async fn spotlight_paste<R: Runtime>(
     app: AppHandle<R>,

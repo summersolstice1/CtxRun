@@ -65,22 +65,17 @@ pub async fn save_context_to_file<R: tauri::Runtime>(
         Ok(())
     }).await.map_err(|e| e.to_string())?
 }
-
-/// 探测项目根目录下是否存在任何 ignore 配置文件
 #[tauri::command]
 pub fn has_ignore_files(project_root: String) -> bool {
     let root = Path::new(&project_root);
     let ignore_files = [".gitignore", ".ctxrunignore", ".npmignore", ".dockerignore"];
     ignore_files.iter().any(|f| root.join(f).exists())
 }
-
-/// 批量检查路径是否被项目的 ignore 规则命中
 #[tauri::command]
 pub fn get_ignored_by_protocol(project_root: String, paths: Vec<String>) -> Vec<String> {
     let root = Path::new(&project_root);
     let mut builder = GitignoreBuilder::new(root);
 
-    // 自动加载标准 ignore 文件
     let ignore_files = [".gitignore", ".ctxrunignore", ".npmignore"];
     for file in ignore_files {
         let path = root.join(file);
@@ -94,28 +89,22 @@ pub fn get_ignored_by_protocol(project_root: String, paths: Vec<String>) -> Vec<
     paths.into_iter()
         .filter(|p| {
             let path = Path::new(p);
-            // gitignore.matched(path, is_dir) 返回的是 PartialMatch
-            // 我们检查是否该文件被设置为 ignored
             gitignore.matched(path, path.is_dir()).is_ignore()
         })
         .collect()
 }
-
-/// 扫描文本中的敏感信息（密钥、密码等）
 #[tauri::command]
 pub async fn scan_for_secrets(
     state: State<'_, ctxrun_db::DbState>,
     content: String
 ) -> Result<Vec<SecretMatch>, String> {
-    
-    // 数据库操作包裹在代码块中，确保锁及时释放
+
     let ignored_set = {
         let conn = state.conn.lock().map_err(|e| e.to_string())?;
         ctxrun_db::secrets::get_all_ignored_values_internal(&conn)
             .map_err(|e| e.to_string())?
-    }; 
+    };
 
-    // 耗时操作在 spawn_blocking 中执行
     let matches = tauri::async_runtime::spawn_blocking(move || {
         let raw_matches = gitleaks::scan_text(&content);
 
