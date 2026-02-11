@@ -90,28 +90,19 @@ pub fn search_prompts(
         return Ok(Vec::new());
     }
 
-    // 1. 分词处理：支持 "adb help" 这种组合搜索
     let keywords: Vec<&str> = trimmed_query.split_whitespace().collect();
     if keywords.is_empty() {
         return Ok(Vec::new());
     }
 
-    // 2. 构建动态 SQL
-    // 我们计算一个 score 字段，用于排序
     let mut sql = String::from(
         "SELECT *,
         (
-            -- 权重 1: 标题完全匹配 (100分)
             (CASE WHEN title LIKE ?1 THEN 100 ELSE 0 END) +
-            -- 权重 2: 标题以查询词开头 (80分)
             (CASE WHEN title LIKE ?2 THEN 80 ELSE 0 END) +
-            -- 权重 3: 标题中包含 ' 查询词' (单词边界匹配) (60分)
             (CASE WHEN title LIKE ?3 THEN 60 ELSE 0 END) +
-            -- 权重 4: 标题包含查询词 (40分)
             (CASE WHEN title LIKE ?4 THEN 40 ELSE 0 END) +
-            -- 权重 5: 内容包含查询词 (20分)
             (CASE WHEN content LIKE ?4 THEN 20 ELSE 0 END) +
-            -- 额外加分: 收藏的项目 (+10分)
             (is_favorite * 10)
         ) as score
         FROM prompts
@@ -124,7 +115,6 @@ pub fn search_prompts(
     }
     sql.push_str(&where_clauses.join(" AND "));
 
-    // 4. 加上分类过滤
     if let Some(cat) = &category {
         if cat == "prompt" {
             sql.push_str(" AND (type = 'prompt' OR type IS NULL)");
@@ -133,32 +123,24 @@ pub fn search_prompts(
         }
     }
 
-    // 5. 排序：先按分数高低，再按更新时间
     sql.push_str(" ORDER BY score DESC, updated_at DESC LIMIT ? OFFSET ?");
 
-    // 6. 准备参数
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-    // 评分参数 (基于完整查询词)
-    params.push(Box::new(trimmed_query.to_string()));             // ?1: exact
-    params.push(Box::new(format!("{}%", trimmed_query)));         // ?2: starts with
-    params.push(Box::new(format!("% {}%", trimmed_query)));       // ?3: word boundary
-    params.push(Box::new(format!("%{}%", trimmed_query)));        // ?4: contains
+    params.push(Box::new(trimmed_query.to_string()));
+    params.push(Box::new(format!("{}%", trimmed_query)));
+    params.push(Box::new(format!("% {}%", trimmed_query)));
+    params.push(Box::new(format!("%{}%", trimmed_query)));
 
-    // 过滤参数 (基于每个分词)
     for kw in keywords {
         let pattern = format!("%{}%", kw);
-        params.push(Box::new(pattern.clone())); // title
-        params.push(Box::new(pattern.clone())); // content
-        params.push(Box::new(pattern.clone())); // description
+        params.push(Box::new(pattern.clone()));
     }
 
-    // 分页参数
     params.push(Box::new(page_size));
     params.push(Box::new(offset));
 
-    // 7. 执行查询
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
     let prompt_iter = stmt.query_map(param_refs.as_slice(), |row| {
@@ -475,8 +457,6 @@ pub fn import_prompts_from_csv(
         tx.execute("DELETE FROM prompts", []).map_err(|e| e.to_string())?;
     }
 
-    // overwrite: INSERT OR REPLACE (存在则更新)
-    // merge: INSERT OR IGNORE (存在则跳过)
     let sql = if mode == "overwrite" {
         "INSERT OR REPLACE INTO prompts (
             id, title, content, group_name, description, tags,
@@ -500,7 +480,6 @@ pub fn import_prompts_from_csv(
             let record: PromptCsvRow =
                 result.map_err(|e| format!("CSV 格式错误: {}", e))?;
 
-            // Process ID: empty -> generate new UUID
             let id = if let Some(ref pid) = record.id {
                 if pid.trim().is_empty() {
                     Uuid::new_v4().to_string()
@@ -511,7 +490,6 @@ pub fn import_prompts_from_csv(
                 Uuid::new_v4().to_string()
             };
 
-            // Process Tags: "tag1, tag2" -> ["tag1", "tag2"]
             let tags_vec: Vec<String> = record
                 .tags
                 .split(',')

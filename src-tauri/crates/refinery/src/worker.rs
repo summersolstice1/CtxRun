@@ -21,8 +21,6 @@ use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 pub static PASTING_FLAG: LazyLock<Arc<AtomicBool>> =
     LazyLock::new(|| Arc::new(AtomicBool::new(false)));
 
-// === 数据结构定义 ===
-
 enum ClipboardPayload {
     Text {
         content: String,
@@ -45,8 +43,6 @@ enum ClipboardPayload {
         source_app: Option<String>,
     }
 }
-
-// === 生产者：RefineryListener ===
 
 struct RefineryListener {
     tx: Sender<ClipboardPayload>,
@@ -292,7 +288,6 @@ impl<R: Runtime> RefineryProcessor<R> {
                 let event_name = if is_new { "refinery:create" } else { "refinery:update" };
                 let _ = self.app.emit(event_name, &id);
 
-                // --- 核心修复：无论是新内容还是旧内容置顶，只要操作了数据库，就触发清理信号 ---
                 if let Some(ref sender) = self.cleanup_sender {
                     let _ = sender.blocking_send(());
                 }
@@ -300,8 +295,6 @@ impl<R: Runtime> RefineryProcessor<R> {
         }
     }
 }
-
-// === 启动入口 ===
 
 pub fn init_listener<R: Runtime>(app: AppHandle<R>, cleanup_sender: Option<mpsc::Sender<()>>) {
     let (tx, rx) = bounded::<ClipboardPayload>(5);

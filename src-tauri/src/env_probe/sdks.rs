@@ -52,7 +52,6 @@ pub fn probe_sdks() -> HashMap<String, Vec<String>> {
                     .filter(|n| n.starts_with("android-"))
                     .map(|n| n.replace("android-", ""))
                     .collect();
-                // 数字排序
                 levels.sort_by(|a, b| a.parse::<u32>().unwrap_or(0).cmp(&b.parse::<u32>().unwrap_or(0)));
                 if !levels.is_empty() {
                     android_info.push(format!("API Levels: {}", levels.join(", ")));

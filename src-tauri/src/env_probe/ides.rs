@@ -38,14 +38,12 @@ fn check_ide(cfg: &IdeConfig) -> ToolInfo {
         }
     }
 
-    // 2. 如果命令行没找到，且是在 macOS 上，尝试 Bundle ID 查找
     #[cfg(target_os = "macos")]
     if info.version == "Not Found" && !cfg.mac_id.is_empty() {
         if let Ok(app_path) = common::run_command("mdfind", &[&format!("kMDItemCFBundleIdentifier == '{}'", cfg.mac_id)]) {
             let first_path = app_path.lines().next().unwrap_or("").trim();
             if !first_path.is_empty() {
                 info.path = Some(first_path.to_string());
-                // 获取版本
                 if let Ok(ver) = common::run_command("mdls", &["-name", "kMDItemShortVersionString", "-raw", first_path]) {
                      if !ver.is_empty() && ver != "(null)" {
                         info.version = ver;

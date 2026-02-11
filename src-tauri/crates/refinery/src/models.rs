@@ -26,7 +26,6 @@ pub struct RefineryMetadata {
     pub height: Option<u32>,
     pub format: Option<String>,
     pub tokens: Option<usize>,
-    /// 用于存储混合记录中的图片路径
     pub image_path: Option<String>,
 }
 
@@ -34,21 +33,19 @@ pub struct RefineryMetadata {
 #[serde(rename_all = "camelCase")]
 pub struct RefineryItem {
     pub id: String,
-    pub kind: String,           // "text" | "image"
-    pub content: Option<String>, // 文本内容 或 图片路径
-    pub content_hash: String,   // SHA256
+    pub kind: String,
+    pub content: Option<String>,
+    pub content_hash: String,
     pub preview: Option<String>,
     pub source_app: Option<String>,
     pub url: Option<String>,
     pub size_info: Option<String>,
     pub is_pinned: bool,
-    pub metadata: String,       // JSON
+    pub metadata: String,
     pub created_at: i64,
     pub updated_at: i64,
-
-    // --- V4 新增字段 ---
     pub title: Option<String>,
-    pub tags: Option<Vec<String>>, // 数据库存 JSON 字符串，取出来转 Vec
+    pub tags: Option<Vec<String>>,
     #[serde(default)]
     pub is_manual: bool,
     #[serde(default)]

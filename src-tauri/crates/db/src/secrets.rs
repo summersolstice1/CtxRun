@@ -63,7 +63,6 @@ pub fn delete_ignored_secret(state: State<DbState>, id: String) -> Result<(), St
     Ok(())
 }
 
-// 内部帮助函数：获取所有白名单值（用于扫描过滤）
 pub fn get_all_ignored_values_internal(conn: &Connection) -> Result<std::collections::HashSet<String>, rusqlite::Error> {
     let mut stmt = conn.prepare("SELECT value FROM ignored_secrets")?;
     let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;

@@ -12,7 +12,6 @@ pub mod scan_logic;
 pub mod traits;
 pub mod scanners;
 
-/// 工具的详细信息
 #[derive(Debug, Serialize, Clone)]
 pub struct ToolInfo {
     pub name: String,
@@ -21,7 +20,6 @@ pub struct ToolInfo {
     pub description: Option<String>,
 }
 
-/// 环境报告的顶级分类
 #[derive(Debug, Serialize, Clone)]
 pub struct EnvReport {
     pub system: Option<HashMap<String, String>>,
@@ -55,22 +53,20 @@ impl Default for EnvReport {
     }
 }
 
-/// 项目特征类型定义
 #[derive(Debug, Serialize, Clone, PartialEq)]
 pub enum ProjectType {
-    Tauri,        // 前端 + Rust
-    NodeFrontend, // React, Vue...
-    Rust,         // Pure Rust
-    Python,       // Django, Flask
-    Java,         // Spring Boot
-    Go,           // Gin
-    Php,          // Laravel
-    DotNet,       // ASP.NET Core, C#
-    Mobile,       // Flutter, React Native
-    Mixed,        // 混合
+    Tauri,
+    NodeFrontend,
+    Rust,
+    Python,
+    Java,
+    Go,
+    Php,
+    DotNet,
+    Mobile,
+    Mixed,
 }
 
-/// AI 上下文扫描结果
 #[derive(Debug, Serialize, Clone)]
 pub struct AiContextReport {
     pub project_type: ProjectType,
