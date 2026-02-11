@@ -75,12 +75,10 @@ function SpotlightContent() {
   const handleItemSelect = async (item: SpotlightItem) => {
     if (!item) return;
 
-    // 1. 处理剪贴板粘贴
     if (item.type === 'clipboard') {
         try {
             await invoke(`${REFINERY_PLUGIN_PREFIX}spotlight_paste`, { itemId: item.id });
             setQuery('');
-            // 注意：不需要手动 hide，因为 rust 端已经 hide 了
         } catch (e) {
             console.error("Paste failed", e);
         }
@@ -201,7 +199,6 @@ function SpotlightContent() {
 
       const isModifierPressed = navigator.platform.includes('Mac') ? e.metaKey : e.altKey;
 
-      // Alt + 1/2/3 切换模式
       if (isModifierPressed) {
         if (e.key === '1') {
           e.preventDefault();
@@ -223,19 +220,16 @@ function SpotlightContent() {
       if (e.key === 'Escape') {
         e.preventDefault();
 
-        // 修改处：将 clipboard 模式也纳入 query 的处理逻辑
         if (mode === 'search' || mode === 'clipboard') {
             if (query.length > 0) {
-                setQuery(''); // 有内容先清空
+                setQuery('');
                 return;
             }
-            // 仅在 search 模式下重置 scope（剪贴板模式不需要这个逻辑）
             if (mode === 'search' && searchScope !== 'global') {
                 setSearchScope('global');
                 return;
             }
         } else {
-            // Chat 模式处理 chatInput
             if (chatInput.length > 0) {
                 setChatInput('');
                 return;
@@ -296,7 +290,6 @@ function SpotlightContent() {
       resultCount={search.results.length}
       isStreaming={chat.isStreaming}
     >
-      {/* 渲染判断：剪贴板模式也复用 SearchMode 组件 */}
       {(mode === 'search' || mode === 'clipboard') ? (
         <SearchMode
           results={search.results}
@@ -304,7 +297,6 @@ function SpotlightContent() {
           setSelectedIndex={search.setSelectedIndex}
           onSelect={handleItemSelect}
           copiedId={copiedId}
-          // --- 传递新增的属性 ---
           hasMore={search.hasMore}
           loadMore={search.loadMore}
           isLoading={search.isLoading}

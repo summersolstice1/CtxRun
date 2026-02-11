@@ -3,7 +3,6 @@ import { getVersion, getName } from '@tauri-apps/api/app';
 import { open } from '@tauri-apps/plugin-shell';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-// [FIX] 引入 Variants 类型
 import { motion, Variants } from 'framer-motion'; 
 import { Github, Loader2, AlertCircle, ExternalLink, BookOpen } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -14,16 +13,14 @@ import iconUrl from '../../../src-tauri/icons/128x128.png';
 
 const REPO_URL = "https://github.com/WinriseF/CtxRun";
 
-// [FIX] 显式标注类型 : Variants
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
-  visible: { 
+  visible: {
     opacity: 1,
-    transition: { staggerChildren: 0.1 } 
+    transition: { staggerChildren: 0.1 }
   }
 };
 
-// [FIX] 显式标注类型 : Variants
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 10 },
   visible: { 
@@ -46,16 +43,14 @@ export function AboutSection() {
 
   return (
     <div className="h-full overflow-y-auto custom-scrollbar bg-background relative selection:bg-primary/20">
-      
+
       <style>{`
-        /* 基础排版优化 */
         .about-md-body { color: var(--foreground); line-height: 1.7; font-size: 0.95rem; }
         .about-md-body p { margin-bottom: 1em; }
-        
-        /* 行内代码微调 */
-        .about-md-body code:not(pre code) { 
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; 
-          font-size: 0.85em; 
+
+        .about-md-body code:not(pre code) {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 0.85em;
           background: var(--secondary);
           color: var(--primary);
           padding: 0.2em 0.4em;
@@ -63,88 +58,80 @@ export function AboutSection() {
           border: 1px solid var(--border);
         }
 
-        /* 标题层级 */
-        .about-md-body h1, .about-md-body h2, .about-md-body h3 { 
-          color: var(--foreground); 
-          font-weight: 700; 
+        .about-md-body h1, .about-md-body h2, .about-md-body h3 {
+          color: var(--foreground);
+          font-weight: 700;
           letter-spacing: -0.02em;
           margin-top: 1.5em;
           margin-bottom: 0.75em;
         }
         .about-md-body h1:first-child { margin-top: 0; }
-        .about-md-body h1 { 
-          font-size: 1.75em; 
-          border-bottom: 2px solid var(--border); 
-          padding-bottom: 0.3em; 
+        .about-md-body h1 {
+          font-size: 1.75em;
+          border-bottom: 2px solid var(--border);
+          padding-bottom: 0.3em;
         }
-        .about-md-body h2 { 
-          font-size: 1.4em; 
+        .about-md-body h2 {
+          font-size: 1.4em;
           padding-bottom: 0.3em;
           border-bottom: 1px dashed var(--border);
         }
         .about-md-body h3 { font-size: 1.15em; }
 
-        /* 列表优化 */
         .about-md-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
         .about-md-body ol { list-style-type: decimal; padding-left: 1.5em; margin-bottom: 1em; }
         .about-md-body li { margin-bottom: 0.4em; padding-left: 0.2em; }
         .about-md-body li::marker { color: var(--muted-foreground); }
 
-        /* 引用块美化 */
-        .about-md-body blockquote { 
-          border-left: 4px solid var(--primary); 
-          margin: 1.5em 0; 
+        .about-md-body blockquote {
+          border-left: 4px solid var(--primary);
+          margin: 1.5em 0;
           padding: 1em 1.2em;
           background: linear-gradient(to right, var(--secondary), transparent);
           color: var(--muted-foreground);
           font-style: italic;
-          border-radius: 0 8px 8px 0; 
+          border-radius: 0 8px 8px 0;
         }
 
-        /* 链接交互 */
-        .about-md-body a { 
-          color: var(--primary); 
-          text-decoration: none; 
-          font-weight: 600; 
+        .about-md-body a {
+          color: var(--primary);
+          text-decoration: none;
+          font-weight: 600;
           border-bottom: 1px solid transparent;
           transition: border-color 0.2s;
         }
         .about-md-body a:hover { border-bottom-color: var(--primary); }
 
-        /* 图片容器化 */
-        .about-md-body img { 
-          max-width: 100%; 
-          height: auto; 
-          border-radius: 8px; 
-          margin: 1.5em 0; 
+        .about-md-body img {
+          max-width: 100%;
+          height: auto;
+          border-radius: 8px;
+          margin: 1.5em 0;
           border: 1px solid var(--border);
           box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* 表格样式 */
-        .about-md-body table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          margin: 1.5em 0; 
+        .about-md-body table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 1.5em 0;
           font-size: 0.9em;
         }
-        .about-md-body th { 
-          background: var(--secondary); 
-          text-align: left; 
-          padding: 0.75em; 
-          font-weight: 600; 
+        .about-md-body th {
+          background: var(--secondary);
+          text-align: left;
+          padding: 0.75em;
+          font-weight: 600;
           border: 1px solid var(--border);
         }
-        .about-md-body td { 
-          padding: 0.75em; 
+        .about-md-body td {
+          padding: 0.75em;
           border: 1px solid var(--border);
         }
         .about-md-body tr:nth-child(even) { background: rgba(128,128,128,0.03); }
       `}</style>
 
-      {/* 1. 头部 Hero 区域 */}
       <div className="relative bg-gradient-to-b from-secondary/30 to-background pt-16 pb-10 border-b border-border/40 overflow-hidden">
-        {/* 背景装饰光晕 */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
         
         <motion.div 
@@ -193,7 +180,6 @@ export function AboutSection() {
         </motion.div>
       </div>
 
-      {/* 2. 粘性标题栏 */}
       <div className="sticky top-0 z-20 px-8 py-3 bg-background/80 backdrop-blur-xl border-y border-border/40 flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider shadow-sm transition-all">
          <div className="flex items-center gap-2">
             <BookOpen size={14} className="text-primary" />
@@ -201,7 +187,6 @@ export function AboutSection() {
          </div>
       </div>
 
-      {/* 内容区域 */}
       <div className="p-0 min-h-[400px] relative bg-background">
          {isLoading ? (
              <div className="flex flex-col items-center justify-center py-32 text-muted-foreground gap-4 opacity-70">
@@ -232,7 +217,6 @@ export function AboutSection() {
                     <ReactMarkdown 
                         remarkPlugins={[remarkGfm]}
                         components={{
-                            // CodeBlock 保持不变，这是功能核心
                             code({node, inline, className, children, ...props}: any) {
                                 const match = /language-(\w+)/.exec(className || '')
                                 return !inline && match ? (
@@ -247,7 +231,6 @@ export function AboutSection() {
                                   </code>
                                 )
                             },
-                            // 链接在新窗口打开，增加 Icon 暗示
                             a: ({node, children, ...props}) => (
                                 <a {...props} target="_blank" rel="noopener noreferrer" onClick={(e) => {
                                     e.preventDefault();
@@ -261,8 +244,7 @@ export function AboutSection() {
                         {content}
                     </ReactMarkdown>
                  </div>
-                 
-                 {/* 底部版权声明 */}
+
                  <div className="mt-16 pt-8 border-t border-border/30 text-center">
                     <p className="text-[10px] text-muted-foreground/40 font-mono">
                         © {new Date().getFullYear()} {appName}. Open Source under GPL-3.0 License.
