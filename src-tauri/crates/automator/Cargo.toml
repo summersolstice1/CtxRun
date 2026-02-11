@@ -1,6 +1,6 @@
 [package]
 name = "ctxrun-plugin-automator"
-version.workspace = true
+version = "1.0.0" 
 description = "Automator plugin for CtxRun"
 edition.workspace = true
 links = "ctxrun-plugin-automator"

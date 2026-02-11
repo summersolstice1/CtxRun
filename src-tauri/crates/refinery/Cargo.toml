@@ -1,6 +1,6 @@
 [package]
 name = "ctxrun-plugin-refinery"
-version.workspace = true
+version = "1.0.0" 
 edition.workspace = true
 links = "ctxrun-plugin-refinery"
 

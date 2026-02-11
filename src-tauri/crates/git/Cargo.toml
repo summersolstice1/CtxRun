@@ -1,6 +1,6 @@
 [package]
 name = "ctxrun-plugin-git"
-version.workspace = true
+version = "1.0.0" 
 edition.workspace = true
 description = "Git operations and export plugin for CtxRun"
 links = "ctxrun-plugin-git" 

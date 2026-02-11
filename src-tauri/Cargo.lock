@@ -1029,7 +1029,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun-db"
-version = "1.5.4"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "csv",
@@ -1046,7 +1046,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun-plugin-automator"
-version = "1.5.4"
+version = "1.0.0"
 dependencies = [
  "enigo",
  "serde",
@@ -1058,7 +1058,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun-plugin-context"
-version = "1.5.4"
+version = "1.0.0"
 dependencies = [
  "arboard",
  "ctxrun-db",
@@ -1076,7 +1076,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun-plugin-git"
-version = "1.5.4"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "git2",
@@ -1091,7 +1091,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun-plugin-refinery"
-version = "1.5.4"
+version = "1.0.0"
 dependencies = [
  "chrono",
  "clipboard-rs",
