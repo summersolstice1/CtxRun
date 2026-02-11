@@ -73,3 +73,5 @@ jobs:
         with:
           releaseId: ${{ needs.create-release.outputs.release_id }}
           args: ${{ matrix.args }}
+          projectPath: "./src-tauri"
+          tagName: v${{ github.ref_name }}
