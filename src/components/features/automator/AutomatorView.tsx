@@ -20,7 +20,6 @@ export function AutomatorView() {
     show: false, msg: '', type: 'info'
   });
 
-  // 初始化监听器
   useEffect(() => {
     initListeners();
     return () => {
@@ -28,7 +27,6 @@ export function AutomatorView() {
     };
   }, []);
 
-  // 监听拾取状态
   useEffect(() => {
     if (isPicking) {
         setToast({
@@ -55,7 +53,6 @@ export function AutomatorView() {
 
   return (
     <div className="h-full flex flex-col bg-background animate-in fade-in duration-300">
-      {/* 顶部标题栏 */}
       <div className="h-14 border-b border-border flex items-center px-6 shrink-0 bg-secondary/5">
         <div className="flex items-center gap-2 font-semibold text-foreground">
           <MousePointerClick className="text-primary" size={20} />
@@ -66,13 +63,11 @@ export function AutomatorView() {
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* 左侧：配置面板 */}
           <div className={cn(
             "bg-card border border-border rounded-xl p-5 shadow-sm space-y-6 transition-opacity",
             isRunning && "opacity-60 pointer-events-none grayscale-[0.5]"
           )}>
 
-            {/* 点击间隔 */}
             <div className="space-y-3">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Clock size={14} /> {getText('automator', 'interval', language)}
@@ -100,7 +95,6 @@ export function AutomatorView() {
 
             <div className="h-px bg-border/50" />
 
-            {/* 按键类型 */}
             <div className="space-y-3">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Mouse size={14} /> {getText('automator', 'clickType', language)}
@@ -123,7 +117,6 @@ export function AutomatorView() {
               </div>
             </div>
 
-            {/* 停止条件 */}
             <div className="space-y-3">
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <AlertCircle size={14} /> {getText('automator', 'stopCondition', language)}
@@ -165,7 +158,6 @@ export function AutomatorView() {
               </div>
             </div>
 
-            {/* 坐标设置 */}
             <div className="space-y-3">
                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Crosshair size={14} /> {getText('automator', 'location', language)}
@@ -207,10 +199,8 @@ export function AutomatorView() {
 
           </div>
 
-          {/* 右侧：状态与控制 */}
           <div className="flex flex-col gap-6">
 
-             {/* 状态卡片 */}
              <div className="flex-1 bg-gradient-to-br from-secondary/30 to-background border border-border rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-inner relative overflow-hidden">
                 <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] [mask-image:linear-gradient(to_bottom,transparent,black)] pointer-events-none" />
 
@@ -230,7 +220,6 @@ export function AutomatorView() {
                 </div>
              </div>
 
-             {/* 巨型控制按钮 */}
              <button
                 onClick={toggle}
                 className={cn(

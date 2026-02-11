@@ -16,13 +16,10 @@ export function RefineryView() {
 
   return (
     <div className="h-full flex items-stretch bg-background relative overflow-hidden">
-      {/* Left Sidebar - Calendar & Filters */}
       <RefinerySidebar />
 
-      {/* Middle Content - Feed Stream */}
       <RefineryFeed />
 
-      {/* Right Drawer - Detail Overlay (2/3) */}
       <RefineryDrawer />
     </div>
   );

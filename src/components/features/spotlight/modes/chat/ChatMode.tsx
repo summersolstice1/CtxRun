@@ -9,7 +9,6 @@ import { CodeBlock } from '@/components/ui/CodeBlock';
 import { ChatMessage } from '@/lib/llm';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 
-// --- 内部组件: 复制菜单 ---
 function MessageCopyMenu({ content }: { content: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);

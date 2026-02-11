@@ -41,7 +41,6 @@ const invertTreeSelection = (nodes: FileNode[]): FileNode[] => {
   });
 };
 
-// 收集所有目录ID
 const collectDirIds = (nodes: FileNode[]): string[] => {
   let ids: string[] = [];
   for (const node of nodes) {
@@ -53,7 +52,6 @@ const collectDirIds = (nodes: FileNode[]): string[] => {
   return ids;
 };
 
-// 收集树中所有路径
 const collectAllPaths = (nodes: FileNode[]): string[] => {
   let paths: string[] = [];
   const traverse = (nodeList: FileNode[]) => {

@@ -181,7 +181,6 @@ export function ContextView() {
               await writeClipboard(text);
               triggerToast(getText('context', 'toastCopied', language), 'success');
           } else if (action === 'save') {
-              // --- 核心修复：如果还没选择保存路径，先让用户选择 ---
               let filePath = savePath;
               if (!filePath) {
                   const defaultPath = await getDefaultSavePath();
@@ -202,7 +201,6 @@ export function ContextView() {
       } catch (err) {
           triggerToast(action === 'copy' ? getText('context', 'toastCopyFail', language) : getText('context', 'toastSaveFail', language), 'error');
       } finally {
-          // 确保在保存操作完成后重置 loading 状态
           if (action === 'save') {
               setIsGenerating(false);
           }
@@ -298,13 +296,10 @@ export function ContextView() {
       const paths = getSelectedPaths(fileTree);
       const header = generateHeader(fileTree, removeComments);
 
-      // --- 核心修复：先进行安全检查，再选择保存位置 ---
       if (detectSecrets) {
         const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, { paths, header, removeComments });
-        // 传入 undefined 作为 filePath，让 processWithSecurityCheck 知道还没选择路径
         await processWithSecurityCheck(text, 'save', undefined);
       } else {
-        // 如果没有开启安全检测，直接选择路径并保存
         const defaultPath = await getDefaultSavePath();
         const filePath = await save({
           filters: [{ name: 'Text File', extensions: ['txt', 'md', 'json'] }],
@@ -390,8 +385,7 @@ export function ContextView() {
 
   return (
     <div className="h-full flex flex-col bg-background relative">
-      
-      {/* Top Bar */}
+
       <div className="h-14 border-b border-border flex items-center px-4 gap-3 shrink-0 bg-background/80 backdrop-blur z-10">
         <button 
           onClick={() => setContextSidebarOpen(!isContextSidebarOpen)} 
@@ -422,7 +416,6 @@ export function ContextView() {
         </button>
       </div>
 
-      {/* Main Split View */}
       <div className="flex-1 flex overflow-hidden relative">
         <div 
           className={cn("flex flex-col bg-secondary/5 border-r border-border transition-all duration-75 ease-linear overflow-hidden relative group/sidebar", !isContextSidebarOpen && "w-0 border-none opacity-0")}
