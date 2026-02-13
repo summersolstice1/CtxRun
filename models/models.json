@@ -1,19 +1,11 @@
 [
   {
-    "id": "Gemini-3-pro-preview",
-    "name": "Gemini 3 Pro",
-    "provider": "Google",
-    "contextLimit": 1048576,
-    "inputPricePerMillion": 2.00,
-    "color": "bg-blue-600"
-  },
-  {
-    "id": "Gmini-2.5-Pro",
-    "name": "Gemini 2.5 Pro",
-    "provider": "Google",
-    "contextLimit": 1048576,
-    "inputPricePerMillion": 1.25,
-    "color": "bg-green-500"
+    "id": "Claude-Opus-4.6",
+    "name": "Claude Opus 4.6",
+    "provider": "Anthropic",
+    "contextLimit": 1000000,
+    "inputPricePerMillion": 5.00,
+    "color": "bg-orange-600"
   },
   {
     "id": "GPT-5-2",
@@ -24,20 +16,28 @@
     "color": "bg-green-600"
   },
   {
-    "id": "GPT-5.1",
-    "name": "GPT-5.1",
-    "provider": "OpenAI",
-    "contextLimit": 400000,
-    "inputPricePerMillion": 1.25,
-    "color": "bg-green-600"
+    "id": "GLM-5",
+    "name": "GLM 5",
+    "provider": "ZhipuAI",
+    "contextLimit": 200000,
+    "inputPricePerMillion": 0.58,
+    "color": "bg-blue-400"
   },
   {
-    "id": "Claude-Opus-4.5",
-    "name": "Claude Opus 4.5",
-    "provider": "Anthropic",
-    "contextLimit": 200000,
-    "inputPricePerMillion": 5.00,
-    "color": "bg-orange-600"
+    "id": "Gemini-3-pro-preview",
+    "name": "Gemini 3 Pro",
+    "provider": "Google",
+    "contextLimit": 1048576,
+    "inputPricePerMillion": 2.00,
+    "color": "bg-blue-600"
+  },
+  {
+    "id": "gemini-3-flash-preview",
+    "name": "Gemini 3 flash",
+    "provider": "Google",
+    "contextLimit": 1048576,
+    "inputPricePerMillion": 0.50,
+    "color": "bg-green-500"
   },
   {
     "id": "Grok-4-1",
@@ -48,6 +48,22 @@
     "color": "bg-gray-900"
   },
   {
+    "id": "Kimi-K2.5-thinking",
+    "name": "Kimi K2.5 Thinking",
+    "provider": "Moonshot",
+    "contextLimit": 262144,
+    "inputPricePerMillion": 0.60,
+    "color": "bg-green-500"
+  },
+  {
+    "id": "GPT-5.1",
+    "name": "GPT-5.1",
+    "provider": "OpenAI",
+    "contextLimit": 400000,
+    "inputPricePerMillion": 1.25,
+    "color": "bg-green-600"
+  },
+  {
     "id": "DeepSeek-v3-2",
     "name": "DeepSeek V3.2",
     "provider": "DeepSeek",
@@ -56,27 +72,11 @@
     "color": "bg-purple-600"
   },
   {
-    "id": "GLM-4-6",
-    "name": "GLM 4.6",
-    "provider": "z.ai",
-    "contextLimit": 200000,
-    "inputPricePerMillion": 0.6,
-    "color": "bg-blue-400"
-  },
-  {
-    "id": "Qwen-3-max",
-    "name": "Qwen 3 Max",
-    "provider": "Alibaba Cloud",
-    "contextLimit": 252000,
-    "inputPricePerMillion": 0.45,
+    "id": "ERNIE-5.0",
+    "name": "ERNIE 5.0",
+    "provider": "Baidu",
+    "contextLimit": 128000,
+    "inputPricePerMillion": 0.84,
     "color": "bg-indigo-600"
-  },
-  {
-    "id": "Kimi-K2-thinking",
-    "name": "Kimi K2 Thinking",
-    "provider": "Moonshot",
-    "contextLimit": 262144,
-    "inputPricePerMillion": 0.57,
-    "color": "bg-green-500"
   }
 ]
