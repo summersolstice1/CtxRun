@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   Play, Square, MousePointerClick, Crosshair,
-  Clock, RotateCcw, AlertCircle, Hash, Mouse
+  Clock, RotateCcw, AlertCircle, Hash, Mouse,
+  ChevronUp, ChevronDown
 } from 'lucide-react';
 import { useAutomatorStore } from '@/store/useAutomatorStore';
 import { useAppStore } from '@/store/useAppStore';
@@ -42,6 +43,13 @@ export function AutomatorView() {
     setConfig({ stopCondition: { MaxCount: count } });
   };
 
+  // 步进函数
+  const updateStopCount = (delta: number) => {
+    const current = getStopCountValue();
+    const next = Math.max(1, current + delta);
+    setConfig({ stopCondition: { MaxCount: next } });
+  };
+
   const getStopCountValue = () => {
     if (typeof config.stopCondition === 'object' && 'MaxCount' in config.stopCondition) {
         return config.stopCondition.MaxCount;
@@ -49,7 +57,32 @@ export function AutomatorView() {
     return 100;
   };
 
+  const updateInterval = (delta: number) => {
+    const next = Math.max(1, config.intervalMs + delta);
+    setConfig({ intervalMs: next });
+  };
+
   const isInfinite = config.stopCondition === 'Infinite';
+
+  // 提取通用的 SpinButton 样式逻辑，避免重复代码
+  const renderSpinButtons = (onUp: () => void, onDown: () => void) => (
+    <div className="absolute right-0 top-0 bottom-0 w-6 flex flex-col border-l border-border bg-secondary/10">
+        <button 
+            onClick={onUp} 
+            className="flex-1 hover:bg-secondary rounded-tr-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border-b border-border/50 active:bg-secondary/80"
+            tabIndex={-1}
+        >
+            <ChevronUp size={10} />
+        </button>
+        <button 
+            onClick={onDown} 
+            className="flex-1 hover:bg-secondary rounded-br-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:bg-secondary/80"
+            tabIndex={-1}
+        >
+            <ChevronDown size={10} />
+        </button>
+    </div>
+  );
 
   return (
     <div className="h-full flex flex-col bg-background animate-in fade-in duration-300">
@@ -72,16 +105,22 @@ export function AutomatorView() {
               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <Clock size={14} /> {getText('automator', 'interval', language)}
               </label>
+              
+              {/* 间隔时间设置 */}
               <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  min="1"
-                  value={config.intervalMs}
-                  onChange={(e) => setConfig({ intervalMs: Math.max(1, parseInt(e.target.value) || 100) })}
-                  className="flex-1 bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none font-mono"
-                />
-                <div className="text-xs text-muted-foreground">ms</div>
+                <div className="relative flex-1 group">
+                    <input
+                      type="number"
+                      min="1"
+                      value={config.intervalMs}
+                      onChange={(e) => setConfig({ intervalMs: Math.max(1, parseInt(e.target.value) || 100) })}
+                      className="w-full bg-secondary/30 border border-border rounded-md pl-3 pr-7 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all group-hover:border-primary/30"
+                    />
+                    {renderSpinButtons(() => updateInterval(10), () => updateInterval(-10))}
+                </div>
+                <div className="text-xs text-muted-foreground font-medium">ms</div>
               </div>
+
               <input
                 type="range"
                 min="1"
@@ -146,13 +185,16 @@ export function AutomatorView() {
 
                 {!isInfinite && (
                   <div className="pl-7 animate-in slide-in-from-top-1 fade-in">
-                    <input
-                      type="number"
-                      min="1"
-                      value={getStopCountValue()}
-                      onChange={(e) => handleStopCountChange(e.target.value)}
-                      className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                    />
+                    <div className="relative group">
+                        <input
+                          type="number"
+                          min="1"
+                          value={getStopCountValue()}
+                          onChange={(e) => handleStopCountChange(e.target.value)}
+                          className="w-full bg-secondary/30 border border-border rounded-md pl-3 pr-7 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all group-hover:border-primary/30"
+                        />
+                        {renderSpinButtons(() => updateStopCount(1), () => updateStopCount(-1))}
+                    </div>
                   </div>
                 )}
               </div>
