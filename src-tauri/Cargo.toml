@@ -1,21 +1,21 @@
 [package]
 name = "ctxrun"
-version = "1.5.5"
+version = "2.0.0"
+edition = "2024"
 description = "A Tool"
 authors = ["Winrisef"]
 license = ""
 repository = ""
-edition = "2024"
 rust-version = "1.91"
 
-[build-dependencies]
-tauri-build = { version = "2", features = [] }
 
-[dependencies]
-tauri-plugin-single-instance = { version = "2" }
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
+[workspace]
+members = ["crates/*"]
+
+[workspace.dependencies]
+# Tauri
 tauri = { version = "2", features = ["tray-icon"] }
+tauri-build = { version = "2" }
 tauri-plugin-shell = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-dialog = "2"
@@ -23,16 +23,83 @@ tauri-plugin-http = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-os = "2"
 tauri-plugin-notification = "2"
-sysinfo = "0.37"
-git2 = "0.19"
-chrono = "0.4"
-similar = "2.6"
-regex = "1.12"
-once_cell = "1.21"
+tauri-plugin-single-instance = { version = "2" }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin = "2"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+futures = "0.3"
+
+# Automation
+enigo = "0.6.1"
+
+# Context
 rayon = "1.10"
 tiktoken-rs = "0.9"
+ignore = "0.4"
 arboard = "3.6"
+regex = "1.12"
+once_cell = "1.21"
 entropy = "0.4"
+
+# db
+rusqlite = { version = "0.37", features = ["bundled"] }
+refinery = { version = "0.9", features = ["rusqlite"] }
+serde_rusqlite = "0.40"
+chrono = "0.4"
+uuid = { version = "1.19", features = ["v4"] }
+ctxrun-db = { path = "crates/db" }
+
+# git
+git2 = "0.19"
+similar = "2.6"
+thiserror = "2.0"
+
+# refinery
+clipboard-rs = "0.3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+crossbeam-channel = "0.5"
+x-win = "5.5"
+
+[build-dependencies]
+tauri-build = { workspace = true }
+
+[dependencies]
+
+ctxrun-plugin-automator = { path = "crates/automator" }
+ctxrun-plugin-context = { path = "crates/context" }
+ctxrun-plugin-git = { path = "crates/git" }
+ctxrun-plugin-refinery = { path = "crates/refinery" }
+
+ctxrun-db = { workspace = true } 
+
+tauri-plugin-single-instance = { workspace = true }
+serde_json = "1.0"
+serde = { workspace = true }
+tauri = { workspace = true }
+tauri-plugin-shell = { workspace = true }
+tauri-plugin-fs = { workspace = true }
+tauri-plugin-dialog = { workspace = true }
+tauri-plugin-http = { workspace = true }
+tauri-plugin-clipboard-manager = { workspace = true }
+tauri-plugin-os = { workspace = true }
+tauri-plugin-notification = { workspace = true }
+sysinfo = "0.37"
+git2 = { workspace = true }
+chrono = "0.4"
+similar = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
+rayon = { workspace = true }
+tiktoken-rs = { workspace = true }
+arboard = { workspace = true }
+entropy = { workspace = true }
 
 rusqlite = { version = "0.37", features = ["bundled"] }
 refinery = { version = "0.9", features = ["rusqlite"] }
@@ -45,23 +112,17 @@ wait-timeout = "0.2"
 csv = "1.4"
 walkdir = "2"
 genai = "0.5.1"
-tokio = { version = "1", features = ["full"] }
-futures = "0.3"
+tokio = { workspace = true }
+futures = { workspace = true }
 infer = "0.19"
 mime_guess = "2.0"
 url = "2.5"
 percent-encoding = "2.3"
-ignore = "0.4"
-clipboard-rs = "0.3"
-crossbeam-channel = "0.5"
-xxhash-rust = { version = "0.8", features = ["xxh3"] }
-image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+ignore = { workspace = true }
 base64 = "0.22"
-x-win = "5.5"
-enigo = "0.6.1"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-global-shortcut = "2"
+tauri-plugin-global-shortcut = { workspace = true }
 
 [features]
 default = [ "custom-protocol" ]

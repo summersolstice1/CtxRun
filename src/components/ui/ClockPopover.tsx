@@ -46,7 +46,6 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
     return () => clearInterval(interval);
   }, [isOpen]);
 
-  // 点击外部关闭逻辑
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (event: MouseEvent) => {
@@ -117,7 +116,6 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
     } catch (err) { console.error(err); }
   };
 
-  // 打开监控面板的处理函数
   const handleOpenMonitor = () => {
       setMonitorOpen(true);
       onClose();

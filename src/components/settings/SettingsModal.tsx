@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Monitor, Moon, Sun, Circle, Languages, Check, Filter, DownloadCloud, Bot, Bell, Database, Upload, Download, FileSpreadsheet, AlertTriangle, FolderCog, Shield, RefreshCw, AppWindow, Edit3, Info, Search as SearchIcon } from 'lucide-react';
 
-// 动画弹簧参数
 const MAC_SPRING = {
   type: "spring" as const,
   stiffness: 400,
@@ -52,7 +51,6 @@ export function SettingsModal() {
   const [importStatus, setImportStatus] = useState<string>('');
   const [isScanningApps, setIsScanningApps] = useState(false);
 
-  // 辅助函数：格式化时间显示 (秒 -> 分:秒)
   const formatDuration = (seconds: number) => {
     if (seconds === 0) return getText('settings', 'never', language);
     if (seconds < 60) return `${seconds} ${getText('settings', 'seconds', language)}`;
@@ -74,7 +72,6 @@ export function SettingsModal() {
     }
   }, [isRenaming]);
 
-  // 同步 Refinery 配置到后端
   useEffect(() => {
     const updateBackendConfig = async () => {
       try {
@@ -107,7 +104,6 @@ export function SettingsModal() {
       if (e.key === 'Escape') setIsRenaming(false);
   };
 
-  // 导出处理函数
   const handleExport = async () => {
     try {
       const filePath = await save({
@@ -125,7 +121,6 @@ export function SettingsModal() {
     }
   };
 
-  // 导入处理函数
   const handleImport = async () => {
     try {
       const filePath = await open({
@@ -146,7 +141,6 @@ export function SettingsModal() {
 
       setImportStatus(`${getText('settings', 'importSuccess', language)}: ${count} items`);
 
-      // 刷新数据
       await loadPrompts(true);
       await refreshGroups();
       await refreshCounts();
@@ -157,7 +151,6 @@ export function SettingsModal() {
     }
   };
 
-  // 导出项目配置
   const handleExportProjectConfigs = async () => {
     try {
       const filePath = await save({
@@ -175,7 +168,6 @@ export function SettingsModal() {
     }
   };
 
-  // 导入项目配置
   const handleImportProjectConfigs = async () => {
     try {
       const filePath = await open({
@@ -201,7 +193,6 @@ export function SettingsModal() {
     }
   };
 
-  // 刷新应用索引
   const handleRefreshApps = async () => {
     setIsScanningApps(true);
     setImportStatus(getText('common', 'loading', language));
@@ -215,7 +206,6 @@ export function SettingsModal() {
     }
   };
 
-  // 手动清理 Refinery
   const handleManualCleanup = async () => {
     try {
       const count = await invoke<number>('manual_cleanup');
@@ -229,10 +219,9 @@ export function SettingsModal() {
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 p-4">
-      
+
       <div className="w-full max-w-[600px] h-full max-h-[500px] bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        
-        {/* Header */}
+
         <div className="h-14 px-6 border-b border-border flex items-center justify-between bg-secondary/10 shrink-0">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <SettingsIcon />
@@ -246,9 +235,7 @@ export function SettingsModal() {
           </button>
         </div>
 
-        {/* Content Body */}
         <div className="flex flex-1 overflow-hidden min-h-0">
-            {/* Sidebar Navigation */}
             <div className="w-40 bg-secondary/5 border-r border-border p-2 space-y-1 overflow-y-auto custom-scrollbar shrink-0">
                 <NavBtn active={activeSection === 'appearance'} onClick={() => setActiveSection('appearance')} icon={<Monitor size={14} />} label={getText('settings', 'navAppearance', language)}  />
                 <NavBtn active={activeSection === 'language'} onClick={() => setActiveSection('language')} icon={<Languages size={14} />} label={getText('settings', 'navLanguage', language)} />
@@ -297,8 +284,7 @@ export function SettingsModal() {
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
                                 {getText('settings', 'spotlightSize', language)}
                             </h3>
-                            
-                            {/* Width Slider */}
+
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
                                     <span>{getText('settings', 'width', language)}</span>
@@ -315,7 +301,6 @@ export function SettingsModal() {
                                 />
                             </div>
 
-                            {/* Default Height Slider */}
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
                                     <span>{getText('settings', 'defaultHeight', language)}</span>
@@ -332,7 +317,6 @@ export function SettingsModal() {
                                 />
                             </div>
 
-                            {/* Max Chat Height Slider */}
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
                                     <span>{getText('settings', 'chatHeight', language)}</span>
@@ -352,15 +336,13 @@ export function SettingsModal() {
 
                         <div className="w-full h-px bg-border/50 my-4" />
 
-                        {/* 休息提醒设置 */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                 <Bell size={14} />
                                 {getText('settings', 'restReminder', language)}
                             </h3>
-                            
+
                             <div className="space-y-3">
-                                {/* 启用开关 */}
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
                                     <div>
                                         <div className="text-sm font-medium text-foreground">
@@ -415,7 +397,6 @@ export function SettingsModal() {
 
                         <div className="w-full h-px bg-border/50 my-4" />
 
-                        {/* 自动销毁设置 */}
                         <div className="space-y-4">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                 <X size={14} />
@@ -556,17 +537,14 @@ export function SettingsModal() {
                             <h3 className="text-sm font-medium text-foreground">{getText('settings', 'aiTitle', language)}</h3>
                             <p className="text-xs text-muted-foreground mt-1">{getText('settings', 'aiDesc', language)}</p>
                         </div>
-                        
+
                         <div className="space-y-4">
-                            {/* Provider Selection Area */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'provider', language)}</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                                    {/* 动态渲染 savedProviderSettings 的 keys，而不是硬编码数组 */}
                                     {Object.keys(savedProviderSettings).map((p) => {
                                         const isActive = aiConfig.providerId === p;
 
-                                        // 如果是当前选中的项，并且处于重命名模式，渲染输入框
                                         if (isActive && isRenaming) {
                                             return (
                                                 <div key={p} className="relative">
@@ -585,7 +563,6 @@ export function SettingsModal() {
                                             );
                                         }
 
-                                        // 常规按钮渲染
                                         return (
                                             <button
                                                 key={p}
@@ -605,7 +582,6 @@ export function SettingsModal() {
                                             >
                                                 <span className="truncate">{p}</span>
 
-                                                {/* 仅在选中状态下显示的编辑小图标 */}
                                                 {isActive && (
                                                     <span
                                                         onClick={(e) => {
@@ -628,7 +604,6 @@ export function SettingsModal() {
                                 </p>
                             </div>
 
-                            {/* API Key */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'apiKey', language)}</label>
                                 <input 
@@ -716,7 +691,6 @@ export function SettingsModal() {
                                 </div>
                             </div>
 
-                            {/* 双按钮并排 */}
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={handleExport}
@@ -742,10 +716,8 @@ export function SettingsModal() {
                             )}
                         </div>
 
-                        {/* 分割线 */}
                         <div className="w-full h-px bg-border/50 my-2" />
 
-                        {/* 2. 项目配置管理卡片 (保持横向，风格统一) */}
                         <div>
                             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                                 <FolderCog size={18} className="text-blue-600"/>
@@ -769,7 +741,6 @@ export function SettingsModal() {
                                 </div>
                             </div>
 
-                            {/* 双按钮并排 */}
                             <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={handleExportProjectConfigs}

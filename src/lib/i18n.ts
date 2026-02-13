@@ -9,6 +9,7 @@ const translations = {
       context: "Context Forge",
       patch: "Patch Weaver",
       refinery: "Refinery",
+      automator: "Auto Clicker",
       settings: "Settings"
     },
     refinery: {
@@ -41,6 +42,31 @@ const translations = {
       clearDateFilter: "Clear date filter",
       noResults: "No results found",
       filteredResults: "Filtered results"
+    },
+    automator: {
+      title: "Auto Clicker",
+      statusRunning: "RUNNING",
+      statusStopped: "STOPPED",
+      interval: "Interval (ms)",
+      clickType: "Mouse Button",
+      left: "Left Button",
+      right: "Right Button",
+      middle: "Middle Button",
+      stopCondition: "Stop Condition",
+      conditionInfinite: "Infinite Loop",
+      conditionCount: "Max Clicks",
+      location: "Click Location",
+      locCurrent: "Current Position",
+      locFixed: "Fixed Coordinate",
+      pickBtn: "Pick",
+      pickTooltip: "Pick current mouse position (3s delay)",
+      startBtn: "Start (Alt+F1)",
+      stopBtn: "Stop (Alt+F1)",
+      countLabel: "Clicks Executed",
+      toastStarted: "Automator Started",
+      toastStopped: "Automator Stopped",
+      pickingMessage: "Move mouse to target position in 3 seconds...",
+      positionPicked: "Position captured: {x}, {y}"
     },
     sidebar: {
       library: "LIBRARY",
@@ -606,6 +632,7 @@ const translations = {
       context: "文件整合",
       patch: "代码对比",
       refinery: "剪贴板",
+      automator: "自动连点器",
       settings: "设置"
     },
     refinery: {
@@ -638,6 +665,31 @@ const translations = {
       clearDateFilter: "清除日期筛选",
       noResults: "没有找到结果",
       filteredResults: "筛选结果"
+    },
+    automator: {
+      title: "自动连点器",
+      statusRunning: "运行中",
+      statusStopped: "已停止",
+      interval: "点击间隔 (毫秒)",
+      clickType: "按键类型",
+      left: "左键",
+      right: "右键",
+      middle: "中键",
+      stopCondition: "停止条件",
+      conditionInfinite: "无限循环",
+      conditionCount: "次数限制",
+      location: "点击位置",
+      locCurrent: "当前鼠标位置",
+      locFixed: "固定坐标",
+      pickBtn: "拾取",
+      pickTooltip: "3秒后拾取当前鼠标位置",
+      startBtn: "启动 (Alt+F1)",
+      stopBtn: "停止 (Alt+F1)",
+      countLabel: "已执行点击",
+      toastStarted: "连点器已启动",
+      toastStopped: "连点器已停止",
+      pickingMessage: "请在 3 秒内将鼠标移动到目标位置...",
+      positionPicked: "坐标已捕获: {x}, {y}"
     },
     sidebar: {
       library: "资料库",

@@ -3,6 +3,9 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { RefineryItem, RefineryItemUI } from '@/types/refinery';
 import { parseMetadata } from '@/lib/refinery_utils';
+import { useAppStore } from './useAppStore';
+
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
 const PAGE_SIZE = 20;
 
@@ -118,6 +121,28 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
     set({ _unlistenFns: [unlistenNewEntry, unlistenUpdate] });
 
+    // --- 核心修复：启动时将 localStorage 中的配置推送到 Rust 后端 ---
+    // 从持久化存储中获取当前的清理配置（根据你实际的存储结构调整）
+    // 如果你用了 Zustand 的 persist，配置就在当前 state 里
+    try {
+        // 这里需要确保获取的是最新的 persisted state
+        const refinerySettings = useAppStore.getState().refinerySettings;
+        const configToSync = {
+            enabled: refinerySettings.enabled,
+            strategy: refinerySettings.strategy,
+            maxCount: refinerySettings.maxCount,
+            keepPinned: refinerySettings.keepPinned,
+            days: refinerySettings.days,
+        };
+
+        // 调用后端指令，强制刷新后端的 enabled 状态
+        await invoke(`${REFINERY_PLUGIN_PREFIX}update_cleanup_config`, {
+            config: configToSync
+        });
+    } catch (e) {
+        console.error("Failed to sync cleanup config to Rust", e);
+    }
+
     await get().loadHistory(true);
     await get().loadStatistics();
   },
@@ -148,7 +173,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     }
 
     try {
-      const res = await invoke<RefineryItem[]>('get_refinery_history', {
+      const res = await invoke<RefineryItem[]>(`${REFINERY_PLUGIN_PREFIX}get_refinery_history`, {
         page: currentPage,
         pageSize: PAGE_SIZE,
         searchQuery: searchArg,
@@ -175,7 +200,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   loadStatistics: async () => {
     set({ statisticsLoading: true });
     try {
-      const stats = await invoke<RefineryStatistics>('get_refinery_statistics');
+      const stats = await invoke<RefineryStatistics>(`${REFINERY_PLUGIN_PREFIX}get_refinery_statistics`);
       set({ statistics: stats, statisticsLoading: false });
     } catch (e) {
       set({ statisticsLoading: false });
@@ -184,7 +209,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   loadItemDetail: async (id) => {
     try {
-      const item = await invoke<RefineryItem>('get_refinery_item_detail', { id });
+      const item = await invoke<RefineryItem>(`${REFINERY_PLUGIN_PREFIX}get_refinery_item_detail`, { id });
       if (!item) return;
 
       set(state => ({
@@ -292,7 +317,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
           item.id === id ? { ...item, isPinned: !item.isPinned } : item
         )
       }));
-      await invoke('toggle_refinery_pin', { id });
+      await invoke(`${REFINERY_PLUGIN_PREFIX}toggle_refinery_pin`, { id });
       get().loadStatistics();
     } catch (e) {
     }
@@ -300,7 +325,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   deleteItem: async (id) => {
     try {
-      await invoke('delete_refinery_items', { ids: [id] });
+      await invoke(`${REFINERY_PLUGIN_PREFIX}delete_refinery_items`, { ids: [id] });
       set(state => ({
         items: state.items.filter(item => item.id !== id),
         activeId: state.activeId === id ? null : state.activeId
@@ -319,7 +344,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         timestamp = date.getTime();
       }
 
-      await invoke('clear_refinery_history', {
+      await invoke(`${REFINERY_PLUGIN_PREFIX}clear_refinery_history`, {
         beforeTimestamp: timestamp,
         includePinned: false
       });
@@ -339,7 +364,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   createNote: async () => {
     try {
-      const id = await invoke<string>('create_note', {
+      const id = await invoke<string>(`${REFINERY_PLUGIN_PREFIX}create_note`, {
         content: '',
         title: 'New Note'
       });
@@ -367,7 +392,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         })
       }));
 
-      await invoke('update_note', {
+      await invoke(`${REFINERY_PLUGIN_PREFIX}update_note`, {
         id,
         content: content || null,
         title: title || null

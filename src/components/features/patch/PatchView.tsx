@@ -15,6 +15,8 @@ import { streamChatCompletion } from '@/lib/llm';
 import { invoke } from '@tauri-apps/api/core';
 import { ExportDialog } from './dialogs/ExportDialog';
 
+const GIT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-git|';
+
 const MANUAL_DIFF_ID = 'manual-scratchpad';
 
 interface GitCommit {
@@ -219,7 +221,7 @@ export function PatchView() {
         setGitProjectRoot(selected);
         setIsGitLoading(true);
         try {
-          const result = await invoke<GitCommit[]>('get_git_commits', { projectPath: selected });
+          const result = await invoke<GitCommit[]>(`${GIT_PLUGIN_PREFIX}get_git_commits`, { projectPath: selected });
           setCommits(result);
 
           // 修改此处逻辑：默认对比 Working Directory 和 HEAD
@@ -243,7 +245,7 @@ export function PatchView() {
     setFiles(prev => prev.filter(p => p.isManual)); 
     setSelectedFileId(null);
     try {
-      const result = await invoke<GitDiffFile[]>('get_git_diff', {
+      const result = await invoke<GitDiffFile[]>(`${GIT_PLUGIN_PREFIX}get_git_diff`, {
         projectPath: gitProjectRoot,
         oldHash: baseHash,
         newHash: compareHash,
@@ -323,13 +325,13 @@ export function PatchView() {
 
         if (filePath) {
             const selectedList = Array.from(selectedExportIds);
-            
-            await invoke('export_git_diff', {
+
+            await invoke(`${GIT_PLUGIN_PREFIX}export_git_diff`, {
                 projectPath: gitProjectRoot,
                 oldHash: baseHash,
                 newHash: compareHash,
                 format: format,
-                layout: layout, 
+                layout: layout,
                 savePath: filePath,
                 selectedPaths: selectedList
             });

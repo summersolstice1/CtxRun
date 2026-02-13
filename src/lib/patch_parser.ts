@@ -6,15 +6,6 @@ export interface ApplyResult {
   errors: string[];
 }
 
-/**
- * 解析 SEARCH/REPLACE 格式
- * 格式示例:
- * <<<<<<< SEARCH
- * original code
- * =======
- * new code
- * >>>>>>> REPLACE
- */
 export function parseMultiFilePatch(text: string): FilePatch[] {
   const filePatches: FilePatch[] = [];
 
@@ -71,9 +62,6 @@ function parseOperations(content: string): PatchOperation[] {
   return ops;
 }
 
-/**
- * 核心算法：基于 Token 映射的模糊替换
- */
 export function applyPatches(originalCode: string, operations: PatchOperation[]): ApplyResult {
   let currentCode = originalCode;
   const errors: string[] = [];
@@ -109,10 +97,6 @@ export function applyPatches(originalCode: string, operations: PatchOperation[])
   };
 }
 
-/**
- * 模糊替换算法
- * 原理：生成无空白的字符流，并记录映射关系。在流中找到位置后，映射回原字符串的索引。
- */
 function fuzzyReplace(source: string, search: string, replacement: string): { success: boolean, newCode: string } {
     const sourceMap: number[] = [];
     let sourceStream = '';

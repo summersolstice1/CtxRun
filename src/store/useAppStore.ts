@@ -3,10 +3,11 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { fileStorage } from '@/lib/storage';
 import { IgnoreConfig, DEFAULT_GLOBAL_IGNORE } from '@/types/context';
 import { emit } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, DEFAULT_PROVIDER_SETTINGS } from '@/types/model';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 
-export type AppView = 'prompts' | 'context' | 'patch' | 'refinery';
+export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator';
 export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';
@@ -180,7 +181,10 @@ export const useAppStore = create<AppState>()(
         }
         return { theme };
       }),
-      setSpotlightShortcut: (shortcut) => set({ spotlightShortcut: shortcut }),
+      setSpotlightShortcut: (shortcut) => {
+        set({ spotlightShortcut: shortcut });
+        invoke('refresh_shortcuts').catch(err => console.error("Failed to refresh shortcuts:", err));
+      },
       setRestReminder: (config) => set((state) => ({
         restReminder: { ...state.restReminder, ...config }
       })),

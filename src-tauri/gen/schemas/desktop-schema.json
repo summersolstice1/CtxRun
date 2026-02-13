@@ -4359,6 +4359,330 @@
           "markdownDescription": "Denies the unminimize command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_mouse_position command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:allow-get-mouse-position",
+          "markdownDescription": "Enables the get_mouse_position command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the start_clicker command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:allow-start-clicker",
+          "markdownDescription": "Enables the start_clicker command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop_clicker command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:allow-stop-clicker",
+          "markdownDescription": "Enables the stop_clicker command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_mouse_position command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:deny-get-mouse-position",
+          "markdownDescription": "Denies the get_mouse_position command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the start_clicker command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:deny-start-clicker",
+          "markdownDescription": "Denies the start_clicker command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop_clicker command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:deny-stop-clicker",
+          "markdownDescription": "Denies the stop_clicker command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the calculate_context_stats command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-calculate-context-stats",
+          "markdownDescription": "Enables the calculate_context_stats command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the copy_context_to_clipboard command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-copy-context-to-clipboard",
+          "markdownDescription": "Enables the copy_context_to_clipboard command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_context_content command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-get-context-content",
+          "markdownDescription": "Enables the get_context_content command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_ignored_by_protocol command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-get-ignored-by-protocol",
+          "markdownDescription": "Enables the get_ignored_by_protocol command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the has_ignore_files command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-has-ignore-files",
+          "markdownDescription": "Enables the has_ignore_files command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the save_context_to_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-save-context-to-file",
+          "markdownDescription": "Enables the save_context_to_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the scan_for_secrets command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:allow-scan-for-secrets",
+          "markdownDescription": "Enables the scan_for_secrets command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the calculate_context_stats command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-calculate-context-stats",
+          "markdownDescription": "Denies the calculate_context_stats command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the copy_context_to_clipboard command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-copy-context-to-clipboard",
+          "markdownDescription": "Denies the copy_context_to_clipboard command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_context_content command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-get-context-content",
+          "markdownDescription": "Denies the get_context_content command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_ignored_by_protocol command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-get-ignored-by-protocol",
+          "markdownDescription": "Denies the get_ignored_by_protocol command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the has_ignore_files command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-has-ignore-files",
+          "markdownDescription": "Denies the has_ignore_files command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the save_context_to_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-save-context-to-file",
+          "markdownDescription": "Denies the save_context_to_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the scan_for_secrets command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-context:deny-scan-for-secrets",
+          "markdownDescription": "Denies the scan_for_secrets command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the export_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-export-git-diff",
+          "markdownDescription": "Enables the export_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_git_commits command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-get-git-commits",
+          "markdownDescription": "Enables the get_git_commits command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-get-git-diff",
+          "markdownDescription": "Enables the get_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_git_diff_text command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:allow-get-git-diff-text",
+          "markdownDescription": "Enables the get_git_diff_text command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the export_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-export-git-diff",
+          "markdownDescription": "Denies the export_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_git_commits command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-get-git-commits",
+          "markdownDescription": "Denies the get_git_commits command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_git_diff command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-get-git-diff",
+          "markdownDescription": "Denies the get_git_diff command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_git_diff_text command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-git:deny-get-git-diff-text",
+          "markdownDescription": "Denies the get_git_diff_text command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the clear_refinery_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-clear-refinery-history",
+          "markdownDescription": "Enables the clear_refinery_history command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the copy_refinery_image command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-copy-refinery-image",
+          "markdownDescription": "Enables the copy_refinery_image command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the copy_refinery_text command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-copy-refinery-text",
+          "markdownDescription": "Enables the copy_refinery_text command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the create_note command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-create-note",
+          "markdownDescription": "Enables the create_note command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the delete_refinery_items command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-delete-refinery-items",
+          "markdownDescription": "Enables the delete_refinery_items command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_refinery_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-get-refinery-history",
+          "markdownDescription": "Enables the get_refinery_history command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_refinery_item_detail command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-get-refinery-item-detail",
+          "markdownDescription": "Enables the get_refinery_item_detail command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_refinery_statistics command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-get-refinery-statistics",
+          "markdownDescription": "Enables the get_refinery_statistics command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the manual_cleanup command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-manual-cleanup",
+          "markdownDescription": "Enables the manual_cleanup command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the spotlight_paste command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-spotlight-paste",
+          "markdownDescription": "Enables the spotlight_paste command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the toggle_refinery_pin command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-toggle-refinery-pin",
+          "markdownDescription": "Enables the toggle_refinery_pin command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_cleanup_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-update-cleanup-config",
+          "markdownDescription": "Enables the update_cleanup_config command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the update_note command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:allow-update-note",
+          "markdownDescription": "Enables the update_note command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the clear_refinery_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-clear-refinery-history",
+          "markdownDescription": "Denies the clear_refinery_history command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the copy_refinery_image command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-copy-refinery-image",
+          "markdownDescription": "Denies the copy_refinery_image command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the copy_refinery_text command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-copy-refinery-text",
+          "markdownDescription": "Denies the copy_refinery_text command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the create_note command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-create-note",
+          "markdownDescription": "Denies the create_note command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the delete_refinery_items command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-delete-refinery-items",
+          "markdownDescription": "Denies the delete_refinery_items command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_refinery_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-get-refinery-history",
+          "markdownDescription": "Denies the get_refinery_history command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_refinery_item_detail command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-get-refinery-item-detail",
+          "markdownDescription": "Denies the get_refinery_item_detail command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_refinery_statistics command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-get-refinery-statistics",
+          "markdownDescription": "Denies the get_refinery_statistics command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the manual_cleanup command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-manual-cleanup",
+          "markdownDescription": "Denies the manual_cleanup command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the spotlight_paste command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-spotlight-paste",
+          "markdownDescription": "Denies the spotlight_paste command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the toggle_refinery_pin command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-toggle-refinery-pin",
+          "markdownDescription": "Denies the toggle_refinery_pin command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_cleanup_config command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-update-cleanup-config",
+          "markdownDescription": "Denies the update_cleanup_config command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the update_note command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-refinery:deny-update-note",
+          "markdownDescription": "Denies the update_note command without any pre-configured scope."
+        },
+        {
           "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-ask`\n- `allow-confirm`\n- `allow-message`\n- `allow-save`\n- `allow-open`",
           "type": "string",
           "const": "dialog:default",

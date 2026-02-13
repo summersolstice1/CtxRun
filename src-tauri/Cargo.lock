@@ -974,21 +974,22 @@ dependencies = [
 
 [[package]]
 name = "ctxrun"
-version = "1.5.5"
+version = "2.0.0"
 dependencies = [
  "arboard",
  "base64 0.22.1",
  "chrono",
- "clipboard-rs",
- "crossbeam-channel",
  "csv",
- "enigo",
+ "ctxrun-db",
+ "ctxrun-plugin-automator",
+ "ctxrun-plugin-context",
+ "ctxrun-plugin-git",
+ "ctxrun-plugin-refinery",
  "entropy",
  "futures",
  "genai",
  "git2",
  "ignore",
- "image",
  "infer",
  "listeners",
  "mime_guess",
@@ -1024,6 +1025,87 @@ dependencies = [
  "walkdir",
  "which",
  "windows 0.61.3",
+]
+
+[[package]]
+name = "ctxrun-db"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "csv",
+ "refinery",
+ "regex",
+ "reqwest 0.12.24",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "serde_rusqlite",
+ "tauri",
+ "uuid",
+]
+
+[[package]]
+name = "ctxrun-plugin-automator"
+version = "2.0.0"
+dependencies = [
+ "enigo",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
+]
+
+[[package]]
+name = "ctxrun-plugin-context"
+version = "2.0.0"
+dependencies = [
+ "arboard",
+ "ctxrun-db",
+ "entropy",
+ "ignore",
+ "once_cell",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "tiktoken-rs",
+]
+
+[[package]]
+name = "ctxrun-plugin-git"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "git2",
+ "rayon",
+ "serde",
+ "serde_json",
+ "similar",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "ctxrun-plugin-refinery"
+version = "2.0.0"
+dependencies = [
+ "chrono",
+ "clipboard-rs",
+ "crossbeam-channel",
+ "ctxrun-db",
+ "enigo",
+ "image",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "tokio",
+ "uuid",
  "x-win",
  "xxhash-rust",
 ]

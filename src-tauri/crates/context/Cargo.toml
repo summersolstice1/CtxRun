@@ -1,0 +1,21 @@
+[package]
+name = "ctxrun-plugin-context"
+version = "2.0.0"
+edition = "2024"
+links = "ctxrun-plugin-context"
+
+[dependencies]
+tauri = { workspace = true }
+ctxrun-db = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rayon = { workspace = true }
+tiktoken-rs = { workspace = true }
+ignore = { workspace = true }
+arboard = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
+entropy = { workspace = true }
+
+[build-dependencies]
+tauri-plugin = { workspace = true }

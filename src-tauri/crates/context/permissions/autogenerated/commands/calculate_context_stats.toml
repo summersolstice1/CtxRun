@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-calculate-context-stats"
+description = "Enables the calculate_context_stats command without any pre-configured scope."
+commands.allow = ["calculate_context_stats"]
+
+[[permission]]
+identifier = "deny-calculate-context-stats"
+description = "Denies the calculate_context_stats command without any pre-configured scope."
+commands.deny = ["calculate_context_stats"]

@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-manual-cleanup"
+description = "Enables the manual_cleanup command without any pre-configured scope."
+commands.allow = ["manual_cleanup"]
+
+[[permission]]
+identifier = "deny-manual-cleanup"
+description = "Denies the manual_cleanup command without any pre-configured scope."
+commands.deny = ["manual_cleanup"]

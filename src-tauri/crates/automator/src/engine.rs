@@ -1,0 +1,77 @@
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread;
+use std::time::Duration;
+use tauri::{AppHandle, Emitter, Runtime};
+use enigo::{Enigo, Mouse, Button, Coordinate, Settings, Direction};
+use crate::models::{ClickerConfig, ClickType, StopCondition};
+
+pub struct AutomatorState {
+    pub is_running: Arc<AtomicBool>,
+}
+
+impl AutomatorState {
+    pub fn new() -> Self {
+        Self {
+            is_running: Arc::new(AtomicBool::new(false)),
+        }
+    }
+}
+
+pub fn run_clicker_task<R: Runtime>(
+    app: AppHandle<R>,
+    config: ClickerConfig,
+    running_flag: Arc<AtomicBool>
+) {
+    thread::spawn(move || {
+        let mut enigo = match Enigo::new(&Settings::default()) {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("[Automator] Failed to init Enigo: {:?}", e);
+                running_flag.store(false, Ordering::SeqCst);
+                let _ = app.emit("automator:status", false);
+                return;
+            }
+        };
+
+        let mut count = 0u64;
+        let button = match config.click_type {
+            ClickType::Left => Button::Left,
+            ClickType::Right => Button::Right,
+            ClickType::Middle => Button::Middle,
+        };
+
+        println!("[Automator] Started. Interval: {}ms", config.interval_ms);
+
+        while running_flag.load(Ordering::SeqCst) {
+            if config.use_fixed_location {
+                let _ = enigo.move_mouse(config.fixed_x, config.fixed_y, Coordinate::Abs);
+            }
+
+            let _ = enigo.button(button, Direction::Click);
+
+            count += 1;
+            let _ = app.emit("automator:count", count);
+
+            if let StopCondition::MaxCount(max) = config.stop_condition {
+                if count >= max {
+                    break;
+                }
+            }
+            if config.interval_ms > 100 {
+                let chunks = config.interval_ms / 50;
+                for _ in 0..chunks {
+                    if !running_flag.load(Ordering::SeqCst) { break; }
+                    thread::sleep(Duration::from_millis(50));
+                }
+                thread::sleep(Duration::from_millis(config.interval_ms % 50));
+            } else {
+                thread::sleep(Duration::from_millis(config.interval_ms));
+            }
+        }
+
+        running_flag.store(false, Ordering::SeqCst);
+        let _ = app.emit("automator:status", false);
+        println!("[Automator] Stopped. Total clicks: {}", count);
+    });
+}

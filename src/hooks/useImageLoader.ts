@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { readFile } from '@tauri-apps/plugin-fs';
 
-/**
- * Hook to load images from Tauri file system and convert to Blob URL
- * This is more reliable than convertFileSrc for some scenarios
- */
 export function useImageLoader(imagePath: string | null | undefined) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -12,7 +8,6 @@ export function useImageLoader(imagePath: string | null | undefined) {
   const urlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    // Clear previous image
     if (urlRef.current) {
       URL.revokeObjectURL(urlRef.current);
       urlRef.current = null;
@@ -28,7 +23,6 @@ export function useImageLoader(imagePath: string | null | undefined) {
 
     readFile(imagePath)
       .then((bytes) => {
-        // Detect image type from file extension or default to png
         let mimeType = 'image/png';
         const ext = imagePath.split('.').pop()?.toLowerCase();
         if (ext === 'jpg' || ext === 'jpeg') {

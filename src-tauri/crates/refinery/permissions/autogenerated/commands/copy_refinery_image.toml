@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-copy-refinery-image"
+description = "Enables the copy_refinery_image command without any pre-configured scope."
+commands.allow = ["copy_refinery_image"]
+
+[[permission]]
+identifier = "deny-copy-refinery-image"
+description = "Denies the copy_refinery_image command without any pre-configured scope."
+commands.deny = ["copy_refinery_image"]

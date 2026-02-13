@@ -8,20 +8,13 @@ pub fn preview_protocol_handler<R: tauri::Runtime>(
     _ctx: tauri::UriSchemeContext<'_, R>,
     request: Request<Vec<u8>>,
 ) -> Response<Vec<u8>> {
-    // 1. 解析路径
-    // 这里的 uri 类似于 "preview://localhost/C%3A%2Fpath%2Fto%2Ffile.png" (Windows)
-    // 或者 "preview://localhost/Users/name/file.png" (Unix)
     let uri = request.uri();
     let uri_str = uri.to_string();
 
-    // 移除协议头 "preview://"
-    // 注意：Tauri v2 的 request.uri() 返回的是完整 URL
     let path_str = uri_str.replace("preview://localhost", "").replace("preview://", "");
 
-    // URL 解码 (处理空格、特殊字符)
     let decoded_path = percent_decode_str(&path_str).decode_utf8_lossy().to_string();
 
-    // 处理 Windows 路径问题 (移除开头的 /，如果是 /C:/...)
     #[cfg(target_os = "windows")]
     let final_path_str = if decoded_path.starts_with('/') && decoded_path.chars().nth(2) == Some(':') {
         &decoded_path[1..]
@@ -34,7 +27,6 @@ pub fn preview_protocol_handler<R: tauri::Runtime>(
 
     let path = Path::new(final_path_str);
 
-    // 2. 安全检查：虽然是本地工具，但最好还是做个 basic check
     if !path.exists() {
         return Response::builder()
             .status(StatusCode::NOT_FOUND)
@@ -63,10 +55,8 @@ pub fn preview_protocol_handler<R: tauri::Runtime>(
             .unwrap_or_default();
     }
 
-    // 4. 猜测 MIME
     let mime_type = mime_guess::from_path(path).first_or_octet_stream();
 
-    // 5. 返回响应
     Response::builder()
         .header(header::CONTENT_TYPE, mime_type.as_ref())
         .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")

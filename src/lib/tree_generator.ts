@@ -1,9 +1,5 @@
 import { FileNode } from '@/types/context';
 
-/**
- * 生成 ASCII 格式的项目结构树
- * 注意：只包含用户勾选 (isSelected) 的节点
- */
 export function generateAsciiTree(nodes: FileNode[]): string {
   let output = '';
 

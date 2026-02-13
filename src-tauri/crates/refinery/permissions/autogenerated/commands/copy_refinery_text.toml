@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-copy-refinery-text"
+description = "Enables the copy_refinery_text command without any pre-configured scope."
+commands.allow = ["copy_refinery_text"]
+
+[[permission]]
+identifier = "deny-copy-refinery-text"
+description = "Denies the copy_refinery_text command without any pre-configured scope."
+commands.deny = ["copy_refinery_text"]

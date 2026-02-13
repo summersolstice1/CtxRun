@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-update-cleanup-config"
+description = "Enables the update_cleanup_config command without any pre-configured scope."
+commands.allow = ["update_cleanup_config"]
+
+[[permission]]
+identifier = "deny-update-cleanup-config"
+description = "Denies the update_cleanup_config command without any pre-configured scope."
+commands.deny = ["update_cleanup_config"]

@@ -1,4 +1,4 @@
-use crate::db::{AppEntry, DbState};
+use ctxrun_db::{AppEntry, DbState};
 use tauri::State;
 use std::path::Path;
 
@@ -10,25 +10,22 @@ use std::os::windows::process::CommandExt;
 
 #[tauri::command]
 pub async fn refresh_apps(state: State<'_, DbState>) -> Result<String, String> {
-    let items = tauri::async_runtime::spawn_blocking(move || {
+    let items = tauri::async_runtime::spawn_blocking(move || -> Vec<AppEntry> {
         scan_system()
     }).await.map_err(|e| e.to_string())?;
 
     let count = items.len();
 
-    // 同步到数据库
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
-    crate::db::apps::sync_scanned_apps(&conn, items).map_err(|e| e.to_string())?;
+    ctxrun_db::apps::sync_scanned_apps(&conn, items).map_err(|e| e.to_string())?;
 
     Ok(format!("Scanned {} applications", count))
 }
 
 #[tauri::command]
 pub async fn open_app(path: String, state: State<'_, DbState>) -> Result<(), String> {
-    // 1. 启动进程
     #[cfg(target_os = "windows")]
     {
-        // 使用 cmd /C start "" "path" 可以处理更复杂的路径和空格情况
         std::process::Command::new("cmd")
             .args(&["/C", "start", "", &path])
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
@@ -52,8 +49,7 @@ pub async fn open_app(path: String, state: State<'_, DbState>) -> Result<(), Str
             .map_err(|e| format!("Failed to launch: {}", e))?;
     }
 
-    // 2. 异步更新使用计数
-    let _ = crate::db::apps::record_app_usage(state, path);
+    let _ = ctxrun_db::apps::record_app_usage(state, path);
 
     Ok(())
 }
@@ -69,7 +65,6 @@ fn scan_system() -> Vec<AppEntry> {
 
         let dirs = vec![start_menu_common, &start_menu_user];
 
-        // 1. 目录黑名单：完全忽略这些文件夹下的内容
         let ignored_dir_names = vec![
             "Windows Kits",
             "Administrative Tools",
@@ -82,7 +77,6 @@ fn scan_system() -> Vec<AppEntry> {
             "Driver",
         ];
 
-        // 2. 关键词黑名单：忽略文件名包含这些词的快捷方式 (不区分大小写)
         let ignored_keywords = vec![
             "uninstall", "卸载", "remove",
             "help", "帮助", "documentation", "manual", "guide", "faq", "说明", "readme", "notes",
@@ -100,10 +94,8 @@ fn scan_system() -> Vec<AppEntry> {
                     let path = entry.path();
                     let path_str = path.to_string_lossy().to_lowercase();
 
-                    // 检查 1: 是否是快捷方式
                     if path.extension().map_or(false, |ext| ext == "lnk") {
 
-                        // 检查 2: 目录黑名单过滤
                         let in_ignored_dir = ignored_dir_names.iter().any(|&d| {
                             let pattern = format!("\\{}", d.to_lowercase());
                             path_str.contains(&pattern)
@@ -116,7 +108,6 @@ fn scan_system() -> Vec<AppEntry> {
                         let name = path.file_stem().unwrap().to_string_lossy().to_string();
                         let lower_name = name.to_lowercase();
 
-                        // 检查 3: 文件名关键词过滤
                         let has_ignored_keyword = ignored_keywords.iter().any(|&k| lower_name.contains(k));
                         if has_ignored_keyword {
                             continue;
@@ -196,7 +187,6 @@ fn scan_system() -> Vec<AppEntry> {
         }
     }
 
-    // 去重 (根据路径)
     apps.sort_by(|a, b| a.path.cmp(&b.path));
     apps.dedup_by(|a, b| a.path == b.path);
 

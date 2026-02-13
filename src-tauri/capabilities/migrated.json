@@ -62,6 +62,34 @@
       ]
     },
     "core:app:allow-identifier",
-    "notification:default"
+    "notification:default",
+
+    "ctxrun-plugin-automator:allow-start-clicker",
+    "ctxrun-plugin-automator:allow-stop-clicker",
+    "ctxrun-plugin-automator:allow-get-mouse-position",
+    "ctxrun-plugin-context:allow-calculate-context-stats",
+    "ctxrun-plugin-context:allow-scan-for-secrets",
+    "ctxrun-plugin-context:allow-get-context-content",
+    "ctxrun-plugin-context:allow-copy-context-to-clipboard",
+    "ctxrun-plugin-context:allow-save-context-to-file",
+    "ctxrun-plugin-context:allow-has-ignore-files",
+    "ctxrun-plugin-context:allow-get-ignored-by-protocol",
+    "ctxrun-plugin-git:allow-get-git-commits",
+    "ctxrun-plugin-git:allow-get-git-diff",
+    "ctxrun-plugin-git:allow-get-git-diff-text",
+    "ctxrun-plugin-git:allow-export-git-diff",
+    "ctxrun-plugin-refinery:allow-get-refinery-history",
+    "ctxrun-plugin-refinery:allow-get-refinery-item-detail",
+    "ctxrun-plugin-refinery:allow-get-refinery-statistics",
+    "ctxrun-plugin-refinery:allow-toggle-refinery-pin",
+    "ctxrun-plugin-refinery:allow-delete-refinery-items",
+    "ctxrun-plugin-refinery:allow-clear-refinery-history",
+    "ctxrun-plugin-refinery:allow-copy-refinery-text",
+    "ctxrun-plugin-refinery:allow-copy-refinery-image",
+    "ctxrun-plugin-refinery:allow-create-note",
+    "ctxrun-plugin-refinery:allow-update-note",
+    "ctxrun-plugin-refinery:allow-spotlight-paste",
+    "ctxrun-plugin-refinery:allow-update-cleanup-config",
+    "ctxrun-plugin-refinery:allow-manual-cleanup"
   ]
 }

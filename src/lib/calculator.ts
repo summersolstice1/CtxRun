@@ -42,22 +42,10 @@ export function evaluateMath(input: string): string | null {
   return null;
 }
 
-/**
- * 计算清理缓冲区阈值
- * 当条目数量达到此阈值时触发清理
- * @param maxCount 最大条目限制
- * @param bufferPercent 缓冲百分比（默认 10%）
- * @returns 触发清理的阈值
- */
 export function getCleanupThreshold(maxCount: number, bufferPercent: number = 10): number {
   return Math.ceil((maxCount * (100 + bufferPercent)) / 100);
 }
 
-/**
- * 格式化 Refinery 清理配置的阈值显示
- * @param maxCount 最大条目限制
- * @returns 格式化后的阈值
- */
 export function formatRefineryBufferThreshold(maxCount: number): number {
   return getCleanupThreshold(maxCount, 10);
 }

@@ -5,6 +5,8 @@ import { basename } from '@tauri-apps/api/path';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
 import { invoke } from '@tauri-apps/api/core';
+
+const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 import {
   FolderOpen, RefreshCw, Loader2, FileJson,
   PanelLeft, Search, ArrowRight, SlidersHorizontal, ChevronUp,
@@ -188,13 +190,20 @@ export function ContextView() {
                   }) || undefined;
               }
 
-              if (!filePath) return;
+              if (!filePath) {
+                  setIsGenerating(false);
+                  return;
+              }
 
               await writeTextFile(filePath, text);
               triggerToast(getText('context', 'toastSaved', language), 'success');
           }
       } catch (err) {
           triggerToast(action === 'copy' ? getText('context', 'toastCopyFail', language) : getText('context', 'toastSaveFail', language), 'error');
+      } finally {
+          if (action === 'save') {
+              setIsGenerating(false);
+          }
       }
   };
 
@@ -205,7 +214,7 @@ export function ContextView() {
       }
 
       try {
-          const results = await invoke<SecretMatch[]>('scan_for_secrets', { content: text });
+          const results = await invoke<SecretMatch[]>(`${CONTEXT_PLUGIN_PREFIX}scan_for_secrets`, { content: text });
 
           if (results && results.length > 0) {
               setScanState({
@@ -267,10 +276,10 @@ export function ContextView() {
       const header = generateHeader(fileTree, removeComments);
 
       if (detectSecrets) {
-        const text = await invoke<string>('get_context_content', { paths, header, removeComments });
+        const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, { paths, header, removeComments });
         await processWithSecurityCheck(text, 'copy');
       } else {
-        await invoke('copy_context_to_clipboard', { paths, header, removeComments });
+        await invoke(`${CONTEXT_PLUGIN_PREFIX}copy_context_to_clipboard`, { paths, header, removeComments });
         triggerToast(getText('context', 'toastCopied', language), 'success');
       }
     } catch (err) {
@@ -287,22 +296,22 @@ export function ContextView() {
       const paths = getSelectedPaths(fileTree);
       const header = generateHeader(fileTree, removeComments);
 
-      const defaultPath = await getDefaultSavePath();
-      const filePath = await save({
-        filters: [{ name: 'Text File', extensions: ['txt', 'md', 'json'] }],
-        defaultPath: defaultPath
-      });
-
-      if (!filePath) {
-        setIsGenerating(false);
-        return;
-      }
-
       if (detectSecrets) {
-        const text = await invoke<string>('get_context_content', { paths, header, removeComments });
-        await processWithSecurityCheck(text, 'save', filePath);
+        const text = await invoke<string>(`${CONTEXT_PLUGIN_PREFIX}get_context_content`, { paths, header, removeComments });
+        await processWithSecurityCheck(text, 'save', undefined);
       } else {
-        await invoke('save_context_to_file', {
+        const defaultPath = await getDefaultSavePath();
+        const filePath = await save({
+          filters: [{ name: 'Text File', extensions: ['txt', 'md', 'json'] }],
+          defaultPath: defaultPath
+        });
+
+        if (!filePath) {
+          setIsGenerating(false);
+          return;
+        }
+
+        await invoke(`${CONTEXT_PLUGIN_PREFIX}save_context_to_file`, {
           paths,
           header,
           removeComments,
@@ -376,8 +385,7 @@ export function ContextView() {
 
   return (
     <div className="h-full flex flex-col bg-background relative">
-      
-      {/* Top Bar */}
+
       <div className="h-14 border-b border-border flex items-center px-4 gap-3 shrink-0 bg-background/80 backdrop-blur z-10">
         <button 
           onClick={() => setContextSidebarOpen(!isContextSidebarOpen)} 
@@ -408,7 +416,6 @@ export function ContextView() {
         </button>
       </div>
 
-      {/* Main Split View */}
       <div className="flex-1 flex overflow-hidden relative">
         <div 
           className={cn("flex flex-col bg-secondary/5 border-r border-border transition-all duration-75 ease-linear overflow-hidden relative group/sidebar", !isContextSidebarOpen && "w-0 border-none opacity-0")}

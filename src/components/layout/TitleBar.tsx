@@ -71,7 +71,6 @@ export function TitleBar() {
            </span>
         </div>
 
-        {/* 时钟下拉面板 */}
         <ClockPopover
           currentTime={currentTime}
           isOpen={isClockPopoverOpen}

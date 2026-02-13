@@ -1,5 +1,7 @@
 import { useMemo, useState, useEffect, cloneElement } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+
+const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 import {
   CheckCircle2, AlertCircle, FileText, Database, Cpu, Save,
   DollarSign, PieChart, TrendingUp, AlertTriangle, Eraser, X, ShieldCheck, Loader2
@@ -65,7 +67,7 @@ export function TokenDashboard({
       setIsCalculating(true);
 
       try {
-        const res = await invoke<ContextStats>('calculate_context_stats', {
+        const res = await invoke<ContextStats>(`${CONTEXT_PLUGIN_PREFIX}calculate_context_stats`, {
           paths: paths,
           removeComments: removeComments
         });

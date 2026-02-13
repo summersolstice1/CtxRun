@@ -10,7 +10,6 @@ export interface LanguageStat {
   percentage: number;
 }
 
-// 新的成本结构
 export interface ModelCostStat {
   modelId: string;
   modelName: string;
@@ -21,7 +20,7 @@ export interface ModelCostStat {
 export interface AnalyticsData {
   languages: LanguageStat[];
   topFiles: FileNode[];
-  modelCosts: ModelCostStat[]; // 动态数组
+  modelCosts: ModelCostStat[];
 }
 
 function getFlatSelectedFiles(nodes: FileNode[]): FileNode[] {
@@ -37,9 +36,6 @@ function getFlatSelectedFiles(nodes: FileNode[]): FileNode[] {
   return files;
 }
 
-/**
- * 动态分析函数
- */
 export function analyzeContext(
   nodes: FileNode[],
   totalTokens: number,
@@ -48,13 +44,11 @@ export function analyzeContext(
   const files = getFlatSelectedFiles(nodes);
   const totalSize = files.reduce((acc, f) => acc + (f.size || 0), 0);
 
-  // 1. 语言分布 - 按扩展名分组
   const langStats: Record<string, { count: number; size: number; ext: string }> = {};
   files.forEach(f => {
     const ext = f.name.split('.').pop()?.toLowerCase() || 'unknown';
     const info = getLanguageInfo(f.name);
 
-    // 将未识别的文件类型归为 "Other"
     const langName = info.name === 'Unknown' ? 'Other' : info.name;
 
     if (!langStats[langName]) {
@@ -82,7 +76,6 @@ export function analyzeContext(
     .sort((a, b) => (b.size || 0) - (a.size || 0))
     .slice(0, 5);
 
-  // 动态成本计算
   const millions = totalTokens / 1_000_000;
   const modelCosts: ModelCostStat[] = models.map(model => ({
     modelId: model.id,

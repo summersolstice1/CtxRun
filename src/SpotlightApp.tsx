@@ -1,12 +1,11 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { getCurrentWebviewWindow, getAllWebviewWindows } from '@tauri-apps/api/webviewWindow';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { LogicalSize } from '@tauri-apps/api/dpi';
 import { listen } from '@tauri-apps/api/event';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { message } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
-import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 
 import { useAppStore, AppTheme } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
@@ -28,6 +27,7 @@ import { SpotlightItem } from '@/types/spotlight';
 import { ShellType } from '@/types/prompt';
 
 const appWindow = getCurrentWebviewWindow();
+const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
 function SpotlightContent() {
   const {
@@ -75,12 +75,10 @@ function SpotlightContent() {
   const handleItemSelect = async (item: SpotlightItem) => {
     if (!item) return;
 
-    // 1. 处理剪贴板粘贴
     if (item.type === 'clipboard') {
         try {
-            await invoke('spotlight_paste', { itemId: item.id });
+            await invoke(`${REFINERY_PLUGIN_PREFIX}spotlight_paste`, { itemId: item.id });
             setQuery('');
-            // 注意：不需要手动 hide，因为 rust 端已经 hide 了
         } catch (e) {
             console.error("Paste failed", e);
         }
@@ -201,7 +199,6 @@ function SpotlightContent() {
 
       const isModifierPressed = navigator.platform.includes('Mac') ? e.metaKey : e.altKey;
 
-      // Alt + 1/2/3 切换模式
       if (isModifierPressed) {
         if (e.key === '1') {
           e.preventDefault();
@@ -223,19 +220,16 @@ function SpotlightContent() {
       if (e.key === 'Escape') {
         e.preventDefault();
 
-        // 修改处：将 clipboard 模式也纳入 query 的处理逻辑
         if (mode === 'search' || mode === 'clipboard') {
             if (query.length > 0) {
-                setQuery(''); // 有内容先清空
+                setQuery('');
                 return;
             }
-            // 仅在 search 模式下重置 scope（剪贴板模式不需要这个逻辑）
             if (mode === 'search' && searchScope !== 'global') {
                 setSearchScope('global');
                 return;
             }
         } else {
-            // Chat 模式处理 chatInput
             if (chatInput.length > 0) {
                 setChatInput('');
                 return;
@@ -296,7 +290,6 @@ function SpotlightContent() {
       resultCount={search.results.length}
       isStreaming={chat.isStreaming}
     >
-      {/* 渲染判断：剪贴板模式也复用 SearchMode 组件 */}
       {(mode === 'search' || mode === 'clipboard') ? (
         <SearchMode
           results={search.results}
@@ -304,7 +297,6 @@ function SpotlightContent() {
           setSelectedIndex={search.setSelectedIndex}
           onSelect={handleItemSelect}
           copiedId={copiedId}
-          // --- 传递新增的属性 ---
           hasMore={search.hasMore}
           loadMore={search.loadMore}
           isLoading={search.isLoading}
@@ -321,37 +313,8 @@ function SpotlightContent() {
 }
 
 export default function SpotlightApp() {
-  const { setTheme, theme, spotlightShortcut } = useAppStore();
+  const { setTheme, theme } = useAppStore();
   const { fetchChatTemplates } = usePromptStore();
-
-  useEffect(() => {
-    if (appWindow.label !== 'spotlight') return;
-
-    const setupShortcut = async () => {
-      try {
-        await unregisterAll();
-        if (!spotlightShortcut) return;
-        await register(spotlightShortcut, async (event) => {
-          if (event.state === 'Pressed') {
-            const windows = await getAllWebviewWindows();
-            const spotlight = windows.find(w => w.label === 'spotlight');
-            if (spotlight) {
-              const isVisible = await spotlight.isVisible();
-              if (isVisible) {
-                await spotlight.hide();
-              } else {
-                await spotlight.show();
-                await spotlight.setFocus();
-              }
-            }
-          }
-        });
-      } catch (err) {
-      }
-    };
-
-    setupShortcut();
-  }, [spotlightShortcut]);
 
   useEffect(() => {
     const root = document.documentElement;

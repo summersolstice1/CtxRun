@@ -14,6 +14,7 @@ const PromptView = lazy(() => import('@/components/features/prompts/PromptView')
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
 const PatchView = lazy(() => import('@/components/features/patch/PatchView').then(module => ({ default: module.PatchView })));
 const RefineryView = lazy(() => import('@/components/features/refinery/RefineryView').then(module => ({ default: module.RefineryView })));
+const AutomatorView = lazy(() => import('@/components/features/automator/AutomatorView').then(module => ({ default: module.AutomatorView })));
 const SystemMonitorModal = lazy(() => import('@/components/features/monitor/SystemMonitorModal').then(module => ({ default: module.SystemMonitorModal })));
 
 const appWindow = getCurrentWebviewWindow()
@@ -124,6 +125,7 @@ function App() {
             {currentView === 'context' && <ContextView />}
             {currentView === 'patch' && <PatchView />}
             {currentView === 'refinery' && <RefineryView />}
+            {currentView === 'automator' && <AutomatorView />}
           </Suspense>
         </main>
       </div>
