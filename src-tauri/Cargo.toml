@@ -1,15 +1,11 @@
-[workspace.package]
-version = "2.0.0"
-edition = "2024"
-
 [package]
 name = "ctxrun"
-version.workspace = true
+version = "2.0.0"
+edition = "2024"
 description = "A Tool"
 authors = ["Winrisef"]
 license = ""
 repository = ""
-edition.workspace = true
 rust-version = "1.91"
 
 
