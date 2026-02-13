@@ -102,7 +102,7 @@ pub fn search_prompts(
             (CASE WHEN title LIKE ?2 THEN 80 ELSE 0 END) +
             (CASE WHEN title LIKE ?3 THEN 60 ELSE 0 END) +
             (CASE WHEN title LIKE ?4 THEN 40 ELSE 0 END) +
-            (CASE WHEN content LIKE ?4 THEN 20 ELSE 0 END) +
+            (CASE WHEN content LIKE ?5 THEN 20 ELSE 0 END) +
             (is_favorite * 10)
         ) as score
         FROM prompts
@@ -128,18 +128,23 @@ pub fn search_prompts(
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-    params.push(Box::new(trimmed_query.to_string()));
-    params.push(Box::new(format!("{}%", trimmed_query)));
-    params.push(Box::new(format!("% {}%", trimmed_query)));
-    params.push(Box::new(format!("%{}%", trimmed_query)));
+    // Bind scoring parameters (?1 - ?5)
+    params.push(Box::new(trimmed_query.to_string()));  // ?1: title exact
+    params.push(Box::new(format!("{}%", trimmed_query)));  // ?2: title prefix1
+    params.push(Box::new(format!("%{}%", trimmed_query)));  // ?3: title prefix2
+    params.push(Box::new(format!("%{}%", trimmed_query)));  // ?4: title prefix3
+    params.push(Box::new(format!("%{}%", trimmed_query)));  // ?5: content prefix
 
+    // Bind WHERE clause parameters (3 per keyword: title/content/description)
     for kw in keywords {
-        let pattern = format!("%{}%", kw);
-        params.push(Box::new(pattern.clone()));
+        params.push(Box::new(format!("{}%", kw)));  // title LIKE ?
+        params.push(Box::new(format!("%{}%", kw)));  // content LIKE ?
+        params.push(Box::new(format!("%{}%", kw)));  // description LIKE ?
     }
 
-    params.push(Box::new(page_size));
-    params.push(Box::new(offset));
+    // 绑定 LIMIT 和 OFFSET
+    params.push(Box::new(page_size));  // LIMIT ?
+    params.push(Box::new(offset));  // OFFSET ?
 
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
