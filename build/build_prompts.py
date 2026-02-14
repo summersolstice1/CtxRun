@@ -5,6 +5,9 @@ import uuid
 import time
 import re
 import requests
+import sys
+
+csv.field_size_limit(sys.maxsize)
 
 SOURCES = {
     "en_roles": {
@@ -131,6 +134,7 @@ def process_source(key, config):
     raw_data = response.text
 
     if config['format'] == 'csv':
+        # 这里会用到上面设置的 field_size_limit
         reader = csv.DictReader(raw_data.splitlines())
         for row in reader:
             act = row.get('act', '').strip()
