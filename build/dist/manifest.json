@@ -1,84 +1,7 @@
 {
-  "updated_at": 1770602487106,
+  "updated_at": 1771069744121,
   "version": "2.1.0",
   "packages": [
-    {
-      "id": "en-roles",
-      "language": "en",
-      "platform": "llm",
-      "name": "ChatGPT Prompts (English)",
-      "description": "Collection of 1203 role-play prompts.",
-      "count": 1203,
-      "size_kb": 2813.65,
-      "url": "packs/prompts/en/roles.json",
-      "category": "prompt"
-    },
-    {
-      "id": "zh-roles",
-      "language": "zh",
-      "platform": "llm",
-      "name": "中文角色扮演精选",
-      "description": "Collection of 124 role-play prompts.",
-      "count": 124,
-      "size_kb": 97.47,
-      "url": "packs/prompts/zh/roles.json",
-      "category": "prompt"
-    },
-    {
-      "id": "zh-android",
-      "language": "zh",
-      "platform": "android",
-      "name": "Android 开发 (ZH)",
-      "description": "Contains 54 zh commands for android.",
-      "count": 54,
-      "size_kb": 23,
-      "url": "packs/commands/zh/android.json",
-      "category": "command"
-    },
-    {
-      "id": "zh-windows",
-      "language": "zh",
-      "platform": "windows",
-      "name": "Windows (ZH)",
-      "description": "Contains 425 zh commands for windows.",
-      "count": 425,
-      "size_kb": 183,
-      "url": "packs/commands/zh/windows.json",
-      "category": "command"
-    },
-    {
-      "id": "zh-dos",
-      "language": "zh",
-      "platform": "dos",
-      "name": "Dos (ZH)",
-      "description": "Contains 11 zh commands for dos.",
-      "count": 11,
-      "size_kb": 4,
-      "url": "packs/commands/zh/dos.json",
-      "category": "command"
-    },
-    {
-      "id": "zh-openbsd",
-      "language": "zh",
-      "platform": "openbsd",
-      "name": "Openbsd (ZH)",
-      "description": "Contains 2 zh commands for openbsd.",
-      "count": 2,
-      "size_kb": 1,
-      "url": "packs/commands/zh/openbsd.json",
-      "category": "command"
-    },
-    {
-      "id": "zh-netbsd",
-      "language": "zh",
-      "platform": "netbsd",
-      "name": "Netbsd (ZH)",
-      "description": "Contains 2 zh commands for netbsd.",
-      "count": 2,
-      "size_kb": 1,
-      "url": "packs/commands/zh/netbsd.json",
-      "category": "command"
-    },
     {
       "id": "zh-freebsd",
       "language": "zh",
@@ -88,17 +11,6 @@
       "count": 5,
       "size_kb": 2,
       "url": "packs/commands/zh/freebsd.json",
-      "category": "command"
-    },
-    {
-      "id": "zh-linux",
-      "language": "zh",
-      "platform": "linux",
-      "name": "Linux 运维 (ZH)",
-      "description": "Contains 763 zh commands for linux.",
-      "count": 763,
-      "size_kb": 342,
-      "url": "packs/commands/zh/linux.json",
       "category": "command"
     },
     {
@@ -113,6 +25,17 @@
       "category": "command"
     },
     {
+      "id": "zh-dos",
+      "language": "zh",
+      "platform": "dos",
+      "name": "Dos (ZH)",
+      "description": "Contains 11 zh commands for dos.",
+      "count": 11,
+      "size_kb": 4,
+      "url": "packs/commands/zh/dos.json",
+      "category": "command"
+    },
+    {
       "id": "zh-osx",
       "language": "zh",
       "platform": "osx",
@@ -121,6 +44,39 @@
       "count": 458,
       "size_kb": 194,
       "url": "packs/commands/zh/osx.json",
+      "category": "command"
+    },
+    {
+      "id": "zh-linux",
+      "language": "zh",
+      "platform": "linux",
+      "name": "Linux 运维 (ZH)",
+      "description": "Contains 763 zh commands for linux.",
+      "count": 763,
+      "size_kb": 342,
+      "url": "packs/commands/zh/linux.json",
+      "category": "command"
+    },
+    {
+      "id": "zh-netbsd",
+      "language": "zh",
+      "platform": "netbsd",
+      "name": "Netbsd (ZH)",
+      "description": "Contains 2 zh commands for netbsd.",
+      "count": 2,
+      "size_kb": 1,
+      "url": "packs/commands/zh/netbsd.json",
+      "category": "command"
+    },
+    {
+      "id": "zh-android",
+      "language": "zh",
+      "platform": "android",
+      "name": "Android 开发 (ZH)",
+      "description": "Contains 54 zh commands for android.",
+      "count": 54,
+      "size_kb": 23,
+      "url": "packs/commands/zh/android.json",
       "category": "command"
     },
     {
@@ -135,58 +91,25 @@
       "category": "command"
     },
     {
-      "id": "en-android",
-      "language": "en",
-      "platform": "android",
-      "name": "Android Dev (EN)",
-      "description": "Contains 57 en commands for android.",
-      "count": 57,
-      "size_kb": 25,
-      "url": "packs/commands/en/android.json",
-      "category": "command"
-    },
-    {
-      "id": "en-windows",
-      "language": "en",
-      "platform": "windows",
-      "name": "Windows (EN)",
-      "description": "Contains 1095 en commands for windows.",
-      "count": 1095,
-      "size_kb": 536,
-      "url": "packs/commands/en/windows.json",
-      "category": "command"
-    },
-    {
-      "id": "en-dos",
-      "language": "en",
-      "platform": "dos",
-      "name": "Dos (EN)",
-      "description": "Contains 64 en commands for dos.",
-      "count": 64,
-      "size_kb": 24,
-      "url": "packs/commands/en/dos.json",
-      "category": "command"
-    },
-    {
-      "id": "en-openbsd",
-      "language": "en",
+      "id": "zh-openbsd",
+      "language": "zh",
       "platform": "openbsd",
-      "name": "Openbsd (EN)",
-      "description": "Contains 36 en commands for openbsd.",
-      "count": 36,
-      "size_kb": 16,
-      "url": "packs/commands/en/openbsd.json",
+      "name": "Openbsd (ZH)",
+      "description": "Contains 2 zh commands for openbsd.",
+      "count": 2,
+      "size_kb": 1,
+      "url": "packs/commands/zh/openbsd.json",
       "category": "command"
     },
     {
-      "id": "en-netbsd",
-      "language": "en",
-      "platform": "netbsd",
-      "name": "Netbsd (EN)",
-      "description": "Contains 41 en commands for netbsd.",
-      "count": 41,
-      "size_kb": 19,
-      "url": "packs/commands/en/netbsd.json",
+      "id": "zh-windows",
+      "language": "zh",
+      "platform": "windows",
+      "name": "Windows (ZH)",
+      "description": "Contains 425 zh commands for windows.",
+      "count": 425,
+      "size_kb": 183,
+      "url": "packs/commands/zh/windows.json",
       "category": "command"
     },
     {
@@ -201,25 +124,36 @@
       "category": "command"
     },
     {
-      "id": "en-linux",
-      "language": "en",
-      "platform": "linux",
-      "name": "Linux Ops (EN)",
-      "description": "Contains 7843 en commands for linux.",
-      "count": 7843,
-      "size_kb": 3709,
-      "url": "packs/commands/en/linux.json",
-      "category": "command"
-    },
-    {
       "id": "en-common",
       "language": "en",
       "platform": "common",
       "name": "Common Tools (EN)",
-      "description": "Contains 19798 en commands for common.",
-      "count": 19798,
-      "size_kb": 9595,
+      "description": "Contains 19810 en commands for common.",
+      "count": 19810,
+      "size_kb": 9601,
       "url": "packs/commands/en/common.json",
+      "category": "command"
+    },
+    {
+      "id": "en-cisco-ios",
+      "language": "en",
+      "platform": "cisco-ios",
+      "name": "Cisco-Ios (EN)",
+      "description": "Contains 42 en commands for cisco-ios.",
+      "count": 42,
+      "size_kb": 17,
+      "url": "packs/commands/en/cisco-ios.json",
+      "category": "command"
+    },
+    {
+      "id": "en-dos",
+      "language": "en",
+      "platform": "dos",
+      "name": "Dos (EN)",
+      "description": "Contains 64 en commands for dos.",
+      "count": 64,
+      "size_kb": 24,
+      "url": "packs/commands/en/dos.json",
       "category": "command"
     },
     {
@@ -234,6 +168,39 @@
       "category": "command"
     },
     {
+      "id": "en-linux",
+      "language": "en",
+      "platform": "linux",
+      "name": "Linux Ops (EN)",
+      "description": "Contains 7843 en commands for linux.",
+      "count": 7843,
+      "size_kb": 3709,
+      "url": "packs/commands/en/linux.json",
+      "category": "command"
+    },
+    {
+      "id": "en-netbsd",
+      "language": "en",
+      "platform": "netbsd",
+      "name": "Netbsd (EN)",
+      "description": "Contains 41 en commands for netbsd.",
+      "count": 41,
+      "size_kb": 19,
+      "url": "packs/commands/en/netbsd.json",
+      "category": "command"
+    },
+    {
+      "id": "en-android",
+      "language": "en",
+      "platform": "android",
+      "name": "Android Dev (EN)",
+      "description": "Contains 57 en commands for android.",
+      "count": 57,
+      "size_kb": 25,
+      "url": "packs/commands/en/android.json",
+      "category": "command"
+    },
+    {
       "id": "en-sunos",
       "language": "en",
       "platform": "sunos",
@@ -245,15 +212,48 @@
       "category": "command"
     },
     {
-      "id": "en-cisco-ios",
+      "id": "en-openbsd",
       "language": "en",
-      "platform": "cisco-ios",
-      "name": "Cisco-Ios (EN)",
-      "description": "Contains 42 en commands for cisco-ios.",
-      "count": 42,
-      "size_kb": 17,
-      "url": "packs/commands/en/cisco-ios.json",
+      "platform": "openbsd",
+      "name": "Openbsd (EN)",
+      "description": "Contains 36 en commands for openbsd.",
+      "count": 36,
+      "size_kb": 16,
+      "url": "packs/commands/en/openbsd.json",
       "category": "command"
+    },
+    {
+      "id": "en-windows",
+      "language": "en",
+      "platform": "windows",
+      "name": "Windows (EN)",
+      "description": "Contains 1095 en commands for windows.",
+      "count": 1095,
+      "size_kb": 536,
+      "url": "packs/commands/en/windows.json",
+      "category": "command"
+    },
+    {
+      "id": "en-roles",
+      "language": "en",
+      "platform": "llm",
+      "name": "ChatGPT Prompts (English)",
+      "description": "Collection of 1247 role-play prompts.",
+      "count": 1247,
+      "size_kb": 3102.53,
+      "url": "packs/prompts/en/roles.json",
+      "category": "prompt"
+    },
+    {
+      "id": "zh-roles",
+      "language": "zh",
+      "platform": "llm",
+      "name": "中文角色扮演精选",
+      "description": "Collection of 124 role-play prompts.",
+      "count": 124,
+      "size_kb": 97.47,
+      "url": "packs/prompts/zh/roles.json",
+      "category": "prompt"
     },
     {
       "id": "custom-prompt-zh-code",
