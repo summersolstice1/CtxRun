@@ -17,6 +17,228 @@
 
 ## 版本历史
 
+### v2.1.1 (2026-02-14)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `89d36c0` | **发布** | 版本发布 2.1.1 |
+| `f2b23b5` | **修复 BUG** | 修复多个问题 |
+| `16efab0` | **修复 BUG** | 修复问题 |
+
+**主要更新**:
+- 🐛 **BUG 修复**: 修复已知问题
+
+---
+
+### v2.1.0 (2026-02-14)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `7159fbb` | **发布** | 版本发布 2.1.0 |
+| `ac07a3f` | **合并分支** | 合并 RE1 分支 |
+| `10fd343` | **更新模型** | 更新 models.json 添加新模型 |
+| `2d1b163` | **数据更新** | 自动同步提示词库 |
+
+**v2.1.0 模型更新文件变更**:
+```
+models/models.json | 更新 AI 模型列表
+```
+
+**主要更新**:
+- 🤖 **AI 模型更新**: 支持最新的 GPT-5.2、GPT-5.1、Gemini 3 Pro、Gemini 2.5 Pro、Claude Opus 4.5、Grok 4.1
+- 📊 **上下文窗口**: Grok 4.1 支持 200万 tokens 上下文
+
+---
+
+### v2.0.4 (2026-02-12)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `05c4246` | **发布** | 版本发布 rc5 |
+| `d2de29b` | **发布** | 上传资源 |
+| `706540c` | **修复** | 修复问题 |
+| `5e1bad4` | **更新模型** | 更新 AI 模型配置 |
+| `73adf54` | **修复 BUG** | 修复 bug |
+| `84eaa67` | **修复** | 修复问题 |
+| `4eddf36` | **发布** | 版本发布 2.0.0+ |
+
+**主要更新**:
+- 🔧 **优化**: 性能调优和 bug 修复
+
+---
+
+### v2.0.0 (2026-02-11)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `f4e778f` | **发布** | 版本发布 2.0.0 |
+
+**v2.0.0 架构重构文件变更**:
+```
+src-tauri/crates/automator/    | +XXX  自动点击器模块
+src-tauri/crates/context/      | 重构 上下文模块
+src-tauri/crates/db/           | 重构 数据库模块
+src-tauri/crates/git/          | 重构 Git 模块
+src-tauri/crates/refinery/     | 重构 Refinery 模块
+src/components/features/automator/ | +XXX  自动点击器 UI
+src/store/useAutomatorStore.ts | +XXX  状态管理
+src/types/automator.ts         | +XXX  类型定义
+```
+
+**主要更新**:
+- 🏗️ **架构重构**: 单体 src-tauri/src 拆分为多 crates 架构
+- 🖱️ **Automator 自动点击器**: 支持左键/右键/中键点击，可配置间隔和次数
+- 🔧 **模块化**: 每个功能独立 crate，提升代码可维护性
+
+---
+
+### v1.5.5 (2026-02-07)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `71e09d9` | **发布** | 版本发布 1.5.5 |
+| `70f2bda` | **修复 BUG** | 修复 bug |
+| `b434755` | **优化** | 优化功能 |
+| `0162c53` | **优化** | 优化体验 |
+| `1a9e1b9` | **修复 BUG** | 修复问题 |
+
+**主要更新**:
+- 🐛 **BUG 修复**: 修复已知问题
+- ⚡ **性能优化**: 整体性能提升
+
+---
+
+### v1.5.4 (2026-02-06)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `9dfd712` | **发布** | 版本发布 1.5.4 |
+
+---
+
+### v1.5.3 (2026-02-05)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `31c8706` | **发布** | 版本发布 1.5.3 |
+| `af5cd47` | **优化** | 功能优化 |
+
+---
+
+### v1.5.2 (2026-02-04)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `8f9cddc` | **发布** | 版本发布 1.5.2 |
+| `1fd5006` | **修复 BUG** | 修复 Bug |
+| `0151d03` | **修复 BUG** | 解决问题 |
+| `9ddf7d1` | **修复 BUG** | 修复自我复制问题 |
+
+---
+
+### v1.5.1 (2026-02-02)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `24753b4` | **发布** | 版本发布 1.5.1 |
+| `6215b42` | **优化** | 优化功能 |
+| `3064a42` | **修复 BUG** | 修复 bug |
+| `6859a96` | **新增** | 添加功能 |
+| `0c4a956` | **新增** | 添加功能 |
+| `17edca5` | **新增** | 添加内容 |
+| `c3751ce` | **更新** | 更新配置 |
+| `aa04326` | **新增** | 添加图片 |
+| `5398b63` | **优化** | 优化体验 |
+| `105f853` | **优化** | 优化自动清理 |
+| `5640a0f` | **优化** | 优化色调 |
+| `da4d3e4` | **优化** | 优化配色 |
+
+**主要更新**:
+- 🎨 **样式优化**: 界面配色改进
+- 🧹 **自动清理**: 优化清理逻辑
+
+---
+
+### v1.5.0 (2026-01-30)
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `346782c` | **发布** | 版本发布 1.5.0 |
+| `a07717a` | **修复 BUG** | 1.5.0-beta.1-fix |
+| `a42628b` | **测试版本** | 1.5.0-beta.1 |
+| `dabde8d` | **更新版本** | 版本号更新 |
+| `a774027` | **清理** | 代码清理 |
+| `b32fd4c` | **优化显示** | 优化显示，优化配色 |
+| `8389414` | **优化 URL** | 优化 url 展示 |
+| `6ba6da5` | **优化色彩** | 优化色彩方案 |
+| `df3ba50` | **优化代码** | 代码优化 |
+| `6db79fd` | **优化** | 功能优化 |
+| `238412d` | **优化动画** | 动画效果优化 |
+| `f964f67` | **优化渲染** | 渲染性能优化 |
+| `d51c823` | **优化** | 综合优化 |
+| `fb5e010` | **优化** | 功能优化 |
+| `55d62ca` | **优化** | 体验优化 |
+| `cbc9a5c` | **数据更新** | 自动同步提示词库 |
+| `2f03879` | **修复 BUG** | 修复 BUG |
+| `c58f490` | **优化忽略** | 优化自我复制忽略 |
+| `f43cce6` | **优化** | 性能优化 |
+| `db3b0f3` | **优化** | 功能优化 |
+| `204e028` | **优化** | 代码优化 |
+| `4e4d7d5` | **优化** | 优化配置 |
+| `70eb9e3` | **优化** | 界面优化 |
+| `7dfa7a2` | **新增功能** | 添加 notes 字段支持 |
+| `d8a47ec` | **新增窗口信息** | 获取窗口信息功能 |
+| `fd127b8` | **新增粘贴板** | Refinery 剪贴板历史 |
+| `db7d3dd` | **更新年份** | update 2024 |
+| `f8944e0` | **优化规则** | 优化 .gitignore 规则支持 |
+| `2726ea4` | **优化** | 代码优化 |
+| `342013e` | **优化** | 性能优化 |
+| `14e6a13` | **优化** | 体验优化 |
+| `c311757` | **更新文档** | update dev.md |
+| `91eeb19` | **修复 BUG** | 修复 BUG |
+
+**v1.5.0 Refinery 功能文件变更**:
+```
+src-tauri/migrations/V3__create_refinery_table.sql | +XXX  创建 refinery 表
+src-tauri/migrations/V4__refinery_notes.sql   | +XX   添加 notes 字段
+src-tauri/src/refinery/mod.rs                | +XXX  Refinery 模块
+src-tauri/src/refinery/commands.rs           | +XXX  命令接口
+src-tauri/src/refinery/model.rs              | +XX   数据模型
+src-tauri/src/refinery/storage.rs             | +XXX  存储层
+src-tauri/src/refinery/worker.rs             | +XXX  工作线程
+src/components/features/refinery/RefineryView.tsx       | +XXX  主视图
+src/components/features/refinery/RefineryDrawer.tsx     | +XXX  侧边栏
+src/components/features/refinery/RefineryFeed.tsx       | +XXX  历史列表
+src/components/features/refinery/RefinerySidebar.tsx    | +XXX  侧边栏
+src/components/features/refinery/ContentWorkbench.tsx    | +XXX  内容工作台
+src/components/features/refinery/HistoryItem.tsx        | +XXX  历史项
+src/components/features/refinery/HistorySidebar.tsx     | +XXX  历史侧边栏
+src/store/useRefineryStore.ts                          | +XXX  状态管理
+src/types/refinery.ts                                  | +XX   类型定义
+src/lib/refinery_utils.ts                             | +XX   工具函数
+```
+
+**v1.5.0 .gitignore 优化文件变更**:
+```
+.gitignore              | +X   添加自我复制忽略规则
+src-tauri/src/main.rs  | +-X  添加 .gitignore 文件读取
+```
+
+**主要更新**:
+- 📋 **Refinery 剪贴板历史**:
+  - 支持文本和图片剪贴板历史记录
+  - 可搜索、筛选 (文本/图片)
+  - 支持收藏 (pin) 重要条目
+  - 支持添加笔记注释
+  - 自动清理配置
+  - 日历视图按日期筛选
+  - Spotlight 快捷粘贴集成
+- 🔒 **.gitignore 规则**: 支持读取项目 .gitignore 过滤文件
+- 🎨 **UI 优化**: 整体配色和动画优化
+- ⚡ **性能优化**: 渲染和动画性能提升
+
+---
+
 ### v1.4.1 (2026-01-29)
 
 | 提交哈希 | 变更内容 | 详细说明 |
@@ -654,6 +876,7 @@ src/lib/i18n.ts                   | +-44 国际化支持
 | v1.3.3 | Shell 命令执行 (`>`) |
 | v1.3.3 | 范围搜索 (`/app`, `/cmd`, `/pmt`) |
 | v1.3.3 | Tag 交互 UI |
+| v1.5.0 | Refinery 快捷粘贴集成 |
 
 ### 3. Prompt Verse (提示词库)
 | 版本 | 功能 |
@@ -670,6 +893,21 @@ src/lib/i18n.ts                   | +-44 国际化支持
 | v1.3.1 | Working Directory 对比 |
 | v1.3.1 | Rayon 并行处理 |
 | v1.3.1 | CRLF 换行符优化 |
+
+### 5. Refinery (剪贴板历史)
+| 版本 | 功能 |
+|-----|------|
+| v1.5.0 | 文本/图片剪贴板历史 |
+| v1.5.0 | 搜索、筛选、收藏功能 |
+| v1.5.0 | 笔记注释支持 |
+| v1.5.0 | 日历视图、自动清理 |
+
+### 6. Automator (自动点击器)
+| 版本 | 功能 |
+|-----|------|
+| v2.0.0 | 左键/右键/中键点击 |
+| v2.0.0 | 可配置间隔和次数 |
+| v2.0.0 | 固定位置或跟随鼠标 |
 
 ---
 
@@ -746,32 +984,38 @@ src/lib/i18n.ts                   | +-44 国际化支持
 
 ```
 ctxrun/
-├── src/                      # React 前端源码
-│   ├── components/           # UI 组件
-│   │   ├── features/         # 功能组件
-│   │   │   ├── context/      # 上下文组装
-│   │   │   ├── prompts/      # 提示词管理
-│   │   │   └── patch/        # 代码对比
-│   │   ├── layout/           # 布局组件
-│   │   ├── settings/         # 设置界面
-│   │   └── ui/               # 基础 UI
-│   ├── lib/                  # 工具函数
-│   ├── store/                # Zustand 状态管理
-│   └── types/                # TypeScript 类型
-├── src-tauri/                # Rust 后端
-│   ├── src/
-│   │   ├── db.rs             # SQLite 数据库
-│   │   ├── git.rs            # Git 操作 (含 Rayon 并行)
-│   │   ├── gitleaks/         # 安全扫描
-│   │   ├── monitor.rs        # 进程监控
-│   │   └── main.rs           # 入口
+├── src/                          # React 前端源码
+│   ├── components/                # UI 组件
+│   │   ├── features/            # 功能组件
+│   │   │   ├── context/         # 上下文组装
+│   │   │   ├── prompts/         # 提示词管理
+│   │   │   ├── patch/           # 代码对比
+│   │   │   ├── refinery/        # 剪贴板历史 (v1.5.0+)
+│   │   │   └── automator/       # 自动点击器 (v2.0.0+)
+│   │   ├── layout/             # 布局组件
+│   │   ├── settings/           # 设置界面
+│   │   └── ui/                # 基础 UI
+│   ├── lib/                     # 工具函数
+│   ├── store/                   # Zustand 状态管理
+│   └── types/                   # TypeScript 类型
+├── src-tauri/                    # Rust 后端
+│   ├── crates/                   # 多 crates 架构 (v2.0.0+)
+│   │   ├── automator/           # 自动点击器模块
+│   │   ├── context/             # 上下文处理模块
+│   │   ├── db/                  # 数据库模块
+│   │   ├── git/                 # Git 操作模块
+│   │   └── refinery/            # Refinery 模块
+│   ├── src/                     # 遗留代码 (逐步迁移)
+│   │   ├── hyperview/           # 文件预览
+│   │   ├── env_probe/           # 环境探测
+│   │   └── main.rs             # 入口
 │   └── Cargo.toml
-├── build/dist/               # 预构建资源
-│   └── packs/                # 提示词数据包
-└── models/                   # LLM 模型配置
+├── build/dist/                   # 预构建资源
+│   └── packs/                    # 提示词数据包
+└── models/                       # LLM 模型配置
 ```
 
 ---
 
-*文档最后更新: 2026-01-29*
+*文档最后更新: 2026-02-14*
 *基于 git 提交历史和代码 diff 分析编写*

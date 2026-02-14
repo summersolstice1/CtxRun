@@ -8,9 +8,11 @@ This document provides detailed usage instructions, configuration guides, and ke
 2.  [Spotlight (Global AI Terminal)](#2-spotlight-global-ai-terminal)
 3.  [Prompt Verse (Prompt Library)](#3-prompt-verse-prompt-library)
 4.  [Patch Weaver (AI Completer)](#4-patch-weaver-ai-completer)
-5.  [System Monitor (System Monitoring)](#5-system-monitor-system-monitoring)
-6.  [Setup Guide](#6-setup-guide-setup-guide)
-7.  [Common Keyboard Shortcuts Reference](#7-common-keyboard-shortcuts-reference)
+5.  [Refinery (Clipboard History)](#5-refinery-clipboard-history)
+6.  [Automator (Auto-Clicker)](#6-automator-auto-clicker)
+7.  [System Monitor (System Monitoring)](#7-system-monitor-system-monitoring)
+8.  [Setup Guide](#8-setup-guide)
+9.  [Common Keyboard Shortcuts Reference](#9-common-keyboard-shortcuts-reference)
 
 ---
 
@@ -182,7 +184,7 @@ Manage your common commands and AI prompts to build a personal knowledge base.
 
 ### 4. Patch Weaver (AI Completer)
 
-Bridge the gap between "AI-generated code" and "actual file modifications", applying AI output directly to code.
+Bridges the gap between "AI-generated code" and "actual file modifications", applying AI output directly to code.
 
 #### Scenario 1: AI Patch Applicator
 
@@ -236,7 +238,58 @@ A powerful Git visualization tool.
 
 ---
 
-### 5. System Monitor (System Monitoring)
+### 5. Refinery (Clipboard History)
+
+**Core Features:**
+*   Full clipboard history manager supporting text and images
+*   Auto-records every copy for easy retrieval
+*   Search, filter (text/image types)
+*   Pin important entries, add notes
+*   Calendar view for date filtering
+*   Auto-cleanup rules to save storage space
+*   Spotlight integration for quick paste
+
+**Access Methods:**
+*   Click "Clipboard" icon in sidebar to open
+*   Or press ALT+3 in Spotlight for quick access
+
+**Usage Guide:**
+*   **Browse History**: Main interface shows all clipboard history records
+*   **Search & Filter**: Use search box or filter buttons
+*   **Pin Items**: Click star icon to pin important entries
+*   **Add Notes**: Select item and add note in sidebar
+*   **Calendar View**: Switch to calendar tab to filter by date
+*   **Quick Paste**: Type keywords in Spotlight for quick paste
+*   **Auto Cleanup**: Configure cleanup rules in settings
+
+---
+
+### 6. Automator (Auto-Clicker)
+
+**Core Features:**
+*   Powerful auto-click automation tool
+*   Support left, right, middle click types
+*   Configurable click interval (millisecond precision)
+*   Support fixed count or infinite clicks
+*   Fixed position or follow mouse cursor
+
+**Access Methods:**
+*   Click "Auto-Clicker" icon in sidebar to open
+*   Or search for "click" or "auto" in Spotlight
+
+**Usage Guide:**
+*   **Start Clicking**: Click "Start" button to begin auto-click
+*   **Configuration Options**:
+    *   **Click Type**: Choose left/right/middle button
+    *   **Interval**: Set time between clicks (milliseconds)
+    *   **Stop Condition**: Choose fixed count or infinite
+    *   **Position Mode**: Fixed position or follow mouse
+    *   **Fixed Coordinates**: Set X/Y coordinates when using fixed mode
+*   **Stop Clicking**: Click "Stop" button or use global shortcut
+
+---
+
+### 7. System Monitor (System Monitoring)
 
 Real-time monitoring of system status and development environment.
 
@@ -269,7 +322,7 @@ Real-time monitoring of system status and development environment.
 
 ---
 
-### 6. Setup Guide
+### 8. Setup Guide
 
 #### AI Configuration
 
@@ -348,13 +401,14 @@ Configure files and folders to ignore across all features:
 
 ---
 
-### 7. Common Keyboard Shortcuts Reference
+### 9. Common Keyboard Shortcuts Reference
 
 #### Global Shortcuts
 
 | Shortcut | Function |
 | :--- | :--- |
 | `Alt + S` | Show/hide Spotlight (can be changed in settings) |
+| `Alt + F1` | Start/Stop Auto-Clicker |
 
 #### Spotlight Shortcuts
 

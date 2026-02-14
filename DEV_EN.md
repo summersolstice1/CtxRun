@@ -17,6 +17,228 @@
 
 ## Version History
 
+### v2.1.1 (2026-02-14)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `89d36c0` | **Release** | Version 2.1.1 |
+| `f2b23b5` | **Fix Bugs** | Fix multiple issues |
+| `16efab0` | **Fix Bugs** | Fix issues |
+
+**Major Updates**:
+- 🐛 **Bug Fixes**: Fix known issues
+
+---
+
+### v2.1.0 (2026-02-14)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `7159fbb` | **Release** | Version 2.1.0 |
+| `ac07a3f` | **Merge Branch** | Merge RE1 branch |
+| `10fd343` | **Update Models** | Update models.json with new models |
+| `2d1b163` | **Data Update** | Auto-sync prompts library |
+
+**v2.1.0 Model Update File Changes**:
+```
+models/models.json | Update AI model list
+```
+
+**Major Updates**:
+- 🤖 **AI Model Update**: Support latest GPT-5.2, GPT-5.1, Gemini 3 Pro, Gemini 2.5 Pro, Claude Opus 4.5, Grok 4.1
+- 📊 **Context Window**: Grok 4.1 supports 2M tokens context
+
+---
+
+### v2.0.4 (2026-02-12)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `05c4246` | **Release** | Version rc5 |
+| `d2de29b` | **Release** | Upload resources |
+| `706540c` | **Fix** | Fix issues |
+| `5e1bad4` | **Update Models** | Update AI model config |
+| `73adf54` | **Fix Bugs** | Fix bugs |
+| `84eaa67` | **Fix** | Fix issues |
+| `4eddf36` | **Release** | Version 2.0.0+ |
+
+**Major Updates**:
+- 🔧 **Optimization**: Performance tuning and bug fixes
+
+---
+
+### v2.0.0 (2026-02-11)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `f4e778f` | **Release** | Version 2.0.0 |
+
+**v2.0.0 Architecture Refactor File Changes**:
+```
+src-tauri/crates/automator/    | +XXX  Auto-clicker module
+src-tauri/crates/context/      | Refactor Context module
+src-tauri/crates/db/           | Refactor DB module
+src-tauri/crates/git/          | Refactor Git module
+src-tauri/crates/refinery/     | Refactor Refinery module
+src/components/features/automator/ | +XXX  Auto-clicker UI
+src/store/useAutomatorStore.ts | +XXX  State management
+src/types/automator.ts         | +XXX  Type definitions
+```
+
+**Major Updates**:
+- 🏗️ **Architecture Refactor**: Split monolithic src-tauri/src into multi-crates architecture
+- 🖱️ **Automator Auto-Clicker**: Support left/right/middle click with configurable interval and count
+- 🔧 **Modularization**: Each function independent crate, improving maintainability
+
+---
+
+### v1.5.5 (2026-02-07)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `71e09d9` | **Release** | Version 1.5.5 |
+| `70f2bda` | **Fix Bugs** | Fix bugs |
+| `b434755` | **Optimize** | Feature optimization |
+| `0162c53` | **Optimize** | UX improvements |
+| `1a9e1b9` | **Fix Bugs** | Fix issues |
+
+**Major Updates**:
+- 🐛 **Bug Fixes**: Fix known issues
+- ⚡ **Performance**: Overall performance improvement
+
+---
+
+### v1.5.4 (2026-02-06)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `9dfd712` | **Release** | Version 1.5.4 |
+
+---
+
+### v1.5.3 (2026-02-05)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `31c8706` | **Release** | Version 1.5.3 |
+| `af5cd47` | **Optimize** | Feature optimization |
+
+---
+
+### v1.5.2 (2026-02-04)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `8f9cddc` | **Release** | Version 1.5.2 |
+| `1fd5006` | **Fix Bugs** | Fix bugs |
+| `0151d03` | **Fix Bugs** | Resolve issues |
+| `9ddf7d1` | **Fix Bugs** | Fix self-copy issue |
+
+---
+
+### v1.5.1 (2026-02-02)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `24753b4` | **Release** | Version 1.5.1 |
+| `6215b42` | **Optimize** | Feature optimization |
+| `3064a42` | **Fix Bugs** | Fix bugs |
+| `6859a96` | **Add** | Add features |
+| `0c4a956` | **Add** | Add features |
+| `17edca5` | **Add** | Add content |
+| `c3751ce` | **Update** | Update config |
+| `aa04326` | **Add** | Add images |
+| `5398b63` | **Optimize** | UX improvements |
+| `105f853` | **Optimize** | Optimize auto-cleanup |
+| `5640a0f` | **Optimize** | Color tuning |
+| `da4d3e4` | **Optimize** | Color scheme optimization |
+
+**Major Updates**:
+- 🎨 **Style Optimization**: UI color scheme improvements
+- 🧹 **Auto Cleanup**: Optimize cleanup logic
+
+---
+
+### v1.5.0 (2026-01-30)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `346782c` | **Release** | Version 1.5.0 |
+| `a07717a` | **Fix Bugs** | 1.5.0-beta.1-fix |
+| `a42628b` | **Test Version** | 1.5.0-beta.1 |
+| `dabde8d` | **Update Version** | Version number update |
+| `a774027` | **Cleanup** | Code cleanup |
+| `b32fd4c` | **Optimize Display** | Optimize display, color tuning |
+| `8389414` | **Optimize URL** | Optimize URL display |
+| `6ba6da5` | **Optimize Color** | Color scheme optimization |
+| `df3ba50` | **Optimize Code** | Code optimization |
+| `6db79fd` | **Optimize** | Feature optimization |
+| `238412d` | **Optimize Animation** | Animation effect optimization |
+| `f964f67` | **Optimize Rendering** | Rendering performance optimization |
+| `d51c823` | **Optimize** | Comprehensive optimization |
+| `fb5e010` | **Optimize** | Feature optimization |
+| `55d62ca` | **Optimize** | UX optimization |
+| `cbc9a5c` | **Data Update** | Auto-sync prompts library |
+| `2f03879` | **Fix Bugs** | Fix bugs |
+| `c58f490` | **Optimize Ignore** | Optimize self-copy ignore |
+| `f43cce6` | **Optimize** | Performance optimization |
+| `db3b0f3` | **Optimize** | Feature optimization |
+| `204e028` | **Optimize** | Code optimization |
+| `4e4d7d5` | **Optimize** | Config optimization |
+| `70eb9e3` | **Optimize** | UI optimization |
+| `7dfa7a2` | **Add Feature** | Add notes field support |
+| `d8a47ec` | **Add Window Info** | Add window info function |
+| `fd127b8` | **Add Clipboard** | Refinery clipboard history |
+| `db7d3dd` | **Update Year** | update 2024 |
+| `f8944e0` | **Optimize Rules** | Optimize .gitignore rule support |
+| `2726ea4` | **Optimize** | Code optimization |
+| `342013e` | **Optimize** | Performance optimization |
+| `14e6a13` | **Optimize** | UX optimization |
+| `c311757` | **Update Docs** | update dev.md |
+| `91eeb19` | **Fix Bugs** | Fix bugs |
+
+**v1.5.0 Refinery Feature File Changes**:
+```
+src-tauri/migrations/V3__create_refinery_table.sql | +XXX  Create refinery table
+src-tauri/migrations/V4__refinery_notes.sql   | +XX   Add notes field
+src-tauri/src/refinery/mod.rs                | +XXX  Refinery module
+src-tauri/src/refinery/commands.rs           | +XXX  Command interface
+src-tauri/src/refinery/model.rs              | +XX   Data model
+src-tauri/src/refinery/storage.rs             | +XXX  Storage layer
+src-tauri/src/refinery/worker.rs             | +XXX  Worker thread
+src/components/features/refinery/RefineryView.tsx       | +XXX  Main view
+src/components/features/refinery/RefineryDrawer.tsx     | +XXX  Sidebar
+src/components/features/refinery/RefineryFeed.tsx       | +XXX  History list
+src/components/features/refinery/RefinerySidebar.tsx    | +XXX  Sidebar
+src/components/features/refinery/ContentWorkbench.tsx    | +XXX  Content workbench
+src/components/features/refinery/HistoryItem.tsx        | +XXX  History item
+src/components/features/refinery/HistorySidebar.tsx     | +XXX  History sidebar
+src/store/useRefineryStore.ts                          | +XXX  State management
+src/types/refinery.ts                                  | +XX   Type definitions
+src/lib/refinery_utils.ts                             | +XX   Utility functions
+```
+
+**v1.5.0 .gitignore Optimization File Changes**:
+```
+.gitignore              | +X   Add self-copy ignore rules
+src-tauri/src/main.rs  | +-X  Add .gitignore file reading
+```
+
+**Major Updates**:
+- 📋 **Refinery Clipboard History**:
+  - Support text and image clipboard history recording
+  - Searchable, filterable (text/image)
+  - Support pinning important entries
+  - Support adding notes
+  - Auto cleanup configuration
+  - Calendar view for date filtering
+  - Spotlight quick paste integration
+- 🔒 **.gitignore Rules**: Support reading project .gitignore to filter files
+- 🎨 **UI Optimization**: Overall color scheme and animation optimization
+- ⚡ **Performance Optimization**: Rendering and animation performance improvements
+
+---
+
 ### v1.4.1 (2026-01-29)
 
 | Commit Hash | Change | Description |
@@ -654,6 +876,7 @@ src/lib/i18n.ts                   | +-44 i18n support
 | v1.3.3 | Shell command execution (`>`) |
 | v1.3.3 | Scope search (`/app`, `/cmd`, `/pmt`) |
 | v1.3.3 | Tag interaction UI |
+| v1.5.0 | Refinery quick paste integration |
 
 ### 3. Prompt Verse (Prompt Library)
 | Version | Feature |
@@ -670,6 +893,21 @@ src/lib/i18n.ts                   | +-44 i18n support
 | v1.3.1 | Working Directory comparison |
 | v1.3.1 | Rayon parallel processing |
 | v1.3.1 | CRLF line ending optimization |
+
+### 5. Refinery (Clipboard History)
+| Version | Feature |
+|---------|---------|
+| v1.5.0 | Text/Image clipboard history |
+| v1.5.0 | Search, filter, pin functionality |
+| v1.5.0 | Notes support |
+| v1.5.0 | Calendar view, auto cleanup |
+
+### 6. Automator (Auto-Clicker)
+| Version | Feature |
+|---------|---------|
+| v2.0.0 | Left/Right/Middle click support |
+| v2.0.0 | Configurable interval and count |
+| v2.0.0 | Fixed position or follow mouse |
 
 ---
 
@@ -746,32 +984,38 @@ Commit: github-actions[bot]
 
 ```
 ctxrun/
-├── src/                      # React frontend source
-│   ├── components/           # UI components
-│   │   ├── features/         # Feature components
-│   │   │   ├── context/      # Context assembly
-│   │   │   ├── prompts/      # Prompt management
-│   │   │   └── patch/        # Code diff
-│   │   ├── layout/           # Layout components
-│   │   ├── settings/         # Settings UI
-│   │   └── ui/               # Base UI
-│   ├── lib/                  # Utilities
-│   ├── store/                # Zustand state management
-│   └── types/                # TypeScript types
-├── src-tauri/                # Rust backend
-│   ├── src/
-│   │   ├── db.rs             # SQLite database
-│   │   ├── git.rs            # Git operations (with Rayon parallel)
-│   │   ├── gitleaks/         # Security scan
-│   │   ├── monitor.rs        # Process monitoring
-│   │   └── main.rs           # Entry point
+├── src/                          # React frontend source
+│   ├── components/                # UI components
+│   │   ├── features/            # Feature components
+│   │   │   ├── context/         # Context assembly
+│   │   │   ├── prompts/         # Prompt management
+│   │   │   ├── patch/           # Code diff
+│   │   │   ├── refinery/        # Clipboard history (v1.5.0+)
+│   │   │   └── automator/       # Auto-clicker (v2.0.0+)
+│   │   ├── layout/             # Layout components
+│   │   ├── settings/           # Settings UI
+│   │   └── ui/                # Base UI
+│   ├── lib/                     # Utilities
+│   ├── store/                   # Zustand state management
+│   └── types/                   # TypeScript types
+├── src-tauri/                    # Rust backend
+│   ├── crates/                   # Multi-crates architecture (v2.0.0+)
+│   │   ├── automator/           # Auto-clicker module
+│   │   ├── context/             # Context processing module
+│   │   ├── db/                  # Database module
+│   │   ├── git/                 # Git operations module
+│   │   └── refinery/            # Refinery module
+│   ├── src/                     # Legacy code (gradually migrating)
+│   │   ├── hyperview/           # File preview
+│   │   ├── env_probe/           # Environment detection
+│   │   └── main.rs             # Entry point
 │   └── Cargo.toml
-├── build/dist/               # Pre-built resources
-│   └── packs/                # Prompt data packs
-└── models/                   # LLM model configurations
+├── build/dist/                   # Pre-built resources
+│   └── packs/                    # Prompt data packs
+└── models/                       # LLM model configurations
 ```
 
 ---
 
-*Document last updated: 2026-01-29*
+*Document last updated: 2026-02-14*
 *Compiled based on git commit history and code diff analysis*

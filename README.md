@@ -44,6 +44,8 @@
 *   **📚 Prompt Verse (Prompt Library)**: Efficiently manage your common commands and AI prompts. Supports variable templates, group management, and downloading offline prompt packs from the official library. Supports executable commands and chat template configuration.
 *   **🔄 Patch Weaver (AI Completer & Git Diff)**: Apply AI-generated code patches with smart fuzzy matching for precise modification location. Also a powerful Git Diff visualizer with Working Directory comparison, version comparison, and diverse export formats.
 *   **🛡️ Privacy Security Scan**: Built-in sensitive information detection engine with whitelist management to prevent API key and other secrets leakage.
+*   **📋 Refinery (Clipboard History)**: Comprehensive clipboard history manager supporting text and images. Features search/filtering, pinning important entries, note-taking, auto-cleanup, calendar view, and Spotlight quick paste integration.
+*   **🖱️ Automator (Auto-Clicker)**: Powerful auto-click automation tool supporting left/right/middle click, configurable interval and count, fixed position or follow mouse cursor.
 
 > ### 🚀 Want to learn how to use it?
 >
