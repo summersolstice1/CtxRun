@@ -19,6 +19,7 @@ use tauri::{
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
     RunEvent, WindowEvent,
 };
+use tauri::window::Color;
 use tokio::time::sleep;
 
 use ctxrun_db as db;
@@ -44,6 +45,7 @@ fn ensure_main_window(app: &AppHandle) {
         )
         .title("CtxRun")
         .inner_size(800.0, 600.0)
+        .background_color(Color(0, 0, 0, 0))
         .center()
         .decorations(false)
         .resizable(true)
