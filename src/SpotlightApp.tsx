@@ -306,6 +306,8 @@ function SpotlightContent() {
           messages={chat.messages}
           isStreaming={chat.isStreaming}
           chatEndRef={chat.chatEndRef}
+          containerRef={chat.containerRef}
+          onScrollPositionChange={chat.setIsUserAtBottom}
         />
       )}
     </SpotlightLayout>
