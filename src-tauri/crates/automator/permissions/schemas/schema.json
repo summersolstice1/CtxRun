@@ -307,6 +307,18 @@
           "markdownDescription": "Denies the execute_workflow command without any pre-configured scope."
         },
         {
+          "description": "Enables the execute_workflow_graph command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-execute-workflow-graph",
+          "markdownDescription": "Enables the execute_workflow_graph command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the execute_workflow_graph command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-execute-workflow-graph",
+          "markdownDescription": "Denies the execute_workflow_graph command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_mouse_position command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-mouse-position",
@@ -317,6 +329,18 @@
           "type": "string",
           "const": "deny-get-mouse-position",
           "markdownDescription": "Denies the get_mouse_position command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_pixel_color command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-get-pixel-color",
+          "markdownDescription": "Enables the get_pixel_color command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_pixel_color command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-get-pixel-color",
+          "markdownDescription": "Denies the get_pixel_color command without any pre-configured scope."
         },
         {
           "description": "Enables the start_clicker command without any pre-configured scope.",

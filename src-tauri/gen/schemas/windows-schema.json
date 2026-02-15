@@ -4365,10 +4365,22 @@
           "markdownDescription": "Enables the execute_workflow command without any pre-configured scope."
         },
         {
+          "description": "Enables the execute_workflow_graph command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:allow-execute-workflow-graph",
+          "markdownDescription": "Enables the execute_workflow_graph command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_mouse_position command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-automator:allow-get-mouse-position",
           "markdownDescription": "Enables the get_mouse_position command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_pixel_color command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:allow-get-pixel-color",
+          "markdownDescription": "Enables the get_pixel_color command without any pre-configured scope."
         },
         {
           "description": "Enables the start_clicker command without any pre-configured scope.",
@@ -4395,10 +4407,22 @@
           "markdownDescription": "Denies the execute_workflow command without any pre-configured scope."
         },
         {
+          "description": "Denies the execute_workflow_graph command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:deny-execute-workflow-graph",
+          "markdownDescription": "Denies the execute_workflow_graph command without any pre-configured scope."
+        },
+        {
           "description": "Denies the get_mouse_position command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-automator:deny-get-mouse-position",
           "markdownDescription": "Denies the get_mouse_position command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_pixel_color command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:deny-get-pixel-color",
+          "markdownDescription": "Denies the get_pixel_color command without any pre-configured scope."
         },
         {
           "description": "Denies the start_clicker command without any pre-configured scope.",
