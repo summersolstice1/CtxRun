@@ -1,0 +1,121 @@
+import { memo } from 'react';
+import { Handle, Position, NodeProps } from '@xyflow/react';
+import { Pipette } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export const ConditionNode = memo(({ data, selected }: NodeProps) => {
+  const payload = (data as any).payload as any;
+  const isExecuting = (data as any).isExecuting as boolean | undefined;
+
+  const handleChange = (key: string, value: any) => {
+    const newPayload = { ...payload, [key]: value };
+    ((data as any).onChange as (d: any) => void)(newPayload);
+  };
+
+  return (
+    <div className={cn(
+      "w-[280px] bg-card border-2 rounded-lg shadow-sm transition-all duration-300 text-xs",
+      selected ? "border-orange-500 ring-1 ring-primary" : "border-border",
+      isExecuting && "border-orange-400 ring-4 ring-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.5)] scale-105 z-50"
+    )}>
+      {/* 标题栏 */}
+      <div className={cn(
+        "bg-orange-500/10 text-orange-600 px-3 py-2 text-[10px] font-bold border-b border-orange-500/20 flex items-center gap-2 rounded-t-lg"
+      )}>
+        <Pipette size={12} />
+        <span>COLOR CONDITION</span>
+        {isExecuting && <div className="ml-auto w-2 h-2 bg-orange-500 rounded-full animate-ping" />}
+      </div>
+
+      {/* 内容区 */}
+      <div className="p-3 space-y-2 nodrag">
+        {/* 颜色选择器 */}
+        <div className="flex items-center gap-2">
+          <div
+            className="w-10 h-10 rounded border shadow-inner shrink-0"
+            style={{ backgroundColor: payload.expectedHex || '#000000' }}
+          />
+          <div className="flex-1">
+            <input
+              type="text"
+              className="w-full bg-background border border-border rounded px-2 py-1.5 text-center font-mono text-xs uppercase"
+              value={payload.expectedHex || '#000000'}
+              onChange={(e) => handleChange('expectedHex', e.target.value)}
+              placeholder="#RRGGBB"
+            />
+          </div>
+        </div>
+
+        {/* 坐标和容差 */}
+        <div className="grid grid-cols-4 gap-2">
+          <div>
+            <label className="text-[9px] text-muted-foreground block mb-0.5">X</label>
+            <input
+              type="number"
+              className="w-full bg-background border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
+              value={payload.x ?? 0}
+              onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
+            />
+          </div>
+          <div>
+            <label className="text-[9px] text-muted-foreground block mb-0.5">Y</label>
+            <input
+              type="number"
+              className="w-full bg-background border border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
+              value={payload.y ?? 0}
+              onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="text-[9px] text-muted-foreground block mb-0.5">容差 (0-255)</label>
+            <input
+              type="number"
+              className="w-full bg-background border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
+              value={payload.tolerance ?? 10}
+              onChange={(e) => handleChange('tolerance', Math.max(0, Math.min(255, parseInt(e.target.value) || 0)))}
+              min="0"
+              max="255"
+            />
+          </div>
+        </div>
+
+        {/* 分支标识 */}
+        <div className="flex justify-between text-[9px] font-semibold pt-1">
+          <div className="flex items-center gap-1 text-red-500">
+            <div className="w-2 h-2 rounded-full bg-red-500" />
+            <span>FALSE ←</span>
+          </div>
+          <div className="flex items-center gap-1 text-green-500">
+            <span>→ TRUE</span>
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+          </div>
+        </div>
+      </div>
+
+      {/* 顶部输入 */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!w-3 !h-3 !bg-muted-foreground/50 hover:!bg-orange-500 !border-2 !border-orange-500/30"
+      />
+
+      {/* 左侧 FALSE 出口 */}
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="false"
+        className="!bg-red-500 !w-3 !h-3 !border-red-600 hover:!bg-red-400 !border-2"
+        style={{ top: '70%' }}
+      />
+
+      {/* 右侧 TRUE 出口 */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="true"
+        className="!bg-green-500 !w-3 !h-3 !border-green-600 hover:!bg-green-400 !border-2"
+        style={{ top: '70%' }}
+      />
+    </div>
+  );
+});

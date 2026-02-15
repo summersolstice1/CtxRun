@@ -6,7 +6,7 @@ use enigo::{
     Enigo, Mouse, Keyboard, Button, Coordinate,
     Settings, Direction, Key, Axis
 };
-use crate::models::{AutomatorAction, Workflow, MouseButton};
+use crate::models::{AutomatorAction, Workflow, WorkflowGraph, MouseButton};
 
 pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
@@ -92,6 +92,9 @@ pub fn run_workflow_task<R: Runtime>(
                                 tokio::time::sleep(Duration::from_millis(sleep_part)).await;
                                 remaining -= sleep_part;
                             }
+                        },
+                        AutomatorAction::CheckColor { .. } => {
+                            // CheckColor 仅在图模式中使用，线性模式跳过
                         }
                     }
 
@@ -154,8 +157,7 @@ fn reset_all_inputs_surgical(enigo: &mut Enigo) {
         Key::Alt,
         Key::Control,
         Key::Shift,
-        Key::Meta,
-        Key::Command, // macOS Command 键
+        Key::Meta, // Windows/Command 键
     ];
 
     for key in modifiers {
@@ -163,4 +165,175 @@ fn reset_all_inputs_surgical(enigo: &mut Enigo) {
         // 我们在这里仅进行必要的释放
         let _ = enigo.key(key, Direction::Release);
     }
+}
+
+/// 获取屏幕指定位置的颜色
+async fn get_screen_color(x: i32, y: i32) -> Result<String, String> {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        use windows::Win32::Graphics::Gdi::{GetDC, GetPixel, ReleaseDC};
+
+        let hdc = GetDC(None);
+        if hdc.is_invalid() {
+            return Err("Failed to get device context".into());
+        }
+        let color = GetPixel(hdc, x, y);
+        let _ = ReleaseDC(None, hdc);
+
+        // COLORREF 是一个 struct wrapping u32，需要访问 .0
+        let color_value = color.0;
+        let r = (color_value & 0x000000FF) as u8;
+        let g = ((color_value & 0x0000FF00) >> 8) as u8;
+        let b = ((color_value & 0x00FF0000) >> 16) as u8;
+
+        Ok(format!("#{:02X}{:02X}{:02X}", r, g, b))
+    }
+    #[cfg(not(target_os = "windows"))]
+    Err("目前仅支持 Windows 颜色采集".into())
+}
+
+/// 颜色匹配函数（带容差）
+fn color_match(actual: &str, expected: &str, tolerance: u32) -> bool {
+    // 解析实际颜色
+    let actual_r = u32::from_str_radix(&actual[1..3], 16).unwrap_or(0);
+    let actual_g = u32::from_str_radix(&actual[3..5], 16).unwrap_or(0);
+    let actual_b = u32::from_str_radix(&actual[5..7], 16).unwrap_or(0);
+
+    // 解析期望颜色
+    let expected_r = u32::from_str_radix(&expected[1..3], 16).unwrap_or(0);
+    let expected_g = u32::from_str_radix(&expected[3..5], 16).unwrap_or(0);
+    let expected_b = u32::from_str_radix(&expected[5..7], 16).unwrap_or(0);
+
+    // 计算每个通道的差异
+    let diff_r = (actual_r as i32 - expected_r as i32).abs() as u32;
+    let diff_g = (actual_g as i32 - expected_g as i32).abs() as u32;
+    let diff_b = (actual_b as i32 - expected_b as i32).abs() as u32;
+
+    // 使用欧几里得距离计算颜色差异
+    let distance = ((diff_r * diff_r + diff_g * diff_g + diff_b * diff_b) as f64).sqrt();
+
+    // 容差转换为距离阈值（tolerance 是单通道的最大差异）
+    let max_distance = ((tolerance * tolerance * 3) as f64).sqrt();
+
+    distance <= max_distance
+}
+
+/// 执行单个图节点动作
+async fn execute_simulation(enigo: &mut Enigo, action: &AutomatorAction) {
+    match action {
+        AutomatorAction::MoveTo { x, y } => {
+            let _ = enigo.move_mouse(*x, *y, Coordinate::Abs);
+        },
+        AutomatorAction::Click { button } => {
+            let btn = map_button(button);
+            let _ = enigo.button(btn, Direction::Click);
+        },
+        AutomatorAction::DoubleClick { button } => {
+            let btn = map_button(button);
+            let _ = enigo.button(btn, Direction::Click);
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            let _ = enigo.button(btn, Direction::Click);
+        },
+        AutomatorAction::Type { text } => {
+            let _ = enigo.text(text);
+        },
+        AutomatorAction::KeyPress { key } => {
+            if let Some(k) = map_key(key) {
+                let _ = enigo.key(k, Direction::Click);
+            }
+        },
+        AutomatorAction::Scroll { delta } => {
+            let _ = enigo.scroll(*delta, Axis::Vertical);
+        },
+        AutomatorAction::Wait { ms } => {
+            tokio::time::sleep(Duration::from_millis(*ms)).await;
+        },
+        AutomatorAction::CheckColor { .. } => {
+            // CheckColor 在节点处理逻辑中单独处理，这里不应该到达
+        }
+    }
+}
+
+/// 使用图结构运行工作流
+pub fn run_graph_task<R: Runtime>(
+    app: AppHandle<R>,
+    graph: WorkflowGraph,
+    running_flag: Arc<AtomicBool>
+) {
+    tauri::async_runtime::spawn(async move {
+        let mut enigo = match Enigo::new(&Settings::default()) {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("[Automator] Failed to init Enigo: {:?}", e);
+                running_flag.store(false, Ordering::SeqCst);
+                let _ = app.emit("automator:status", false);
+                return;
+            }
+        };
+
+        println!("[Automator] Graph workflow started");
+        let mut current_id = Some(graph.start_node_id.clone());
+        let mut execution_count = 0u32;
+        const MAX_EXECUTION_COUNT: u32 = 5000; // 熔断机制
+
+        let _execution_result = async {
+            while let Some(id) = current_id {
+                // 熔断检查
+                execution_count += 1;
+                if execution_count > MAX_EXECUTION_COUNT {
+                    eprintln!("[Automator] Execution count exceeded limit, stopping");
+                    break;
+                }
+
+                if !running_flag.load(Ordering::SeqCst) { break; }
+
+                let node = match graph.nodes.get(&id) {
+                    Some(n) => n,
+                    None => {
+                        eprintln!("[Automator] Node not found: {}", id);
+                        break;
+                    }
+                };
+
+                let _ = app.emit("automator:step", &id);
+
+                // 通过 action 类型判断是否为条件节点
+                match &node.action {
+                    AutomatorAction::CheckColor { x, y, expected_hex, tolerance } => {
+                        match get_screen_color(*x, *y).await {
+                            Ok(actual_color) => {
+                                let is_match = color_match(&actual_color, expected_hex, *tolerance);
+                                current_id = if is_match {
+                                    node.true_id.clone()
+                                } else {
+                                    node.false_id.clone()
+                                };
+                            },
+                            Err(e) => {
+                                eprintln!("[Automator] Failed to get color: {}", e);
+                                // 颜色获取失败，走 false 分支
+                                current_id = node.false_id.clone();
+                            }
+                        }
+                    },
+                    _ => {
+                        // 普通动作节点
+                        execute_simulation(&mut enigo, &node.action).await;
+                        current_id = node.next_id.clone();
+                    }
+                }
+
+                tokio::time::sleep(Duration::from_millis(50)).await;
+            }
+        }.await;
+
+        // 安全防护阶段
+        println!("[Automator] Executing surgical cleanup...");
+        reset_all_inputs_surgical(&mut enigo);
+        let _ = enigo.key(Key::Escape, Direction::Click);
+
+        running_flag.store(false, Ordering::SeqCst);
+        let _ = app.emit("automator:status", false);
+        println!("[Automator] Graph engine released.");
+    });
 }

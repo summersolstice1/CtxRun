@@ -1,4 +1,4 @@
-import { MousePointerClick, Move, Type, Clock, Keyboard, PlayCircle, StopCircle } from 'lucide-react';
+import { MousePointerClick, Move, Type, Clock, Keyboard, PlayCircle, StopCircle, Eye } from 'lucide-react';
 import { DragEvent } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -51,6 +51,9 @@ export function ActionPalette() {
 
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">FLOW</div>
         <DraggableItem type="Wait" label="Wait / Sleep" icon={Clock} payload={{ ms: 1000 }} />
+
+        <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">CONDITION</div>
+        <DraggableItem type="conditionNode" label="Check Color" icon={Eye} payload={{ x: 0, y: 0, expectedHex: '#00FF00', tolerance: 10 }} />
       </div>
     </div>
   );

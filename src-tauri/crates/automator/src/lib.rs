@@ -16,8 +16,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::<R>::new("ctxrun-plugin-automator")
         .invoke_handler(tauri::generate_handler![
             commands::execute_workflow,
+            commands::execute_workflow_graph,
             commands::stop_workflow,
-            commands::get_mouse_position
+            commands::get_mouse_position,
+            commands::get_pixel_color
         ])
         .setup(|app, _api| {
             app.manage(AutomatorState::new());

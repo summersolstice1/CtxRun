@@ -11,15 +11,17 @@ import { Play, Square, Move } from 'lucide-react';
 import { useAutomatorStore } from '@/store/useAutomatorStore';
 import { ActionNode } from './nodes/ActionNode';
 import { StartNode, EndNode } from './nodes/SpecialNodes';
+import { ConditionNode } from './nodes/ConditionNode';
 import { ActionPalette } from './sidebar/ActionPalette';
-import { AutomatorAction } from '@/types/automator';
+import { AutomatorAction, WorkflowNode, WorkflowGraph } from '@/types/automator';
 import { cn } from '@/lib/utils';
 
 // 自定义节点注册
 const nodeTypes = {
   actionNode: ActionNode,
-  startNode: StartNode, // 注册起点
-  endNode: EndNode,     // 注册终点
+  conditionNode: ConditionNode,
+  startNode: StartNode,
+  endNode: EndNode,
 };
 
 let id = 0;
@@ -35,7 +37,7 @@ function DnDFlow() {
   const { screenToFlowPosition } = useReactFlow();
 
   const {
-    start, stop, isRunning, setWorkflow, currentStepIndex
+    stop, isRunning, currentStepIndex
   } = useAutomatorStore();
 
   // 状态同步：重置高亮
@@ -122,10 +124,10 @@ function DnDFlow() {
       const newNodeId = getId();
       const newNode: Node = {
         id: newNodeId,
-        type: type === 'startNode' || type === 'endNode' ? type : 'actionNode',
+        type: type === 'startNode' || type === 'endNode' ? type : type === 'conditionNode' ? 'conditionNode' : 'actionNode',
         position,
         data: type === 'startNode' || type === 'endNode' ? {} : {
-            actionType: type as AutomatorAction['type'],
+            actionType: type === 'conditionNode' ? 'CheckColor' : type as AutomatorAction['type'],
             payload: payload,
             onChange: (newData: any) => {
                 setNodes((nds) => nds.map((node) => {
@@ -159,7 +161,7 @@ function DnDFlow() {
     [setEdges],
   );
 
-  // --- 2. 增强的序列解析算法 ---
+  // --- 2. 图结构解析算法 ---
   const handleRun = async () => {
     // 1. 基础检查
     if (nodes.length === 0) return;
@@ -167,72 +169,91 @@ function DnDFlow() {
     // 2. 找到唯一的起点
     const startNode = nodes.find((n) => n.type === 'startNode');
     if (!startNode) {
-        alert("请添加 Start Point 节点作为起始。");
-        return;
+      alert("请添加 Start Point 节点作为起始。");
+      return;
     }
 
-    const sortedActions: AutomatorAction[] = [];
-    const runIds: string[] = []; // 用于 UI 高亮
-    const visited = new Set<string>();
-    let current: Node | undefined = startNode;
+    console.log("开始解析图结构工作流...");
 
-    console.log("开始解析工作流...");
+    // 3. 构建图结构
+    const graphNodes: Record<string, WorkflowNode> = {};
 
-    // 3. 严格的线性遍历
-    while (current) {
-        // 环路检测
-        if (visited.has(current.id)) {
-            console.error("检测到循环节点:", current.id);
-            alert("检测到逻辑环路！目前仅支持从上到下的线性执行。");
-            return;
+    for (const node of nodes) {
+      if (node.type === 'startNode' || node.type === 'endNode') continue;
+
+      let action: AutomatorAction;
+      if (node.type === 'conditionNode') {
+        const nodeData = node.data as { payload: any };
+        action = {
+          type: 'CheckColor',
+          payload: nodeData.payload
+        };
+      } else {
+        const nodeData = node.data as { actionType: AutomatorAction['type']; payload: any };
+        action = {
+          type: nodeData.actionType,
+          payload: nodeData.payload
+        };
+      }
+
+      // 查找连线关系
+      const outgoingEdges = edges.filter((e) => e.source === node.id);
+
+      const workflowNode: WorkflowNode = {
+        id: node.id,
+        action,
+        nextId: undefined,
+        trueId: undefined,
+        falseId: undefined,
+      };
+
+      // 通过 action 类型判断是否为条件节点
+      const isConditionNode = action.type === 'CheckColor';
+
+      for (const edge of outgoingEdges) {
+        if (isConditionNode) {
+          // 条件节点的 true/false 分支
+          if (edge.sourceHandle === 'true') {
+            workflowNode.trueId = edge.target;
+          } else if (edge.sourceHandle === 'false') {
+            workflowNode.falseId = edge.target;
+          } else {
+            // 未指定 handle，默认 false
+            workflowNode.falseId = edge.target;
+          }
+        } else {
+          // 动作节点的下一个节点
+          workflowNode.nextId = edge.target;
         }
+      }
 
-        visited.add(current.id);
-        runIds.push(current.id);
-
-        // 如果是动作节点，提取数据
-        if (current.type === 'actionNode') {
-            const actionData = current.data as { actionType: AutomatorAction['type']; payload: any };
-            if (actionData && actionData.actionType) {
-                sortedActions.push({
-                    type: actionData.actionType,
-                    payload: actionData.payload
-                });
-            }
-        }
-
-        // 遇到 End 节点，完美结束
-        if (current.type === 'endNode') {
-            console.log("到达终点，解析成功。");
-            break;
-        }
-
-        // --- 核心修复：查找有效的下一跳 ---
-        // 我们只看那些真正连接到现存节点的边
-        const outgoingEdge = edges.find((e) => e.source === current!.id);
-
-        if (!outgoingEdge) {
-            // 如果不是 End 节点却没线了，说明断开了
-            if (current.type !== 'endNode') {
-                console.warn("工作流在节点中途中断:", current.id);
-            }
-            break;
-        }
-
-        // 确保 target 节点确实存在于当前的 nodes 数组中
-        const nextNode = nodes.find((n) => n.id === outgoingEdge.target);
-        current = nextNode;
+      graphNodes[node.id] = workflowNode;
     }
 
-    if (sortedActions.length === 0) {
-        alert("起点和终点之间没有有效的动作。");
-        return;
+    // 4. 找到 startNode 连接的第一个节点
+    const firstEdge = edges.find((e) => e.source === startNode.id);
+    if (!firstEdge) {
+      alert("起点没有连接任何节点。");
+      return;
     }
 
-    // 4. 提交执行
-    (window as any).currentRunIds = runIds; // 保存路径 ID 用于高亮
-    setWorkflow({ actions: sortedActions });
-    await start();
+    const workflowGraph: WorkflowGraph = {
+      nodes: graphNodes,
+      startNodeId: firstEdge.target,
+    };
+
+    console.log("图结构解析完成:", workflowGraph);
+
+    // 5. 调用后端执行
+    const { invoke } = await import('@tauri-apps/api/core');
+    try {
+      await invoke('ctxrun-plugin-automator:execute_workflow_graph', {
+        graph: workflowGraph
+      });
+    } catch (error) {
+      console.error('执行失败:', error);
+      alert(`执行失败: ${error}`);
+    }
   };
 
   // --- 3. 动态高亮逻辑 ---
