@@ -7,9 +7,11 @@ import { getText } from '@/lib/i18n';
 interface ShortcutInputProps {
   value: string;
   onChange: (value: string) => void;
+  label?: string;
+  tip?: string;
 }
 
-export function ShortcutInput({ value, onChange }: ShortcutInputProps) {
+export function ShortcutInput({ value, onChange, label, tip }: ShortcutInputProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [currentKeys, setCurrentKeys] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLDivElement>(null);
@@ -66,7 +68,7 @@ export function ShortcutInput({ value, onChange }: ShortcutInputProps) {
   return (
     <div className="space-y-2">
         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            {getText('settings', 'shortcutLabel', language)}
+            {label || getText('settings', 'shortcutLabel', language)}
         </label>
         <div className="flex gap-2">
             <div
@@ -105,9 +107,11 @@ export function ShortcutInput({ value, onChange }: ShortcutInputProps) {
                 </button>
             )}
         </div>
-        <p className="text-[10px] text-muted-foreground/60">
-            {getText('settings', 'shortcutTip', language)}
-        </p>
+        {tip !== undefined && (
+            <p className="text-[10px] text-muted-foreground/60">
+                {tip}
+            </p>
+        )}
     </div>
   );
 }

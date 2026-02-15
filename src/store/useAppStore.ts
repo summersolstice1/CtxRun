@@ -88,6 +88,7 @@ interface AppState {
   language: AppLang;
   spotlightAppearance: SpotlightAppearance;
   spotlightShortcut: string;
+  automatorShortcut: string;
   globalIgnore: IgnoreConfig;
   restReminder: RestReminderConfig;
   windowDestroyDelay: WindowDestroyDelay;
@@ -117,6 +118,7 @@ interface AppState {
   updateGlobalIgnore: (type: keyof IgnoreConfig, action: 'add' | 'remove', value: string) => void;
   setAIConfig: (config: Partial<AIProviderConfig>) => void;
   setSpotlightShortcut: (shortcut: string) => void;
+  setAutomatorShortcut: (shortcut: string) => void;
   setRestReminder: (config: Partial<RestReminderConfig>) => void;
   setWindowDestroyDelay: (seconds: number) => void;
   setSearchSettings: (config: Partial<AppState['searchSettings']>) => void;
@@ -140,6 +142,7 @@ export const useAppStore = create<AppState>()(
       theme: 'dark',
       language: 'zh',
       spotlightShortcut: 'Alt+S',
+      automatorShortcut: 'Alt+F1',
       aiConfig: DEFAULT_AI_CONFIG,
       savedProviderSettings: DEFAULT_PROVIDER_SETTINGS,
       globalIgnore: DEFAULT_GLOBAL_IGNORE,
@@ -183,6 +186,10 @@ export const useAppStore = create<AppState>()(
       }),
       setSpotlightShortcut: (shortcut) => {
         set({ spotlightShortcut: shortcut });
+        invoke('refresh_shortcuts').catch(err => console.error("Failed to refresh shortcuts:", err));
+      },
+      setAutomatorShortcut: (shortcut) => {
+        set({ automatorShortcut: shortcut });
         invoke('refresh_shortcuts').catch(err => console.error("Failed to refresh shortcuts:", err));
       },
       setRestReminder: (config) => set((state) => ({
@@ -295,6 +302,7 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,
         language: state.language,
         spotlightShortcut: state.spotlightShortcut,
+        automatorShortcut: state.automatorShortcut,
         isSidebarOpen: state.isSidebarOpen,
         isPromptSidebarOpen: state.isPromptSidebarOpen,
         isContextSidebarOpen: state.isContextSidebarOpen,

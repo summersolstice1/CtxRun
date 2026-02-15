@@ -1,4 +1,4 @@
-import { MousePointerClick, Move, Type, Clock, Keyboard } from 'lucide-react';
+import { MousePointerClick, Move, Type, Clock, Keyboard, PlayCircle, StopCircle } from 'lucide-react';
 import { DragEvent } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -36,15 +36,19 @@ export function ActionPalette() {
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-1">SYSTEM</div>
+        <DraggableItem type="startNode" label="Start Point" icon={PlayCircle} payload={{}} />
+        <DraggableItem type="endNode" label="End Point" icon={StopCircle} payload={{}} />
+
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-1">MOUSE</div>
         <DraggableItem type="Click" label="Click" icon={MousePointerClick} payload={{ button: 'Left' }} />
         <DraggableItem type="DoubleClick" label="Double Click" icon={MousePointerClick} payload={{ button: 'Left' }} />
         <DraggableItem type="MoveTo" label="Move Mouse" icon={Move} payload={{ x: 0, y: 0 }} />
-        
+
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">KEYBOARD</div>
         <DraggableItem type="Type" label="Input Text" icon={Type} payload={{ text: '' }} />
         <DraggableItem type="KeyPress" label="Press Key" icon={Keyboard} payload={{ key: 'Enter' }} />
-        
+
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">FLOW</div>
         <DraggableItem type="Wait" label="Wait / Sleep" icon={Clock} payload={{ ms: 1000 }} />
       </div>

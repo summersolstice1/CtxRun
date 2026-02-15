@@ -38,13 +38,18 @@ export const ActionNode = memo(({ data, selected }: NodeProps) => {
 
   return (
     <div className={cn(
-      "min-w-[180px] bg-card border rounded-lg shadow-sm transition-all text-xs",
+      "min-w-[180px] bg-card border rounded-lg shadow-sm transition-all duration-300 text-xs",
       selected ? "border-primary ring-1 ring-primary" : "border-border",
-      isExecuting && "ring-2 ring-green-500 border-green-500 shadow-green-500/20"
+      // 执行中的酷炫效果
+      isExecuting && "border-primary ring-4 ring-primary/20 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105 z-50"
     )}>
-      <div className="flex items-center gap-2 px-3 py-2 bg-secondary/30 border-b border-border rounded-t-lg handle">
-        <Icon size={12} className="text-primary" />
-        <span className="font-semibold text-foreground/80">{title}</span>
+      <div className={cn(
+        "flex items-center gap-2 px-3 py-2 border-b rounded-t-lg transition-colors",
+        isExecuting ? "bg-primary text-primary-foreground" : "bg-secondary/30 text-foreground/80"
+      )}>
+        <Icon size={12} />
+        <span className="font-bold text-[10px] uppercase">{title}</span>
+        {isExecuting && <div className="ml-auto w-2 h-2 bg-white rounded-full animate-ping" />}
       </div>
 
       <div className="p-3 space-y-2 nodrag">

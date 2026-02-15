@@ -38,6 +38,7 @@ export function SettingsModal() {
     savedProviderSettings,
     renameAIProvider,
     spotlightShortcut, setSpotlightShortcut,
+    automatorShortcut, setAutomatorShortcut,
     restReminder, setRestReminder,
     windowDestroyDelay, setWindowDestroyDelay,
     spotlightAppearance, setSpotlightAppearance,
@@ -277,8 +278,21 @@ export function SettingsModal() {
                         
                         <div className="w-full h-px bg-border/50 my-4" />
 
-                        {/* 快捷键设置 */}
-                        <ShortcutInput value={spotlightShortcut} onChange={setSpotlightShortcut} />
+                        {/* 快捷键配置区域 */}
+                        <div className="grid grid-cols-1 gap-4">
+                          <ShortcutInput
+                            label={getText('settings', 'shortcutLabel', language)}
+                            value={spotlightShortcut}
+                            onChange={setSpotlightShortcut}
+                            tip={getText('settings', 'shortcutTip', language)}
+                          />
+                          <ShortcutInput
+                            label={getText('settings', 'automatorShortcutLabel', language)}
+                            value={automatorShortcut}
+                            onChange={setAutomatorShortcut}
+                            tip="推荐: Alt+F1, Ctrl+Shift+A"
+                          />
+                        </div>
 
                         <div className="space-y-4 pt-4 border-t border-border/50">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
