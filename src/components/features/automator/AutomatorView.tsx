@@ -1,303 +1,207 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import {
-  Play, Square, MousePointerClick, Crosshair,
-  Clock, RotateCcw, AlertCircle, Hash, Mouse,
-  ChevronUp, ChevronDown
-} from 'lucide-react';
-import { useAutomatorStore } from '@/store/useAutomatorStore';
-import { useAppStore } from '@/store/useAppStore';
-import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
-import { Toast, ToastType } from '@/components/ui/Toast';
+  ReactFlow, Background, Controls, 
+  useNodesState, useEdgesState, addEdge, 
+  ReactFlowProvider, Connection, 
+  BackgroundVariant, useReactFlow, Node
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css'; 
 
-export function AutomatorView() {
-  const { language } = useAppStore();
-  const {
-    config, isRunning, clickCount, isPicking,
-    setConfig, toggle, pickLocation, initListeners, unlisten
+import { Play, Square, Move } from 'lucide-react';
+import { useAutomatorStore } from '@/store/useAutomatorStore';
+import { ActionNode } from './nodes/ActionNode';
+import { ActionPalette } from './sidebar/ActionPalette';
+import { AutomatorAction } from '@/types/automator';
+import { cn } from '@/lib/utils';
+
+// 自定义节点注册
+const nodeTypes = {
+  actionNode: ActionNode,
+};
+
+let id = 0;
+const getId = () => `node_${Date.now()}_${id++}`;
+
+// --- 内部组件 (必须在 Provider 下) ---
+function DnDFlow() {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
+  
+  // 核心 Hook：坐标转换
+  const { screenToFlowPosition } = useReactFlow();
+
+  const { 
+    start, stop, isRunning, setWorkflow 
   } = useAutomatorStore();
 
-  const [toast, setToast] = useState<{show: boolean, msg: string, type: ToastType}>({
-    show: false, msg: '', type: 'info'
-  });
-
+  // 状态同步：重置高亮
   useEffect(() => {
-    initListeners();
-    return () => {
-      unlisten();
-    };
+    if (!isRunning) {
+        setNodes((nds) => nds.map((node) => ({
+            ...node,
+            data: { ...node.data, isExecuting: false }
+        })));
+    }
+  }, [isRunning, setNodes]);
+
+  // --- 关键 1: DragOver 必须 PreventDefault ---
+  const onDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  useEffect(() => {
-    if (isPicking) {
-        setToast({
-            show: true,
-            msg: getText('automator', 'pickingMessage', language),
-            type: 'info'
-        });
-    }
-  }, [isPicking, language]);
+  // --- 关键 2: Drop 逻辑 ---
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
 
-  const handleStopCountChange = (val: string) => {
-    const count = parseInt(val) || 0;
-    setConfig({ stopCondition: { MaxCount: count } });
-  };
+      if (!reactFlowWrapper.current) return;
 
-  // 步进函数
-  const updateStopCount = (delta: number) => {
-    const current = getStopCountValue();
-    const next = Math.max(1, current + delta);
-    setConfig({ stopCondition: { MaxCount: next } });
-  };
+      const type = event.dataTransfer.getData('application/reactflow');
+      const payloadStr = event.dataTransfer.getData('application/payload');
 
-  const getStopCountValue = () => {
-    if (typeof config.stopCondition === 'object' && 'MaxCount' in config.stopCondition) {
-        return config.stopCondition.MaxCount;
-    }
-    return 100;
-  };
+      // 检查类型是否合法
+      if (typeof type === 'undefined' || !type) {
+        return;
+      }
 
-  const updateInterval = (delta: number) => {
-    const next = Math.max(1, config.intervalMs + delta);
-    setConfig({ intervalMs: next });
-  };
+      const payload = payloadStr ? JSON.parse(payloadStr) : {};
 
-  const isInfinite = config.stopCondition === 'Infinite';
+      // V12 推荐的坐标转换方法
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
-  // 提取通用的 SpinButton 样式逻辑，避免重复代码
-  const renderSpinButtons = (onUp: () => void, onDown: () => void) => (
-    <div className="absolute right-0 top-0 bottom-0 w-6 flex flex-col border-l border-border bg-secondary/10">
-        <button 
-            onClick={onUp} 
-            className="flex-1 hover:bg-secondary rounded-tr-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors border-b border-border/50 active:bg-secondary/80"
-            tabIndex={-1}
-        >
-            <ChevronUp size={10} />
-        </button>
-        <button 
-            onClick={onDown} 
-            className="flex-1 hover:bg-secondary rounded-br-md flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors active:bg-secondary/80"
-            tabIndex={-1}
-        >
-            <ChevronDown size={10} />
-        </button>
-    </div>
+      const newNodeId = getId();
+      const newNode: Node = {
+        id: newNodeId,
+        type: 'actionNode', 
+        position,
+        data: { 
+            actionType: type as AutomatorAction['type'], 
+            payload: payload,
+            onChange: (newData: any) => {
+                setNodes((nds) => nds.map((node) => {
+                    if (node.id === newNodeId) {
+                        return { ...node, data: { ...node.data, payload: newData } };
+                    }
+                    return node;
+                }));
+            }
+        },
+      };
+
+      setNodes((nds) => nds.concat(newNode));
+      
+      // 自动连线体验优化
+      if (nodes.length > 0) {
+          const lastNode = nodes[nodes.length - 1];
+          setEdges((eds) => addEdge({
+              id: `e-${lastNode.id}-${newNode.id}`,
+              source: lastNode.id,
+              target: newNode.id,
+              animated: true
+          }, eds));
+      }
+    },
+    [screenToFlowPosition, nodes, setNodes, setEdges],
   );
 
+  const onConnect = useCallback(
+    (params: Connection) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
+    [setEdges],
+  );
+
+  // 运行逻辑
+  const handleRun = async () => {
+    // 简单的拓扑排序，转成线性列表
+    if (nodes.length === 0) return;
+    const targets = new Set(edges.map((e) => e.target));
+    let startNode = nodes.find((n) => !targets.has(n.id)) || nodes[0];
+    const sortedActions: AutomatorAction[] = [];
+    const visited = new Set<string>();
+    let current: Node | undefined = startNode;
+
+    while (current) {
+        if (visited.has(current.id)) break;
+        visited.add(current.id);
+        const actionData = current.data as any;
+        sortedActions.push({
+            type: actionData.actionType,
+            payload: actionData.payload
+        });
+        const outgoingEdge = edges.find((e) => e.source === current!.id);
+        current = outgoingEdge ? nodes.find((n) => n.id === outgoingEdge.target) : undefined;
+    }
+    
+    if (sortedActions.length === 0) return;
+    setWorkflow({ actions: sortedActions });
+    await start();
+  };
+
   return (
-    <div className="h-full flex flex-col bg-background animate-in fade-in duration-300">
-      <div className="h-14 border-b border-border flex items-center px-6 shrink-0 bg-secondary/5">
-        <div className="flex items-center gap-2 font-semibold text-foreground">
-          <MousePointerClick className="text-primary" size={20} />
-          {getText('automator', 'title', language)}
-        </div>
+    <div className="h-full flex flex-col bg-background">
+       {/* 顶部栏 */}
+      <div className="h-14 border-b border-border flex items-center px-4 justify-between bg-secondary/5 shrink-0 z-10">
+         <div className="flex items-center gap-3">
+            <h2 className="font-semibold text-foreground">Automator Designer</h2>
+            <div className="px-2 py-0.5 rounded-full bg-secondary text-[10px] text-muted-foreground border border-border">Manual Mode</div>
+         </div>
+         <div className="flex items-center gap-2">
+            <button onClick={isRunning ? stop : handleRun} className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm", isRunning ? "bg-destructive text-white" : "bg-primary text-primary-foreground")}>
+                {isRunning ? <><Square size={14} fill="currentColor"/> Stop</> : <><Play size={14} fill="currentColor"/> Run</>}
+            </button>
+         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          <div className={cn(
-            "bg-card border border-border rounded-xl p-5 shadow-sm space-y-6 transition-opacity",
-            isRunning && "opacity-60 pointer-events-none grayscale-[0.5]"
-          )}>
-
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Clock size={14} /> {getText('automator', 'interval', language)}
-              </label>
-              
-              {/* 间隔时间设置 */}
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1 group">
-                    <input
-                      type="number"
-                      min="1"
-                      value={config.intervalMs}
-                      onChange={(e) => setConfig({ intervalMs: Math.max(1, parseInt(e.target.value) || 100) })}
-                      className="w-full bg-secondary/30 border border-border rounded-md pl-3 pr-7 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all group-hover:border-primary/30"
-                    />
-                    {renderSpinButtons(() => updateInterval(10), () => updateInterval(-10))}
-                </div>
-                <div className="text-xs text-muted-foreground font-medium">ms</div>
-              </div>
-
-              <input
-                type="range"
-                min="1"
-                max="5000"
-                step="10"
-                value={config.intervalMs}
-                onChange={(e) => setConfig({ intervalMs: parseInt(e.target.value) })}
-                className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-              />
-            </div>
-
-            <div className="h-px bg-border/50" />
-
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Mouse size={14} /> {getText('automator', 'clickType', language)}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {['Left', 'Right', 'Middle'].map((type) => (
-                  <button
-                    key={type}
-                    onClick={() => setConfig({ clickType: type as any })}
-                    className={cn(
-                      "px-3 py-2 rounded-md text-sm border transition-all",
-                      config.clickType === type
-                        ? "bg-primary/10 border-primary text-primary font-bold"
-                        : "bg-secondary/30 border-border hover:bg-secondary/50"
-                    )}
-                  >
-                    {getText('automator', type.toLowerCase() as any, language)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <AlertCircle size={14} /> {getText('automator', 'stopCondition', language)}
-              </label>
-              <div className="flex flex-col gap-3">
-                <label className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-secondary/20 transition-colors">
-                  <input
-                    type="radio"
-                    checked={isInfinite}
-                    onChange={() => setConfig({ stopCondition: 'Infinite' })}
-                    className="accent-primary w-4 h-4"
-                  />
-                  <span className="text-sm font-medium">{getText('automator', 'conditionInfinite', language)}</span>
-                  <RotateCcw size={14} className="ml-auto text-muted-foreground" />
-                </label>
-
-                <label className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-secondary/20 transition-colors">
-                  <input
-                    type="radio"
-                    checked={!isInfinite}
-                    onChange={() => setConfig({ stopCondition: { MaxCount: 100 } })}
-                    className="accent-primary w-4 h-4"
-                  />
-                  <span className="text-sm font-medium">{getText('automator', 'conditionCount', language)}</span>
-                  <Hash size={14} className="ml-auto text-muted-foreground" />
-                </label>
-
-                {!isInfinite && (
-                  <div className="pl-7 animate-in slide-in-from-top-1 fade-in">
-                    <div className="relative group">
-                        <input
-                          type="number"
-                          min="1"
-                          value={getStopCountValue()}
-                          onChange={(e) => handleStopCountChange(e.target.value)}
-                          className="w-full bg-secondary/30 border border-border rounded-md pl-3 pr-7 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none transition-all group-hover:border-primary/30"
-                        />
-                        {renderSpinButtons(() => updateStopCount(1), () => updateStopCount(-1))}
+      <div className="flex-1 flex overflow-hidden">
+        {/* 左侧面板 */}
+        <ActionPalette />
+        
+        {/* 
+            核心修复点：
+            1. 使用 ref={reactFlowWrapper} 获取 DOM 边界
+            2. 将 onDrop 和 onDragOver 放在这个 div 上
+            3. 确保这个 div 有宽高 (flex-1 h-full)
+        */}
+        <div className="flex-1 h-full relative bg-secondary/5" ref={reactFlowWrapper}>
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                nodeTypes={nodeTypes}
+                defaultEdgeOptions={{ type: 'smoothstep', animated: true }}
+                fitView
+            >
+                <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
+                <Controls />
+            </ReactFlow>
+            
+            {nodes.length === 0 && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
+                    <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-8 flex flex-col items-center">
+                        <Move size={32} className="mb-2" />
+                        <p className="text-sm font-medium">Drag actions here</p>
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-               <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                <Crosshair size={14} /> {getText('automator', 'location', language)}
-              </label>
-              <div className="flex flex-col gap-3">
-                 <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setConfig({ useFixedLocation: false })}
-                        className={cn("flex-1 py-2 text-xs rounded-md border transition-all", !config.useFixedLocation ? "bg-primary/10 border-primary text-primary font-bold" : "bg-secondary/30 border-border")}
-                    >
-                        {getText('automator', 'locCurrent', language)}
-                    </button>
-                    <button
-                        onClick={() => setConfig({ useFixedLocation: true })}
-                        className={cn("flex-1 py-2 text-xs rounded-md border transition-all", config.useFixedLocation ? "bg-primary/10 border-primary text-primary font-bold" : "bg-secondary/30 border-border")}
-                    >
-                        {getText('automator', 'locFixed', language)}
-                    </button>
-                 </div>
-
-                 {config.useFixedLocation && (
-                     <div className="flex items-center gap-2 animate-in fade-in">
-                        <div className="flex-1 flex gap-2">
-                            <input disabled value={config.fixedX} className="w-1/2 bg-secondary/50 border border-border rounded px-2 py-1 text-xs text-center font-mono" />
-                            <input disabled value={config.fixedY} className="w-1/2 bg-secondary/50 border border-border rounded px-2 py-1 text-xs text-center font-mono" />
-                        </div>
-                        <button
-                            onClick={pickLocation}
-                            disabled={isPicking}
-                            className="px-4 py-1.5 bg-primary text-primary-foreground text-xs font-bold rounded-md hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
-                            title={getText('automator', 'pickTooltip', language)}
-                        >
-                            {isPicking ? '...' : getText('automator', 'pickBtn', language)}
-                        </button>
-                     </div>
-                 )}
-              </div>
-            </div>
-
-          </div>
-
-          <div className="flex flex-col gap-6">
-
-             <div className="flex-1 bg-gradient-to-br from-secondary/30 to-background border border-border rounded-xl p-8 flex flex-col items-center justify-center text-center shadow-inner relative overflow-hidden">
-                <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] [mask-image:linear-gradient(to_bottom,transparent,black)] pointer-events-none" />
-
-                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-4 z-10">
-                    {getText('automator', 'countLabel', language)}
-                </h3>
-                <div className="text-7xl font-bold tabular-nums tracking-tighter text-foreground z-10 mb-2">
-                    {clickCount.toLocaleString()}
                 </div>
-                <div className={cn(
-                    "text-xs font-bold px-3 py-1 rounded-full z-10 transition-colors",
-                    isRunning
-                        ? "bg-green-500/10 text-green-600 border border-green-500/20 animate-pulse"
-                        : "bg-secondary text-muted-foreground border border-border"
-                )}>
-                    {isRunning ? getText('automator', 'statusRunning', language) : getText('automator', 'statusStopped', language)}
-                </div>
-             </div>
-
-             <button
-                onClick={toggle}
-                className={cn(
-                    "h-24 w-full rounded-2xl flex items-center justify-center gap-4 text-2xl font-bold transition-all shadow-lg active:scale-[0.98] ring-offset-2 focus:ring-2",
-                    isRunning
-                        ? "bg-destructive text-destructive-foreground hover:bg-destructive/90 shadow-destructive/20 ring-destructive/50"
-                        : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20 ring-primary/50"
-                )}
-             >
-                {isRunning ? (
-                    <>
-                        <Square className="fill-current" size={32} />
-                        {getText('automator', 'stopBtn', language)}
-                    </>
-                ) : (
-                    <>
-                        <Play className="fill-current" size={32} />
-                        {getText('automator', 'startBtn', language)}
-                    </>
-                )}
-             </button>
-
-             <div className="text-center text-xs text-muted-foreground/60">
-                ⚠️ {language === 'zh' ? '请确保在使用前设置好停止快捷键，以防无法控制。' : 'Please ensure the stop shortcut works before use.'}
-             </div>
-          </div>
-
+            )}
         </div>
       </div>
-
-      <Toast
-        show={toast.show}
-        message={toast.msg}
-        type={toast.type}
-        onDismiss={() => setToast(prev => ({ ...prev, show: false }))}
-      />
     </div>
+  );
+}
+
+// 3. 根组件：Provider 包裹
+export function AutomatorView() {
+  return (
+    <ReactFlowProvider>
+      <DnDFlow />
+    </ReactFlowProvider>
   );
 }

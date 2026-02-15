@@ -10,6 +10,32 @@
 <tr>
 <td>
 
+`ctxrun-plugin-automator:allow-execute-workflow`
+
+</td>
+<td>
+
+Enables the execute_workflow command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-automator:deny-execute-workflow`
+
+</td>
+<td>
+
+Denies the execute_workflow command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-automator:allow-get-mouse-position`
 
 </td>
@@ -81,6 +107,32 @@ Enables the stop_clicker command without any pre-configured scope.
 <td>
 
 Denies the stop_clicker command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-automator:allow-stop-workflow`
+
+</td>
+<td>
+
+Enables the stop_workflow command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-automator:deny-stop-workflow`
+
+</td>
+<td>
+
+Denies the stop_workflow command without any pre-configured scope.
 
 </td>
 </tr>

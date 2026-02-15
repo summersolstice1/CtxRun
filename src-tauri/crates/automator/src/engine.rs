@@ -3,8 +3,11 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Runtime};
-use enigo::{Enigo, Mouse, Button, Coordinate, Settings, Direction};
-use crate::models::{ClickerConfig, ClickType, StopCondition};
+use enigo::{
+    Enigo, Mouse, Keyboard, Button, Coordinate,
+    Settings, Direction, Key, Axis
+};
+use crate::models::{AutomatorAction, Workflow, MouseButton};
 
 pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
@@ -18,9 +21,9 @@ impl AutomatorState {
     }
 }
 
-pub fn run_clicker_task<R: Runtime>(
+pub fn run_workflow_task<R: Runtime>(
     app: AppHandle<R>,
-    config: ClickerConfig,
+    workflow: Workflow,
     running_flag: Arc<AtomicBool>
 ) {
     thread::spawn(move || {
@@ -34,44 +37,77 @@ pub fn run_clicker_task<R: Runtime>(
             }
         };
 
-        let mut count = 0u64;
-        let button = match config.click_type {
-            ClickType::Left => Button::Left,
-            ClickType::Right => Button::Right,
-            ClickType::Middle => Button::Middle,
-        };
-
-        println!("[Automator] Started. Interval: {}ms", config.interval_ms);
+        println!("[Automator] Workflow started: {}", workflow.name);
+        let mut current_loop = 0;
 
         while running_flag.load(Ordering::SeqCst) {
-            if config.use_fixed_location {
-                let _ = enigo.move_mouse(config.fixed_x, config.fixed_y, Coordinate::Abs);
+            if workflow.repeat_count > 0 && current_loop >= workflow.repeat_count {
+                break;
             }
 
-            let _ = enigo.button(button, Direction::Click);
+            for (index, action) in workflow.actions.iter().enumerate() {
+                if !running_flag.load(Ordering::SeqCst) { break; }
 
-            count += 1;
-            let _ = app.emit("automator:count", count);
+                let _ = app.emit("automator:step", index);
 
-            if let StopCondition::MaxCount(max) = config.stop_condition {
-                if count >= max {
-                    break;
+                match action {
+                    AutomatorAction::MoveTo { x, y } => {
+                        let _ = enigo.move_mouse(*x, *y, Coordinate::Abs);
+                    },
+                    AutomatorAction::Click { button } => {
+                        let btn = map_button(button);
+                        let _ = enigo.button(btn, Direction::Click);
+                    },
+                    AutomatorAction::DoubleClick { button } => {
+                        let btn = map_button(button);
+                        let _ = enigo.button(btn, Direction::Click);
+                        thread::sleep(Duration::from_millis(50));
+                        let _ = enigo.button(btn, Direction::Click);
+                    },
+                    AutomatorAction::Type { text } => {
+                        let _ = enigo.text(text);
+                    },
+                    AutomatorAction::KeyPress { key } => {
+                        if let Some(k) = map_key(key) {
+                            let _ = enigo.key(k, Direction::Click);
+                        }
+                    },
+                    AutomatorAction::Scroll { delta } => {
+                        let _ = enigo.scroll(*delta, Axis::Vertical);
+                    },
+                    AutomatorAction::Wait { ms } => {
+                        thread::sleep(Duration::from_millis(*ms));
+                    }
                 }
+
+                thread::sleep(Duration::from_millis(50));
             }
-            if config.interval_ms > 100 {
-                let chunks = config.interval_ms / 50;
-                for _ in 0..chunks {
-                    if !running_flag.load(Ordering::SeqCst) { break; }
-                    thread::sleep(Duration::from_millis(50));
-                }
-                thread::sleep(Duration::from_millis(config.interval_ms % 50));
-            } else {
-                thread::sleep(Duration::from_millis(config.interval_ms));
-            }
+
+            current_loop += 1;
+            let _ = app.emit("automator:loop_count", current_loop);
         }
 
         running_flag.store(false, Ordering::SeqCst);
         let _ = app.emit("automator:status", false);
-        println!("[Automator] Stopped. Total clicks: {}", count);
+        println!("[Automator] Stopped.");
     });
+}
+
+fn map_button(btn: &MouseButton) -> Button {
+    match btn {
+        MouseButton::Left => Button::Left,
+        MouseButton::Right => Button::Right,
+        MouseButton::Middle => Button::Middle,
+    }
+}
+
+fn map_key(key_str: &str) -> Option<Key> {
+    match key_str.to_lowercase().as_str() {
+        "enter" | "return" => Some(Key::Return),
+        "space" => Some(Key::Space),
+        "backspace" => Some(Key::Backspace),
+        "tab" => Some(Key::Tab),
+        "escape" | "esc" => Some(Key::Escape),
+        _ => None,
+    }
 }

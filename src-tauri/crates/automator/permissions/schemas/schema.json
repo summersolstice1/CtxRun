@@ -295,6 +295,18 @@
       "type": "string",
       "oneOf": [
         {
+          "description": "Enables the execute_workflow command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-execute-workflow",
+          "markdownDescription": "Enables the execute_workflow command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the execute_workflow command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-execute-workflow",
+          "markdownDescription": "Denies the execute_workflow command without any pre-configured scope."
+        },
+        {
           "description": "Enables the get_mouse_position command without any pre-configured scope.",
           "type": "string",
           "const": "allow-get-mouse-position",
@@ -329,6 +341,18 @@
           "type": "string",
           "const": "deny-stop-clicker",
           "markdownDescription": "Denies the stop_clicker command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop_workflow command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-stop-workflow",
+          "markdownDescription": "Enables the stop_workflow command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop_workflow command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-stop-workflow",
+          "markdownDescription": "Denies the stop_workflow command without any pre-configured scope."
         }
       ]
     }

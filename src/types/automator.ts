@@ -1,24 +1,28 @@
-export type ClickType = 'Left' | 'Right' | 'Middle';
+export type MouseButton = 'Left' | 'Right' | 'Middle';
 
-// 对应 Rust 的 enum StopCondition
-// Rust: Infinite -> JSON: "Infinite"
-// Rust: MaxCount(u64) -> JSON: { "MaxCount": number }
-export type StopCondition = 'Infinite' | { MaxCount: number };
+export type AutomatorAction =
+  | { type: 'MoveTo'; payload: { x: number; y: number } }
+  | { type: 'Click'; payload: { button: MouseButton } }
+  | { type: 'DoubleClick'; payload: { button: MouseButton } }
+  | { type: 'Type'; payload: { text: string } }
+  | { type: 'KeyPress'; payload: { key: string } }
+  | { type: 'Scroll'; payload: { delta: number } }
+  | { type: 'Wait'; payload: { ms: number } };
 
-export interface ClickerConfig {
-  intervalMs: number;
-  clickType: ClickType;
-  stopCondition: StopCondition;
-  useFixedLocation: boolean;
-  fixedX: number;
-  fixedY: number;
+export interface Workflow {
+  id: string;
+  name: string;
+  actions: AutomatorAction[];
+  repeatCount: number;
+  meta?: {
+    description?: string;
+    createdAt?: number;
+  };
 }
 
-export const DEFAULT_CLICKER_CONFIG: ClickerConfig = {
-  intervalMs: 100,
-  clickType: 'Left',
-  stopCondition: 'Infinite',
-  useFixedLocation: false,
-  fixedX: 0,
-  fixedY: 0
+export const DEFAULT_WORKFLOW: Workflow = {
+  id: 'default',
+  name: 'New Workflow',
+  actions: [],
+  repeatCount: 1
 };

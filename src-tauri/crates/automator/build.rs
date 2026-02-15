@@ -1,6 +1,6 @@
 const COMMANDS: &[&str] = &[
-    "start_clicker",
-    "stop_clicker",
+    "execute_workflow",
+    "stop_workflow",
     "get_mouse_position"
 ];
 
