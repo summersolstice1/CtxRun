@@ -12,6 +12,7 @@ import { useAutomatorStore } from '@/store/useAutomatorStore';
 import { ActionNode } from './nodes/ActionNode';
 import { StartNode, EndNode } from './nodes/SpecialNodes';
 import { ConditionNode } from './nodes/ConditionNode';
+import { IteratorNode } from './nodes/IteratorNode';
 import { ActionPalette } from './sidebar/ActionPalette';
 import { AutomatorAction, WorkflowNode, WorkflowGraph } from '@/types/automator';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ import { cn } from '@/lib/utils';
 const nodeTypes = {
   actionNode: ActionNode,
   conditionNode: ConditionNode,
+  iteratorNode: IteratorNode,
   startNode: StartNode,
   endNode: EndNode,
 };
@@ -128,10 +130,12 @@ function DnDFlow() {
       const newNodeId = getId();
       const newNode: Node = {
         id: newNodeId,
-        type: type === 'startNode' || type === 'endNode' ? type : type === 'conditionNode' ? 'conditionNode' : 'actionNode',
+        type: type === 'startNode' || type === 'endNode'
+          ? type
+          : (type === 'conditionNode' || type === 'iteratorNode' ? type : 'actionNode'),
         position,
         data: type === 'startNode' || type === 'endNode' ? {} : {
-            actionType: type === 'conditionNode' ? 'CheckColor' : type as AutomatorAction['type'],
+            actionType: type === 'conditionNode' ? 'CheckColor' : (type === 'iteratorNode' ? 'Iterate' : type as AutomatorAction['type']),
             payload: payload,
             onChange: (newData: any) => {
                 setNodes((nds) => nds.map((node) => {
@@ -192,6 +196,12 @@ function DnDFlow() {
           type: 'CheckColor',
           payload: nodeData.payload
         };
+      } else if (node.type === 'iteratorNode') {
+        const nodeData = node.data as { payload: any };
+        action = {
+          type: 'Iterate',
+          payload: nodeData.payload
+        };
       } else {
         const nodeData = node.data as { actionType: AutomatorAction['type']; payload: any };
         action = {
@@ -211,8 +221,8 @@ function DnDFlow() {
         falseId: undefined,
       };
 
-      // 通过 action 类型判断是否为条件节点
-      const isConditionNode = action.type === 'CheckColor';
+      // 通过 action 类型判断是否为条件节点（有 true/false 分支）
+      const isConditionNode = action.type === 'CheckColor' || action.type === 'Iterate';
 
       for (const edge of outgoingEdges) {
         if (isConditionNode) {
@@ -253,10 +263,15 @@ function DnDFlow() {
     const visited = new Set<string>();
     let currentId: string | undefined = workflowGraph.startNodeId;
     while (currentId && !visited.has(currentId)) {
+      // 检查节点是否存在于 graphNodes 中（可能指向 endNode）
+      const node: WorkflowNode | undefined = graphNodes[currentId];
+      if (!node) {
+        // 节点不存在（可能是 endNode），停止追踪
+        break;
+      }
       visited.add(currentId);
       runIds.push(currentId);
-      const node: WorkflowNode = graphNodes[currentId];
-      if (node.action.type === 'CheckColor') {
+      if (node.action.type === 'CheckColor' || node.action.type === 'Iterate') {
         currentId = node.trueId || node.falseId || node.nextId;
       } else {
         currentId = node.nextId;
@@ -267,7 +282,7 @@ function DnDFlow() {
     // 5. 调用后端执行
     const { invoke } = await import('@tauri-apps/api/core');
     try {
-      await invoke('ctxrun-plugin-automator:execute_workflow_graph', {
+      await invoke('plugin:ctxrun-plugin-automator|execute_workflow_graph', {
         graph: workflowGraph
       });
     } catch (error) {

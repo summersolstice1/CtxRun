@@ -2,7 +2,6 @@
 //! 使用 xcap 库提供屏幕取色、截图等功能
 
 use xcap::Monitor;
-use image::GenericImageView;
 use std::error::Error;
 use std::fmt;
 use xcap::XCapError;

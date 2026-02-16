@@ -39,10 +39,13 @@ export const ConditionNode = memo((props: NodeProps) => {
       // 2. 获取该位置的颜色
       const color = await invoke<string>(`${PLUGIN_PREFIX}get_pixel_color`, { x, y });
 
-      // 3. 更新节点数据
-      handleChange('x', x);
-      handleChange('y', y);
-      handleChange('expectedHex', color);
+      // 3. 更新节点数据（一次性更新所有字段）
+      data.onChange({
+        ...payload,
+        x,
+        y,
+        expectedHex: color
+      });
     } catch (error) {
       console.error('取色失败:', error);
     } finally {

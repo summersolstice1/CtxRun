@@ -1,8 +1,9 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type } from 'lucide-react';
+import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AutomatorAction, MouseButton } from '@/types/automator';
+import { invoke } from '@tauri-apps/api/core';
 
 const ICONS: Record<AutomatorAction['type'], any> = {
   'MoveTo': Move,
@@ -13,6 +14,7 @@ const ICONS: Record<AutomatorAction['type'], any> = {
   'Wait': Clock,
   'Scroll': Move,
   'CheckColor': MousePointer2,
+  'Iterate': Repeat,
 };
 
 const TITLES: Record<AutomatorAction['type'], string> = {
@@ -24,6 +26,7 @@ const TITLES: Record<AutomatorAction['type'], string> = {
   'Wait': 'Wait',
   'Scroll': 'Scroll',
   'CheckColor': 'Check Color',
+  'Iterate': 'Loop Iterator',
 };
 
 interface ActionNodeData {
@@ -44,9 +47,36 @@ export const ActionNode = memo((props: NodeProps) => {
   const Icon = ICONS[actionType] || MousePointer2;
   const title = TITLES[actionType] || actionType;
 
+  // 取坐标状态（仅用于 MoveTo）
+  const [isPickingCoords, setIsPickingCoords] = useState(false);
+
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
     data.onChange(newPayload);
+  };
+
+  // 取坐标功能：延迟 3 秒后获取鼠标位置
+  const handlePickCoordinates = async () => {
+    setIsPickingCoords(true);
+
+    // 延迟 3 秒让用户移动鼠标到目标位置
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    try {
+      // 获取鼠标位置
+      const [x, y] = await invoke<[number, number]>('plugin:ctxrun-plugin-automator|get_mouse_position');
+
+      // 一次性更新所有坐标字段
+      data.onChange({
+        ...payload,
+        x,
+        y
+      });
+    } catch (error) {
+      console.error('取坐标失败:', error);
+    } finally {
+      setIsPickingCoords(false);
+    }
   };
 
   return (
@@ -67,25 +97,47 @@ export const ActionNode = memo((props: NodeProps) => {
       <div className="p-3 space-y-2 nodrag">
 
         {actionType === 'MoveTo' && (
-          <div className="flex gap-2">
-            <div>
-              <label className="text-[10px] text-muted-foreground block mb-0.5">X</label>
-              <input
-                type="number"
-                className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
-                value={(payload as { x: number }).x}
-                onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
-              />
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="text-[10px] text-muted-foreground block mb-0.5">X</label>
+                <input
+                  type="number"
+                  className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
+                  value={(payload as { x: number }).x}
+                  onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[10px] text-muted-foreground block mb-0.5">Y</label>
+                <input
+                  type="number"
+                  className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
+                  value={(payload as { y: number }).y}
+                  onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-[10px] text-muted-foreground block mb-0.5">Y</label>
-              <input
-                type="number"
-                className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
-                value={(payload as { y: number }).y}
-                onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
-              />
-            </div>
+            {/* 取坐标按钮 */}
+            <button
+              onClick={handlePickCoordinates}
+              disabled={isPickingCoords}
+              className={cn(
+                "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-[10px] font-medium transition-all",
+                "bg-primary/10 text-primary hover:bg-primary/20",
+                isPickingCoords && "bg-primary/5 animate-pulse"
+              )}
+              title={isPickingCoords ? "移动鼠标到目标位置..." : "点击取坐标 (3秒延迟)"}
+            >
+              <Crosshair size={12} className={cn(isPickingCoords && "animate-spin")} />
+              <span>{isPickingCoords ? "取坐标中..." : "取坐标"}</span>
+            </button>
+            {/* 取坐标状态提示 */}
+            {isPickingCoords && (
+              <div className="bg-primary/10 border border-primary/30 rounded px-2 py-1 text-center">
+                <span className="text-[9px] text-primary font-medium">3 秒后取坐标... 移动鼠标到目标位置</span>
+              </div>
+            )}
           </div>
         )}
 

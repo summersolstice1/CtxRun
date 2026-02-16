@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
@@ -96,6 +97,9 @@ pub fn run_workflow_task<R: Runtime>(
                         },
                         AutomatorAction::CheckColor { .. } => {
                             // CheckColor 仅在图模式中使用，线性模式跳过
+                        },
+                        AutomatorAction::Iterate { .. } => {
+                            // Iterate 仅在图模式中使用，线性模式跳过
                         }
                     }
 
@@ -246,8 +250,8 @@ async fn execute_simulation(enigo: &mut Enigo, action: &AutomatorAction) {
         AutomatorAction::Wait { ms } => {
             tokio::time::sleep(Duration::from_millis(*ms)).await;
         },
-        AutomatorAction::CheckColor { .. } => {
-            // CheckColor 在节点处理逻辑中单独处理，这里不应该到达
+        AutomatorAction::CheckColor { .. } | AutomatorAction::Iterate { .. } => {
+            // CheckColor 和 Iterate 在节点处理逻辑中单独处理，这里不应该到达
         }
     }
 }
@@ -270,16 +274,21 @@ pub fn run_graph_task<R: Runtime>(
         };
 
         println!("[Automator] Graph workflow started");
+
+        // ==== 关键修改 1: 引入运行时状态存储 ====
+        // 用于存储每个 Iterator 节点的当前计数值
+        let mut node_counters: HashMap<String, u32> = HashMap::new();
+
         let mut current_id = Some(graph.start_node_id.clone());
         let mut execution_count = 0u32;
-        const MAX_EXECUTION_COUNT: u32 = 5000; // 熔断机制
+        const MAX_EXECUTION_COUNT: u32 = 10000; // 考虑到有循环，适当调大熔断阈值
 
         let _execution_result = async {
             while let Some(id) = current_id {
                 // 熔断检查
                 execution_count += 1;
                 if execution_count > MAX_EXECUTION_COUNT {
-                    eprintln!("[Automator] Execution count exceeded limit, stopping");
+                    eprintln!("[Automator] Execution count exceeded limit (Safety Trip)");
                     break;
                 }
 
@@ -295,8 +304,9 @@ pub fn run_graph_task<R: Runtime>(
 
                 let _ = app.emit("automator:step", &id);
 
-                // 通过 action 类型判断是否为条件节点
+                // ==== 关键修改 2: 处理不同类型的动作逻辑 ====
                 match &node.action {
+                    // 情况 A: 颜色检测节点 (基于外部环境)
                     AutomatorAction::CheckColor { x, y, expected_hex, tolerance } => {
                         // 使用 xcap 在阻塞线程中执行屏幕截图
                         let x_coord = *x;
@@ -326,6 +336,26 @@ pub fn run_graph_task<R: Runtime>(
                             }
                         }
                     },
+
+                    // 情况 B: 迭代器节点 (基于内部状态)
+                    AutomatorAction::Iterate { target_count } => {
+                        // 获取当前节点的计数，如果不存在则从 0 开始
+                        let count = node_counters.entry(id.clone()).or_insert(0);
+
+                        if *count < *target_count {
+                            // 增加计数并走向"循环"分支 (true)
+                            *count += 1;
+                            println!("[Automator] Node {} iteration: {}/{}", id, count, target_count);
+                            current_id = node.true_id.clone();
+                        } else {
+                            // 达到目标，重置计数并走向"退出"分支 (false)
+                            *count = 0;
+                            println!("[Automator] Node {} iteration finished", id);
+                            current_id = node.false_id.clone();
+                        }
+                    },
+
+                    // 情况 C: 普通模拟节点 (执行完走 next)
                     _ => {
                         // 普通动作节点
                         execute_simulation(&mut enigo, &node.action).await;

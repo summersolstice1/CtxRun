@@ -9,7 +9,9 @@ export type AutomatorAction =
   | { type: 'KeyPress'; payload: { key: string } }
   | { type: 'Scroll'; payload: { delta: number } }
   | { type: 'Wait'; payload: { ms: number } }
-  | { type: 'CheckColor'; payload: { x: number; y: number; expectedHex: string; tolerance: number } };
+  | { type: 'CheckColor'; payload: { x: number; y: number; expectedHex: string; tolerance: number } }
+  // 迭代计数器
+  | { type: 'Iterate'; payload: { targetCount: number } };
 
 // 图节点结构：通过 action.type 自动判断是否为条件节点
 export interface WorkflowNode {
