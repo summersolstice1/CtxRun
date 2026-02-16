@@ -64,9 +64,11 @@
     "core:app:allow-identifier",
     "notification:default",
 
-    "ctxrun-plugin-automator:allow-start-clicker",
-    "ctxrun-plugin-automator:allow-stop-clicker",
+    "ctxrun-plugin-automator:allow-execute-workflow",
+    "ctxrun-plugin-automator:allow-execute-workflow-graph",
+    "ctxrun-plugin-automator:allow-stop-workflow",
     "ctxrun-plugin-automator:allow-get-mouse-position",
+    "ctxrun-plugin-automator:allow-get-pixel-color",
     "ctxrun-plugin-context:allow-calculate-context-stats",
     "ctxrun-plugin-context:allow-scan-for-secrets",
     "ctxrun-plugin-context:allow-get-context-content",

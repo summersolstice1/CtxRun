@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-stop-workflow"
+description = "Enables the stop_workflow command without any pre-configured scope."
+commands.allow = ["stop_workflow"]
+
+[[permission]]
+identifier = "deny-stop-workflow"
+description = "Denies the stop_workflow command without any pre-configured scope."
+commands.deny = ["stop_workflow"]

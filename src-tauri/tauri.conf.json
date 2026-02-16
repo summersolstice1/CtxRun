@@ -58,7 +58,8 @@
         "transparent": true,
         "shadow": false,
         "visible": false,
-        "useHttpsScheme": true
+        "useHttpsScheme": true,
+        "dragDropEnabled": false
       },
       {
         "label": "spotlight",

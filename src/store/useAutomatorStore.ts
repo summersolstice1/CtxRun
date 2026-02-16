@@ -3,57 +3,98 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { fileStorage } from '@/lib/storage';
-import { ClickerConfig, DEFAULT_CLICKER_CONFIG } from '@/types/automator';
+import { Workflow, DEFAULT_WORKFLOW, AutomatorAction } from '@/types/automator';
 
-// 定义插件调用的前缀
 const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-automator|';
 
 interface AutomatorState {
-  config: ClickerConfig;
+  activeWorkflow: Workflow;
   isRunning: boolean;
-  clickCount: number;
+  currentLoop: number;
+  currentStepIndex: number;
   isPicking: boolean;
 
-  // Actions
-  setConfig: (config: Partial<ClickerConfig>) => void;
+  setWorkflow: (workflow: Partial<Workflow>) => void;
+  addAction: (action: AutomatorAction) => void;
+  updateAction: (index: number, action: AutomatorAction) => void;
+  removeAction: (index: number) => void;
+  reorderActions: (oldIndex: number, newIndex: number) => void;
+
   start: () => Promise<void>;
   stop: () => Promise<void>;
   toggle: () => Promise<void>;
+
   pickLocation: () => Promise<void>;
-  
-  // Lifecycle
   initListeners: () => Promise<void>;
   unlisten: () => void;
+
   _unlistenFns: UnlistenFn[];
 }
 
 export const useAutomatorStore = create<AutomatorState>()(
   persist(
     (set, get) => ({
-      config: DEFAULT_CLICKER_CONFIG,
+      activeWorkflow: DEFAULT_WORKFLOW,
       isRunning: false,
-      clickCount: 0,
+      currentLoop: 0,
+      currentStepIndex: -1,
       isPicking: false,
       _unlistenFns: [],
 
-      setConfig: (newConfig) => set((state) => ({
-        config: { ...state.config, ...newConfig }
+      setWorkflow: (updates) => set((state) => ({
+        activeWorkflow: { ...state.activeWorkflow, ...updates }
       })),
+
+      addAction: (action) => set((state) => ({
+        activeWorkflow: {
+          ...state.activeWorkflow,
+          actions: [...state.activeWorkflow.actions, action]
+        }
+      })),
+
+      updateAction: (index, action) => set((state) => {
+        const newActions = [...state.activeWorkflow.actions];
+        newActions[index] = action;
+        return {
+          activeWorkflow: { ...state.activeWorkflow, actions: newActions }
+        };
+      }),
+
+      removeAction: (index) => set((state) => ({
+        activeWorkflow: {
+          ...state.activeWorkflow,
+          actions: state.activeWorkflow.actions.filter((_, i) => i !== index)
+        }
+      })),
+
+      reorderActions: (oldIndex, newIndex) => set((state) => {
+        const items = Array.from(state.activeWorkflow.actions);
+        const [reorderedItem] = items.splice(oldIndex, 1);
+        items.splice(newIndex, 0, reorderedItem);
+        return {
+          activeWorkflow: { ...state.activeWorkflow, actions: items }
+        };
+      }),
 
       initListeners: async () => {
         if (get()._unlistenFns.length > 0) return;
 
-        // 监听运行状态 (事件名称保持不变，因为 Rust 端是全局 emit)
         const unlistenStatus = await listen<boolean>('automator:status', (event) => {
           set({ isRunning: event.payload });
+          if (!event.payload) {
+             set({ currentStepIndex: -1 });
+          }
         });
 
-        // 监听点击计数
-        const unlistenCount = await listen<number>('automator:count', (event) => {
-          set({ clickCount: event.payload });
+        const unlistenLoop = await listen<number>('automator:loop_count', (event) => {
+          set({ currentLoop: event.payload });
         });
 
-        set({ _unlistenFns: [unlistenStatus, unlistenCount] });
+        const unlistenStep = await listen<number>('automator:step', (event) => {
+          set({ currentStepIndex: event.payload });
+        });
+
+        set({ _unlistenFns: [unlistenStatus, unlistenLoop, unlistenStep] });
       },
 
       unlisten: () => {
@@ -62,22 +103,27 @@ export const useAutomatorStore = create<AutomatorState>()(
       },
 
       start: async () => {
-        const { config } = get();
+        const { activeWorkflow } = get();
         try {
-          set({ clickCount: 0 });
-          // [修改点] 添加插件前缀
-          await invoke(`${PLUGIN_PREFIX}start_clicker`, { config });
+          set({ currentLoop: 0, currentStepIndex: -1 });
+          await invoke(`${PLUGIN_PREFIX}execute_workflow`, {
+            workflow: {
+                id: activeWorkflow.id,
+                name: activeWorkflow.name,
+                actions: activeWorkflow.actions,
+                repeatCount: activeWorkflow.repeatCount
+            }
+          });
         } catch (e) {
-          console.error("Failed to start clicker:", e);
+          console.error("Failed to start workflow:", e);
         }
       },
 
       stop: async () => {
         try {
-          // [修改点] 添加插件前缀
-          await invoke(`${PLUGIN_PREFIX}stop_clicker`);
+          await invoke(`${PLUGIN_PREFIX}stop_workflow`);
         } catch (e) {
-          console.error("Failed to stop clicker:", e);
+          console.error("Failed to stop workflow:", e);
         }
       },
 
@@ -92,20 +138,17 @@ export const useAutomatorStore = create<AutomatorState>()(
 
       pickLocation: async () => {
         set({ isPicking: true });
-        
+
         setTimeout(async () => {
           try {
-            // [修改点] 添加插件前缀
             const [x, y] = await invoke<[number, number]>(`${PLUGIN_PREFIX}get_mouse_position`);
-            set((state) => ({
-              isPicking: false,
-              config: {
-                ...state.config,
-                useFixedLocation: true,
-                fixedX: x,
-                fixedY: y
-              }
-            }));
+
+            get().addAction({
+                type: 'MoveTo',
+                payload: { x, y }
+            });
+
+            set({ isPicking: false });
           } catch (e) {
             console.error("Failed to pick location:", e);
             set({ isPicking: false });
@@ -116,7 +159,9 @@ export const useAutomatorStore = create<AutomatorState>()(
     {
       name: 'automator-config',
       storage: createJSONStorage(() => fileStorage),
-      partialize: (state) => ({ config: state.config }),
+      partialize: (state) => ({
+          activeWorkflow: state.activeWorkflow
+      }),
     }
   )
 );
