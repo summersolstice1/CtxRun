@@ -77,9 +77,7 @@ pub fn run_workflow_task<R: Runtime>(
                             let _ = enigo.text(text);
                         },
                         AutomatorAction::KeyPress { key } => {
-                            if let Some(k) = map_key(key) {
-                                let _ = enigo.key(k, Direction::Click);
-                            }
+                            execute_key_combination(&mut enigo, key);
                         },
                         AutomatorAction::Scroll { delta } => {
                             let _ = enigo.scroll(*delta, Axis::Vertical);
@@ -139,12 +137,127 @@ fn map_button(btn: &MouseButton) -> Button {
 
 fn map_key(key_str: &str) -> Option<Key> {
     match key_str.to_lowercase().as_str() {
+        // 特殊键
         "enter" | "return" => Some(Key::Return),
         "space" => Some(Key::Space),
         "backspace" => Some(Key::Backspace),
         "tab" => Some(Key::Tab),
         "escape" | "esc" => Some(Key::Escape),
+        "delete" | "del" => Some(Key::Delete),
+        "insert" => Some(Key::Insert),
+        "home" => Some(Key::Home),
+        "end" => Some(Key::End),
+        "pageup" | "page up" => Some(Key::PageUp),
+        "pagedown" | "page down" => Some(Key::PageDown),
+
+        // 方向键（支持多种写法）
+        "up" | "arrowup" | "arrow up" => Some(Key::UpArrow),
+        "down" | "arrowdown" | "arrow down" => Some(Key::DownArrow),
+        "left" | "arrowleft" | "arrow left" => Some(Key::LeftArrow),
+        "right" | "arrowright" | "arrow right" => Some(Key::RightArrow),
+
+        // 功能键
+        "f1" => Some(Key::F1),
+        "f2" => Some(Key::F2),
+        "f3" => Some(Key::F3),
+        "f4" => Some(Key::F4),
+        "f5" => Some(Key::F5),
+        "f6" => Some(Key::F6),
+        "f7" => Some(Key::F7),
+        "f8" => Some(Key::F8),
+        "f9" => Some(Key::F9),
+        "f10" => Some(Key::F10),
+        "f11" => Some(Key::F11),
+        "f12" => Some(Key::F12),
+
+        // 字母键
+        "a" => Some(Key::A),
+        "b" => Some(Key::B),
+        "c" => Some(Key::C),
+        "d" => Some(Key::D),
+        "e" => Some(Key::E),
+        "f" => Some(Key::F),
+        "g" => Some(Key::G),
+        "h" => Some(Key::H),
+        "i" => Some(Key::I),
+        "j" => Some(Key::J),
+        "k" => Some(Key::K),
+        "l" => Some(Key::L),
+        "m" => Some(Key::M),
+        "n" => Some(Key::N),
+        "o" => Some(Key::O),
+        "p" => Some(Key::P),
+        "q" => Some(Key::Q),
+        "r" => Some(Key::R),
+        "s" => Some(Key::S),
+        "t" => Some(Key::T),
+        "u" => Some(Key::U),
+        "v" => Some(Key::V),
+        "w" => Some(Key::W),
+        "x" => Some(Key::X),
+        "y" => Some(Key::Y),
+        "z" => Some(Key::Z),
+
+        // 数字键
+        "0" => Some(Key::Num0),
+        "1" => Some(Key::Num1),
+        "2" => Some(Key::Num2),
+        "3" => Some(Key::Num3),
+        "4" => Some(Key::Num4),
+        "5" => Some(Key::Num5),
+        "6" => Some(Key::Num6),
+        "7" => Some(Key::Num7),
+        "8" => Some(Key::Num8),
+        "9" => Some(Key::Num9),
+
         _ => None,
+    }
+}
+
+/// 执行组合键（如 "Alt+F1"）
+/// 按顺序：按下修饰键 → 点击主键 → 逆序释放修饰键
+fn execute_key_combination(enigo: &mut Enigo, key_combo: &str) {
+    // 解析组合键字符串，例如 "Alt+F1" -> ["Alt", "F1"]
+    let parts: Vec<&str> = key_combo.split('+').collect();
+    let mut modifiers = Vec::new();
+    let mut main_key = None;
+
+    for part in parts {
+        let part_lower = part.trim().to_lowercase();
+        match part_lower.as_str() {
+            "control" | "ctrl" => modifiers.push(Key::Control),
+            "alt" => modifiers.push(Key::Alt),
+            "shift" => modifiers.push(Key::Shift),
+            "meta" | "command" | "cmd" => modifiers.push(Key::Meta),
+            other => {
+                // 不是修饰键，则作为主键
+                if let Some(k) = map_key(other) {
+                    main_key = Some(k);
+                }
+            }
+        }
+    }
+
+    // 1. 依次按下修饰键
+    for m in &modifiers {
+        let _ = enigo.key(*m, Direction::Press);
+    }
+
+    // 2. 点击主键 (Press + Release)
+    if let Some(k) = main_key {
+        let _ = enigo.key(k, Direction::Click);
+    } else if modifiers.is_empty() {
+        // 既没有修饰键也没有主键，可能是单个无效键
+    } else {
+        // 只有修饰键，没有主键（如只按下 Alt），则点击第一个修饰键
+        if let Some(m) = modifiers.first() {
+            let _ = enigo.key(*m, Direction::Click);
+        }
+    }
+
+    // 3. 依次释放修饰键 (逆序释放，符合键盘习惯)
+    for m in modifiers.iter().rev() {
+        let _ = enigo.key(*m, Direction::Release);
     }
 }
 
@@ -240,9 +353,7 @@ async fn execute_simulation(enigo: &mut Enigo, action: &AutomatorAction) {
             let _ = enigo.text(text);
         },
         AutomatorAction::KeyPress { key } => {
-            if let Some(k) = map_key(key) {
-                let _ = enigo.key(k, Direction::Click);
-            }
+            execute_key_combination(enigo, key);
         },
         AutomatorAction::Scroll { delta } => {
             let _ = enigo.scroll(*delta, Axis::Vertical);

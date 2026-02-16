@@ -1,6 +1,6 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair } from 'lucide-react';
+import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AutomatorAction, MouseButton } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
@@ -55,6 +55,11 @@ export const ActionNode = memo((props: NodeProps) => {
   // 取坐标状态（仅用于 MoveTo）
   const [isPickingCoords, setIsPickingCoords] = useState(false);
 
+  // 按键录制状态（仅用于 KeyPress）
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentKeys, setCurrentKeys] = useState<Set<string>>(new Set());
+  const recordingRef = useRef<HTMLDivElement>(null);
+
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
     data.onChange(newPayload);
@@ -85,6 +90,66 @@ export const ActionNode = memo((props: NodeProps) => {
   };
 
   const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
+
+  // 按键录制处理
+  useEffect(() => {
+    if (!isRecording || actionType !== 'KeyPress') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      const keys = new Set<string>();
+      if (e.ctrlKey) keys.add('Control');
+      if (e.altKey) keys.add('Alt');
+      if (e.shiftKey) keys.add('Shift');
+      if (e.metaKey) keys.add('Meta');
+
+      // 排除单纯的修饰键
+      if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
+        let key = e.key;
+        // 标准化键名
+        if (key === ' ') key = 'Space';
+        if (key.length === 1) key = key.toUpperCase();
+        keys.add(key);
+
+        // 格式化为 "Alt+F1" 这种字符串
+        const shortcut = Array.from(keys).join('+');
+        handleChange('key', shortcut);
+        setIsRecording(false);
+        setCurrentKeys(new Set());
+      }
+
+      setCurrentKeys(keys);
+    };
+
+    // ESC 取消录制
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isRecording) {
+        e.preventDefault();
+        setIsRecording(false);
+        setCurrentKeys(new Set());
+      }
+    };
+
+    // 点击外部取消录制
+    const handleClickOutside = (e: MouseEvent) => {
+      if (recordingRef.current && !recordingRef.current.contains(e.target as Node)) {
+        setIsRecording(false);
+        setCurrentKeys(new Set());
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleEscape);
+    window.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isRecording, actionType, payload]);
 
   return (
     <div className={cn(
@@ -170,6 +235,53 @@ export const ActionNode = memo((props: NodeProps) => {
              <option value="Right">{t('rightButton')}</option>
              <option value="Middle">{t('middleButton')}</option>
            </select>
+        )}
+
+        {actionType === 'KeyPress' && (
+          <div className="space-y-1">
+            <label className="text-[10px] text-muted-foreground block">{t('pressKey')}</label>
+            <div className="flex gap-1">
+              <div
+                ref={recordingRef}
+                onClick={() => {
+                  setIsRecording(true);
+                  setCurrentKeys(new Set());
+                }}
+                className={cn(
+                  "flex-1 px-2 py-1.5 rounded border border-border bg-background text-center cursor-pointer transition-all select-none",
+                  isRecording
+                    ? "border-primary bg-primary/10 ring-2 ring-primary/20"
+                    : "hover:border-primary/50"
+                )}
+              >
+                <span className={cn(
+                  "font-mono text-[11px]",
+                  isRecording ? "text-primary" : "text-foreground"
+                )}>
+                  {isRecording
+                    ? currentKeys.size > 0
+                      ? Array.from(currentKeys).join(' + ')
+                      : "Press keys..."
+                    : ((payload as { key: string }).key || "Click to record")
+                  }
+                </span>
+              </div>
+              {((payload as { key: string }).key) && !isRecording && (
+                <button
+                  onClick={() => handleChange('key', '')}
+                  className="px-2 rounded border border-border bg-secondary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
+                  title={t('clear')}
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+            {isRecording && (
+              <p className="text-[9px] text-center text-muted-foreground">
+                Press combination or ESC to cancel
+              </p>
+            )}
+          </div>
         )}
 
         {actionType === 'Wait' && (
