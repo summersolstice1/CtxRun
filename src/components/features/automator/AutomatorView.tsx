@@ -1,6 +1,6 @@
 import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import {
-  ReactFlow, Background, Controls,
+  ReactFlow, Background,
   useNodesState, useEdgesState, addEdge,
   ReactFlowProvider, Connection,
   BackgroundVariant, useReactFlow, Node
@@ -341,6 +341,7 @@ function DnDFlow() {
                 onDrop={onDrop}
                 onDragOver={onDragOver}
                 nodeTypes={nodeTypes}
+                proOptions={{ hideAttribution: true }} 
                 // --- 新增：当节点被删除时，自动清理相关的连线 ---
                 onNodesDelete={(deletedNodes) => {
                     const deletedIds = new Set(deletedNodes.map(n => n.id));
@@ -350,7 +351,6 @@ function DnDFlow() {
                 fitView
             >
                 <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
-                <Controls />
             </ReactFlow>
             
             {nodes.length === 0 && (
