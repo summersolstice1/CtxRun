@@ -17,10 +17,9 @@ pub enum AutomatorAction {
     KeyPress { key: String },
     Scroll { delta: i32 },
     Wait { ms: u64 },
-    CheckColor { x: i32, y: i32, expected_hex: String, tolerance: u32 },
-    /// 迭代计数器（注意 camelCase 到 snake_case 的转换）
-    #[serde(rename_all = "camelCase")]
-    Iterate { target_count: u32 },
+    CheckColor { x: i32, y: i32, #[serde(rename = "expectedHex")] expected_hex: String, tolerance: u32 },
+    /// 迭代计数器
+    Iterate { #[serde(rename = "targetCount")] target_count: u32 },
 }
 
 // 图节点结构：通过 action 类型自动判断是否为条件节点
