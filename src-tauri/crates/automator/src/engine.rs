@@ -7,6 +7,7 @@ use enigo::{
     Settings, Direction, Key, Axis
 };
 use crate::models::{AutomatorAction, Workflow, WorkflowGraph, MouseButton};
+use crate::screen;
 
 pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
@@ -167,31 +168,6 @@ fn reset_all_inputs_surgical(enigo: &mut Enigo) {
     }
 }
 
-/// 获取屏幕指定位置的颜色
-async fn get_screen_color(x: i32, y: i32) -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    unsafe {
-        use windows::Win32::Graphics::Gdi::{GetDC, GetPixel, ReleaseDC};
-
-        let hdc = GetDC(None);
-        if hdc.is_invalid() {
-            return Err("Failed to get device context".into());
-        }
-        let color = GetPixel(hdc, x, y);
-        let _ = ReleaseDC(None, hdc);
-
-        // COLORREF 是一个 struct wrapping u32，需要访问 .0
-        let color_value = color.0;
-        let r = (color_value & 0x000000FF) as u8;
-        let g = ((color_value & 0x0000FF00) >> 8) as u8;
-        let b = ((color_value & 0x00FF0000) >> 16) as u8;
-
-        Ok(format!("#{:02X}{:02X}{:02X}", r, g, b))
-    }
-    #[cfg(not(target_os = "windows"))]
-    Err("目前仅支持 Windows 颜色采集".into())
-}
-
 /// 颜色匹配函数（带容差）
 /// 使用最大差异法：每个通道的差异都必须在容差范围内
 fn color_match(actual: &str, expected: &str, tolerance: u32) -> bool {
@@ -322,8 +298,16 @@ pub fn run_graph_task<R: Runtime>(
                 // 通过 action 类型判断是否为条件节点
                 match &node.action {
                     AutomatorAction::CheckColor { x, y, expected_hex, tolerance } => {
-                        match get_screen_color(*x, *y).await {
-                            Ok(actual_color) => {
+                        // 使用 xcap 在阻塞线程中执行屏幕截图
+                        let x_coord = *x;
+                        let y_coord = *y;
+
+                        let color_res = tauri::async_runtime::spawn_blocking(move || {
+                            screen::get_color_at(x_coord, y_coord)
+                        }).await;
+
+                        match color_res {
+                            Ok(Ok(actual_color)) => {
                                 let is_match = color_match(&actual_color, expected_hex, *tolerance);
                                 current_id = if is_match {
                                     node.true_id.clone()
@@ -331,10 +315,14 @@ pub fn run_graph_task<R: Runtime>(
                                     node.false_id.clone()
                                 };
                             },
-                            Err(e) => {
-                                eprintln!("[Automator] Failed to get color: {}", e);
+                            Ok(Err(e)) => {
+                                eprintln!("[Automator] xcap error: {}", e);
                                 // 颜色获取失败，走 false 分支
                                 current_id = node.false_id.clone();
+                            },
+                            Err(e) => {
+                                eprintln!("[Automator] Task joining failed: {}", e);
+                                break;
                             }
                         }
                     },

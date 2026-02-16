@@ -8,6 +8,7 @@ use std::fs;
 pub mod models;
 pub mod engine;
 pub mod commands;
+pub mod screen;
 
 use engine::AutomatorState;
 use models::AutomatorStoreRoot;

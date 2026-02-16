@@ -1,7 +1,8 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { Pipette } from 'lucide-react';
+import { Pipette, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { invoke } from '@tauri-apps/api/core';
 
 interface ConditionNodeData {
   payload: { x: number; y: number; expectedHex: string; tolerance: number };
@@ -9,16 +10,44 @@ interface ConditionNodeData {
   isExecuting?: boolean;
 }
 
+const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-automator|';
+
 export const ConditionNode = memo((props: NodeProps) => {
   const data = props.data as unknown as ConditionNodeData;
   const selected = props.selected;
 
   const payload = data.payload;
   const isExecuting = data.isExecuting;
+  const [isPicking, setIsPicking] = useState(false);
 
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
     data.onChange(newPayload);
+  };
+
+  // 取色功能：延迟 3 秒后获取鼠标位置和颜色
+  const handlePickColor = async () => {
+    setIsPicking(true);
+
+    // 延迟 3 秒让用户移动鼠标到目标位置
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    try {
+      // 1. 获取鼠标位置
+      const [x, y] = await invoke<[number, number]>(`${PLUGIN_PREFIX}get_mouse_position`);
+
+      // 2. 获取该位置的颜色
+      const color = await invoke<string>(`${PLUGIN_PREFIX}get_pixel_color`, { x, y });
+
+      // 3. 更新节点数据
+      handleChange('x', x);
+      handleChange('y', y);
+      handleChange('expectedHex', color);
+    } catch (error) {
+      console.error('取色失败:', error);
+    } finally {
+      setIsPicking(false);
+    }
   };
 
   return (
@@ -40,10 +69,25 @@ export const ConditionNode = memo((props: NodeProps) => {
       <div className="p-3 space-y-2 nodrag">
         {/* 颜色选择器 */}
         <div className="flex items-center gap-2">
-          <div
-            className="w-10 h-10 rounded border shadow-inner shrink-0"
-            style={{ backgroundColor: payload.expectedHex || '#000000' }}
-          />
+          <div className="relative">
+            <div
+              className="w-10 h-10 rounded border shadow-inner shrink-0"
+              style={{ backgroundColor: payload.expectedHex || '#000000' }}
+            />
+            {/* 取色按钮 */}
+            <button
+              onClick={handlePickColor}
+              disabled={isPicking}
+              className={cn(
+                "absolute inset-0 flex items-center justify-center rounded transition-all",
+                "hover:bg-black/20 active:bg-black/30",
+                isPicking && "bg-black/10 animate-pulse"
+              )}
+              title={isPicking ? "移动鼠标到目标位置..." : "点击取色 (3秒延迟)"}
+            >
+              <Crosshair size={14} className={cn("text-white drop-shadow-md", isPicking && "animate-spin")} />
+            </button>
+          </div>
           <div className="flex-1">
             <input
               type="text"
@@ -87,6 +131,13 @@ export const ConditionNode = memo((props: NodeProps) => {
             />
           </div>
         </div>
+
+        {/* 取色状态提示 */}
+        {isPicking && (
+          <div className="bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1.5 text-center">
+            <span className="text-[9px] text-orange-600 font-medium">3 秒后取色... 移动鼠标到目标位置</span>
+          </div>
+        )}
 
         {/* 分支标识 */}
         <div className="flex justify-between text-[9px] font-semibold pt-1">

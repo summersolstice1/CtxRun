@@ -2,6 +2,7 @@ use tauri::{State, AppHandle, Emitter, Runtime};
 use std::sync::atomic::Ordering;
 use crate::engine::{AutomatorState, run_workflow_task, run_graph_task};
 use crate::models::{Workflow, WorkflowGraph};
+use crate::screen;
 
 #[tauri::command]
 pub async fn execute_workflow<R: Runtime>(
@@ -41,27 +42,45 @@ pub async fn get_mouse_position() -> Result<(i32, i32), String> {
 
 #[tauri::command]
 pub async fn get_pixel_color(x: i32, y: i32) -> Result<String, String> {
-    #[cfg(target_os = "windows")]
-    unsafe {
-        use windows::Win32::Graphics::Gdi::{GetDC, GetPixel, ReleaseDC};
+    // 使用 tauri::async_runtime::spawn_blocking
+    // 因为屏幕截图通常是阻塞操作，不应阻塞 Tauri 的异步运行时线程
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        screen::get_color_at(x, y)
+    }).await
+    .map_err(|e| format!("Task join error: {}", e))?; // 处理线程错误
 
-        let hdc = GetDC(None);
-        if hdc.is_invalid() {
-            return Err("Failed to get device context".into());
-        }
-        let color = GetPixel(hdc, x, y);
-        let _ = ReleaseDC(None, hdc);
-
-        // COLORREF 是一个 struct wrapping u32，需要访问 .0
-        let color_value = color.0;
-        let r = (color_value & 0x000000FF) as u8;
-        let g = ((color_value & 0x0000FF00) >> 8) as u8;
-        let b = ((color_value & 0x00FF0000) >> 16) as u8;
-
-        Ok(format!("#{:02X}{:02X}{:02X}", r, g, b))
+    match result {
+        Ok(hex) => Ok(hex),
+        Err(e) => Err(format!("Failed to get color: {}", e)) // 处理业务错误
     }
-    #[cfg(not(target_os = "windows"))]
-    Err("目前仅支持 Windows 颜色采集".into())
+}
+
+/// 调试命令：获取所有屏幕信息
+#[tauri::command]
+pub async fn get_screens_info() -> Result<Vec<screen::ScreenInfo>, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        screen::get_all_screens_info()
+    }).await
+    .map_err(|e| format!("Task join error: {}", e))?
+    .map_err(|e| format!("Failed to get screens info: {}", e))
+}
+
+/// 调试命令：测试取色功能（带详细日志）
+#[tauri::command]
+pub async fn test_get_pixel_color(x: i32, y: i32) -> Result<String, String> {
+    eprintln!("[TestColor] Testing color pick at ({}, {})", x, y);
+
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        screen::get_color_at(x, y)
+    }).await
+    .map_err(|e| format!("Task join error: {}", e))?;
+
+    match &result {
+        Ok(color) => eprintln!("[TestColor] Success: {}", color),
+        Err(e) => eprintln!("[TestColor] Failed: {}", e),
+    }
+
+    result.map_err(|e| format!("Failed to get color: {}", e))
 }
 
 #[tauri::command]
