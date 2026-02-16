@@ -4,6 +4,7 @@ import { Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { getText } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 
 interface IteratorNodeData {
   payload: { targetCount: number };
@@ -19,8 +20,8 @@ export const IteratorNode = memo((props: NodeProps) => {
 
   const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
 
-  const handleChange = (val: string) => {
-    onChange({ targetCount: Math.max(1, parseInt(val) || 1) });
+  const handleChange = (val: number) => {
+    onChange({ targetCount: Math.max(1, val) });
   };
 
   return (
@@ -36,16 +37,12 @@ export const IteratorNode = memo((props: NodeProps) => {
       </div>
 
       <div className="p-3 space-y-2 nodrag">
-        <div>
-          <label className="text-[9px] text-muted-foreground block mb-1">{t('targetCount')}</label>
-          <input
-            type="number"
-            className="w-full bg-background border border-border rounded px-2 py-1 text-center font-mono text-sm"
-            value={payload.targetCount}
-            min={1}
-            onChange={(e) => handleChange(e.target.value)}
-          />
-        </div>
+        <NumberInput
+          label={t('targetCount')}
+          value={payload.targetCount}
+          min={1}
+          onChange={handleChange}
+        />
 
         <div className="flex justify-between text-[9px] font-semibold pt-1">
           <div className="flex items-center gap-1 text-red-500">

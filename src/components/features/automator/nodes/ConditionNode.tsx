@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '@/store/useAppStore';
 import { getText } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 
 interface ConditionNodeData {
   payload: { x: number; y: number; expectedHex: string; tolerance: number };
@@ -31,21 +32,16 @@ export const ConditionNode = memo((props: NodeProps) => {
     data.onChange(newPayload);
   };
 
-  // 取色功能：延迟 3 秒后获取鼠标位置和颜色
   const handlePickColor = async () => {
     setIsPicking(true);
 
-    // 延迟 3 秒让用户移动鼠标到目标位置
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-      // 1. 获取鼠标位置
       const [x, y] = await invoke<[number, number]>(`${PLUGIN_PREFIX}get_mouse_position`);
 
-      // 2. 获取该位置的颜色
       const color = await invoke<string>(`${PLUGIN_PREFIX}get_pixel_color`, { x, y });
 
-      // 3. 更新节点数据（一次性更新所有字段）
       data.onChange({
         ...payload,
         x,
@@ -61,11 +57,10 @@ export const ConditionNode = memo((props: NodeProps) => {
 
   return (
     <div className={cn(
-      "w-[280px] bg-card border-2 rounded-lg shadow-sm transition-all duration-300 text-xs",
+      "w-[450px] bg-card border-2 rounded-lg shadow-sm transition-all duration-300 text-xs",
       selected ? "border-orange-500 ring-1 ring-primary" : "border-border",
       isExecuting && "border-orange-400 ring-4 ring-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.5)] scale-105 z-50"
     )}>
-      {/* 标题栏 */}
       <div className={cn(
         "bg-orange-500/10 text-orange-600 px-3 py-2 text-[10px] font-bold border-b border-orange-500/20 flex items-center gap-2 rounded-t-lg"
       )}>
@@ -74,16 +69,13 @@ export const ConditionNode = memo((props: NodeProps) => {
         {isExecuting && <div className="ml-auto w-2 h-2 bg-orange-500 rounded-full animate-ping" />}
       </div>
 
-      {/* 内容区 */}
       <div className="p-3 space-y-2 nodrag">
-        {/* 颜色选择器 */}
         <div className="flex items-center gap-2">
           <div className="relative">
             <div
               className="w-10 h-10 rounded border shadow-inner shrink-0"
               style={{ backgroundColor: payload.expectedHex || '#000000' }}
             />
-            {/* 取色按钮 */}
             <button
               onClick={handlePickColor}
               disabled={isPicking}
@@ -108,47 +100,33 @@ export const ConditionNode = memo((props: NodeProps) => {
           </div>
         </div>
 
-        {/* 坐标和容差 */}
         <div className="grid grid-cols-4 gap-2">
-          <div>
-            <label className="text-[9px] text-muted-foreground block mb-0.5">X</label>
-            <input
-              type="number"
-              className="w-full bg-background border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
-              value={payload.x ?? 0}
-              onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
-            />
-          </div>
-          <div>
-            <label className="text-[9px] text-muted-foreground block mb-0.5">Y</label>
-            <input
-              type="number"
-              className="w-full bg-background border border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
-              value={payload.y ?? 0}
-              onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
-            />
-          </div>
-          <div className="col-span-2">
-            <label className="text-[9px] text-muted-foreground block mb-0.5">{t('toleranceRange')}</label>
-            <input
-              type="number"
-              className="w-full bg-background border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
-              value={payload.tolerance ?? 10}
-              onChange={(e) => handleChange('tolerance', Math.max(0, Math.min(255, parseInt(e.target.value) || 0)))}
-              min="0"
-              max="255"
-            />
-          </div>
+          <NumberInput
+            label="X"
+            value={payload.x ?? 0}
+            onChange={(val) => handleChange('x', val)}
+          />
+          <NumberInput
+            label="Y"
+            value={payload.y ?? 0}
+            onChange={(val) => handleChange('y', val)}
+          />
+          <NumberInput
+            label={t('toleranceRange')}
+            value={payload.tolerance ?? 10}
+            min={0}
+            max={255}
+            onChange={(val) => handleChange('tolerance', Math.max(0, Math.min(255, val)))}
+            className="col-span-2"
+          />
         </div>
 
-        {/* 取色状态提示 */}
         {isPicking && (
           <div className="bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1.5 text-center">
             <span className="text-[9px] text-orange-600 font-medium">{t('pickingColor')}</span>
           </div>
         )}
 
-        {/* 分支标识 */}
         <div className="flex justify-between text-[9px] font-semibold pt-1">
           <div className="flex items-center gap-1 text-red-500">
             <div className="w-2 h-2 rounded-full bg-red-500" />
@@ -161,14 +139,12 @@ export const ConditionNode = memo((props: NodeProps) => {
         </div>
       </div>
 
-      {/* 顶部输入 */}
       <Handle
         type="target"
         position={Position.Top}
         className="!w-3 !h-3 !bg-muted-foreground/50 hover:!bg-orange-500 !border-2 !border-orange-500/30"
       />
 
-      {/* 左侧 FALSE 出口 */}
       <Handle
         type="source"
         position={Position.Left}
@@ -177,7 +153,6 @@ export const ConditionNode = memo((props: NodeProps) => {
         style={{ top: '70%' }}
       />
 
-      {/* 右侧 TRUE 出口 */}
       <Handle
         type="source"
         position={Position.Right}

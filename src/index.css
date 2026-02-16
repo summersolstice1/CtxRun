@@ -187,3 +187,15 @@
   background-size: 300% 300%;
   animation: gradient-flow 3s ease infinite;
 }
+
+/* Hide native number input spin buttons */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

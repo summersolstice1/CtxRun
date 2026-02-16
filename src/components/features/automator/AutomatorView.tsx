@@ -31,6 +31,16 @@ const nodeTypes = {
 let id = 0;
 const getId = () => `node_${Date.now()}_${id++}`;
 
+// 根据字符串生成唯一颜色
+const getEdgeColor = (str: string) => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash % 360);
+  return `hsl(${hue}, 70%, 50%)`;
+};
+
 // --- 内部组件 (必须在 Provider 下) ---
 function DnDFlow() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
@@ -87,6 +97,7 @@ function DnDFlow() {
           source: startNodeId,
           target: endNodeId,
           animated: true,
+          style: { stroke: getEdgeColor(`e-${startNodeId}-${endNodeId}`) },
         },
       ];
 
@@ -157,11 +168,13 @@ function DnDFlow() {
       // 自动连线体验优化
       if (nodes.length > 0) {
           const lastNode = nodes[nodes.length - 1];
+          const edgeId = `e-${lastNode.id}-${newNode.id}`;
           setEdges((eds) => addEdge({
-              id: `e-${lastNode.id}-${newNode.id}`,
+              id: edgeId,
               source: lastNode.id,
               target: newNode.id,
-              animated: true
+              animated: true,
+              style: { stroke: getEdgeColor(edgeId) }
           }, eds));
       }
     },
@@ -169,7 +182,14 @@ function DnDFlow() {
   );
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge({ ...params, animated: true }, eds)),
+    (params: Connection) => {
+      const edgeId = `e-${params.source}-${params.target}`;
+      setEdges((eds) => addEdge({
+        ...params,
+        animated: true,
+        style: { stroke: getEdgeColor(edgeId) }
+      }, eds));
+    },
     [setEdges],
   );
 

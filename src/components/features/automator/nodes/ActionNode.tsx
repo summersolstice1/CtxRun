@@ -6,6 +6,7 @@ import { AutomatorAction, MouseButton } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '@/store/useAppStore';
 import { getText } from '@/lib/i18n';
+import { NumberInput } from '@/components/ui/NumberInput';
 
 const ICONS: Record<AutomatorAction['type'], any> = {
   'MoveTo': Move,
@@ -153,7 +154,7 @@ export const ActionNode = memo((props: NodeProps) => {
 
   return (
     <div className={cn(
-      "min-w-[180px] bg-card border rounded-lg shadow-sm transition-all duration-300 text-xs",
+      "w-[250px] bg-card border rounded-lg shadow-sm transition-all duration-300 text-xs",
       selected ? "border-primary ring-1 ring-primary" : "border-border",
       isExecuting && "border-primary ring-4 ring-primary/20 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105 z-50"
     )}>
@@ -171,24 +172,18 @@ export const ActionNode = memo((props: NodeProps) => {
         {actionType === 'MoveTo' && (
           <div className="space-y-2">
             <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground block mb-0.5">X</label>
-                <input
-                  type="number"
-                  className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
-                  value={(payload as { x: number }).x}
-                  onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
-                />
-              </div>
-              <div className="flex-1">
-                <label className="text-[10px] text-muted-foreground block mb-0.5">Y</label>
-                <input
-                  type="number"
-                  className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
-                  value={(payload as { y: number }).y}
-                  onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
-                />
-              </div>
+              <NumberInput
+                label="X"
+                value={(payload as { x: number }).x}
+                onChange={(val) => handleChange('x', val)}
+                className="flex-1"
+              />
+              <NumberInput
+                label="Y"
+                value={(payload as { y: number }).y}
+                onChange={(val) => handleChange('y', val)}
+                className="flex-1"
+              />
             </div>
             {/* 取坐标按钮 */}
             <button
@@ -285,15 +280,11 @@ export const ActionNode = memo((props: NodeProps) => {
         )}
 
         {actionType === 'Wait' && (
-           <div className="flex items-center gap-2">
-              <input
-                type="number"
-                className="w-full bg-background border border-border rounded px-2 py-1 text-right font-mono"
-                value={(payload as { ms: number }).ms}
-                onChange={(e) => handleChange('ms', parseInt(e.target.value) || 0)}
-              />
-              <span className="text-muted-foreground">ms</span>
-           </div>
+           <NumberInput
+              value={(payload as { ms: number }).ms}
+              onChange={(val) => handleChange('ms', val)}
+              className="flex-1"
+           />
         )}
 
       </div>
