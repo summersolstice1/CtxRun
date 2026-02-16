@@ -75,7 +75,6 @@ export async function fetchFromMirrors<T>(
   try {
     return await Promise.any(promises);
   } catch (error) {
-    console.error('[Network] All mirror sources failed:', error);
     throw new Error('Failed to fetch resource from any available mirror.');
   }
 }

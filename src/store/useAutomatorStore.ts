@@ -115,7 +115,6 @@ export const useAutomatorStore = create<AutomatorState>()(
             }
           });
         } catch (e) {
-          console.error("Failed to start workflow:", e);
         }
       },
 
@@ -123,7 +122,6 @@ export const useAutomatorStore = create<AutomatorState>()(
         try {
           await invoke(`${PLUGIN_PREFIX}stop_workflow`);
         } catch (e) {
-          console.error("Failed to stop workflow:", e);
         }
       },
 
@@ -150,7 +148,6 @@ export const useAutomatorStore = create<AutomatorState>()(
 
             set({ isPicking: false });
           } catch (e) {
-            console.error("Failed to pick location:", e);
             set({ isPicking: false });
           }
         }, 3000);

@@ -141,7 +141,6 @@ export const useContextStore = create<ContextState>()(
             set({ projectIgnore: DEFAULT_PROJECT_IGNORE });
           }
         } catch (e) {
-          console.error('Failed to load project config from DB:', e);
           set({ projectIgnore: DEFAULT_PROJECT_IGNORE });
         }
       },
@@ -162,7 +161,7 @@ export const useContextStore = create<ContextState>()(
 
           if (state.projectRoot) {
             invoke('save_project_config', { path: state.projectRoot, config: newProjectIgnore })
-              .catch(err => console.error('Failed to save config to DB:', err));
+              .catch(() => {});
           }
 
           return { projectIgnore: newProjectIgnore };
@@ -172,7 +171,7 @@ export const useContextStore = create<ContextState>()(
       resetProjectIgnore: () => set((state) => {
         if (state.projectRoot) {
           invoke('save_project_config', { path: state.projectRoot, config: DEFAULT_PROJECT_IGNORE })
-            .catch(err => console.error('Failed to save config to DB:', err));
+            .catch(() => {});
         }
         return { projectIgnore: DEFAULT_PROJECT_IGNORE };
       }),

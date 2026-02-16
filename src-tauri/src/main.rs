@@ -55,7 +55,7 @@ fn ensure_main_window(app: &AppHandle) {
             Ok(w) => {
                 let _ = w.set_focus();
             }
-            Err(e) => eprintln!("Failed to recreate main window: {}", e),
+            Err(_) => {}
         }
     }}
 }

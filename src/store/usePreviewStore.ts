@@ -22,11 +22,9 @@ export const usePreviewStore = create<PreviewState>((set) => ({
     set({ isOpen: true, isLoading: true, error: null, activeFile: null });
 
     try {
-      // 调用我们在 Rust 后端写的 hyperview::get_file_meta
       const meta = await invoke<FileMeta>('get_file_meta', { path });
       set({ activeFile: meta, isLoading: false });
     } catch (err: any) {
-      console.error("Preview failed:", err);
       set({ error: String(err), isLoading: false });
     }
   },

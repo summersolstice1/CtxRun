@@ -48,8 +48,6 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
                     let _ = app.emit("automator:status", true);
 
                     engine::run_workflow_task(app.clone(), workflow, state.is_running.clone());
-                } else {
-                    eprintln!("[Automator] No active workflow found.");
                 }
             }
         }

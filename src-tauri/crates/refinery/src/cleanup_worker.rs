@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::{mpsc, Mutex};
-use tauri::{AppHandle, Runtime}; // 引入 Runtime
+use tauri::{AppHandle, Runtime};
 use serde::{Deserialize, Serialize};
 
 const SCAN_INTERVAL_SECS: u64 = 3600;
@@ -39,7 +39,6 @@ impl CleanupWorker {
         (Self { config, rx }, tx)
     }
 
-    // 核心修复：添加 <R: Runtime>
     pub async fn run<R: Runtime>(mut self, app: AppHandle<R>) {
         loop {
             tokio::select! {
@@ -53,7 +52,6 @@ impl CleanupWorker {
         }
     }
 
-    // 核心修复：添加 <R: Runtime>
     async fn check_and_cleanup<R: Runtime>(&self, app: &AppHandle<R>) {
         let config = self.config.lock().await.clone();
         if !config.enabled { return; }

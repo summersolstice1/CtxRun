@@ -184,10 +184,6 @@ function DnDFlow() {
       alert(getText('automator', 'needStartPoint', language));
       return;
     }
-
-    console.log("开始解析图结构工作流...");
-
-    // 3. 构建图结构
     const graphNodes: Record<string, WorkflowNode> = {};
 
     for (const node of nodes) {
@@ -259,10 +255,6 @@ function DnDFlow() {
       nodes: graphNodes,
       startNodeId: firstEdge.target,
     };
-
-    console.log("图结构解析完成:", workflowGraph);
-
-    // 提取节点执行顺序用于 UI 高亮
     const runIds: string[] = [];
     const visited = new Set<string>();
     let currentId: string | undefined = workflowGraph.startNodeId;
@@ -282,20 +274,15 @@ function DnDFlow() {
       }
     }
     setExecutingNodeIds(runIds);
-
-    // 5. 调用后端执行
     const { invoke } = await import('@tauri-apps/api/core');
     try {
       await invoke('plugin:ctxrun-plugin-automator|execute_workflow_graph', {
         graph: workflowGraph
       });
     } catch (error) {
-      console.error('执行失败:', error);
       alert(getText('automator', 'executionFailed', language, { error: String(error) }));
     }
   };
-
-  // --- 3. 动态高亮逻辑 ---
   const processedNodes = useMemo(() => {
     return nodes.map((node) => {
         const isActive = isRunning && executingNodeIds[currentStepIndex] === node.id;
@@ -308,7 +295,6 @@ function DnDFlow() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-       {/* 顶部栏 */}
       <div className="h-14 border-b border-border flex items-center px-4 justify-between bg-secondary/5 shrink-0 z-10">
          <div className="flex items-center gap-3">
             <h2 className="font-semibold text-foreground">{getText('automator', 'designerTitle', language)}</h2>
@@ -322,15 +308,7 @@ function DnDFlow() {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* 左侧面板 */}
         <ActionPalette />
-        
-        {/* 
-            核心修复点：
-            1. 使用 ref={reactFlowWrapper} 获取 DOM 边界
-            2. 将 onDrop 和 onDragOver 放在这个 div 上
-            3. 确保这个 div 有宽高 (flex-1 h-full)
-        */}
         <div className="flex-1 h-full relative bg-secondary/5" ref={reactFlowWrapper}>
             <ReactFlow
                 nodes={processedNodes}
@@ -341,8 +319,7 @@ function DnDFlow() {
                 onDrop={onDrop}
                 onDragOver={onDragOver}
                 nodeTypes={nodeTypes}
-                proOptions={{ hideAttribution: true }} 
-                // --- 新增：当节点被删除时，自动清理相关的连线 ---
+                proOptions={{ hideAttribution: true }}
                 onNodesDelete={(deletedNodes) => {
                     const deletedIds = new Set(deletedNodes.map(n => n.id));
                     setEdges(eds => eds.filter(e => !deletedIds.has(e.source) && !deletedIds.has(e.target)));
@@ -367,7 +344,6 @@ function DnDFlow() {
   );
 }
 
-// 3. 根组件：Provider 包裹
 export function AutomatorView() {
   return (
     <ReactFlowProvider>

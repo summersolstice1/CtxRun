@@ -42,45 +42,15 @@ pub async fn get_mouse_position() -> Result<(i32, i32), String> {
 
 #[tauri::command]
 pub async fn get_pixel_color(x: i32, y: i32) -> Result<String, String> {
-    // 使用 tauri::async_runtime::spawn_blocking
-    // 因为屏幕截图通常是阻塞操作，不应阻塞 Tauri 的异步运行时线程
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        screen::get_color_at(x, y)
-    }).await
-    .map_err(|e| format!("Task join error: {}", e))?; // 处理线程错误
-
-    match result {
-        Ok(hex) => Ok(hex),
-        Err(e) => Err(format!("Failed to get color: {}", e)) // 处理业务错误
-    }
-}
-
-/// 调试命令：获取所有屏幕信息
-#[tauri::command]
-pub async fn get_screens_info() -> Result<Vec<screen::ScreenInfo>, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        screen::get_all_screens_info()
-    }).await
-    .map_err(|e| format!("Task join error: {}", e))?
-    .map_err(|e| format!("Failed to get screens info: {}", e))
-}
-
-/// 调试命令：测试取色功能（带详细日志）
-#[tauri::command]
-pub async fn test_get_pixel_color(x: i32, y: i32) -> Result<String, String> {
-    eprintln!("[TestColor] Testing color pick at ({}, {})", x, y);
-
     let result = tauri::async_runtime::spawn_blocking(move || {
         screen::get_color_at(x, y)
     }).await
     .map_err(|e| format!("Task join error: {}", e))?;
 
-    match &result {
-        Ok(color) => eprintln!("[TestColor] Success: {}", color),
-        Err(e) => eprintln!("[TestColor] Failed: {}", e),
+    match result {
+        Ok(hex) => Ok(hex),
+        Err(e) => Err(format!("Failed to get color: {}", e))
     }
-
-    result.map_err(|e| format!("Failed to get color: {}", e))
 }
 
 #[tauri::command]

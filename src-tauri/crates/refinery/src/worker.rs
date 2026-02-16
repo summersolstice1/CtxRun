@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::LazyLock;
-use tauri::{AppHandle, Emitter, Manager, Runtime}; // 引入 Runtime
+use tauri::{AppHandle, Emitter, Manager, Runtime};
 use clipboard_rs::{
     Clipboard, ClipboardContext, ClipboardHandler,
     ClipboardWatcher, ClipboardWatcherContext, ContentFormat,
@@ -14,8 +14,8 @@ use tokio::sync::mpsc;
 use crossbeam_channel::{bounded, Sender};
 use x_win::{get_active_window, get_browser_url};
 
-use ctxrun_db::DbState; // 修正引用
-use super::models::{RefineryKind, RefineryMetadata}; // 注意 model -> models
+use ctxrun_db::DbState;
+use super::models::{RefineryKind, RefineryMetadata};
 use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
 
 pub static PASTING_FLAG: LazyLock<Arc<AtomicBool>> =
@@ -310,7 +310,6 @@ pub fn init_listener<R: Runtime>(app: AppHandle<R>, cleanup_sender: Option<mpsc:
 
     thread::spawn(move || {
         thread::sleep(Duration::from_secs(1));
-        println!("[Refinery] Starting Clipboard Producer...");
 
         let manager = ClipboardWatcherContext::new();
         match manager {

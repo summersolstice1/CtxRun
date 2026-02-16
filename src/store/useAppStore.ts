@@ -186,11 +186,11 @@ export const useAppStore = create<AppState>()(
       }),
       setSpotlightShortcut: (shortcut) => {
         set({ spotlightShortcut: shortcut });
-        invoke('refresh_shortcuts').catch(err => console.error("Failed to refresh shortcuts:", err));
+        invoke('refresh_shortcuts').catch(() => {});
       },
       setAutomatorShortcut: (shortcut) => {
         set({ automatorShortcut: shortcut });
-        invoke('refresh_shortcuts').catch(err => console.error("Failed to refresh shortcuts:", err));
+        invoke('refresh_shortcuts').catch(() => {});
       },
       setRestReminder: (config) => set((state) => ({
         restReminder: { ...state.restReminder, ...config }

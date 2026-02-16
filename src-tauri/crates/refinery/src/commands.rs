@@ -211,7 +211,7 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
     for path_str in files_to_delete {
         let path = std::path::Path::new(&path_str);
         if path.exists() {
-            let _ = std::fs::remove_file(path).map_err(|e| println!("[Refinery] Failed to delete image file: {} - {}", path_str, e));
+            let _ = std::fs::remove_file(path);
         }
     }
     Ok(deleted_count)
@@ -320,7 +320,6 @@ pub async fn update_cleanup_config<R: Runtime>(
         let _ = manual_cleanup(app, state).await;
     }
 
-    println!("[Refinery Cleanup] Config synced and check performed.");
     Ok(())
 }
 #[tauri::command]
@@ -360,9 +359,7 @@ pub fn execute_count_cleanup<R: Runtime>(app: &AppHandle<R>, max_count: u32, kee
         .filter_map(|r| r.ok())
         .collect();
     if ids.is_empty() { return Ok(0); }
-    let deleted_count = delete_items_internal(&conn, &ids)?;
-    println!("[Refinery Cleanup] Deleted {} items", deleted_count);
-    Ok(deleted_count)
+    delete_items_internal(&conn, &ids)
 }
 
 pub fn execute_time_cleanup<R: Runtime>(app: &AppHandle<R>, days: u32, keep_pinned: bool) -> Result<usize, String> {

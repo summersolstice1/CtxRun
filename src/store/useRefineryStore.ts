@@ -121,11 +121,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
     set({ _unlistenFns: [unlistenNewEntry, unlistenUpdate] });
 
-    // --- 核心修复：启动时将 localStorage 中的配置推送到 Rust 后端 ---
-    // 从持久化存储中获取当前的清理配置（根据你实际的存储结构调整）
-    // 如果你用了 Zustand 的 persist，配置就在当前 state 里
     try {
-        // 这里需要确保获取的是最新的 persisted state
         const refinerySettings = useAppStore.getState().refinerySettings;
         const configToSync = {
             enabled: refinerySettings.enabled,
@@ -140,7 +136,6 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
             config: configToSync
         });
     } catch (e) {
-        console.error("Failed to sync cleanup config to Rust", e);
     }
 
     await get().loadHistory(true);
