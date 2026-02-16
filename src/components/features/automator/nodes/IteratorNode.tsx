@@ -2,6 +2,8 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAppStore } from '@/store/useAppStore';
+import { getText } from '@/lib/i18n';
 
 interface IteratorNodeData {
   payload: { targetCount: number };
@@ -12,6 +14,10 @@ interface IteratorNodeData {
 export const IteratorNode = memo((props: NodeProps) => {
   const data = props.data as unknown as IteratorNodeData;
   const { payload, onChange, isExecuting } = data;
+
+  const { language } = useAppStore();
+
+  const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
 
   const handleChange = (val: string) => {
     onChange({ targetCount: Math.max(1, parseInt(val) || 1) });
@@ -25,13 +31,13 @@ export const IteratorNode = memo((props: NodeProps) => {
     )}>
       <div className="bg-blue-500/10 text-blue-600 px-3 py-2 text-[10px] font-bold border-b border-blue-500/20 flex items-center gap-2 rounded-t-lg">
         <Repeat size={12} />
-        <span>LOOP ITERATOR</span>
+        <span>{t('loopIteratorNodeLabel')}</span>
         {isExecuting && <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full animate-ping" />}
       </div>
 
       <div className="p-3 space-y-2 nodrag">
         <div>
-          <label className="text-[9px] text-muted-foreground block mb-1">重复次数 (Target Count)</label>
+          <label className="text-[9px] text-muted-foreground block mb-1">{t('targetCount')}</label>
           <input
             type="number"
             className="w-full bg-background border border-border rounded px-2 py-1 text-center font-mono text-sm"
@@ -44,10 +50,10 @@ export const IteratorNode = memo((props: NodeProps) => {
         <div className="flex justify-between text-[9px] font-semibold pt-1">
           <div className="flex items-center gap-1 text-red-500">
             <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span>EXIT ←</span>
+            <span>← {t('exit')}</span>
           </div>
           <div className="flex items-center gap-1 text-green-500">
-            <span>LOOP →</span>
+            <span>{t('loop')} →</span>
             <div className="w-2 h-2 rounded-full bg-green-500" />
           </div>
         </div>

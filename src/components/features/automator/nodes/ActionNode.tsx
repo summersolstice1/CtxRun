@@ -4,6 +4,8 @@ import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, 
 import { cn } from '@/lib/utils';
 import { AutomatorAction, MouseButton } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
+import { useAppStore } from '@/store/useAppStore';
+import { getText } from '@/lib/i18n';
 
 const ICONS: Record<AutomatorAction['type'], any> = {
   'MoveTo': Move,
@@ -17,16 +19,17 @@ const ICONS: Record<AutomatorAction['type'], any> = {
   'Iterate': Repeat,
 };
 
-const TITLES: Record<AutomatorAction['type'], string> = {
-  'MoveTo': 'Move Mouse',
-  'Click': 'Click',
-  'DoubleClick': 'Double Click',
-  'Type': 'Input Text',
-  'KeyPress': 'Press Key',
-  'Wait': 'Wait',
-  'Scroll': 'Scroll',
-  'CheckColor': 'Check Color',
-  'Iterate': 'Loop Iterator',
+// Title key mapping for i18n
+const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
+  'MoveTo': 'moveTo',
+  'Click': 'clickLabel',
+  'DoubleClick': 'doubleClickLabel',
+  'Type': 'type',
+  'KeyPress': 'keyPress',
+  'Wait': 'wait',
+  'Scroll': 'scroll',
+  'CheckColor': 'checkColorLabel',
+  'Iterate': 'loopIteratorLabel',
 };
 
 interface ActionNodeData {
@@ -44,8 +47,10 @@ export const ActionNode = memo((props: NodeProps) => {
   const payload = data.payload;
   const isExecuting = data.isExecuting;
 
+  const { language } = useAppStore();
+
   const Icon = ICONS[actionType] || MousePointer2;
-  const title = TITLES[actionType] || actionType;
+  const title = getText('automator', TITLE_KEYS[actionType] || actionType, language);
 
   // 取坐标状态（仅用于 MoveTo）
   const [isPickingCoords, setIsPickingCoords] = useState(false);
@@ -78,6 +83,8 @@ export const ActionNode = memo((props: NodeProps) => {
       setIsPickingCoords(false);
     }
   };
+
+  const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
 
   return (
     <div className={cn(
@@ -127,15 +134,15 @@ export const ActionNode = memo((props: NodeProps) => {
                 "bg-primary/10 text-primary hover:bg-primary/20",
                 isPickingCoords && "bg-primary/5 animate-pulse"
               )}
-              title={isPickingCoords ? "移动鼠标到目标位置..." : "点击取坐标 (3秒延迟)"}
+              title={isPickingCoords ? t('pickingCoordsMessage') : t('pickCoordsTooltip')}
             >
               <Crosshair size={12} className={cn(isPickingCoords && "animate-spin")} />
-              <span>{isPickingCoords ? "取坐标中..." : "取坐标"}</span>
+              <span>{isPickingCoords ? t('pickingCoords') : t('pickCoords')}</span>
             </button>
             {/* 取坐标状态提示 */}
             {isPickingCoords && (
               <div className="bg-primary/10 border border-primary/30 rounded px-2 py-1 text-center">
-                <span className="text-[9px] text-primary font-medium">3 秒后取坐标... 移动鼠标到目标位置</span>
+                <span className="text-[9px] text-primary font-medium">{t('pickingCoordsMessage')}</span>
               </div>
             )}
           </div>
@@ -146,7 +153,7 @@ export const ActionNode = memo((props: NodeProps) => {
              <input
                 type="text"
                 className="w-full bg-background border border-border rounded px-2 py-1"
-                placeholder="Text to type..."
+                placeholder={t('textToType')}
                 value={(payload as { text: string }).text}
                 onChange={(e) => handleChange('text', e.target.value)}
               />
@@ -159,9 +166,9 @@ export const ActionNode = memo((props: NodeProps) => {
              value={(payload as { button: MouseButton }).button}
              onChange={(e) => handleChange('button', e.target.value as MouseButton)}
            >
-             <option value="Left">Left Button</option>
-             <option value="Right">Right Button</option>
-             <option value="Middle">Middle</option>
+             <option value="Left">{t('leftButton')}</option>
+             <option value="Right">{t('rightButton')}</option>
+             <option value="Middle">{t('middleButton')}</option>
            </select>
         )}
 

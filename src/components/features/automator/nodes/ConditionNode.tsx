@@ -3,6 +3,8 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Pipette, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
+import { useAppStore } from '@/store/useAppStore';
+import { getText } from '@/lib/i18n';
 
 interface ConditionNodeData {
   payload: { x: number; y: number; expectedHex: string; tolerance: number };
@@ -19,6 +21,10 @@ export const ConditionNode = memo((props: NodeProps) => {
   const payload = data.payload;
   const isExecuting = data.isExecuting;
   const [isPicking, setIsPicking] = useState(false);
+
+  const { language } = useAppStore();
+
+  const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
 
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
@@ -64,7 +70,7 @@ export const ConditionNode = memo((props: NodeProps) => {
         "bg-orange-500/10 text-orange-600 px-3 py-2 text-[10px] font-bold border-b border-orange-500/20 flex items-center gap-2 rounded-t-lg"
       )}>
         <Pipette size={12} />
-        <span>COLOR CONDITION</span>
+        <span>{t('colorCondition')}</span>
         {isExecuting && <div className="ml-auto w-2 h-2 bg-orange-500 rounded-full animate-ping" />}
       </div>
 
@@ -86,7 +92,7 @@ export const ConditionNode = memo((props: NodeProps) => {
                 "hover:bg-black/20 active:bg-black/30",
                 isPicking && "bg-black/10 animate-pulse"
               )}
-              title={isPicking ? "移动鼠标到目标位置..." : "点击取色 (3秒延迟)"}
+              title={isPicking ? t('pickingColor') : t('pickCoordsTooltip')}
             >
               <Crosshair size={14} className={cn("text-white drop-shadow-md", isPicking && "animate-spin")} />
             </button>
@@ -123,7 +129,7 @@ export const ConditionNode = memo((props: NodeProps) => {
             />
           </div>
           <div className="col-span-2">
-            <label className="text-[9px] text-muted-foreground block mb-0.5">容差 (0-255)</label>
+            <label className="text-[9px] text-muted-foreground block mb-0.5">{t('toleranceRange')}</label>
             <input
               type="number"
               className="w-full bg-background border border-border rounded px-1.5 py-1 text-center font-mono text-xs"
@@ -138,7 +144,7 @@ export const ConditionNode = memo((props: NodeProps) => {
         {/* 取色状态提示 */}
         {isPicking && (
           <div className="bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1.5 text-center">
-            <span className="text-[9px] text-orange-600 font-medium">3 秒后取色... 移动鼠标到目标位置</span>
+            <span className="text-[9px] text-orange-600 font-medium">{t('pickingColor')}</span>
           </div>
         )}
 
@@ -146,10 +152,10 @@ export const ConditionNode = memo((props: NodeProps) => {
         <div className="flex justify-between text-[9px] font-semibold pt-1">
           <div className="flex items-center gap-1 text-red-500">
             <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span>FALSE ←</span>
+            <span>← {t('exit')}</span>
           </div>
           <div className="flex items-center gap-1 text-green-500">
-            <span>→ TRUE</span>
+            <span>{t('loop')} →</span>
             <div className="w-2 h-2 rounded-full bg-green-500" />
           </div>
         </div>
