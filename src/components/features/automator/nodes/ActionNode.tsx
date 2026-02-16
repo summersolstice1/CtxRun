@@ -2,45 +2,57 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AutomatorAction, MouseButton } from '@/types/automator';
 
-const ICONS: Record<string, any> = {
+const ICONS: Record<AutomatorAction['type'], any> = {
   'MoveTo': Move,
   'Click': MousePointerClick,
   'DoubleClick': MousePointer2,
   'Type': Type,
   'KeyPress': Keyboard,
   'Wait': Clock,
-  'Scroll': Move
+  'Scroll': Move,
+  'CheckColor': MousePointer2,
 };
 
-const TITLES: Record<string, string> = {
+const TITLES: Record<AutomatorAction['type'], string> = {
   'MoveTo': 'Move Mouse',
   'Click': 'Click',
   'DoubleClick': 'Double Click',
   'Type': 'Input Text',
   'KeyPress': 'Press Key',
   'Wait': 'Wait',
-  'Scroll': 'Scroll'
+  'Scroll': 'Scroll',
+  'CheckColor': 'Check Color',
 };
 
-export const ActionNode = memo(({ data, selected }: NodeProps) => {
-  const actionType = (data as any).actionType as string;
-  const payload = (data as any).payload as any;
-  const isExecuting = (data as any).isExecuting as boolean | undefined;
+interface ActionNodeData {
+  actionType: AutomatorAction['type'];
+  payload: AutomatorAction['payload'];
+  onChange: (payload: AutomatorAction['payload']) => void;
+  isExecuting?: boolean;
+}
+
+export const ActionNode = memo((props: NodeProps) => {
+  const data = props.data as unknown as ActionNodeData;
+  const selected = props.selected;
+
+  const actionType = data.actionType;
+  const payload = data.payload;
+  const isExecuting = data.isExecuting;
 
   const Icon = ICONS[actionType] || MousePointer2;
   const title = TITLES[actionType] || actionType;
 
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
-    ((data as any).onChange as (d: any) => void)(newPayload);
+    data.onChange(newPayload);
   };
 
   return (
     <div className={cn(
       "min-w-[180px] bg-card border rounded-lg shadow-sm transition-all duration-300 text-xs",
       selected ? "border-primary ring-1 ring-primary" : "border-border",
-      // 执行中的酷炫效果
       isExecuting && "border-primary ring-4 ring-primary/20 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105 z-50"
     )}>
       <div className={cn(
@@ -61,8 +73,8 @@ export const ActionNode = memo(({ data, selected }: NodeProps) => {
               <input
                 type="number"
                 className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
-                value={payload.x}
-                onChange={(e) => handleChange('x', parseInt(e.target.value))}
+                value={(payload as { x: number }).x}
+                onChange={(e) => handleChange('x', parseInt(e.target.value) || 0)}
               />
             </div>
             <div>
@@ -70,8 +82,8 @@ export const ActionNode = memo(({ data, selected }: NodeProps) => {
               <input
                 type="number"
                 className="w-full bg-background border border-border rounded px-1 py-0.5 text-center font-mono"
-                value={payload.y}
-                onChange={(e) => handleChange('y', parseInt(e.target.value))}
+                value={(payload as { y: number }).y}
+                onChange={(e) => handleChange('y', parseInt(e.target.value) || 0)}
               />
             </div>
           </div>
@@ -83,7 +95,7 @@ export const ActionNode = memo(({ data, selected }: NodeProps) => {
                 type="text"
                 className="w-full bg-background border border-border rounded px-2 py-1"
                 placeholder="Text to type..."
-                value={payload.text}
+                value={(payload as { text: string }).text}
                 onChange={(e) => handleChange('text', e.target.value)}
               />
           </div>
@@ -92,8 +104,8 @@ export const ActionNode = memo(({ data, selected }: NodeProps) => {
         {(actionType === 'Click' || actionType === 'DoubleClick') && (
            <select
              className="w-full bg-background border border-border rounded px-2 py-1"
-             value={payload.button}
-             onChange={(e) => handleChange('button', e.target.value)}
+             value={(payload as { button: MouseButton }).button}
+             onChange={(e) => handleChange('button', e.target.value as MouseButton)}
            >
              <option value="Left">Left Button</option>
              <option value="Right">Right Button</option>
@@ -106,8 +118,8 @@ export const ActionNode = memo(({ data, selected }: NodeProps) => {
               <input
                 type="number"
                 className="w-full bg-background border border-border rounded px-2 py-1 text-right font-mono"
-                value={payload.ms}
-                onChange={(e) => handleChange('ms', parseInt(e.target.value))}
+                value={(payload as { ms: number }).ms}
+                onChange={(e) => handleChange('ms', parseInt(e.target.value) || 0)}
               />
               <span className="text-muted-foreground">ms</span>
            </div>

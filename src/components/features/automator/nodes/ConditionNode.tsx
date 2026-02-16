@@ -3,13 +3,22 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Pipette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const ConditionNode = memo(({ data, selected }: NodeProps) => {
-  const payload = (data as any).payload as any;
-  const isExecuting = (data as any).isExecuting as boolean | undefined;
+interface ConditionNodeData {
+  payload: { x: number; y: number; expectedHex: string; tolerance: number };
+  onChange: (payload: ConditionNodeData['payload']) => void;
+  isExecuting?: boolean;
+}
+
+export const ConditionNode = memo((props: NodeProps) => {
+  const data = props.data as unknown as ConditionNodeData;
+  const selected = props.selected;
+
+  const payload = data.payload;
+  const isExecuting = data.isExecuting;
 
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
-    ((data as any).onChange as (d: any) => void)(newPayload);
+    data.onChange(newPayload);
   };
 
   return (

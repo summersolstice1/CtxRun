@@ -193,29 +193,51 @@ async fn get_screen_color(x: i32, y: i32) -> Result<String, String> {
 }
 
 /// 颜色匹配函数（带容差）
+/// 使用最大差异法：每个通道的差异都必须在容差范围内
 fn color_match(actual: &str, expected: &str, tolerance: u32) -> bool {
-    // 解析实际颜色
-    let actual_r = u32::from_str_radix(&actual[1..3], 16).unwrap_or(0);
-    let actual_g = u32::from_str_radix(&actual[3..5], 16).unwrap_or(0);
-    let actual_b = u32::from_str_radix(&actual[5..7], 16).unwrap_or(0);
+    // 验证颜色格式
+    if actual.len() != 7 || expected.len() != 7 {
+        return false;
+    }
+    if !actual.starts_with('#') || !expected.starts_with('#') {
+        return false;
+    }
+
+    // 解析实际颜色（使用更好的错误处理）
+    let actual_r = match u32::from_str_radix(&actual[1..3], 16) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+    let actual_g = match u32::from_str_radix(&actual[3..5], 16) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+    let actual_b = match u32::from_str_radix(&actual[5..7], 16) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
 
     // 解析期望颜色
-    let expected_r = u32::from_str_radix(&expected[1..3], 16).unwrap_or(0);
-    let expected_g = u32::from_str_radix(&expected[3..5], 16).unwrap_or(0);
-    let expected_b = u32::from_str_radix(&expected[5..7], 16).unwrap_or(0);
+    let expected_r = match u32::from_str_radix(&expected[1..3], 16) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+    let expected_g = match u32::from_str_radix(&expected[3..5], 16) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
+    let expected_b = match u32::from_str_radix(&expected[5..7], 16) {
+        Ok(v) => v,
+        Err(_) => return false,
+    };
 
-    // 计算每个通道的差异
-    let diff_r = (actual_r as i32 - expected_r as i32).abs() as u32;
-    let diff_g = (actual_g as i32 - expected_g as i32).abs() as u32;
-    let diff_b = (actual_b as i32 - expected_b as i32).abs() as u32;
+    // 计算每个通道的绝对差异
+    let diff_r = (actual_r as i32 - expected_r as i32).unsigned_abs();
+    let diff_g = (actual_g as i32 - expected_g as i32).unsigned_abs();
+    let diff_b = (actual_b as i32 - expected_b as i32).unsigned_abs();
 
-    // 使用欧几里得距离计算颜色差异
-    let distance = ((diff_r * diff_r + diff_g * diff_g + diff_b * diff_b) as f64).sqrt();
-
-    // 容差转换为距离阈值（tolerance 是单通道的最大差异）
-    let max_distance = ((tolerance * tolerance * 3) as f64).sqrt();
-
-    distance <= max_distance
+    // 所有通道的差异都必须在容差范围内
+    diff_r <= tolerance && diff_g <= tolerance && diff_b <= tolerance
 }
 
 /// 执行单个图节点动作

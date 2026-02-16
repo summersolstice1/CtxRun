@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useMemo } from 'react';
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import {
   ReactFlow, Background, Controls,
   useNodesState, useEdgesState, addEdge,
@@ -32,7 +32,10 @@ function DnDFlow() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
-  
+
+  // 本地状态：当前执行的节点 ID 序列
+  const [executingNodeIds, setExecutingNodeIds] = useState<string[]>([]);
+
   // 核心 Hook：坐标转换
   const { screenToFlowPosition } = useReactFlow();
 
@@ -47,6 +50,7 @@ function DnDFlow() {
             ...node,
             data: { ...node.data, isExecuting: false }
         })));
+        setExecutingNodeIds([]);
     }
   }, [isRunning, setNodes]);
 
@@ -244,6 +248,22 @@ function DnDFlow() {
 
     console.log("图结构解析完成:", workflowGraph);
 
+    // 提取节点执行顺序用于 UI 高亮
+    const runIds: string[] = [];
+    const visited = new Set<string>();
+    let currentId: string | undefined = workflowGraph.startNodeId;
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId);
+      runIds.push(currentId);
+      const node: WorkflowNode = graphNodes[currentId];
+      if (node.action.type === 'CheckColor') {
+        currentId = node.trueId || node.falseId || node.nextId;
+      } else {
+        currentId = node.nextId;
+      }
+    }
+    setExecutingNodeIds(runIds);
+
     // 5. 调用后端执行
     const { invoke } = await import('@tauri-apps/api/core');
     try {
@@ -257,17 +277,15 @@ function DnDFlow() {
   };
 
   // --- 3. 动态高亮逻辑 ---
-  // 利用 store 中的 currentStepIndex 实时反馈 UI
   const processedNodes = useMemo(() => {
-    const runIds = (window as any).currentRunIds || [];
     return nodes.map((node) => {
-        const isActive = isRunning && runIds[currentStepIndex] === node.id;
+        const isActive = isRunning && executingNodeIds[currentStepIndex] === node.id;
         return {
             ...node,
             data: { ...node.data, isExecuting: isActive }
         };
     });
-  }, [nodes, isRunning, currentStepIndex]);
+  }, [nodes, isRunning, currentStepIndex, executingNodeIds]);
 
   return (
     <div className="h-full flex flex-col bg-background">
