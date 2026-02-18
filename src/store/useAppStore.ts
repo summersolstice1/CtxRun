@@ -303,6 +303,12 @@ export const useAppStore = create<AppState>()(
     {
       name: 'app-config',
       storage: createJSONStorage(() => fileStorage),
+      onRehydrateStorage: () => (state) => {
+        // Sync language to i18next after rehydration
+        if (state?.language) {
+          i18n.changeLanguage(state.language);
+        }
+      },
       partialize: (state) => ({
         theme: state.theme,
         language: state.language,
