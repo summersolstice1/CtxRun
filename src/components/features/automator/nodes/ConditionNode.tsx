@@ -130,10 +130,10 @@ export const ConditionNode = memo((props: NodeProps) => {
         <div className="flex justify-between text-[9px] font-semibold pt-1">
           <div className="flex items-center gap-1 text-red-500">
             <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span>← {t('exit')}</span>
+            <span>← FALSE</span>
           </div>
           <div className="flex items-center gap-1 text-green-500">
-            <span>{t('loop')} →</span>
+            <span>TRUE →</span>
             <div className="w-2 h-2 rounded-full bg-green-500" />
           </div>
         </div>
