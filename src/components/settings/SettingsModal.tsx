@@ -291,7 +291,7 @@ export function SettingsModal() {
                             label={t('settings.automatorShortcutLabel')}
                             value={automatorShortcut}
                             onChange={setAutomatorShortcut}
-                            tip="推荐: Alt+F1, Ctrl+Shift+A"
+                            tip={t('settings.automatorShortcutTip')}
                           />
                         </div>
 

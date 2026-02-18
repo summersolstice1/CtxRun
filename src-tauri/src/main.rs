@@ -254,7 +254,7 @@ fn main() {
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
 
-            let quit_i = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
+            let quit_i = MenuItem::with_id(app, "quit", "退出/Quit", true, None::<&str>)?;
 
             let menu = Menu::with_items(app, &[&quit_i])?;
 
