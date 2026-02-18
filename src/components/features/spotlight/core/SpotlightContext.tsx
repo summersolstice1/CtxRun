@@ -20,7 +20,7 @@ interface SpotlightContextType {
   toggleMode: () => void;
 
   // 引用
-  inputRef: React.RefObject<HTMLInputElement>;
+  inputRef: React.RefObject<HTMLInputElement | null>;
   focusInput: () => void;
 }
 

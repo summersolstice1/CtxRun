@@ -18,7 +18,7 @@ interface ClockPopoverProps {
   currentTime: Date;
   isOpen: boolean;
   onClose: () => void;
-  triggerRef: React.RefObject<HTMLDivElement>;
+  triggerRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: ClockPopoverProps) {

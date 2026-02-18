@@ -117,8 +117,8 @@ ChatMessageItem.displayName = 'ChatMessageItem';
 interface ChatModeProps {
   messages: ChatMessage[];
   isStreaming: boolean;
-  chatEndRef: React.RefObject<HTMLDivElement>;
-  containerRef: React.RefObject<HTMLDivElement>;
+  chatEndRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
   onScrollPositionChange?: (isAtBottom: boolean) => void;
 }
 
