@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from './SpotlightContext';
 import { useSmartContextMenu } from '@/lib/hooks';
-import { getText } from '@/lib/i18n';
 import { ChatCommandMenu } from './ChatCommandMenu';
 import { Prompt } from '@/types/prompt';
 import { usePromptStore } from '@/store/usePromptStore';
@@ -16,12 +16,13 @@ interface SearchBarProps {
 }
 
 export function SearchBar({ onKeyDown }: SearchBarProps) {
+  const { t } = useTranslation();
   const {
     mode, query, chatInput, searchScope, activeTemplate,
     setQuery, setChatInput, inputRef, setSearchScope, setActiveTemplate, toggleMode
   } = useSpotlight();
 
-  const { language, aiConfig, setAIConfig, savedProviderSettings, searchSettings } = useAppStore();
+  const { aiConfig, setAIConfig, savedProviderSettings, searchSettings } = useAppStore();
   const { chatTemplates } = usePromptStore();
 
   const [menuSelectedIndex, setMenuSelectedIndex] = useState(0);
@@ -225,7 +226,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
       <button
         onClick={toggleMode}
         className="w-6 h-6 flex items-center justify-center relative outline-none group mr-4 cursor-pointer"
-        title={getText('spotlight', 'toggleMode', language)}
+        title={t('spotlight.toggleMode')}
       >
         <SearchIcon
           strokeWidth={1.5}
@@ -271,14 +272,14 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
             style={{ letterSpacing: '-0.02em' }}
             placeholder={
                 mode === 'search'
-                    ? (searchScope === 'global' ? getText('spotlight', 'searchPlaceholder', language) :
+                    ? (searchScope === 'global' ? t('spotlight.searchPlaceholder') :
                        searchScope === 'math' ? "Expression..." :
                        searchScope === 'shell' ? "Shell Command..." :
                        searchScope === 'web' ? "Search..." :
-                       `${getText('spotlight', 'filterPlaceholder', language)}...`)
+                       `${t('spotlight.filterPlaceholder')}...`)
                     : mode === 'chat'
-                        ? (activeTemplate ? "" : getText('spotlight', 'chatPlaceholder', language))
-                        : getText('spotlight', 'clipboardPlaceholder', language)
+                        ? (activeTemplate ? "" : t('spotlight.chatPlaceholder'))
+                        : t('spotlight.clipboardPlaceholder')
             }
             value={mode === 'search' || mode === 'clipboard' ? query : chatInput}
             onChange={mode === 'search' || mode === 'clipboard' ? handleQueryChange : handleChatInputChange}
@@ -297,7 +298,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
 
       <div className="flex items-center gap-2 relative z-10">
          {mode === 'chat' && (
-            <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/50 hover:bg-secondary text-[10px] font-mono font-medium transition-colors border border-border/50 group" title={getText('spotlight', 'currentProvider', language, { provider: aiConfig.providerId })}>
+            <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/50 hover:bg-secondary text-[10px] font-mono font-medium transition-colors border border-border/50 group" title={t('spotlight.currentProvider', { provider: aiConfig.providerId })}>
                 <Zap strokeWidth={2} size={10} className={cn(
                     aiConfig.providerId.toLowerCase().includes('deepseek') ? "text-blue-500" :
                     aiConfig.providerId.toLowerCase().includes('openai') ? "text-green-500" :
@@ -311,7 +312,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
          )}
          <div className="flex items-center gap-2 pointer-events-none opacity-50">
               <span className={cn("px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground transition-colors duration-300", mode === 'chat' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : "")}>TAB</span>
-              {mode === 'search' && query && <span className="px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground">ESC {getText('spotlight', 'clear', language)}</span>}
+              {mode === 'search' && query && <span className="px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground">ESC {t('spotlight.clear')}</span>}
          </div>
       </div>
     </div>

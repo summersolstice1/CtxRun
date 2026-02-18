@@ -1,8 +1,7 @@
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from './SpotlightContext';
-import { getText } from '@/lib/i18n';
 
 interface SpotlightLayoutProps {
   children: ReactNode;
@@ -13,18 +12,18 @@ interface SpotlightLayoutProps {
 
 export function SpotlightLayout({ children, header, resultCount = 0, isStreaming = false }: SpotlightLayoutProps) {
   const { mode } = useSpotlight();
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   // 辅助函数：获取左侧状态文字
   const getStatusText = () => {
     switch (mode) {
       case 'search':
-        return `${resultCount} ${getText('spotlight', 'results', language)}`;
+        return `${resultCount} ${t('spotlight.results')}`;
       case 'clipboard':
-        return getText('spotlight', 'clipboardConsole', language);
+        return t('spotlight.clipboardConsole');
       case 'chat':
       default:
-        return getText('spotlight', 'console', language);
+        return t('spotlight.console');
     }
   };
 
@@ -58,18 +57,18 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
                 {/* 模式 1 & 3：搜索和剪贴板共用类似的导航提示 */}
                 {(mode === 'search' || mode === 'clipboard') ? (
                     <>
-                        <span>{getText('spotlight', 'nav', language)} ↑↓</span>
+                        <span>{t('spotlight.nav')} ↑↓</span>
                         {/* 已移除：Alt + 1~9 Quick Paste 提示 */}
-                        <span>{mode === 'clipboard' ? 'Paste' : getText('spotlight', 'copy', language)} ↵</span>
+                        <span>{mode === 'clipboard' ? 'Paste' : t('spotlight.copy')} ↵</span>
                     </>
                 ) : (
                     /* 模式 2：AI 聊天提示 */
                     <>
-                    <span className={cn(isStreaming && "opacity-30")}>{getText('spotlight', 'clear', language)} Ctrl+K</span>
-                    <span>{getText('spotlight', 'send', language)} ↵</span>
+                    <span className={cn(isStreaming && "opacity-30")}>{t('spotlight.clear')} Ctrl+K</span>
+                    <span>{t('spotlight.send')} ↵</span>
                     </>
                 )}
-                <span>{getText('spotlight', 'close', language)} Esc</span>
+                <span>{t('spotlight.close')} Esc</span>
             </div>
         </div>
       </div>

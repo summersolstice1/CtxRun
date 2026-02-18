@@ -1,13 +1,12 @@
 import { AlertTriangle, Info, XCircle, Check } from 'lucide-react';
 import { useConfirmStore } from '@/store/useConfirmStore';
-import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 export function GlobalConfirmDialog() {
+  const { t } = useTranslation();
   const { isOpen, options, handleConfirm, handleCancel } = useConfirmStore();
-  const { language } = useAppStore();
-  
+
   if (!isOpen) return null;
 
   const isDanger = options.type === 'danger';
@@ -43,7 +42,7 @@ export function GlobalConfirmDialog() {
 
             {isDanger && (
                 <div className="mt-4 p-3 bg-red-500/5 border border-red-500/10 rounded-lg text-xs text-red-500/80">
-                    {getText('common', 'highRiskWarning', language)}
+                    {t('common.highRiskWarning')}
                 </div>
             )}
         </div>

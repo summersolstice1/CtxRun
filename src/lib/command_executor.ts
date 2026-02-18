@@ -5,8 +5,7 @@ import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { join, tempDir } from '@tauri-apps/api/path';
 import { ShellType } from '@/types/prompt';
 import { useConfirmStore } from '@/store/useConfirmStore';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import i18n from '@/i18n/config';
 
 const DANGEROUS_KEYWORDS = [
   'rm ', 'del ', 'remove-item', 'mv ', 'move ', 'format', 'mkfs', '>', 'chmod ', 'chown ', 'icacls '
@@ -25,15 +24,13 @@ const showNotification = async (msg: string, type: 'info' | 'error' = 'info') =>
 };
 
 export async function executeCommand(commandStr: string, shell: ShellType = 'auto', cwd?: string | null) {
-  const language = useAppStore.getState().language;
-
   if (checkCommandRisk(commandStr)) {
     const confirmed = await useConfirmStore.getState().ask({
-        title: getText('executor', 'riskTitle', language),
-        message: getText('executor', 'riskMsg', language, { command: commandStr }),
+        title: i18n.t(`executor.riskTitle`),
+        message: i18n.t(`executor.riskMsg`, { command: commandStr }),
         type: 'danger',
-        confirmText: getText('executor', 'btnExecute', language),
-        cancelText: getText('prompts', 'cancel', language)
+        confirmText: i18n.t(`executor.btnExecute`),
+        cancelText: i18n.t(`prompts.cancel`)
     });
 
     if (!confirmed) return;
@@ -251,7 +248,7 @@ rm "$0"
       await cmd.spawn();
 
     } else {
-      await showNotification(getText('executor', 'unsupported', language), "error");
+      await showNotification(i18n.t('executor.unsupported'), "error");
     }
 
   } catch (e: any) {

@@ -1,7 +1,7 @@
 import { useState, Suspense, lazy } from 'react';
 import { X, Activity, Network, Terminal, Settings2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 // 懒加载子组件
@@ -13,7 +13,8 @@ const NetworkDoctor = lazy(() => import('./tabs/NetworkDoctor').then(module => (
 type TabType = 'dashboard' | 'ports' | 'env' | 'network';
 
 export function SystemMonitorModal() {
-  const { isMonitorOpen, setMonitorOpen, language } = useAppStore();
+  const { isMonitorOpen, setMonitorOpen } = useAppStore();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 
   if (!isMonitorOpen) return null;
@@ -26,7 +27,7 @@ export function SystemMonitorModal() {
         <div className="h-14 px-6 border-b border-border flex items-center justify-between bg-secondary/10 shrink-0 select-none">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <Activity className="text-primary" size={20} />
-            {getText('monitor', 'title', language)}
+            {t('monitor.title')}
           </h2>
           <button
             onClick={() => setMonitorOpen(false)}
@@ -44,25 +45,25 @@ export function SystemMonitorModal() {
               active={activeTab === 'dashboard'} 
               onClick={() => setActiveTab('dashboard')} 
               icon={<Activity size={16} />} 
-              label={getText('monitor', 'navDashboard', language)} 
+              label={t('monitor.navDashboard')} 
             />
             <NavBtn 
               active={activeTab === 'ports'} 
               onClick={() => setActiveTab('ports')} 
               icon={<Network size={16} />} 
-              label={getText('monitor', 'navPorts', language)} 
+              label={t('monitor.navPorts')} 
             />
             <NavBtn 
               active={activeTab === 'env'} 
               onClick={() => setActiveTab('env')} 
               icon={<Terminal size={16} />} 
-              label={getText('monitor', 'navEnv', language)} 
+              label={t('monitor.navEnv')} 
             />
             <NavBtn 
               active={activeTab === 'network'} 
               onClick={() => setActiveTab('network')} 
               icon={<Settings2 size={16} />} 
-              label={getText('monitor', 'navNetwork', language)} 
+              label={t('monitor.navNetwork')} 
             />
           </div>
 

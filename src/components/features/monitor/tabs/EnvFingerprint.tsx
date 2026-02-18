@@ -1,19 +1,18 @@
 import { useState, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { 
-  Terminal, Copy, RefreshCw, Check, Search, 
-  Cpu, Globe, Code2, Layers, Database, Box, 
+import {
+  Terminal, Copy, RefreshCw, Check, Search,
+  Cpu, Globe, Code2, Layers, Database, Box,
   AppWindow, Wrench, Play, Sparkles
 } from 'lucide-react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { useAppStore } from '@/store/useAppStore';
-import { useContextStore } from '@/store/useContextStore'; 
-import { getText } from '@/lib/i18n';
+import { useContextStore } from '@/store/useContextStore';
+import { useTranslation } from 'react-i18next';
 import { EnvReport, ToolInfo, AiContextReport } from '@/types/monitor';
 import { cn } from '@/lib/utils';
 
 export function EnvFingerprint() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const { projectRoot } = useContextStore(); 
   
   const [data, setData] = useState<EnvReport | null>(null);
@@ -96,10 +95,10 @@ export function EnvFingerprint() {
   const handleCopyReport = async () => {
     if (!data) return;
 
-    const reportTitle = getText('spotlight', 'envReport', language);
-    const generatedBy = getText('spotlight', 'generatedBy', language);
-    const systemLabel = getText('monitor', 'envSystem', language);
-    const sdkLabel = getText('monitor', 'envSDKs', language);
+    const reportTitle = t('spotlight.envReport');
+    const generatedBy = t('spotlight.generatedBy');
+    const systemLabel = t('monitor.envSystem');
+    const sdkLabel = t('monitor.envSDKs');
 
     let report = `## ${reportTitle}\n${generatedBy} - ${new Date().toLocaleString()}\n\n`;
 
@@ -110,7 +109,7 @@ export function EnvFingerprint() {
     }
 
     const printSection = (key: string, list: ToolInfo[]) => {
-      const title = getText('monitor', key, language);
+      const title = t(`monitor.${key}`);
       const valid = list.filter(i => i.version !== 'Not Found' && i.version !== 'Not Installed');
       if (valid.length === 0) return;
       report += `### ${title}\n`;
@@ -150,9 +149,9 @@ export function EnvFingerprint() {
         <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-[0_0_30px_rgba(59,130,246,0.2)]">
            <Wrench size={40} />
         </div>
-        <h2 className="text-xl font-bold mb-2 text-foreground">{getText('monitor', 'navEnv', language)}</h2>
+        <h2 className="text-xl font-bold mb-2 text-foreground">{t('monitor.navEnv')}</h2>
         <p className="text-muted-foreground text-center max-w-md mb-8 text-sm leading-relaxed">
-           {getText('monitor', 'envScanDesc', language)}
+           {t('monitor.envScanDesc')}
         </p>
         
         <div className="flex flex-col gap-3 w-full max-w-xs">
@@ -161,7 +160,7 @@ export function EnvFingerprint() {
               className="group relative flex items-center justify-center gap-3 px-8 py-3 bg-primary text-primary-foreground rounded-full font-semibold shadow-lg hover:shadow-primary/25 hover:scale-105 transition-all active:scale-95"
             >
               {loading ? <RefreshCw size={20} className="animate-spin" /> : <Play size={20} className="fill-current" />}
-              <span>{getText('monitor', 'envStartScan', language)}</span>
+              <span>{t('monitor.envStartScan')}</span>
             </button>
 
             {/* AI Context 快捷入口 */}
@@ -174,7 +173,7 @@ export function EnvFingerprint() {
                 )}
             >
                 {isAiLoading ? <RefreshCw size={16} className="animate-spin" /> : aiCopied ? <Check size={16} /> : <Sparkles size={16} />}
-                <span>{aiCopied ? getText('monitor', 'contextCopied', language) : getText('monitor', 'copyAiContext', language)}</span>
+                <span>{aiCopied ? t('monitor.contextCopied') : t('monitor.copyAiContext')}</span>
             </button>
         </div>
       </div>
@@ -223,7 +222,7 @@ export function EnvFingerprint() {
           <div className="flex justify-between items-center">
              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Globe size={16} />
-                <span>{getText('monitor', 'envFingerprint', language)}</span>
+                <span>{t('monitor.envFingerprint')}</span>
              </div>
              <div className="flex gap-2">
                 {/* AI Context 按钮 (Toolbar 版) */}
@@ -236,26 +235,26 @@ export function EnvFingerprint() {
                             ? "bg-green-500/10 text-green-600 border-green-500/20"
                             : "bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 border-purple-500/20"
                     )}
-                    title={getText('monitor', 'aiContextTooltip', language)}
+                    title={t('monitor.aiContextTooltip')}
                 >
                     {isAiLoading ? <RefreshCw size={14} className="animate-spin" /> : aiCopied ? <Check size={14} /> : <Sparkles size={14} />}
-                    {aiCopied ? getText('monitor', 'contextCopied', language) : getText('monitor', 'copyAiContext', language)}
+                    {aiCopied ? t('monitor.contextCopied') : t('monitor.copyAiContext')}
                 </button>
 
                 <div className="w-px h-6 bg-border mx-1" />
 
-                <button 
+                <button
                     onClick={handleCopyReport}
                     className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded-lg text-xs font-medium transition-colors border border-transparent hover:border-border"
                 >
                     {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                    {getText('monitor', 'copyReport', language)}
+                    {t('monitor.copyReport')}
                 </button>
                 <button
                     onClick={fetchData}
                     disabled={loading}
                     className="p-1.5 hover:bg-secondary rounded-lg transition-colors disabled:opacity-50 border border-transparent hover:border-border"
-                    title={getText('monitor', 'envRescan', language)}
+                    title={t('monitor.envRescan')}
                 >
                     <RefreshCw size={16} className={cn(loading && "animate-spin")} />
                 </button>
@@ -264,9 +263,9 @@ export function EnvFingerprint() {
 
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-            <input 
+            <input
                 className="w-full bg-secondary/30 border border-border rounded-lg pl-9 pr-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
-                placeholder={getText('monitor', 'envToolFilter', language)}
+                placeholder={t('monitor.envToolFilter')}
                 value={filter}
                 onChange={e => setFilter(e.target.value)}
             />
@@ -278,7 +277,7 @@ export function EnvFingerprint() {
          {loading && !filteredData && (
              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
                  <RefreshCw size={24} className="animate-spin text-primary" />
-                 <span className="text-sm">{getText('monitor', 'envScanning', language)}</span>
+                 <span className="text-sm">{t('monitor.envScanning')}</span>
              </div>
          )}
 
@@ -287,7 +286,7 @@ export function EnvFingerprint() {
                 {/* 1. System Info */}
                 {filteredData.system && (
                     <div className="bg-gradient-to-br from-secondary/50 to-background border border-border p-4 rounded-xl shadow-sm mb-6">
-                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2"><Cpu size={14}/> {getText('monitor', 'envSystem', language)}</h3>
+                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2"><Cpu size={14}/> {t('monitor.envSystem')}</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                             {Object.entries(filteredData.system).map(([k, v]) => (
                                 <div key={k} className="flex flex-col">
@@ -300,21 +299,21 @@ export function EnvFingerprint() {
                 )}
 
                 {/* 2. Tool Sections */}
-                <Section title={getText('monitor', 'envBinaries', language)} icon={Terminal} items={filteredData.binaries} />
-                <Section title={getText('monitor', 'envLanguages', language)} icon={Code2} items={filteredData.languages} />
-                <Section title={getText('monitor', 'envBrowsers', language)} icon={Globe} items={filteredData.browsers} />
-                <Section title={getText('monitor', 'envIDEs', language)} icon={AppWindow} items={filteredData.ides} />
-                <Section title={getText('monitor', 'envDatabases', language)} icon={Database} items={filteredData.databases} />
-                <Section title={getText('monitor', 'envVirtualization', language)} icon={Layers} items={filteredData.virtualization} />
-                <Section title={getText('monitor', 'envNpmPackages', language)} icon={Box} items={filteredData.npm_packages} />
-                <Section title={getText('monitor', 'envManagers', language)} icon={Wrench} items={filteredData.managers} />
-                <Section title={getText('monitor', 'envUtilities', language)} icon={Terminal} items={filteredData.utilities} />
+                <Section title={t('monitor.envBinaries')} icon={Terminal} items={filteredData.binaries} />
+                <Section title={t('monitor.envLanguages')} icon={Code2} items={filteredData.languages} />
+                <Section title={t('monitor.envBrowsers')} icon={Globe} items={filteredData.browsers} />
+                <Section title={t('monitor.envIDEs')} icon={AppWindow} items={filteredData.ides} />
+                <Section title={t('monitor.envDatabases')} icon={Database} items={filteredData.databases} />
+                <Section title={t('monitor.envVirtualization')} icon={Layers} items={filteredData.virtualization} />
+                <Section title={t('monitor.envNpmPackages')} icon={Box} items={filteredData.npm_packages} />
+                <Section title={t('monitor.envManagers')} icon={Wrench} items={filteredData.managers} />
+                <Section title={t('monitor.envUtilities')} icon={Terminal} items={filteredData.utilities} />
 
                 {/* 3. SDKs */}
                 {Object.keys(filteredData.sdks).length > 0 && (
                     <div className="mb-6">
                         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-border/50 pb-1">
-                            <Layers size={14} /> {getText('monitor', 'envSDKs', language)}
+                            <Layers size={14} /> {t('monitor.envSDKs')}
                         </h3>
                         <div className="grid grid-cols-1 gap-3">
                             {Object.entries(filteredData.sdks).map(([name, versions]) => (
@@ -336,7 +335,7 @@ export function EnvFingerprint() {
                 {/* Empty State for Filter */}
                 {Object.keys(filteredData.system || {}).length === 0 && filteredData.binaries.length === 0 && (
                     <div className="text-center py-10 text-muted-foreground opacity-50">
-                        {getText('monitor', 'envNoMatches', language)}
+                        {t('monitor.envNoMatches')}
                     </div>
                 )}
             </div>

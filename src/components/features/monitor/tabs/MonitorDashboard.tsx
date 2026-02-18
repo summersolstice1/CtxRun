@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Cpu, HardDrive, Zap, User, ShieldCheck, XCircle } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
 import { useConfirmStore } from '@/store/useConfirmStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { SystemMetrics, ProcessInfo } from '@/types/monitor';
 import { Toast, ToastType } from '@/components/ui/Toast';
 
 export function MonitorDashboard() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const confirm = useConfirmStore();
   
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
@@ -60,18 +59,18 @@ export function MonitorDashboard() {
       if (proc.is_system) return;
 
       const confirmed = await confirm.ask({
-          title: getText('monitor', 'confirmKill', language),
-          message: getText('monitor', 'killMsg', language, { name: proc.name, pid: proc.pid.toString() }),
+          title: t('monitor.confirmKill'),
+          message: t('monitor.killMsg', { name: proc.name, pid: proc.pid.toString() }),
           type: 'danger',
-          confirmText: getText('monitor', 'kill', language),
-          cancelText: getText('prompts', 'cancel', language)
+          confirmText: t('monitor.kill'),
+          cancelText: t('prompts.cancel')
       });
 
       if (!confirmed) return;
 
       try {
           await invoke('kill_process', { pid: proc.pid });
-          setToast({ show: true, msg: getText('monitor', 'killSuccess', language), type: 'success' });
+          setToast({ show: true, msg: t('monitor.killSuccess'), type: 'success' });
           fetchProcesses(); // 立即刷新
       } catch (err: any) {
           setToast({ show: true, msg: `Error: ${err}`, type: 'error' });
@@ -85,15 +84,15 @@ export function MonitorDashboard() {
       <div className="grid grid-cols-2 gap-4 shrink-0">
         <MetricCard
           icon={<Cpu className="text-blue-500" />}
-          label={getText('monitor', 'cpu', language)}
+          label={t('monitor.cpu')}
           value={`${metrics?.cpu_usage.toFixed(1) || 0}%`}
-          subValue={getText('monitor', 'totalLoad', language)}
+          subValue={t('monitor.totalLoad')}
           percent={metrics?.cpu_usage || 0}
           color="bg-blue-500"
         />
-        <MetricCard 
-          icon={<HardDrive className="text-purple-500" />} 
-          label={getText('monitor', 'memory', language)} 
+        <MetricCard
+          icon={<HardDrive className="text-purple-500" />}
+          label={t('monitor.memory')} 
           value={metrics ? formatBytes(metrics.memory_used) : '...'} 
           subValue={metrics ? `/ ${formatBytes(metrics.memory_total)}` : ''}
           percent={metrics ? (metrics.memory_used / metrics.memory_total) * 100 : 0}
@@ -106,10 +105,10 @@ export function MonitorDashboard() {
         <div className="px-4 py-3 border-b border-border/50 flex justify-between items-center bg-secondary/10">
            <h3 className="font-semibold text-sm flex items-center gap-2">
              <Zap size={16} className="text-orange-500" />
-             {getText('monitor', 'topProcesses', language)}
+             {t('monitor.topProcesses')}
            </h3>
            <span className="text-[10px] text-muted-foreground bg-secondary px-2 py-0.5 rounded">
-             {getText('monitor', 'autoRefresh', language)}
+             {t('monitor.autoRefresh')}
            </span>
         </div>
         
@@ -117,11 +116,11 @@ export function MonitorDashboard() {
            <table className="w-full text-left text-xs">
              <thead className="bg-secondary/30 text-muted-foreground font-medium sticky top-0 backdrop-blur-md z-10">
                <tr>
-                 <th className="px-4 py-2 w-16">{getText('monitor', 'procPid', language)}</th>
-                 <th className="px-4 py-2">{getText('monitor', 'procName', language)}</th>
-                 <th className="px-4 py-2 w-24 hidden sm:table-cell">{getText('monitor', 'procUser', language)}</th>
-                 <th className="px-4 py-2 w-20 text-right">{getText('monitor', 'procCpu', language)}</th>
-                 <th className="px-4 py-2 w-24 text-right">{getText('monitor', 'procMem', language)}</th>
+                 <th className="px-4 py-2 w-16">{t('monitor.procPid')}</th>
+                 <th className="px-4 py-2">{t('monitor.procName')}</th>
+                 <th className="px-4 py-2 w-24 hidden sm:table-cell">{t('monitor.procUser')}</th>
+                 <th className="px-4 py-2 w-20 text-right">{t('monitor.procCpu')}</th>
+                 <th className="px-4 py-2 w-24 text-right">{t('monitor.procMem')}</th>
                  <th className="px-4 py-2 w-10"></th>
                </tr>
              </thead>
@@ -133,7 +132,7 @@ export function MonitorDashboard() {
                       <div className="flex items-center gap-2 max-w-[180px]">
                         <span className="truncate" title={proc.name}>{proc.name}</span>
                         {proc.is_system && (
-                            <div title={getText('monitor', 'systemProcess', language)}>
+                            <div title={t('monitor.systemProcess')}>
                                 <ShieldCheck size={12} className="text-green-500 shrink-0" />
                             </div>
                         )}
@@ -149,10 +148,10 @@ export function MonitorDashboard() {
                    <td className="px-4 py-2 text-right font-mono text-purple-500">{formatBytes(proc.memory)}</td>
                    <td className="px-4 py-2 text-center">
                       {!proc.is_system && (
-                          <button 
+                          <button
                             onClick={() => handleKillProcess(proc)}
                             className="p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded transition-colors opacity-0 group-hover:opacity-100"
-                            title={getText('monitor', 'kill', language)}
+                            title={t('monitor.kill')}
                           >
                               <XCircle size={14} />
                           </button>

@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { Globe, RefreshCw, Signal, AlertTriangle, CheckCircle2, XCircle, Activity } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { NetDiagResult } from '@/types/monitor';
 import { cn } from '@/lib/utils';
 
 export function NetworkDoctor() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const [results, setResults] = useState<NetDiagResult[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,52 +37,52 @@ export function NetworkDoctor() {
                 <Globe size={20} />
             </div>
             <div>
-                <h3 className="font-semibold text-sm">{getText('monitor', 'navNetwork', language)}</h3>
-                <p className="text-xs text-muted-foreground mt-0.5 opacity-80">{getText('monitor', 'netCheckDesc', language)}</p>
+                <h3 className="font-semibold text-sm">{t('monitor.navNetwork')}</h3>
+                <p className="text-xs text-muted-foreground mt-0.5 opacity-80">{t('monitor.netCheckDesc')}</p>
             </div>
          </div>
-         <button 
+         <button
             onClick={runDiagnosis}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 bg-background border border-border shadow-sm hover:bg-secondary rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
          >
             <RefreshCw size={14} className={cn(loading && "animate-spin")} />
-            {loading ? getText('monitor', 'diagnosing', language) : getText('monitor', 'diagnose', language)}
+            {loading ? t('monitor.diagnosing') : t('monitor.diagnose')}
          </button>
       </div>
 
       {/* List Container */}
       <div className="flex-1 bg-card border border-border rounded-xl overflow-hidden flex flex-col shadow-sm">
          <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-secondary/30 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
-             <div className="col-span-5">{getText('monitor', 'netTarget', language)}</div>
-             <div className="col-span-3">{getText('monitor', 'netStatus', language)}</div>
-             <div className="col-span-2 text-right">{getText('monitor', 'netLatency', language)}</div>
-             <div className="col-span-2 text-right">{getText('monitor', 'netCode', language)}</div>
+             <div className="col-span-5">{t('monitor.netTarget')}</div>
+             <div className="col-span-3">{t('monitor.netStatus')}</div>
+             <div className="col-span-2 text-right">{t('monitor.netLatency')}</div>
+             <div className="col-span-2 text-right">{t('monitor.netCode')}</div>
          </div>
 
          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
              {loading && results.length === 0 && (
                  <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2">
                      <Activity size={32} className="animate-pulse" />
-                     <p className="text-sm">{getText('monitor', 'diagnosing', language)}</p>
+                     <p className="text-sm">{t('monitor.diagnosing')}</p>
                  </div>
              )}
              
              {results.map((item) => {
                  let statusColor = "text-green-500";
                  let statusIcon = <CheckCircle2 size={16} />;
-                 let statusText = getText('monitor', 'statusSuccess', language);
+                 let statusText = t('monitor.statusSuccess');
                  let rowBg = "hover:bg-secondary/40";
 
                  if (item.status === 'Fail' || item.status_code >= 400) {
                      statusColor = "text-destructive";
                      statusIcon = <XCircle size={16} />;
-                     statusText = getText('monitor', 'statusFail', language);
+                     statusText = t('monitor.statusFail');
                      rowBg = "bg-destructive/5 hover:bg-destructive/10";
                  } else if (item.status === 'Slow') {
                      statusColor = "text-yellow-500";
                      statusIcon = <AlertTriangle size={16} />;
-                     statusText = getText('monitor', 'statusSlow', language);
+                     statusText = t('monitor.statusSlow');
                  }
 
                  return (

@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
-import { 
-  Search, Trash2, RefreshCw, Network, Shield, ShieldAlert, 
-  FileSearch, FolderOpen, FileQuestion, AlertTriangle 
+import {
+  Search, Trash2, RefreshCw, Network, Shield, ShieldAlert,
+  FileSearch, FolderOpen, FileQuestion, AlertTriangle
 } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
 import { useConfirmStore } from '@/store/useConfirmStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { PortInfo, LockedFileProcess } from '@/types/monitor';
 import { cn } from '@/lib/utils';
 import { Toast, ToastType } from '@/components/ui/Toast';
@@ -15,7 +14,7 @@ import { Toast, ToastType } from '@/components/ui/Toast';
 type ViewMode = 'ports' | 'files';
 
 export function PortManager() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const confirm = useConfirmStore();
   
   const [mode, setMode] = useState<ViewMode>('ports');
@@ -43,7 +42,7 @@ export function PortManager() {
       setPorts(data.sort((a, b) => a.port - b.port));
     } catch (e) {
       console.error(e);
-      setToast({ show: true, msg: getText('toast', 'portScanFailed', language), type: 'error' });
+      setToast({ show: true, msg: t('toast.portScanFailed'), type: 'error' });
     } finally {
       setIsPortsLoading(false);
     }
@@ -74,7 +73,7 @@ export function PortManager() {
       setHasChecked(true);
     } catch (e: any) {
       console.error(e);
-      setToast({ show: true, msg: getText('monitor', 'fileLockCheckFailed', language), type: 'error' });
+      setToast({ show: true, msg: t('monitor.fileLockCheckFailed'), type: 'error' });
     } finally {
       setIsCheckingLocks(false);
     }
@@ -105,38 +104,38 @@ export function PortManager() {
 
   const handleKill = async (pid: number, name: string, isSystem: boolean) => {
     if (isSystem) {
-        setToast({ show: true, msg: getText('toast', 'cannotKillSystem', language), type: 'warning' });
+        setToast({ show: true, msg: t('toast.cannotKillSystem'), type: 'warning' });
         return;
     }
 
     const isExplorer = name.toLowerCase() === 'explorer.exe';
-    
-    const title = isExplorer ? 'Restart Explorer?' : getText('monitor', 'confirmKill', language);
-    const message = isExplorer 
-        ? getText('monitor', 'killWarnExplorer', language)
-        : getText('monitor', 'killMsg', language, { name, pid: pid.toString() });
-    
+
+    const title = isExplorer ? 'Restart Explorer?' : t('monitor.confirmKill');
+    const message = isExplorer
+        ? t('monitor.killWarnExplorer')
+        : t('monitor.killMsg', { name, pid: pid.toString() });
+
     const confirmed = await confirm.ask({
         title,
         message,
         type: isExplorer ? 'warning' : 'danger',
-        confirmText: getText('monitor', 'kill', language),
-        cancelText: getText('prompts', 'cancel', language)
+        confirmText: t('monitor.kill'),
+        cancelText: t('prompts.cancel')
     });
 
     if (!confirmed) return;
 
     try {
         await invoke('kill_process', { pid });
-        setToast({ show: true, msg: getText('monitor', 'killSuccess', language), type: 'success' });
-        
+        setToast({ show: true, msg: t('monitor.killSuccess'), type: 'success' });
+
         if (mode === 'ports') {
             setTimeout(fetchPorts, 800);
         } else {
             setTimeout(() => checkFileLocks(), 800);
         }
     } catch (err: any) {
-        setToast({ show: true, msg: getText('toast', 'error', language, { msg: err }), type: 'error' });
+        setToast({ show: true, msg: t('toast.error', { msg: err }), type: 'error' });
     }
   };
 
@@ -155,7 +154,7 @@ export function PortManager() {
                     )}
                 >
                     <Network size={14} />
-                    {getText('monitor', 'tabPorts', language)}
+                    {t('monitor.tabPorts')}
                 </button>
                 <button
                     onClick={() => setMode('files')}
@@ -165,7 +164,7 @@ export function PortManager() {
                     )}
                 >
                     <FileSearch size={14} />
-                    {getText('monitor', 'tabFiles', language)}
+                    {t('monitor.tabFiles')}
                 </button>
             </div>
 
@@ -175,21 +174,21 @@ export function PortManager() {
                     <>
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                            <input 
+                            <input
                                 className="w-full bg-secondary/30 border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
-                                placeholder={getText('monitor', 'searchPorts', language)}
+                                placeholder={t('monitor.searchPorts')}
                                 value={portSearch}
                                 onChange={e => setPortSearch(e.target.value)}
                                 autoFocus
                             />
                         </div>
-                        <button 
-                            onClick={fetchPorts} 
+                        <button
+                            onClick={fetchPorts}
                             disabled={isPortsLoading}
                             className="px-4 bg-secondary hover:bg-secondary/80 border border-border rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
                         >
                             <RefreshCw size={16} className={cn(isPortsLoading && "animate-spin")} />
-                            {getText('monitor', 'refresh', language)}
+                            {t('monitor.refresh')}
                         </button>
                     </>
                 ) : (
@@ -197,29 +196,29 @@ export function PortManager() {
                         <div className="flex-1 relative flex gap-2">
                             <div className="relative flex-1">
                                 <FileSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                                <input 
+                                <input
                                     className="w-full bg-secondary/30 border border-border rounded-lg pl-9 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/50"
-                                    placeholder={getText('monitor', 'pathPlaceholder', language)}
+                                    placeholder={t('monitor.pathPlaceholder')}
                                     value={lockPath}
                                     onChange={e => setLockPath(e.target.value)}
                                     onKeyDown={e => e.key === 'Enter' && checkFileLocks()}
                                 />
                             </div>
-                            <button 
+                            <button
                                 onClick={handleBrowse}
                                 className="px-3 bg-secondary/50 hover:bg-secondary border border-border rounded-lg text-muted-foreground transition-colors"
-                                title={getText('monitor', 'browse', language)}
+                                title={t('monitor.browse')}
                             >
                                 <FolderOpen size={16} />
                             </button>
                         </div>
-                        <button 
+                        <button
                             onClick={() => checkFileLocks()}
                             disabled={isCheckingLocks || !lockPath}
                             className="px-6 bg-primary text-primary-foreground hover:bg-primary/90 border border-transparent rounded-lg text-sm font-medium transition-colors flex items-center gap-2 disabled:opacity-50 shadow-sm"
                         >
                             {isCheckingLocks ? <RefreshCw size={16} className="animate-spin" /> : <Search size={16} />}
-                            {getText('monitor', 'checkLocks', language)}
+                            {t('monitor.checkLocks')}
                         </button>
                     </>
                 )}
@@ -233,18 +232,18 @@ export function PortManager() {
             {mode === 'ports' && (
                 <>
                     <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-secondary/30 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">
-                        <div className="col-span-2">{getText('monitor', 'port', language)}</div>
-                        <div className="col-span-1">{getText('monitor', 'proto', language)}</div>
-                        <div className="col-span-3">{getText('monitor', 'localAddr', language)}</div>
-                        <div className="col-span-2">{getText('monitor', 'procPid', language)}</div>
-                        <div className="col-span-3">{getText('monitor', 'procName', language)}</div>
-                        <div className="col-span-1 text-right">{getText('monitor', 'action', language)}</div>
+                        <div className="col-span-2">{t('monitor.port')}</div>
+                        <div className="col-span-1">{t('monitor.proto')}</div>
+                        <div className="col-span-3">{t('monitor.localAddr')}</div>
+                        <div className="col-span-2">{t('monitor.procPid')}</div>
+                        <div className="col-span-3">{t('monitor.procName')}</div>
+                        <div className="col-span-1 text-right">{t('monitor.action')}</div>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-1 space-y-1">
                         {filteredPorts.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2">
                                 <Network size={32} />
-                                <p className="text-sm">{getText('monitor', 'emptyPorts', language)}</p>
+                                <p className="text-sm">{t('monitor.emptyPorts')}</p>
                             </div>
                         ) : (
                             filteredPorts.map((p, i) => (
@@ -252,7 +251,7 @@ export function PortManager() {
                                     <div className="col-span-2 font-mono text-primary font-bold flex items-center gap-1.5">
                                         {p.port}
                                         {p.is_system && (
-                                            <div title={getText('monitor', 'systemPort', language)}>
+                                            <div title={t('monitor.systemPort')}>
                                                 <Shield size={12} className="text-green-500" />
                                             </div>
                                         )}
@@ -266,9 +265,9 @@ export function PortManager() {
                                             isSystem={p.is_system}
                                             isExplorer={false}
                                             onClick={() => handleKill(p.pid, p.process_name, p.is_system)}
-                                            label={getText('monitor', 'kill', language)}
-                                            sysLabel={getText('monitor', 'protected', language)}
-                                            language={language}
+                                            label={t('monitor.kill')}
+                                            sysLabel={t('monitor.protected')}
+                                            t={t}
                                         />
                                     </div>
                                 </div>
@@ -288,7 +287,7 @@ export function PortManager() {
                                 <FileQuestion size={32} />
                             </div>
                             <div className="text-center max-w-xs">
-                                <p className="text-sm">{getText('monitor', 'enterPathHint', language)}</p>
+                                <p className="text-sm">{t('monitor.enterPathHint')}</p>
                             </div>
                         </div>
                     )}
@@ -297,16 +296,16 @@ export function PortManager() {
                     {hasChecked && (
                         <>
                             <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-secondary/30 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">
-                                <div className="col-span-2">{getText('monitor', 'procPid', language)}</div>
-                                <div className="col-span-4">{getText('monitor', 'procName', language)}</div>
-                                <div className="col-span-4">{getText('monitor', 'procUser', language)}</div>
-                                <div className="col-span-2 text-right">{getText('monitor', 'action', language)}</div>
+                                <div className="col-span-2">{t('monitor.procPid')}</div>
+                                <div className="col-span-4">{t('monitor.procName')}</div>
+                                <div className="col-span-4">{t('monitor.procUser')}</div>
+                                <div className="col-span-2 text-right">{t('monitor.action')}</div>
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar p-1 space-y-1">
                                 {lockedProcesses.length === 0 ? (
                                     <div className="h-full flex flex-col items-center justify-center text-green-600/70 gap-2">
                                         <ShieldAlert size={32} className="opacity-50" />
-                                        <p className="text-sm font-medium">{getText('monitor', 'noLocks', language)}</p>
+                                        <p className="text-sm font-medium">{t('monitor.noLocks')}</p>
                                     </div>
                                 ) : (
                                     lockedProcesses.map((p) => {
@@ -317,7 +316,7 @@ export function PortManager() {
                                                 <div className="col-span-4 font-medium flex items-center gap-1.5">
                                                     <span className="truncate" title={p.name}>{p.name}</span>
                                                     {p.is_system && (
-                                                        <div title={getText('monitor', 'systemProcessProtected', language)}>
+                                                        <div title={t('monitor.systemProcessProtected')}>
                                                             <Shield size={12} className="text-green-500 shrink-0" />
                                                         </div>
                                                     )}
@@ -328,9 +327,9 @@ export function PortManager() {
                                                         isSystem={p.is_system}
                                                         isExplorer={isExplorer}
                                                         onClick={() => handleKill(p.pid, p.name, p.is_system)}
-                                                        label={getText('monitor', 'kill', language)}
-                                                        sysLabel={getText('monitor', 'protected', language)}
-                                                        language={language}
+                                                        label={t('monitor.kill')}
+                                                        sysLabel={t('monitor.protected')}
+                                                        t={t}
                                                     />
                                                 </div>
                                             </div>
@@ -340,7 +339,7 @@ export function PortManager() {
                             </div>
                             <div className="px-4 py-2 bg-secondary/10 border-t border-border text-[10px] text-muted-foreground flex justify-between shrink-0">
                                 <span><code className="bg-secondary/50 px-1 rounded">{lockPath}</code></span>
-                                <span>{getText('monitor', 'locksFound', language, { count: lockedProcesses.length.toString() })}</span>
+                                <span>{t('monitor.locksFound', { count: lockedProcesses.length })}</span>
                             </div>
                         </>
                     )}
@@ -354,7 +353,7 @@ export function PortManager() {
 }
 
 // 提取的 Action Button 组件，处理复杂的按钮状态
-function ActionBtn({ isSystem, isExplorer, onClick, label, sysLabel, language }: any) {
+function ActionBtn({ isSystem, isExplorer, onClick, label, sysLabel, t }: any) {
     if (isSystem) {
         return (
             <div className="flex justify-end text-muted-foreground/30 cursor-not-allowed" title={sysLabel}>
@@ -364,7 +363,7 @@ function ActionBtn({ isSystem, isExplorer, onClick, label, sysLabel, language }:
     }
 
     if (isExplorer) {
-        const restartLabel = getText('monitor', 'restart', language);
+        const restartLabel = t('monitor.restart');
         return (
             <button
                 onClick={onClick}
@@ -378,7 +377,7 @@ function ActionBtn({ isSystem, isExplorer, onClick, label, sysLabel, language }:
     }
 
     return (
-        <button 
+        <button
             onClick={onClick}
             className="p-1.5 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground rounded-md transition-colors opacity-0 group-hover:opacity-100 ml-auto"
             title={label}

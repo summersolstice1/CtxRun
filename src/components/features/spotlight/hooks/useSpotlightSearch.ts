@@ -3,11 +3,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { Prompt } from '@/types/prompt';
 import { SpotlightItem } from '@/types/spotlight';
 import { useSpotlight } from '../core/SpotlightContext';
-import { getText } from '@/lib/i18n';
 import { evaluateMath } from '@/lib/calculator';
 import { useAppStore } from '@/store/useAppStore';
 import { RefineryItem } from '@/types/refinery';
 import { formatTimeAgo } from '@/lib/refinery_utils';
+import { TFunction } from 'i18next';
 
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
@@ -63,9 +63,9 @@ const SEARCH_TEMPLATES: Record<string, { name: string; url: string; color: strin
   custom: { name: 'Custom', url: '', color: 'bg-purple-600' },
 };
 
-export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
+export function useSpotlightSearch(t: TFunction) {
   const { query, mode, searchScope } = useSpotlight();
-  const { searchSettings } = useAppStore();
+  const { searchSettings, language } = useAppStore();
   const debouncedQuery = useDebounce(query, 100);
 
   const [results, setResults] = useState<SpotlightItem[]>([]);
@@ -141,7 +141,7 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
         setResults([{
           id: 'math-result',
           title: mathResult,
-          description: `${getText('spotlight', 'mathResult', language) || 'Result'} (${q})`,
+          description: `${t('spotlight.mathResult')} (${q})`,
           content: mathResult,
           type: 'math',
           mathResult: mathResult
@@ -158,9 +158,9 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
       const currentShellItem: SpotlightItem = {
         id: 'shell-exec-current',
         title: q
-          ? `${getText('spotlight', 'executeCommand', language) || 'Execute'}: ${q}`
-          : getText('spotlight', 'shellPlaceholder', language) || 'Type a command to run...',
-        description: getText('spotlight', 'runInTerminal', language) || 'Run in Terminal',
+          ? `${t('spotlight.executeCommand')}: ${q}`
+          : t('spotlight.shellPlaceholder'),
+        description: t('spotlight.runInTerminal'),
         content: q,
         type: 'shell',
         shellCmd: q,
@@ -284,7 +284,7 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
         if (!existsInHistory) {
           dynamicUrlItem = {
             id: `dynamic-url-${q}`,
-            title: `${getText('spotlight', 'openLink', language)} ${q}`,
+            title: `${t('spotlight.openLink')} ${q}`,
             description: "Open in default browser",
             content: url,
             type: 'url',
@@ -296,7 +296,7 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
       const appItems: SpotlightItem[] = (appsData as AppEntry[]).map(app => ({
         id: `app-${app.path}`,
         title: app.name,
-        description: getText('spotlight', 'application', language),
+        description: t('spotlight.application'),
         content: app.path,
         type: 'app',
         appPath: app.path
@@ -305,7 +305,7 @@ export function useSpotlightSearch(language: 'zh' | 'en' = 'en') {
       const historyItems: SpotlightItem[] = (urlHistoryData as UrlHistoryRecord[]).map(h => ({
         id: `history-${h.url}`,
         title: h.title && h.title.length > 0 ? h.title : h.url,
-        description: h.title ? h.url : getText('spotlight', 'visitedTimes', language, { count: String(h.visit_count) }),
+        description: h.title ? h.url : t('spotlight.visitedTimes', { count: h.visit_count }),
         content: h.url,
         type: 'url',
         url: h.url

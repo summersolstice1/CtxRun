@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Prompt } from '@/types/prompt';
 import { usePromptStore } from '@/store/usePromptStore';
-import { useAppStore } from '@/store/useAppStore';
 import { Sparkles, Command, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
 
 interface ChatCommandMenuProps {
   inputValue: string;
@@ -13,8 +12,8 @@ interface ChatCommandMenuProps {
 }
 
 export function ChatCommandMenu({ inputValue, selectedIndex, onSelect }: ChatCommandMenuProps) {
+  const { t } = useTranslation();
   const { chatTemplates } = usePromptStore();
-  const { language } = useAppStore();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const filtered = chatTemplates.filter(p =>
@@ -41,9 +40,9 @@ export function ChatCommandMenu({ inputValue, selectedIndex, onSelect }: ChatCom
         <div className="px-3 py-2 bg-secondary/30 border-b border-border/40 flex justify-between items-center text-[10px] text-muted-foreground/70 select-none">
             <span className="font-medium flex items-center gap-1.5 uppercase tracking-wider">
                 <Command size={10} />
-                {getText('common', 'slashCommands', language)}
+                {t('common.slashCommands')}
             </span>
-            <span className="font-mono opacity-50">{getText('common', 'navHint', language)}</span>
+            <span className="font-mono opacity-50">{t('common.navHint')}</span>
         </div>
 
         {/* List */}

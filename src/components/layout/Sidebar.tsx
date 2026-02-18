@@ -3,14 +3,15 @@
 import { motion } from "framer-motion";
 import { BookOpen, FileJson, GitMerge, Factory, Settings, ChevronLeft, ChevronRight, MousePointerClick } from 'lucide-react';
 import { useAppStore, AppView } from '@/store/useAppStore';
-import { getMenuLabel, getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 export function Sidebar() {
+  const { t } = useTranslation();
   const {
     currentView, setView,
     isSidebarOpen, toggleSidebar,
-    language, setSettingsOpen
+    setSettingsOpen
   } = useAppStore();
 
   const menuItems: { id: AppView; icon: any }[] = [
@@ -51,7 +52,7 @@ export function Sidebar() {
             "absolute top-0 bottom-0 right-0 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors z-20 h-14 border-l border-transparent",
             !isSidebarOpen && "w-full right-auto left-0 border-none hover:bg-secondary"
           )}
-          title={isSidebarOpen ? getText('actions', 'collapse', language) : getText('actions', 'expand', language)}
+          title={isSidebarOpen ? t('actions.collapse') : t('actions.expand')}
         >
           {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={18} />}
         </button>
@@ -64,7 +65,7 @@ export function Sidebar() {
             <button
               key={item.id}
               onClick={() => setView(item.id)}
-              title={!isSidebarOpen ? getMenuLabel(item.id, language) : undefined}
+              title={!isSidebarOpen ? t(`menu.${item.id}`) : undefined}
               className={cn(
                 "relative flex items-center h-9 w-full rounded-lg transition-all duration-200 group outline-none",
                 isActive ? "text-primary" : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
@@ -96,7 +97,7 @@ export function Sidebar() {
                   isSidebarOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"
                 )}
               >
-                {getMenuLabel(item.id, language)}
+                {t(`menu.${item.id}`)}
               </span>
             </button>
           );
@@ -109,7 +110,7 @@ export function Sidebar() {
           className={cn(
             "relative flex items-center h-10 w-full rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors group/btn"
           )}
-          title={!isSidebarOpen ? getText('menu', 'settings', language) : undefined}
+          title={!isSidebarOpen ? t('menu.settings') : undefined}
         >
           <div className="w-12 flex items-center justify-center shrink-0">
              <Settings
@@ -121,7 +122,7 @@ export function Sidebar() {
             "text-sm transition-all duration-300 origin-left font-medium",
             isSidebarOpen ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
           )}>
-            {getText('menu', 'settings', language)}
+            {t('menu.settings')}
           </span>
         </button>
       </div>

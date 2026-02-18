@@ -1,10 +1,10 @@
 import { useState, memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Sparkles, ChevronDown, Brain, Check, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { ChatMessage } from '@/lib/llm';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
@@ -29,7 +29,7 @@ const reasoningComponents = {
 
 function MessageCopyMenu({ content }: { content: string }) {
   const [isCopied, setIsCopied] = useState(false);
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   const handleCopy = async () => {
     try {
@@ -50,7 +50,7 @@ function MessageCopyMenu({ content }: { content: string }) {
           ? "text-green-500 bg-green-500/10 border border-green-500/20"
           : "text-muted-foreground hover:text-foreground hover:bg-secondary/80 border border-transparent"
       )}
-      title={getText('spotlight', 'copyMessage', language)}
+      title={t('spotlight.copyMessage')}
     >
       {isCopied ? <Check size={14} /> : <Copy size={14} />}
     </button>
@@ -66,7 +66,7 @@ interface ChatMessageItemProps {
 
 // 使用 React.memo 优化单条消息的渲染
 const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMessageItemProps) => {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const isLastMessage = idx === messagesLength - 1;
   const isStreamingLast = isStreaming && isLastMessage;
 
@@ -80,7 +80,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
               <details className="mb-2 group/reasoning" open={isStreamingLast}>
                 <summary className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60 cursor-pointer hover:text-purple-400 transition-colors select-none list-none outline-none">
                   <Brain size={12} />
-                  <span>{getText('spotlight', 'thinking', language)}</span>
+                  <span>{t('spotlight.thinking')}</span>
                   <ChevronDown size={12} className="group-open/reasoning:rotate-180 transition-transform duration-200" />
                 </summary>
                 <div className="mt-2 pl-2 border-l-2 border-purple-500/20 text-xs text-muted-foreground/80 leading-relaxed opacity-80 reasoning-body">
@@ -123,7 +123,8 @@ interface ChatModeProps {
 }
 
 export function ChatMode({ messages, isStreaming, chatEndRef, containerRef, onScrollPositionChange }: ChatModeProps) {
-  const { language, aiConfig } = useAppStore();
+  const { t } = useTranslation();
+  const { aiConfig } = useAppStore();
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
 
   // 监听滚动事件，判断用户是否在底部
@@ -143,12 +144,12 @@ export function ChatMode({ messages, isStreaming, chatEndRef, containerRef, onSc
         <div className="w-12 h-12 bg-purple-500/10 rounded-full flex items-center justify-center mb-4 text-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.15)] animate-pulse">
           <Sparkles size={24} />
         </div>
-        <h3 className="text-foreground font-medium mb-1">{getText('spotlight', 'aiReady', language)}</h3>
+        <h3 className="text-foreground font-medium mb-1">{t('spotlight.aiReady')}</h3>
         <p className="text-xs text-center max-w-[200px] opacity-70 leading-relaxed">
-          {getText('spotlight', 'aiDesc', language)} <span className="text-purple-500 font-medium">{aiConfig.providerId}</span>.
+          {t('spotlight.aiDesc')} <span className="text-purple-500 font-medium">{aiConfig.providerId}</span>.
         </p>
         <div className="mt-8 text-[10px] opacity-40 font-mono bg-background/50 border border-border/50 px-2 py-1 rounded">
-          {getText('spotlight', 'ephemeral', language)}
+          {t('spotlight.ephemeral')}
         </div>
       </div>
     );
@@ -189,10 +190,10 @@ export function ChatMode({ messages, isStreaming, chatEndRef, containerRef, onSc
         <button
           onClick={() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })}
           className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs shadow-lg hover:bg-primary/90 transition-colors flex items-center gap-1.5 animate-in fade-in slide-in-from-bottom-2"
-          title={language === 'zh' ? '查看最新回复' : 'See latest response'}
+          title={t('spotlight.seeLatest')}
         >
           <ChevronDown size={14} />
-          <span className="font-medium">{language === 'zh' ? '最新' : 'Latest'}</span>
+          <span className="font-medium">{t('spotlight.latest')}</span>
         </button>
       )}
     </div>

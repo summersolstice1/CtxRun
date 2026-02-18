@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Command, Sparkles, Terminal, CornerDownLeft, Check, Zap, Globe, AppWindow, Calculator, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
 import { SpotlightItem } from '@/types/spotlight';
-import { getText } from '@/lib/i18n';
 import { useSpotlight } from '../../core/SpotlightContext';
 import { invoke } from '@tauri-apps/api/core';
 import { executeCommand } from '@/lib/command_executor';
@@ -23,7 +22,7 @@ interface SearchModeProps {
 }
 
 export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect, copiedId, hasMore, loadMore, isLoading }: SearchModeProps) {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const { setQuery, inputRef, setSearchScope } = useSpotlight();
 
   const { projectRoot } = useContextStore();
@@ -103,19 +102,19 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
     return (
       <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2 opacity-60 min-h-[100px]">
         <Command size={24} strokeWidth={1.5} />
-        <span className="text-sm">{getText('spotlight', 'noCommands', language)}</span>
+        <span className="text-sm">{t('spotlight.noCommands')}</span>
       </div>
     );
   }
 
   const getActionLabel = (item: SpotlightItem) => {
-    if (item.type === 'url') return getText('spotlight', 'openLink', language);
-    if (item.type === 'app') return getText('spotlight', 'openApp', language);
+    if (item.type === 'url') return t('spotlight.openLink');
+    if (item.type === 'app') return t('spotlight.openApp');
     if (item.type === 'web_search') return "Search";
-    if (item.type === 'shell' || item.isExecutable) return getText('actions', 'run', language);
-    if (item.type === 'shell_history') return getText('actions', 'run', language);
-    if (item.type === 'math') return getText('spotlight', 'copyResult', language) || "Copy";
-    return getText('spotlight', 'copy', language);
+    if (item.type === 'shell' || item.isExecutable) return t('actions.run');
+    if (item.type === 'shell_history') return t('actions.run');
+    if (item.type === 'math') return t('spotlight.copyResult') || "Copy";
+    return t('spotlight.copy');
   };
 
   return (

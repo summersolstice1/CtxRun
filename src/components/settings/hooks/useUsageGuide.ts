@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { fetchFromMirrors, REPOSITORY_MIRROR_BASES } from '@/lib/network';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 const memoryCache: Record<string, string> = {};
 
 export function useUsageGuide() {
+  const { t } = useTranslation();
   const { language } = useAppStore();
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +36,7 @@ export function useUsageGuide() {
         setContent(text);
       } catch (err) {
         console.error("Failed to load usage guide:", err);
-        setError(getText('settings', 'usageLoadFailed', language));
+        setError(t('settings.usageLoadFailed'));
       } finally {
         setIsLoading(false);
       }

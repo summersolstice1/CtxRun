@@ -3,15 +3,16 @@ import { Download, Trash2, RefreshCw, Box, Check, Loader2, Globe, Sparkles, Term
 import { usePromptStore } from '@/store/usePromptStore';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { open } from '@tauri-apps/plugin-shell'; 
 
 export function PromptLibraryManager() {
-  const { 
-    manifest, fetchManifest, installPack, uninstallPack, 
+  const { t } = useTranslation();
+  const {
+    manifest, fetchManifest, installPack, uninstallPack,
     installedPackIds, isStoreLoading
   } = usePromptStore();
-  
+
   const { language } = useAppStore();
   const [activeTab, setActiveTab] = useState<'prompt' | 'command'>('prompt');
 
@@ -26,7 +27,7 @@ export function PromptLibraryManager() {
           setErrorMsg(null);
           await installPack(pack);
       } catch (err: any) {
-          const msg = err.message || getText('library', 'unknownError', language);
+          const msg = err.message || t('library.unknownError');
           setErrorMsg(msg);
           setTimeout(() => setErrorMsg(null), 8000);
       }
@@ -60,29 +61,29 @@ export function PromptLibraryManager() {
       <div className="mb-4 flex items-center justify-between shrink-0">
          <div>
             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
-                <Globe size={16} className="text-primary"/> 
-                {getText('library', 'title', language)}
+                <Globe size={16} className="text-primary"/>
+                {t('library.title')}
             </h3>
             <div className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-1">
-                <span>{getText('library', 'desc', language)}</span>
+                <span>{t('library.desc')}</span>
 
                 {/* 渲染固定的来源链接 */}
-                <button 
+                <button
                     onClick={() => open(sourceInfo.url)}
                     className="flex items-center gap-0.5 text-primary hover:underline hover:text-primary/80 transition-colors bg-primary/5 px-1.5 py-0.5 rounded cursor-pointer font-medium"
-                    title={getText('library', 'openSource', language, { url: sourceInfo.url })}
+                    title={t('library.openSource', { url: sourceInfo.url })}
                 >
                     {sourceInfo.name}
                     <ExternalLink size={10} />
                 </button>
             </div>
          </div>
-         
-         <button 
-           onClick={() => { setErrorMsg(null); fetchManifest(); }} 
+
+         <button
+           onClick={() => { setErrorMsg(null); fetchManifest(); }}
            disabled={isStoreLoading}
            className="p-2 hover:bg-secondary rounded-full transition-colors"
-           title={getText('library', 'refresh', language)}
+           title={t('library.refresh')}
          >
             <RefreshCw size={16} className={cn(isStoreLoading && "animate-spin")} />
          </button>
@@ -93,7 +94,7 @@ export function PromptLibraryManager() {
         <div className="mb-4 p-3 rounded-lg bg-destructive/10 border border-destructive/20 flex gap-3 items-start animate-in fade-in slide-in-from-top-2">
             <AlertCircle size={16} className="text-destructive shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
-                <h4 className="text-xs font-bold text-destructive mb-0.5">{getText('common', 'error', language)}</h4>
+                <h4 className="text-xs font-bold text-destructive mb-0.5">{t('common.error')}</h4>
                 <p className="text-xs text-destructive/80 break-all whitespace-pre-wrap">{errorMsg}</p>
             </div>
             <button onClick={() => setErrorMsg(null)} className="text-destructive/60 hover:text-destructive text-xs">✕</button>
@@ -106,13 +107,13 @@ export function PromptLibraryManager() {
               onClick={() => setActiveTab('prompt')}
               className={cn("px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center gap-2", activeTab === 'prompt' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
           >
-              <Sparkles size={14} /> {getText('common', 'prompts', language)}
+              <Sparkles size={14} /> {t('common.prompts')}
           </button>
           <button
               onClick={() => setActiveTab('command')}
               className={cn("px-4 py-2 text-xs font-bold border-b-2 transition-colors flex items-center gap-2", activeTab === 'command' ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground")}
           >
-              <Terminal size={14} /> {getText('common', 'commands', language)}
+              <Terminal size={14} /> {t('common.commands')}
           </button>
       </div>
 
@@ -122,14 +123,14 @@ export function PromptLibraryManager() {
             <div className="flex justify-center py-10 text-muted-foreground">
                 <div className="flex flex-col items-center gap-2">
                     <Loader2 className="animate-spin" />
-                    <span className="text-xs">{getText('library', 'loading', language)}</span>
+                    <span className="text-xs">{t('library.loading')}</span>
                 </div>
             </div>
         )}
-        
+
         {!isStoreLoading && availablePacks.length === 0 && (
             <div className="text-center py-10 text-muted-foreground text-xs">
-                {getText('library', 'noPacks', language)}
+                {t('library.noPacks')}
             </div>
         )}
 
@@ -145,7 +146,7 @@ export function PromptLibraryManager() {
                             <h4 className="text-sm font-medium truncate">{pack.name}</h4>
                             <p className="text-xs text-muted-foreground truncate" title={pack.description}>{pack.description}</p>
                             <div className="flex gap-2 mt-1 text-[10px] text-muted-foreground/70">
-                                <span>{pack.count} {getText('library', 'prompts', language)}</span>
+                                <span>{pack.count} {t('library.prompts')}</span>
                                 <span>•</span>
                                 <span>{pack.size_kb} KB</span>
                             </div>
@@ -155,30 +156,30 @@ export function PromptLibraryManager() {
                     <div className="flex items-center gap-2 shrink-0">
                         {isInstalled ? (
                             <>
-                                <button 
+                                <button
                                     onClick={() => handleInstall(pack)}
                                     disabled={isStoreLoading}
                                     className="px-3 py-1.5 text-xs font-medium bg-secondary hover:bg-secondary/80 rounded-md transition-colors"
                                 >
-                                    {getText('library', 'update', language)}
+                                    {t('library.update')}
                                 </button>
-                                <button 
+                                <button
                                     onClick={() => uninstallPack(pack.id)}
                                     disabled={isStoreLoading}
                                     className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors"
-                                    title={getText('library', 'uninstall', language)}
+                                    title={t('library.uninstall')}
                                 >
                                     <Trash2 size={16} />
                                 </button>
                             </>
                         ) : (
-                            <button 
+                            <button
                                 onClick={() => handleInstall(pack)}
                                 disabled={isStoreLoading}
                                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md transition-colors shadow-sm"
                             >
                                 <Download size={14} />
-                                {getText('library', 'download', language)}
+                                {t('library.download')}
                             </button>
                         )}
                     </div>

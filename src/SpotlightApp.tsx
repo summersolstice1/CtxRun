@@ -38,11 +38,11 @@ function SpotlightContent() {
     activeTemplate, setActiveTemplate,
     setMode
   } = useSpotlight();
-  const { language, spotlightAppearance } = useAppStore();
+  const { spotlightAppearance } = useAppStore();
   const { projectRoot } = useContextStore();
   const { t } = useTranslation();
 
-  const search = useSpotlightSearch(language);
+  const search = useSpotlightSearch(t);
   const chat = useSpotlightChat();
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
