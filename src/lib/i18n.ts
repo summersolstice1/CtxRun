@@ -1,5 +1,3 @@
-import { AppView } from "@/store/useAppStore";
-
 export type LangKey = 'zh' | 'en';
 
 const translations = {
@@ -1374,28 +1372,6 @@ const translations = {
     }
   }
 };
-
-export function getMenuLabel(view: AppView, lang: LangKey): string {
-  return translations[lang].menu[view];
-}
-
-export function getText(
-  section: keyof typeof translations['en'],
-  key: string,
-  lang: LangKey,
-  vars?: Record<string, string>
-): string {
-  // @ts-ignore
-  let text = translations[lang][section]?.[key] || key;
-
-  if (vars) {
-    Object.entries(vars).forEach(([k, v]) => {
-      text = text.replace(`{${k}}`, v);
-    });
-  }
-
-  return text;
-}
 
 // Export translations for react-i18next
 export { translations };
