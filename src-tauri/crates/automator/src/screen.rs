@@ -1,7 +1,5 @@
 use xcap::Monitor;
-use std::error::Error;
-use std::fmt;
-use xcap::XCapError;
+use crate::error::{AutomatorError, Result};
 
 #[derive(Debug)]
 pub enum ColorPickError {
@@ -10,8 +8,8 @@ pub enum ColorPickError {
     OutOfBounds { x: i32, y: i32, width: u32, height: u32 },
 }
 
-impl fmt::Display for ColorPickError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl std::fmt::Display for ColorPickError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ColorPickError::NoScreenFound { x, y } => {
                 write!(f, "No monitor found containing coordinates ({}, {})", x, y)
@@ -26,7 +24,13 @@ impl fmt::Display for ColorPickError {
     }
 }
 
-impl Error for ColorPickError {}
+impl std::error::Error for ColorPickError {}
+
+impl From<ColorPickError> for AutomatorError {
+    fn from(err: ColorPickError) -> Self {
+        AutomatorError::ScreenError(err.to_string())
+    }
+}
 
 #[derive(Debug, Clone, serde::Serialize)]
 pub struct ScreenInfo {
@@ -39,15 +43,14 @@ pub struct ScreenInfo {
     pub name: String,
 }
 
-pub fn get_color_at(x: i32, y: i32) -> Result<String, Box<dyn Error + Send + Sync>> {
+pub fn get_color_at(x: i32, y: i32) -> Result<String> {
     let monitors = Monitor::all().map_err(|e| {
         ColorPickError::CaptureFailed(format!("Failed to get monitors: {}", e))
     })?;
 
     if monitors.is_empty() {
-        return Err(Box::new(ColorPickError::CaptureFailed("No monitors found".into())));
+        return Err(ColorPickError::CaptureFailed("No monitors found".into()).into());
     }
-
 
     let target_monitor = monitors
         .iter()
@@ -61,9 +64,8 @@ pub fn get_color_at(x: i32, y: i32) -> Result<String, Box<dyn Error + Send + Syn
 
     let monitor = match target_monitor {
         Some(m) => m,
-        None => return Err(Box::new(ColorPickError::NoScreenFound { x, y })),
+        None => return Err(ColorPickError::NoScreenFound { x, y }.into()),
     };
-
 
     let image = monitor.capture_image().map_err(|e| {
         ColorPickError::CaptureFailed(format!("capture_image failed: {}", e))
@@ -74,7 +76,7 @@ pub fn get_color_at(x: i32, y: i32) -> Result<String, Box<dyn Error + Send + Syn
     let local_y = (y - monitor_y) as u32;
     let (img_w, img_h) = image.dimensions();
     if local_x >= img_w || local_y >= img_h {
-        return Err(Box::new(ColorPickError::OutOfBounds { x, y, width: img_w, height: img_h }));
+        return Err(ColorPickError::OutOfBounds { x, y, width: img_w, height: img_h }.into());
     }
     let pixel = image.get_pixel(local_x, local_y);
     let r = pixel[0];
@@ -85,7 +87,7 @@ pub fn get_color_at(x: i32, y: i32) -> Result<String, Box<dyn Error + Send + Syn
 }
 
 
-pub fn get_all_screens_info() -> Result<Vec<ScreenInfo>, Box<dyn Error + Send + Sync>> {
+pub fn get_all_screens_info() -> Result<Vec<ScreenInfo>> {
     let monitors = Monitor::all().map_err(|e| {
         ColorPickError::CaptureFailed(format!("Failed to get monitors: {}", e))
     })?;
@@ -104,8 +106,8 @@ pub fn get_all_screens_info() -> Result<Vec<ScreenInfo>, Box<dyn Error + Send + 
                 name: m.name()?,
             })
         })
-        .collect::<Result<Vec<_>, XCapError>>()
-        .map_err(|e: XCapError| ColorPickError::CaptureFailed(format!("Failed to get monitor info: {}", e)))?;
+        .collect::<std::result::Result<Vec<_>, xcap::XCapError>>()
+        .map_err(|e| ColorPickError::CaptureFailed(format!("Failed to get monitor info: {}", e)))?;
 
     Ok(infos)
 }

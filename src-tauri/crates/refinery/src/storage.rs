@@ -4,12 +4,13 @@ use std::io::BufWriter;
 use rusqlite::{params, Connection, OptionalExtension};
 use chrono::Utc;
 use uuid::Uuid;
-use tauri::{AppHandle, Manager, Runtime}; // 引入 Runtime
+use tauri::{AppHandle, Manager, Runtime};
 use image::{DynamicImage, ImageEncoder};
 use image::codecs::png::{PngEncoder, CompressionType, FilterType};
 use xxhash_rust::xxh3::xxh3_64;
 
-use super::models::{RefineryKind, RefineryMetadata}; // model -> models
+use super::models::{RefineryKind, RefineryMetadata};
+use crate::error::Result;
 
 const IMAGE_FOLDER: &str = "refinery_images";
 
@@ -24,19 +25,17 @@ pub fn hash_content(content: &[u8]) -> String {
     format!("{:016x}", hash_val)
 }
 
-fn ensure_image_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf, String> {
-    let app_dir = app.path().app_local_data_dir()
-        .map_err(|e| format!("Failed to get app data dir: {}", e))?;
+fn ensure_image_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
+    let app_dir = app.path().app_local_data_dir()?;
 
     let image_dir = app_dir.join(IMAGE_FOLDER);
     if !image_dir.exists() {
-        fs::create_dir_all(&image_dir)
-            .map_err(|e| format!("Failed to create image dir: {}", e))?;
+        fs::create_dir_all(&image_dir)?;
     }
     Ok(image_dir)
 }
 
-pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) -> Result<(String, String), String> {
+pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) -> Result<(String, String)> {
     let hash = hash_dynamic_image(image);
 
     let dir = ensure_image_dir(app)?;
@@ -48,7 +47,7 @@ pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) 
         return Ok((file_path_str, hash));
     }
 
-    let file = fs::File::create(&file_path).map_err(|e| e.to_string())?;
+    let file = fs::File::create(&file_path)?;
     let ref_writer = BufWriter::new(file);
 
     let encoder = PngEncoder::new_with_quality(
@@ -62,7 +61,7 @@ pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) 
         image.width(),
         image.height(),
         image.color().into()
-    ).map_err(|e| format!("Failed to encode png: {}", e))?;
+    )?;
 
     Ok((file_path_str, hash))
 }
@@ -77,14 +76,14 @@ pub fn capture_clipboard_item(
     url: Option<String>,
     size_info: Option<String>,
     metadata: RefineryMetadata
-) -> Result<(bool, String), String> {
+) -> Result<(bool, String)> {
     let now = Utc::now().timestamp_millis();
 
     let existing_id: Option<String> = conn.query_row(
         "SELECT id FROM refinery_history WHERE content_hash = ? ORDER BY updated_at DESC LIMIT 1",
         params![&hash],
-        |row: &rusqlite::Row| row.get(0) // 显式类型
-    ).optional().map_err(|e| e.to_string())?;
+        |row: &rusqlite::Row| row.get(0)
+    ).optional()?;
 
     if let Some(id) = existing_id {
         match (&source_app, &url) {
@@ -92,25 +91,25 @@ pub fn capture_clipboard_item(
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ?, source_app = ?, url = ? WHERE id = ?",
                     params![now, app, u, &id]
-                ).map_err(|e| e.to_string())?;
+                )?;
             }
             (Some(app), None) => {
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ?, source_app = ? WHERE id = ?",
                     params![now, app, &id]
-                ).map_err(|e| e.to_string())?;
+                )?;
             }
             (None, Some(u)) => {
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ?, url = ? WHERE id = ?",
                     params![now, u, &id]
-                ).map_err(|e| e.to_string())?;
+                )?;
             }
             (None, None) => {
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ? WHERE id = ?",
                     params![now, &id]
-                ).map_err(|e| e.to_string())?;
+                )?;
             }
         }
         Ok((false, id))
@@ -137,7 +136,7 @@ pub fn capture_clipboard_item(
                 now,
                 now
             ]
-        ).map_err(|e| e.to_string())?;
+        )?;
 
         Ok((true, new_id))
     }
@@ -147,7 +146,7 @@ pub fn create_manual_note_db(
     conn: &Connection,
     content: String,
     title: Option<String>,
-) -> Result<String, String> {
+) -> Result<String> {
     let now = Utc::now().timestamp_millis();
     let new_id = Uuid::new_v4().to_string();
 
@@ -181,7 +180,7 @@ pub fn create_manual_note_db(
             now,
             title
         ]
-    ).map_err(|e| e.to_string())?;
+    )?;
 
     Ok(new_id)
 }
@@ -191,7 +190,7 @@ pub fn update_note_db(
     id: &str,
     content: Option<String>,
     title: Option<String>
-) -> Result<(), String> {
+) -> Result<()> {
     let now = Utc::now().timestamp_millis();
 
     if let Some(new_content) = content {
@@ -211,12 +210,12 @@ pub fn update_note_db(
                 is_edited = 1
              WHERE id = ?7",
             params![new_content, hash, preview, size_info, title, now, id]
-        ).map_err(|e| e.to_string())?;
+        )?;
     } else if let Some(new_title) = title {
         conn.execute(
             "UPDATE refinery_history SET title = ?1, updated_at = ?2 WHERE id = ?3",
             params![new_title, now, id]
-        ).map_err(|e| e.to_string())?;
+        )?;
     }
 
     Ok(())

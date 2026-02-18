@@ -10,6 +10,9 @@ pub mod storage;
 pub mod worker;
 pub mod commands;
 pub mod cleanup_worker;
+pub mod error;
+
+pub use error::{RefineryError, Result};
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::<R>::new("ctxrun-plugin-refinery")

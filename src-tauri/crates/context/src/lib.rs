@@ -8,6 +8,9 @@ pub mod processing;
 pub mod tokenizer;
 pub mod commands;
 pub mod gitleaks;
+pub mod error;
+
+pub use error::{ContextError, Result};
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::<R>::new("ctxrun-plugin-context") 

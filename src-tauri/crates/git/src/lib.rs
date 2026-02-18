@@ -6,6 +6,9 @@ use tauri::{
 pub mod models;
 pub mod commands;
 pub mod export;
+pub mod error;
+
+pub use error::{GitError, Result};
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::<R>::new("ctxrun-plugin-git")

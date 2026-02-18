@@ -3,15 +3,16 @@ use std::sync::atomic::Ordering;
 use crate::engine::{AutomatorState, run_workflow_task, run_graph_task};
 use crate::models::{Workflow, WorkflowGraph};
 use crate::screen;
+use crate::error::{AutomatorError, Result};
 
 #[tauri::command]
 pub async fn execute_workflow<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, AutomatorState>,
     workflow: Workflow
-) -> Result<(), String> {
+) -> Result<()> {
     if state.is_running.load(Ordering::SeqCst) {
-        return Err("Already running".into());
+        return Err(AutomatorError::AlreadyRunning);
     }
 
     state.is_running.store(true, Ordering::SeqCst);
@@ -26,31 +27,30 @@ pub async fn execute_workflow<R: Runtime>(
 pub async fn stop_workflow<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, AutomatorState>
-) -> Result<(), String> {
+) -> Result<()> {
     state.is_running.store(false, Ordering::SeqCst);
     let _ = app.emit("automator:status", false);
     Ok(())
 }
 
 #[tauri::command]
-pub async fn get_mouse_position() -> Result<(i32, i32), String> {
+pub async fn get_mouse_position() -> Result<(i32, i32)> {
     use enigo::{Enigo, Mouse, Settings};
-    let enigo = Enigo::new(&Settings::default()).map_err(|e| e.to_string())?;
-    let (x, y) = enigo.location().map_err(|e| e.to_string())?;
+    let enigo = Enigo::new(&Settings::default())
+        .map_err(|e| AutomatorError::InputError(e.to_string()))?;
+    let (x, y) = enigo.location()
+        .map_err(|e| AutomatorError::InputError(e.to_string()))?;
     Ok((x, y))
 }
 
 #[tauri::command]
-pub async fn get_pixel_color(x: i32, y: i32) -> Result<String, String> {
+pub async fn get_pixel_color(x: i32, y: i32) -> Result<String> {
     let result = tauri::async_runtime::spawn_blocking(move || {
         screen::get_color_at(x, y)
     }).await
-    .map_err(|e| format!("Task join error: {}", e))?;
+    .map_err(|e| AutomatorError::JoinError(e.to_string()))??;
 
-    match result {
-        Ok(hex) => Ok(hex),
-        Err(e) => Err(format!("Failed to get color: {}", e))
-    }
+    Ok(result)
 }
 
 #[tauri::command]
@@ -58,9 +58,9 @@ pub async fn execute_workflow_graph<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, AutomatorState>,
     graph: WorkflowGraph
-) -> Result<(), String> {
+) -> Result<()> {
     if state.is_running.load(Ordering::SeqCst) {
-        return Err("Already running".into());
+        return Err(AutomatorError::AlreadyRunning);
     }
 
     state.is_running.store(true, Ordering::SeqCst);

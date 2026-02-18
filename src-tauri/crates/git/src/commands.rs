@@ -2,8 +2,9 @@ use chrono::{DateTime, Local};
 use git2::{Delta, DiffFormat, DiffOptions, Oid, Repository};
 use rayon::prelude::*;
 use std::path::Path;
+use crate::error::{GitError, Result};
 use crate::models::{GitCommit, GitDiffFile, ExportFormat, ExportLayout};
-use crate::export::generate_export_content; 
+use crate::export::generate_export_content;
 
 struct DiffItem {
     path: String,
@@ -15,12 +16,9 @@ struct DiffItem {
 }
 
 #[tauri::command]
-pub fn get_git_commits(project_path: String) -> Result<Vec<GitCommit>, String> {
-    let repo = Repository::open(&project_path).map_err(|e| format!("无法打开 Git 仓库: {}", e))?;
-
-    let mut revwalk = repo
-        .revwalk()
-        .map_err(|e| format!("无法读取历史记录: {}", e))?;
+pub fn get_git_commits(project_path: String) -> Result<Vec<GitCommit>> {
+    let repo = Repository::open(&project_path)?;
+    let mut revwalk = repo.revwalk()?;
 
     if revwalk.push_head().is_err() {
         return Ok(Vec::new());
@@ -31,8 +29,8 @@ pub fn get_git_commits(project_path: String) -> Result<Vec<GitCommit>, String> {
     let mut commits = Vec::new();
 
     for id in revwalk {
-        let oid = id.map_err(|e| e.to_string())?;
-        let commit = repo.find_commit(oid).map_err(|e| e.to_string())?;
+        let oid = id?;
+        let commit = repo.find_commit(oid)?;
 
         let time = commit.time();
         let dt = DateTime::from_timestamp(time.seconds(), 0).unwrap_or_default();
@@ -116,26 +114,22 @@ pub fn get_git_diff(
     project_path: String,
     old_hash: String,
     new_hash: String,
-) -> Result<Vec<GitDiffFile>, String> {
-    let repo = Repository::open(&project_path).map_err(|e| format!("Failed to open repo: {}", e))?;
-
-    let old_oid = Oid::from_str(&old_hash).map_err(|e| format!("Invalid old hash: {}", e))?;
-    let old_commit = repo.find_commit(old_oid).map_err(|e| e.to_string())?;
-    let old_tree = old_commit.tree().map_err(|e| e.to_string())?;
+) -> Result<Vec<GitDiffFile>> {
+    let repo = Repository::open(&project_path)?;
+    let old_oid = Oid::from_str(&old_hash)?;
+    let old_commit = repo.find_commit(old_oid)?;
+    let old_tree = old_commit.tree()?;
 
     let mut diff_opts = DiffOptions::new();
     diff_opts.include_untracked(true);
 
     let diff = if new_hash == "__WORK_DIR__" {
-        repo.diff_tree_to_workdir_with_index(Some(&old_tree), Some(&mut diff_opts))
-            .map_err(|e| format!("Workdir diff failed: {}", e))?
+        repo.diff_tree_to_workdir_with_index(Some(&old_tree), Some(&mut diff_opts))?
     } else {
-        let new_oid = Oid::from_str(&new_hash).map_err(|e| format!("Invalid new hash: {}", e))?;
-        let new_commit = repo.find_commit(new_oid).map_err(|e| e.to_string())?;
-        let new_tree = new_commit.tree().map_err(|e| e.to_string())?;
-
-        repo.diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut diff_opts))
-            .map_err(|e| format!("Tree diff failed: {}", e))?
+        let new_oid = Oid::from_str(&new_hash)?;
+        let new_commit = repo.find_commit(new_oid)?;
+        let new_tree = new_commit.tree()?;
+        repo.diff_tree_to_tree(Some(&old_tree), Some(&new_tree), Some(&mut diff_opts))?
     };
 
     let diff_items: Vec<DiffItem> = diff
@@ -217,24 +211,15 @@ pub fn get_git_diff_text(
     project_path: String,
     old_hash: String,
     new_hash: String,
-) -> Result<String, String> {
-    let repo = Repository::open(&project_path).map_err(|e| format!("Failed to open repo: {}", e))?;
+) -> Result<String> {
+    let repo = Repository::open(&project_path)?;
+    let old_oid = Oid::from_str(&old_hash)?;
+    let new_oid = Oid::from_str(&new_hash)?;
 
-    let old_oid = Oid::from_str(&old_hash).map_err(|e| e.to_string())?;
-    let new_oid = Oid::from_str(&new_hash).map_err(|e| e.to_string())?;
+    let old_tree = repo.find_commit(old_oid).and_then(|c| c.tree())?;
+    let new_tree = repo.find_commit(new_oid).and_then(|c| c.tree())?;
 
-    let old_tree = repo
-        .find_commit(old_oid)
-        .and_then(|c| c.tree())
-        .map_err(|e| e.to_string())?;
-    let new_tree = repo
-        .find_commit(new_oid)
-        .and_then(|c| c.tree())
-        .map_err(|e| e.to_string())?;
-
-    let diff = repo
-        .diff_tree_to_tree(Some(&old_tree), Some(&new_tree), None)
-        .map_err(|e| e.to_string())?;
+    let diff = repo.diff_tree_to_tree(Some(&old_tree), Some(&new_tree), None)?;
 
     let mut diff_buf = Vec::new();
     diff.print(DiffFormat::Patch, |_delta, _hunk, line| {
@@ -249,8 +234,7 @@ pub fn get_git_diff_text(
             }
         }
         true
-    })
-    .map_err(|e| format!("Failed to print diff: {}", e))?;
+    })?;
 
     Ok(String::from_utf8_lossy(&diff_buf).to_string())
 }
@@ -264,8 +248,7 @@ pub async fn export_git_diff(
     layout: ExportLayout,
     save_path: String,
     selected_paths: Vec<String>,
-) -> Result<(), String> {
-
+) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
         let all_files = get_git_diff(project_path, old_hash, new_hash)?;
 
@@ -275,13 +258,14 @@ pub async fn export_git_diff(
             .collect();
 
         if filtered_files.is_empty() {
-            return Err("No files selected for export.".to_string());
+            return Err(GitError::NoFilesSelected);
         }
 
         let content = generate_export_content(filtered_files, format, layout);
+        std::fs::write(&save_path, content)?;
 
-        std::fs::write(&save_path, content).map_err(|e| format!("Failed to write file: {}", e))?;
-        
         Ok(())
-    }).await.map_err(|e| e.to_string())?
+    })
+    .await
+    .map_err(|e| GitError::JoinError(e.to_string()))?
 }

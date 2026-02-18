@@ -9,6 +9,9 @@ pub mod models;
 pub mod engine;
 pub mod commands;
 pub mod screen;
+pub mod error;
+
+pub use error::{AutomatorError, Result};
 
 use engine::AutomatorState;
 use models::AutomatorStoreRoot;

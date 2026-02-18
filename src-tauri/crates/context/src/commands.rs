@@ -6,16 +6,18 @@ use super::gitleaks::{self, SecretMatch};
 use arboard::Clipboard;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use tauri::{State};
+use crate::error::{ContextError, Result};
 
 #[tauri::command]
 pub async fn calculate_context_stats<R: tauri::Runtime>(
     _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     remove_comments: bool
-) -> Result<ContextStats, String> {
+) -> Result<ContextStats> {
     let stats = tauri::async_runtime::spawn_blocking(move || {
         core::calculate_stats_parallel(paths, remove_comments)
-    }).await.map_err(|e| e.to_string())?;
+    }).await
+    .map_err(|e| ContextError::JoinError(e.to_string()))?;
 
     Ok(stats)
 }
@@ -26,10 +28,11 @@ pub async fn get_context_content<R: tauri::Runtime>(
     paths: Vec<String>,
     header: String,
     remove_comments: bool
-) -> Result<String, String> {
+) -> Result<String> {
     let content = tauri::async_runtime::spawn_blocking(move || {
         core::assemble_context_parallel(paths, header, remove_comments)
-    }).await.map_err(|e| e.to_string())?;
+    }).await
+    .map_err(|e| ContextError::JoinError(e.to_string()))?;
 
     Ok(content)
 }
@@ -40,14 +43,17 @@ pub async fn copy_context_to_clipboard<R: tauri::Runtime>(
     paths: Vec<String>,
     header: String,
     remove_comments: bool
-) -> Result<String, String> {
+) -> Result<String> {
     tauri::async_runtime::spawn_blocking(move || {
         let content = core::assemble_context_parallel(paths, header, remove_comments);
-        let mut clipboard = Clipboard::new().map_err(|e| format!("Clipboard init failed: {}", e))?;
+        let mut clipboard = Clipboard::new()
+            .map_err(|e| ContextError::ClipboardError(e.to_string()))?;
 
-        clipboard.set_text(content).map_err(|e| format!("Clipboard write failed: {}", e))?;
+        clipboard.set_text(content)
+            .map_err(|e| ContextError::ClipboardError(e.to_string()))?;
         Ok("Success".to_string())
-    }).await.map_err(|e| e.to_string())?
+    }).await
+    .map_err(|e| ContextError::JoinError(e.to_string()))?
 }
 
 #[tauri::command]
@@ -57,13 +63,14 @@ pub async fn save_context_to_file<R: tauri::Runtime>(
     header: String,
     remove_comments: bool,
     save_path: String
-) -> Result<(), String> {
+) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
         let content = core::assemble_context_parallel(paths, header, remove_comments);
-        let mut file = File::create(save_path).map_err(|e| format!("Failed to create file: {}", e))?;
-        file.write_all(content.as_bytes()).map_err(|e| format!("Failed to write file: {}", e))?;
+        let mut file = File::create(&save_path)?;
+        file.write_all(content.as_bytes())?;
         Ok(())
-    }).await.map_err(|e| e.to_string())?
+    }).await
+    .map_err(|e| ContextError::JoinError(e.to_string()))?
 }
 #[tauri::command]
 pub fn has_ignore_files(project_root: String) -> bool {
@@ -97,12 +104,13 @@ pub fn get_ignored_by_protocol(project_root: String, paths: Vec<String>) -> Vec<
 pub async fn scan_for_secrets(
     state: State<'_, ctxrun_db::DbState>,
     content: String
-) -> Result<Vec<SecretMatch>, String> {
+) -> Result<Vec<SecretMatch>> {
 
     let ignored_set = {
-        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        let conn = state.conn.lock()
+            .map_err(|e| ContextError::DbError(e.to_string()))?;
         ctxrun_db::secrets::get_all_ignored_values_internal(&conn)
-            .map_err(|e| e.to_string())?
+            .map_err(|e| ContextError::DbError(e.to_string()))?
     };
 
     let matches = tauri::async_runtime::spawn_blocking(move || {
@@ -115,7 +123,8 @@ pub async fn scan_for_secrets(
                 .filter(|m| !ignored_set.contains(&m.value))
                 .collect()
         }
-    }).await.map_err(|e| e.to_string())?;
+    }).await
+    .map_err(|e| ContextError::JoinError(e.to_string()))?;
 
     Ok(matches)
 }

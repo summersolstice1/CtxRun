@@ -1,12 +1,12 @@
-use tauri::{State, Emitter, Manager, AppHandle, Runtime}; 
+use tauri::{State, Emitter, Manager, AppHandle, Runtime};
 use rusqlite::{params, OptionalExtension};
 use serde::Serialize;
 use serde_json;
-use clipboard_rs::Clipboard; 
+use clipboard_rs::Clipboard;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::thread; 
-use std::time::Duration; 
+use std::thread;
+use std::time::Duration;
 
 use enigo::{Enigo, Key, Keyboard, Settings, Direction};
 
@@ -15,6 +15,7 @@ use super::models::RefineryItem;
 use super::storage::{create_manual_note_db, update_note_db};
 use super::cleanup_worker::RefineryCleanupConfig;
 use super::worker::PASTING_FLAG;
+use crate::error::Result;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -35,8 +36,8 @@ pub fn get_refinery_history(
     manual_only: bool,
     start_date: Option<i64>,
     end_date: Option<i64>,
-) -> Result<Vec<RefineryItem>, String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+) -> Result<Vec<RefineryItem>> {
+    let conn = state.conn.lock()?;
     let offset = (page - 1) * page_size;
 
     let mut sql = String::from(
@@ -80,7 +81,7 @@ pub fn get_refinery_history(
     params.push(Box::new(page_size));
     params.push(Box::new(offset));
 
-    let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(&sql)?;
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
     let iter = stmt.query_map(param_refs.as_slice(), |row: &rusqlite::Row| {
@@ -107,18 +108,18 @@ pub fn get_refinery_history(
             is_manual: row.get("is_manual").unwrap_or(false),
             is_edited: row.get("is_edited").unwrap_or(false),
         })
-    }).map_err(|e| e.to_string())?;
+    })?;
 
     let mut results = Vec::new();
     for item in iter {
-        results.push(item.map_err(|e| e.to_string())?);
+        results.push(item?);
     }
     Ok(results)
 }
 
 #[tauri::command]
-pub fn get_refinery_item_detail(state: State<DbState>, id: String) -> Result<Option<RefineryItem>, String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+pub fn get_refinery_item_detail(state: State<DbState>, id: String) -> Result<Option<RefineryItem>> {
+    let conn = state.conn.lock()?;
     let item = conn.query_row(
         "SELECT * FROM refinery_history WHERE id = ?",
         params![id],
@@ -144,54 +145,54 @@ pub fn get_refinery_item_detail(state: State<DbState>, id: String) -> Result<Opt
                 is_edited: row.get("is_edited").unwrap_or(false),
             })
         }
-    ).optional().map_err(|e| e.to_string())?;
+    ).optional()?;
     Ok(item)
 }
 
 #[tauri::command]
-pub fn get_refinery_statistics(state: State<DbState>) -> Result<RefineryStatistics, String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+pub fn get_refinery_statistics(state: State<DbState>) -> Result<RefineryStatistics> {
+    let conn = state.conn.lock()?;
     let total_entries: u32 = conn.query_row(
         "SELECT COUNT(*) FROM refinery_history",
         [],
         |row: &rusqlite::Row| row.get(0)
-    ).map_err(|e| e.to_string())?;
+    )?;
 
     let favorites: u32 = conn.query_row(
         "SELECT COUNT(*) FROM refinery_history WHERE is_pinned = 1",
         [],
         |row: &rusqlite::Row| row.get(0)
-    ).map_err(|e| e.to_string())?;
+    )?;
 
     let week_ago = chrono::Utc::now().timestamp_millis() - (7 * 24 * 60 * 60 * 1000);
     let this_week: u32 = conn.query_row(
         "SELECT COUNT(*) FROM refinery_history WHERE created_at > ?",
         params![week_ago],
         |row: &rusqlite::Row| row.get(0)
-    ).map_err(|e| e.to_string())?;
+    )?;
 
     Ok(RefineryStatistics { total_entries, this_week, favorites })
 }
 
 #[tauri::command]
-pub fn toggle_refinery_pin(state: State<DbState>, id: String) -> Result<(), String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+pub fn toggle_refinery_pin(state: State<DbState>, id: String) -> Result<()> {
+    let conn = state.conn.lock()?;
     conn.execute("UPDATE refinery_history SET is_pinned = NOT is_pinned WHERE id = ?", params![id])
-        .map_err(|e| e.to_string())?;
+        ?;
     Ok(())
 }
 
-fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<usize, String> {
+fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<usize> {
     if ids.is_empty() { return Ok(0); }
     let mut files_to_delete: Vec<String> = Vec::new();
     {
-        let mut stmt = conn.prepare("SELECT kind, content FROM refinery_history WHERE id = ?").map_err(|e| e.to_string())?;
+        let mut stmt = conn.prepare("SELECT kind, content FROM refinery_history WHERE id = ?")?;
         for id in ids {
             let rows = stmt.query_map(params![id], |row: &rusqlite::Row| {
                 let kind: String = row.get(0)?;
                 let content: String = row.get(1)?;
                 Ok((kind, content))
-            }).map_err(|e| e.to_string())?;
+            })?;
             for r in rows {
                 if let Ok((kind, content)) = r {
                     if kind == "image" { files_to_delete.push(content); }
@@ -199,15 +200,15 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
             }
         }
     }
-    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    let tx = conn.unchecked_transaction()?;
     let mut deleted_count = 0;
     {
-        let mut delete_stmt = tx.prepare("DELETE FROM refinery_history WHERE id = ?").map_err(|e| e.to_string())?;
+        let mut delete_stmt = tx.prepare("DELETE FROM refinery_history WHERE id = ?")?;
         for id in ids {
-            deleted_count += delete_stmt.execute(params![id]).map_err(|e| e.to_string())?;
+            deleted_count += delete_stmt.execute(params![id])?;
         }
     }
-    tx.commit().map_err(|e| e.to_string())?;
+    tx.commit()?;
     for path_str in files_to_delete {
         let path = std::path::Path::new(&path_str);
         if path.exists() {
@@ -218,14 +219,14 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
 }
 
 #[tauri::command]
-pub fn delete_refinery_items(state: State<DbState>, ids: Vec<String>) -> Result<usize, String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+pub fn delete_refinery_items(state: State<DbState>, ids: Vec<String>) -> Result<usize> {
+    let conn = state.conn.lock()?;
     delete_items_internal(&conn, &ids)
 }
 
 #[tauri::command]
-pub fn clear_refinery_history(state: State<DbState>, before_timestamp: Option<i64>, include_pinned: bool) -> Result<usize, String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+pub fn clear_refinery_history(state: State<DbState>, before_timestamp: Option<i64>, include_pinned: bool) -> Result<usize> {
+    let conn = state.conn.lock()?;
     let mut sql = String::from("SELECT id FROM refinery_history WHERE 1=1");
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
     if let Some(ts) = before_timestamp {
@@ -233,10 +234,10 @@ pub fn clear_refinery_history(state: State<DbState>, before_timestamp: Option<i6
         params.push(Box::new(ts));
     }
     if !include_pinned { sql.push_str(" AND is_pinned = 0"); }
-    let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
+    let mut stmt = conn.prepare(&sql)?;
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
     let ids: Vec<String> = stmt.query_map(param_refs.as_slice(), |row: &rusqlite::Row| row.get(0))
-        .map_err(|e| e.to_string())?
+        ?
         .filter_map(|r| r.ok())
         .collect();
     if ids.is_empty() { return Ok(0); }
@@ -244,22 +245,22 @@ pub fn clear_refinery_history(state: State<DbState>, before_timestamp: Option<i6
 }
 
 #[tauri::command]
-pub async fn copy_refinery_text(text: String) -> Result<(), String> {
+pub async fn copy_refinery_text(text: String) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
         let clipboard = clipboard_rs::ClipboardContext::new().map_err(|e| format!("Failed to init clipboard: {}", e))?;
         clipboard.set_text(text).map_err(|e| format!("Failed to copy text: {}", e))?;
         Ok(())
-    }).await.map_err(|e| e.to_string())?
+    }).await?
 }
 
 #[tauri::command]
-pub async fn copy_refinery_image(image_path: String) -> Result<(), String> {
+pub async fn copy_refinery_image(image_path: String) -> Result<()> {
     use clipboard_rs::common::{RustImageData, RustImage};
     use std::path::Path;
     tauri::async_runtime::spawn_blocking(move || {
         let path = Path::new(&image_path);
-        if !path.exists() { return Err(format!("Image file not found: {}", image_path)); }
-        let img = image::open(path).map_err(|e| format!("Failed to open image: {}", e))?;
+        if !path.exists() { return Err(format!("Image file not found: {}", image_path).into()); }
+        let img = image::open(path)?;
         let final_img = if img.width() > 4096 || img.height() > 4096 {
             let (max_w, max_h) = if img.width() > img.height() {
                 (4096, (4096 * img.height() / img.width()).max(1))
@@ -269,10 +270,12 @@ pub async fn copy_refinery_image(image_path: String) -> Result<(), String> {
             img.resize(max_w, max_h, image::imageops::FilterType::Triangle)
         } else { img };
         let rust_image = RustImageData::from_dynamic_image(final_img);
-        let clipboard = clipboard_rs::ClipboardContext::new().map_err(|e| format!("Failed to init clipboard: {}", e))?;
-        clipboard.set_image(rust_image).map_err(|e| format!("Failed to copy image: {}", e))?;
+        let clipboard = clipboard_rs::ClipboardContext::new()
+            .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+        clipboard.set_image(rust_image)
+            .map_err(|e| format!("Failed to copy image: {}", e))?;
         Ok(())
-    }).await.map_err(|e| e.to_string())?
+    }).await?
 }
 
 #[tauri::command]
@@ -281,8 +284,8 @@ pub fn create_note<R: Runtime>(
     state: State<DbState>,
     content: String,
     title: Option<String>
-) -> Result<String, String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+) -> Result<String> {
+    let conn = state.conn.lock()?;
     let new_id = create_manual_note_db(&conn, content, title)?;
     let _ = app.emit("refinery:create", &new_id);
     Ok(new_id)
@@ -295,8 +298,8 @@ pub fn update_note<R: Runtime>(
     id: String,
     content: Option<String>,
     title: Option<String>
-) -> Result<(), String> {
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+) -> Result<()> {
+    let conn = state.conn.lock()?;
     update_note_db(&conn, &id, content, title)?;
     let _ = app.emit("refinery:update", &id);
     Ok(())
@@ -309,7 +312,7 @@ pub async fn update_cleanup_config<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, CleanupConfigState>,
     config: RefineryCleanupConfig,
-) -> Result<(), String> {
+) -> Result<()> {
     let is_enabled = config.enabled;
     {
         let mut state_config = state.0.lock().await;
@@ -326,7 +329,7 @@ pub async fn update_cleanup_config<R: Runtime>(
 pub async fn manual_cleanup<R: Runtime>(
     app: AppHandle<R>,
     config_state: State<'_, CleanupConfigState>,
-) -> Result<usize, String> {
+) -> Result<usize> {
     let config = config_state.0.lock().await.clone();
     if !config.enabled { return Ok(0); }
     match config.strategy.as_str() {
@@ -342,35 +345,35 @@ pub async fn manual_cleanup<R: Runtime>(
 
 const CLEANUP_BUFFER_RATIO: f64 = 0.10;
 
-pub fn execute_count_cleanup<R: Runtime>(app: &AppHandle<R>, max_count: u32, keep_pinned: bool) -> Result<usize, String> {
+pub fn execute_count_cleanup<R: Runtime>(app: &AppHandle<R>, max_count: u32, keep_pinned: bool) -> Result<usize> {
     let state = app.state::<DbState>();
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = state.conn.lock()?;
     let buffer = (max_count as f64 * CLEANUP_BUFFER_RATIO).ceil() as u32;
     let threshold = max_count + buffer;
-    let total: u32 = conn.query_row("SELECT COUNT(*) FROM refinery_history WHERE is_manual = 0", [], |row: &rusqlite::Row| row.get(0)).map_err(|e| e.to_string())?;
+    let total: u32 = conn.query_row("SELECT COUNT(*) FROM refinery_history WHERE is_manual = 0", [], |row: &rusqlite::Row| row.get(0))?;
     if total <= threshold { return Ok(0); }
     let to_delete = total - max_count;
     let mut sql = String::from("SELECT id FROM refinery_history WHERE is_manual = 0");
     if keep_pinned { sql.push_str(" AND is_pinned = 0"); }
     sql.push_str(&format!(" ORDER BY updated_at ASC LIMIT {}", to_delete));
-    let ids: Vec<String> = conn.prepare(&sql).map_err(|e| e.to_string())?
+    let ids: Vec<String> = conn.prepare(&sql)?
         .query_map([], |row: &rusqlite::Row| row.get(0))
-        .map_err(|e| e.to_string())?
+        ?
         .filter_map(|r| r.ok())
         .collect();
     if ids.is_empty() { return Ok(0); }
     delete_items_internal(&conn, &ids)
 }
 
-pub fn execute_time_cleanup<R: Runtime>(app: &AppHandle<R>, days: u32, keep_pinned: bool) -> Result<usize, String> {
+pub fn execute_time_cleanup<R: Runtime>(app: &AppHandle<R>, days: u32, keep_pinned: bool) -> Result<usize> {
     let state = app.state::<DbState>();
-    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    let conn = state.conn.lock()?;
     let cutoff = chrono::Utc::now().timestamp_millis() - (days as i64 * 24 * 60 * 60 * 1000);
     let mut sql = String::from("SELECT id FROM refinery_history WHERE is_manual = 0 AND created_at < ?");
     if keep_pinned { sql.push_str(" AND is_pinned = 0"); }
-    let ids: Vec<String> = conn.prepare(&sql).map_err(|e| e.to_string())?
+    let ids: Vec<String> = conn.prepare(&sql)?
         .query_map(params![cutoff], |row: &rusqlite::Row| row.get(0))
-        .map_err(|e| e.to_string())?
+        ?
         .filter_map(|r| r.ok())
         .collect();
     if ids.is_empty() { return Ok(0); }
@@ -382,15 +385,15 @@ pub async fn spotlight_paste<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, DbState>,
     item_id: String,
-) -> Result<(), String> {
+) -> Result<()> {
     PASTING_FLAG.store(true, std::sync::atomic::Ordering::SeqCst);
     let (kind, content) = {
-        let conn = state.conn.lock().map_err(|e| e.to_string())?;
+        let conn = state.conn.lock()?;
         conn.query_row(
             "SELECT kind, content FROM refinery_history WHERE id = ?",
             params![item_id],
             |row: &rusqlite::Row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
-        ).map_err(|e| e.to_string())?
+        )?
     };
 
     if let Some(window) = app.get_webview_window("spotlight") {
@@ -409,7 +412,7 @@ pub async fn spotlight_paste<R: Runtime>(
             Ok(e) => e,
             Err(e) => { eprintln!("[CtxRun] Failed to init Enigo: {:?}", e); return; }
         };
-        let mut perform_paste = || -> Result<(), enigo::InputError> {
+        let mut perform_paste = || -> std::result::Result<(), enigo::InputError> {
             #[cfg(target_os = "macos")] {
                 enigo.key(Key::Meta, Direction::Press)?;
                 enigo.key(Key::Unicode('v'), Direction::Click)?;
