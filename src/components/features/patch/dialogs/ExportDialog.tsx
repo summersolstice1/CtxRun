@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { X, FileText, FileJson, FileCode, FileType, Columns, List, GitMerge } from 'lucide-react';
 import { ExportFormat, ExportLayout } from '../patch_types';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface ExportDialogProps {
   isOpen: boolean;
@@ -15,7 +14,7 @@ interface ExportDialogProps {
 export function ExportDialog({ isOpen, onClose, onConfirm, count }: ExportDialogProps) {
   const [format, setFormat] = useState<ExportFormat>('Markdown');
   const [layout, setLayout] = useState<ExportLayout>('Split');
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   if (!isOpen) return null;
 
@@ -25,9 +24,9 @@ export function ExportDialog({ isOpen, onClose, onConfirm, count }: ExportDialog
         
         <div className="px-6 py-4 border-b border-border bg-secondary/10 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">{getText('export', 'title', language)}</h3>
+            <h3 className="text-lg font-semibold">{t('export.title')}</h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-                {getText('export', 'selected', language, { count: count.toString() })}
+                {t('export.selected', { count })}
             </p>
           </div>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-secondary text-muted-foreground transition-colors">
@@ -37,50 +36,50 @@ export function ExportDialog({ isOpen, onClose, onConfirm, count }: ExportDialog
 
         <div className="p-6 space-y-6">
             <div className="space-y-3">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('export', 'layout', language)}</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('export.layout')}</label>
                 <div className="grid grid-cols-3 gap-3">
                     <LayoutOption 
                         active={layout === 'Split'} 
                         onClick={() => setLayout('Split')}
                         icon={Columns}
-                        title={getText('export', 'split', language)}
-                        desc={getText('export', 'splitDesc', language)}
+                        title={t('export.split')}
+                        desc={t('export.splitDesc')}
                     />
                     <LayoutOption 
                         active={layout === 'Unified'} 
                         onClick={() => setLayout('Unified')}
                         icon={List}
-                        title={getText('export', 'unified', language)}
-                        desc={getText('export', 'unifiedDesc', language)}
+                        title={t('export.unified')}
+                        desc={t('export.unifiedDesc')}
                     />
                     <LayoutOption 
                         active={layout === 'GitPatch'} 
                         onClick={() => setLayout('GitPatch')}
                         icon={GitMerge}
-                        title={getText('export', 'gitPatch', language)}
-                        desc={getText('export', 'gitPatchDesc', language)}
+                        title={t('export.gitPatch')}
+                        desc={t('export.gitPatchDesc')}
                     />
                 </div>
             </div>
 
             <div className="space-y-3">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('export', 'format', language)}</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('export.format')}</label>
                 <div className="grid grid-cols-2 gap-2">
-                    <FormatOption active={format === 'Markdown'} onClick={() => setFormat('Markdown')} icon={FileText} label={getText('export', 'markdown', language)} />
-                    <FormatOption active={format === 'Json'} onClick={() => setFormat('Json')} icon={FileJson} label={getText('export', 'json', language)} />
-                    <FormatOption active={format === 'Xml'} onClick={() => setFormat('Xml')} icon={FileCode} label={getText('export', 'xml', language)} />
-                    <FormatOption active={format === 'Txt'} onClick={() => setFormat('Txt')} icon={FileType} label={getText('export', 'txt', language)} />
+                    <FormatOption active={format === 'Markdown'} onClick={() => setFormat('Markdown')} icon={FileText} label={t('export.markdown')} />
+                    <FormatOption active={format === 'Json'} onClick={() => setFormat('Json')} icon={FileJson} label={t('export.json')} />
+                    <FormatOption active={format === 'Xml'} onClick={() => setFormat('Xml')} icon={FileCode} label={t('export.xml')} />
+                    <FormatOption active={format === 'Txt'} onClick={() => setFormat('Txt')} icon={FileType} label={t('export.txt')} />
                 </div>
             </div>
         </div>
 
         <div className="p-4 border-t border-border bg-secondary/5 flex justify-end gap-3">
-            <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary text-muted-foreground transition-colors">{getText('export', 'btnCancel', language)}</button>
-            <button 
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary text-muted-foreground transition-colors">{t('export.btnCancel')}</button>
+            <button
                 onClick={() => onConfirm(format, layout)}
                 className="px-6 py-2 text-sm font-medium rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm transition-colors"
             >
-                {getText('export', 'btnExport', language)}
+                {t('export.btnExport')}
             </button>
         </div>
       </div>

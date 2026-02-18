@@ -2,14 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Search, Filter, Layers, Image as ImageIcon, Type, X } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { HistoryItem } from './HistoryItem';
 import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 export function HistorySidebar() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const {
     items, activeId, isLoading, hasMore, loadHistory,
     searchQuery, setSearchQuery,
@@ -72,7 +71,7 @@ export function HistorySidebar() {
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
             <input
                className="w-full bg-secondary/50 border border-border/50 rounded-lg pl-8 pr-8 py-1.5 text-xs focus:ring-1 focus:ring-primary/30 focus:bg-background transition-all outline-none"
-               placeholder={getText('common', 'search', language)}
+               placeholder={t('common.search')}
                value={localSearch}
                onChange={(e) => setLocalSearch(e.target.value)}
             />

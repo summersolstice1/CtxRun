@@ -298,7 +298,9 @@ const translations = {
       executable: "Executable Command",
       executableDesc: "Run this in the system terminal instead of copying.",
       execShell: "Execution Shell",
-      autoDetect: "Auto Detect"
+      autoDetect: "Auto Detect",
+      smartAssemblyMode: "Smart Assembly Mode:",
+      smartAssemblyTip: "• Fills {{variable}} if present.\n• Otherwise, appends your input to the end."
     },
     filler: {
       title: "Fill Variables",
@@ -984,7 +986,9 @@ const translations = {
       executable: "可执行命令",
       executableDesc: "直接在系统终端中运行，而不是复制到剪贴板",
       execShell: "执行 Shell",
-      autoDetect: "自动检测"
+      autoDetect: "自动检测",
+      smartAssemblyMode: "智能拼接模式：",
+      smartAssemblyTip: "• 若内容包含 {{变量}}，输入将自动填充。\n• 若无变量，输入将自动拼接到内容末尾。"
     },
     filler: {
       title: "填充变量",
@@ -1392,3 +1396,6 @@ export function getText(
 
   return text;
 }
+
+// Export translations for react-i18next
+export { translations };

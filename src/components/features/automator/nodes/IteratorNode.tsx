@@ -2,8 +2,7 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Repeat } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { NumberInput } from '@/components/ui/NumberInput';
 
 interface IteratorNodeData {
@@ -16,9 +15,7 @@ export const IteratorNode = memo((props: NodeProps) => {
   const data = props.data as unknown as IteratorNodeData;
   const { payload, onChange, isExecuting } = data;
 
-  const { language } = useAppStore();
-
-  const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
+  const { t } = useTranslation();
 
   const handleChange = (val: number) => {
     onChange({ targetCount: Math.max(1, val) });
@@ -32,13 +29,13 @@ export const IteratorNode = memo((props: NodeProps) => {
     )}>
       <div className="bg-blue-500/10 text-blue-600 px-3 py-2 text-[10px] font-bold border-b border-blue-500/20 flex items-center gap-2 rounded-t-lg">
         <Repeat size={12} />
-        <span>{t('loopIteratorNodeLabel')}</span>
+        <span>{t('automator.loopIteratorNodeLabel')}</span>
         {isExecuting && <div className="ml-auto w-2 h-2 bg-blue-500 rounded-full animate-ping" />}
       </div>
 
       <div className="p-3 space-y-2 nodrag">
         <NumberInput
-          label={t('targetCount')}
+          label={t('automator.targetCount')}
           value={payload.targetCount}
           min={1}
           onChange={handleChange}
@@ -47,10 +44,10 @@ export const IteratorNode = memo((props: NodeProps) => {
         <div className="flex justify-between text-[9px] font-semibold pt-1">
           <div className="flex items-center gap-1 text-red-500">
             <div className="w-2 h-2 rounded-full bg-red-500" />
-            <span>← {t('exit')}</span>
+            <span>← {t('automator.exit')}</span>
           </div>
           <div className="flex items-center gap-1 text-green-500">
-            <span>{t('loop')} →</span>
+            <span>{t('automator.loop')} →</span>
             <div className="w-2 h-2 rounded-full bg-green-500" />
           </div>
         </div>

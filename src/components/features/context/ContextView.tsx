@@ -24,7 +24,7 @@ import { FilterManager } from './FilterManager';
 import { ContextPreview } from './ContextPreview';
 import { ScanResultDialog, SecretMatch } from './ScanResultDialog';
 import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { Toast, ToastType } from '@/components/ui/Toast';
 import { FileNode } from '@/types/context';
 import { FixedSizeList as List } from 'react-window';
@@ -67,6 +67,7 @@ const Row = memo(function Row({ index, style, data }: RowProps) {
 });
 
 export function ContextView() {
+  const { t } = useTranslation();
   const {
     projectRoot, fileTree, isScanning,
     projectIgnore, updateProjectIgnore,
@@ -81,7 +82,7 @@ export function ContextView() {
     isContextSidebarOpen, setContextSidebarOpen,
     contextSidebarWidth, setContextSidebarWidth,
     globalIgnore,
-    models, language
+    models
   } = useAppStore();
 
   const { openPreview } = usePreviewStore();
@@ -179,7 +180,7 @@ export function ContextView() {
       try {
           if (action === 'copy') {
               await writeClipboard(text);
-              triggerToast(getText('context', 'toastCopied', language), 'success');
+              triggerToast(t('context.toastCopied'), 'success');
           } else if (action === 'save') {
               let filePath = savePath;
               if (!filePath) {
@@ -196,10 +197,10 @@ export function ContextView() {
               }
 
               await writeTextFile(filePath, text);
-              triggerToast(getText('context', 'toastSaved', language), 'success');
+              triggerToast(t('context.toastSaved'), 'success');
           }
       } catch (err) {
-          triggerToast(action === 'copy' ? getText('context', 'toastCopyFail', language) : getText('context', 'toastSaveFail', language), 'error');
+          triggerToast(action === 'copy' ? t('context.toastCopyFail') : t('context.toastSaveFail'), 'error');
       } finally {
           if (action === 'save') {
               setIsGenerating(false);
@@ -280,7 +281,7 @@ export function ContextView() {
         await processWithSecurityCheck(text, 'copy');
       } else {
         await invoke(`${CONTEXT_PLUGIN_PREFIX}copy_context_to_clipboard`, { paths, header, removeComments });
-        triggerToast(getText('context', 'toastCopied', language), 'success');
+        triggerToast(t('context.toastCopied'), 'success');
       }
     } catch (err) {
       triggerToast("Copy failed", 'error');
@@ -317,7 +318,7 @@ export function ContextView() {
           removeComments,
           savePath: filePath
         });
-        triggerToast(getText('context', 'toastSaved', language), 'success');
+        triggerToast(t('context.toastSaved'), 'success');
       }
     } catch (err) {
       triggerToast("Generation failed", 'error');
@@ -398,7 +399,7 @@ export function ContextView() {
           <Search size={14} className="text-muted-foreground/50" />
           <input 
             className="flex-1 bg-transparent border-none outline-none text-sm h-8 placeholder:text-muted-foreground/40"
-            placeholder={getText('context', 'searchPlaceholder', language)}
+            placeholder={t('context.searchPlaceholder')}
             value={pathInput}
             onChange={(e) => setPathInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -409,7 +410,7 @@ export function ContextView() {
         </div>
 
         <button onClick={handleBrowse} className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 border border-border rounded-md text-sm font-medium transition-colors whitespace-nowrap">
-          <FolderOpen size={16} /><span>{getText('context', 'browse', language)}</span>
+          <FolderOpen size={16} /><span>{t('context.browse')}</span>
         </button>
         <button onClick={() => performScan(projectRoot || '')} disabled={!projectRoot || isScanning} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50">
           <RefreshCw size={16} className={cn(isScanning && "animate-spin")} />
@@ -422,7 +423,7 @@ export function ContextView() {
           style={{ width: isContextSidebarOpen ? `${contextSidebarWidth}px` : 0 }}
         >
           <div className="p-3 border-b border-border/50 text-xs font-bold text-muted-foreground uppercase tracking-wider flex justify-between shrink-0 items-center">
-             <span className="flex items-center gap-1"><FileJson size={12}/>{getText('context', 'explorer', language)}</span>
+             <span className="flex items-center gap-1"><FileJson size={12}/>{t('context.explorer')}</span>
              <div className="flex items-center gap-2">
                 {hasProjectIgnoreFiles && (
                   <button
@@ -433,7 +434,7 @@ export function ContextView() {
                         ? "bg-orange-500/20 text-orange-500 border border-orange-500/30"
                         : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                     )}
-                    title={isIgnoreSyncActive ? getText('context', 'releaseIgnore', language) : getText('context', 'syncIgnore', language)}
+                    title={isIgnoreSyncActive ? t('context.releaseIgnore') : t('context.syncIgnore')}
                   >
                     <GitBranch size={12} className={cn(isIgnoreSyncActive && "animate-pulse")} />
                     {isIgnoreSyncActive && <span className="text-[10px] font-bold">GIT</span>}
@@ -442,23 +443,23 @@ export function ContextView() {
                 <button
                   onClick={invertSelection}
                   className="p-1 hover:bg-secondary/80 rounded transition-colors text-muted-foreground hover:text-foreground"
-                  title={getText('context', 'invertSelection', language)}
+                  title={t('context.invertSelection')}
                 >
                    <ArrowRightLeft size={12} />
                 </button>
                 <span className="bg-secondary/50 px-1.5 py-0.5 rounded text-[10px] tabular-nums">
-                  {getText('context', 'selectedCount', language, { count: selectedFileCount.toString() })}
+                  {t('context.selectedCount', { count: selectedFileCount })}
                 </span>
              </div>
           </div>
           
           <div className="flex-1 overflow-hidden relative">
             {!projectRoot ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2 text-center px-4"><p className="text-sm">{getText('context', 'enterPath', language)}</p></div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2 text-center px-4"><p className="text-sm">{t('context.enterPath')}</p></div>
             ) : isScanning ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground animate-pulse"><Loader2 size={20} className="animate-spin text-primary" /><span>{getText('context', 'scanning', language)}</span></div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground animate-pulse"><Loader2 size={20} className="animate-spin text-primary" /><span>{t('context.scanning')}</span></div>
             ) : fileTree.length === 0 ? (
-              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">{getText('context', 'emptyDir', language)}</div>
+              <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">{t('context.emptyDir')}</div>
             ) : (
               <AutoSizer>
                 {({ height, width }) => (
@@ -484,7 +485,7 @@ export function ContextView() {
                   onClick={() => setShowFilters(!showFilters)}
                   className="flex items-center justify-between px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wider hover:bg-secondary/50 transition-colors"
               >
-                  <span className="flex items-center gap-2"><SlidersHorizontal size={12}/> {getText('context', 'filters', language)}</span>
+                  <span className="flex items-center gap-2"><SlidersHorizontal size={12}/> {t('context.filters')}</span>
                   <ChevronUp size={14} className={cn("transition-transform duration-200", showFilters ? "rotate-180" : "rotate-0")} />
               </button>
               {showFilters && (
@@ -510,13 +511,13 @@ export function ContextView() {
                     active={rightViewMode === 'dashboard'} 
                     onClick={() => setRightViewMode('dashboard')}
                     icon={<LayoutDashboard size={14} />} 
-                    label={getText('context', 'tabDashboard', language)}
+                    label={t('context.tabDashboard')}
                   />
                   <ViewToggleBtn 
                     active={rightViewMode === 'preview'} 
                     onClick={() => setRightViewMode('preview')}
                     icon={<FileText size={14} />} 
-                    label={getText('context', 'tabPreview', language)}
+                    label={t('context.tabPreview')}
                   />
                </div>
             </div>

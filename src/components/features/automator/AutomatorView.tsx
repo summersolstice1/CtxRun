@@ -9,8 +9,7 @@ import '@xyflow/react/dist/style.css';
 
 import { Play, Square, Move } from 'lucide-react';
 import { useAutomatorStore } from '@/store/useAutomatorStore';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { ActionNode } from './nodes/ActionNode';
 import { StartNode, EndNode } from './nodes/SpecialNodes';
 import { ConditionNode } from './nodes/ConditionNode';
@@ -57,7 +56,7 @@ function DnDFlow() {
     stop, isRunning, currentStepIndex
   } = useAutomatorStore();
 
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   // 状态同步：重置高亮
   useEffect(() => {
@@ -201,7 +200,7 @@ function DnDFlow() {
     // 2. 找到唯一的起点
     const startNode = nodes.find((n) => n.type === 'startNode');
     if (!startNode) {
-      alert(getText('automator', 'needStartPoint', language));
+      alert(t('automator.needStartPoint'));
       return;
     }
     const graphNodes: Record<string, WorkflowNode> = {};
@@ -267,7 +266,7 @@ function DnDFlow() {
     // 4. 找到 startNode 连接的第一个节点
     const firstEdge = edges.find((e) => e.source === startNode.id);
     if (!firstEdge) {
-      alert(getText('automator', 'noConnection', language));
+      alert(t('automator.noConnection'));
       return;
     }
 
@@ -300,7 +299,7 @@ function DnDFlow() {
         graph: workflowGraph
       });
     } catch (error) {
-      alert(getText('automator', 'executionFailed', language, { error: String(error) }));
+      alert(t('automator.executionFailed', { error: String(error) }));
     }
   };
   const processedNodes = useMemo(() => {
@@ -317,12 +316,12 @@ function DnDFlow() {
     <div className="h-full flex flex-col bg-background">
       <div className="h-14 border-b border-border flex items-center px-4 justify-between bg-secondary/5 shrink-0 z-10">
          <div className="flex items-center gap-3">
-            <h2 className="font-semibold text-foreground">{getText('automator', 'designerTitle', language)}</h2>
-            <div className="px-2 py-0.5 rounded-full bg-secondary text-[10px] text-muted-foreground border border-border">{getText('automator', 'manualMode', language)}</div>
+            <h2 className="font-semibold text-foreground">{t('automator.designerTitle')}</h2>
+            <div className="px-2 py-0.5 rounded-full bg-secondary text-[10px] text-muted-foreground border border-border">{t('automator.manualMode')}</div>
          </div>
          <div className="flex items-center gap-2">
             <button onClick={isRunning ? stop : handleRun} className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm", isRunning ? "bg-destructive text-white" : "bg-primary text-primary-foreground")}>
-                {isRunning ? <><Square size={14} fill="currentColor"/> {getText('automator', 'stopBtn', language)}</> : <><Play size={14} fill="currentColor"/> {getText('automator', 'runBtn', language)}</>}
+                {isRunning ? <><Square size={14} fill="currentColor"/> {t('automator.stopBtn')}</> : <><Play size={14} fill="currentColor"/> {t('automator.runBtn')}</>}
             </button>
          </div>
       </div>
@@ -354,7 +353,7 @@ function DnDFlow() {
                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-40">
                     <div className="border-2 border-dashed border-muted-foreground/30 rounded-xl p-8 flex flex-col items-center">
                         <Move size={32} className="mb-2" />
-                        <p className="text-sm font-medium">{getText('automator', 'dragActionsHere', language)}</p>
+                        <p className="text-sm font-medium">{t('automator.dragActionsHere')}</p>
                     </div>
                 </div>
             )}

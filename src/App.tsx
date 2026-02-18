@@ -8,7 +8,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { useAppStore, AppTheme } from "@/store/useAppStore";
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { PreviewModal } from "@/components/features/hyperview";
 const PromptView = lazy(() => import('@/components/features/prompts/PromptView').then(module => ({ default: module.PromptView })));
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
@@ -20,7 +20,8 @@ const SystemMonitorModal = lazy(() => import('@/components/features/monitor/Syst
 const appWindow = getCurrentWebviewWindow()
 
 function App() {
-  const { currentView, theme, setTheme, syncModels, lastUpdated, restReminder, language } = useAppStore();
+  const { currentView, theme, setTheme, syncModels, lastUpdated, restReminder } = useAppStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -118,7 +119,7 @@ function App() {
           <Suspense fallback={
             <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 animate-in fade-in">
                 <Loader2 className="animate-spin text-primary" size={32} />
-                <span className="text-sm">{getText('common', 'loadingModule', language)}</span>
+                <span className="text-sm">{t('common.loadingModule')}</span>
             </div>
           }>
             {currentView === 'prompts' && <PromptView />}

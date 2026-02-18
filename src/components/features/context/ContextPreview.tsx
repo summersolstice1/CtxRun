@@ -6,7 +6,7 @@ import { getSelectedPaths, generateHeader } from '@/lib/context_assembler';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -20,7 +20,8 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
-  const { language, theme } = useAppStore();
+  const { t } = useTranslation();
+  const { theme } = useAppStore();
   const { removeComments } = useContextStore();
 
   const editorRef = useRef<any>(null);
@@ -51,7 +52,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
         if (isMounted) setContent(text);
       } catch (err) {
         console.error("Preview generation failed", err);
-        if (isMounted) setContent(getText('common', 'previewError', language));
+        if (isMounted) setContent(t('common.previewError'));
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -146,7 +147,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
         <Loader2 size={24} className="animate-spin text-primary" />
-        <p className="text-sm">{getText('context', 'generating', language)}</p>
+        <p className="text-sm">{t('context.generating')}</p>
       </div>
     );
   }
@@ -155,7 +156,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 opacity-60">
         <AlertCircle size={32} />
-        <p>{getText('context', 'noFiles', language)}</p>
+        <p>{t('context.noFiles')}</p>
       </div>
     );
   }
@@ -191,10 +192,10 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
       <div className="flex items-center justify-between px-6 py-3 border-b border-border/50 bg-secondary/10 shrink-0 z-10 relative">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <FileText size={16} className="text-primary" />
-          <span>{getText('context', 'previewTitle', language)}</span>
+          <span>{t('context.previewTitle')}</span>
           <span className="text-xs text-muted-foreground font-normal ml-2">
-            ({getText('context', 'chars', language, { count: content.length.toLocaleString() })})
-            {removeComments && <span className="ml-2 px-1.5 py-0.5 bg-green-500/10 text-green-600 text-[10px] rounded border border-green-500/20">{getText('common', 'noComments', language)}</span>}
+            ({t('context.chars', { count: content.length })})
+            {removeComments && <span className="ml-2 px-1.5 py-0.5 bg-green-500/10 text-green-600 text-[10px] rounded border border-green-500/20">{t('common.noComments')}</span>}
           </span>
         </div>
 
@@ -203,7 +204,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
             onClick={triggerSearch}
             className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-md hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground border border-transparent hover:border-border/50"
           >
-            <Search size={14} />{getText('common', 'search', language)}
+            <Search size={14} />{t('common.search')}
           </button>
 
           <button
@@ -214,10 +215,10 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
             )}
           >
             {isCopied ? (
-              <span className="text-green-500">{getText('context', 'copied', language)}</span>
+              <span className="text-green-500">{t('context.copied')}</span>
             ) : (
               <>
-                <Copy size={14} /> {getText('actions', 'copy', language)}
+                <Copy size={14} /> {t('actions.copy')}
               </>
             )}
           </button>
@@ -233,7 +234,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
           loading={
              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                 <Loader2 size={20} className="animate-spin" />
-                <span className="text-xs">{getText('common', 'loadingEditor', language)}</span>
+                <span className="text-xs">{t('common.loadingEditor')}</span>
              </div>
           }
           options={{

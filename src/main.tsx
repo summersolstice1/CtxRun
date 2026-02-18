@@ -2,7 +2,8 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import SpotlightApp from "./SpotlightApp";
-import "./index.css"; 
+import "./index.css";
+import "./i18n/config"; // Initialize i18next 
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 const appWindow = getCurrentWebviewWindow()
 

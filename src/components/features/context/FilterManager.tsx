@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Lock, Plus, Trash2, Folder, File, FileCode } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { IgnoreConfig } from '@/types/context';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 type FilterType = keyof IgnoreConfig;
 
@@ -16,7 +15,7 @@ interface FilterManagerProps {
 export function FilterManager({ localConfig, globalConfig, onUpdate }: FilterManagerProps) {
   const [activeTab, setActiveTab] = useState<FilterType>('dirs');
   const [inputValue, setInputValue] = useState('');
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   // 渲染列表项
   const renderList = () => {
@@ -51,7 +50,7 @@ export function FilterManager({ localConfig, globalConfig, onUpdate }: FilterMan
               </div>
 
               {isLocked ? (
-              <div title={getText('common', 'managedByGlobal', language)} className="cursor-not-allowed">
+              <div title={t('common.managedByGlobal')} className="cursor-not-allowed">
                   <Lock size={10} className="text-muted-foreground opacity-50" />
               </div>
               ) : (
@@ -66,16 +65,16 @@ export function FilterManager({ localConfig, globalConfig, onUpdate }: FilterMan
           );
         })}
         {allItems.length === 0 && (
-            <div className="text-xs text-muted-foreground text-center py-4 opacity-50">{getText('context', 'noFilters', language)}</div>
+            <div className="text-xs text-muted-foreground text-center py-4 opacity-50">{t('context.noFilters')}</div>
         )}
       </div>
     );
   };
 
   const getPlaceholder = () => {
-      if (activeTab === 'dirs') return getText('context', 'filterPlaceholder', language, { type: getText('context', 'filterDirs', language) });
-      if (activeTab === 'files') return getText('context', 'filterPlaceholder', language, { type: getText('context', 'filterFiles', language) });
-      return getText('context', 'filterPlaceholder', language, { type: getText('context', 'filterExts', language) });
+      if (activeTab === 'dirs') return t('context.filterPlaceholder', { type: t('context.filterDirs') });
+      if (activeTab === 'files') return t('context.filterPlaceholder', { type: t('context.filterFiles') });
+      return t('context.filterPlaceholder', { type: t('context.filterExts') });
   };
 
   const handleAdd = () => {
@@ -88,21 +87,21 @@ export function FilterManager({ localConfig, globalConfig, onUpdate }: FilterMan
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tabs */}
       <div className="flex items-center gap-1 bg-secondary/20 p-1 rounded-lg mb-3 shrink-0">
-        <TabButton active={activeTab === 'dirs'} onClick={() => setActiveTab('dirs')} icon={<Folder size={12} />} label={getText('context', 'filterDirs', language)} />
-        <TabButton active={activeTab === 'files'} onClick={() => setActiveTab('files')} icon={<File size={12} />} label={getText('context', 'filterFiles', language)} />
-        <TabButton active={activeTab === 'extensions'} onClick={() => setActiveTab('extensions')} icon={<FileCode size={12} />} label={getText('context', 'filterExts', language)} />
+        <TabButton active={activeTab === 'dirs'} onClick={() => setActiveTab('dirs')} icon={<Folder size={12} />} label={t('context.filterDirs')} />
+        <TabButton active={activeTab === 'files'} onClick={() => setActiveTab('files')} icon={<File size={12} />} label={t('context.filterFiles')} />
+        <TabButton active={activeTab === 'extensions'} onClick={() => setActiveTab('extensions')} icon={<FileCode size={12} />} label={t('context.filterExts')} />
       </div>
 
       {/* Input */}
       <div className="flex gap-2 mb-2 shrink-0">
-        <input 
+        <input
           className="flex-1 bg-secondary/30 border border-border/50 rounded px-2 py-1 text-xs outline-none focus:border-primary/50"
           placeholder={getPlaceholder()}
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
         />
-        <button 
+        <button
           onClick={handleAdd}
           disabled={!inputValue.trim()}
           className="p-1 bg-primary/10 text-primary hover:bg-primary/20 rounded disabled:opacity-50"

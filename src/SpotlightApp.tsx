@@ -10,7 +10,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStore, AppTheme } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
 import { usePromptStore } from '@/store/usePromptStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { parseVariables } from '@/lib/template';
 import { executeCommand } from '@/lib/command_executor';
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
@@ -40,6 +40,7 @@ function SpotlightContent() {
   } = useSpotlight();
   const { language, spotlightAppearance } = useAppStore();
   const { projectRoot } = useContextStore();
+  const { t } = useTranslation();
 
   const search = useSpotlightSearch(language);
   const chat = useSpotlightChat();
@@ -111,7 +112,7 @@ function SpotlightContent() {
             await appWindow.hide();
             setQuery('');
         } catch (e) {
-            await message(getText('common', 'failedToLaunch', language, { error: String(e) }), { kind: 'error' });
+            await message(t('common.failedToLaunch', { error: String(e) }), { kind: 'error' });
         }
         return;
     }
@@ -123,7 +124,7 @@ function SpotlightContent() {
             await appWindow.hide();
             setQuery('');
         } catch (e) {
-            await message(getText('common', 'failedToOpenUrl', language, { error: String(e) }), { kind: 'error' });
+            await message(t('common.failedToOpenUrl', { error: String(e) }), { kind: 'error' });
         }
         return;
     }
@@ -143,8 +144,8 @@ function SpotlightContent() {
       const content = item.content || '';
       const vars = parseVariables(content);
       if (vars.length > 0) {
-        await message(getText('spotlight', 'commandHasVariables', language), {
-          title: getText('spotlight', 'actionRequired', language),
+        await message(t('spotlight.commandHasVariables'), {
+          title: t('spotlight.actionRequired'),
           kind: 'info'
         });
         return;

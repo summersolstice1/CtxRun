@@ -4,8 +4,7 @@ import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, 
 import { cn } from '@/lib/utils';
 import { AutomatorAction, MouseButton } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { NumberInput } from '@/components/ui/NumberInput';
 
 const ICONS: Record<AutomatorAction['type'], any> = {
@@ -48,10 +47,10 @@ export const ActionNode = memo((props: NodeProps) => {
   const payload = data.payload;
   const isExecuting = data.isExecuting;
 
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   const Icon = ICONS[actionType] || MousePointer2;
-  const title = getText('automator', TITLE_KEYS[actionType] || actionType, language);
+  const title = t(`automator.${TITLE_KEYS[actionType] || actionType}`);
 
   // 取坐标状态（仅用于 MoveTo）
   const [isPickingCoords, setIsPickingCoords] = useState(false);
@@ -89,8 +88,6 @@ export const ActionNode = memo((props: NodeProps) => {
       setIsPickingCoords(false);
     }
   };
-
-  const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
 
   // 按键录制处理
   useEffect(() => {
@@ -194,15 +191,15 @@ export const ActionNode = memo((props: NodeProps) => {
                 "bg-primary/10 text-primary hover:bg-primary/20",
                 isPickingCoords && "bg-primary/5 animate-pulse"
               )}
-              title={isPickingCoords ? t('pickingCoordsMessage') : t('pickCoordsTooltip')}
+              title={isPickingCoords ? t('automator.pickingCoordsMessage') : t('automator.pickCoordsTooltip')}
             >
               <Crosshair size={12} className={cn(isPickingCoords && "animate-spin")} />
-              <span>{isPickingCoords ? t('pickingCoords') : t('pickCoords')}</span>
+              <span>{isPickingCoords ? t('automator.pickingCoords') : t('automator.pickCoords')}</span>
             </button>
             {/* 取坐标状态提示 */}
             {isPickingCoords && (
               <div className="bg-primary/10 border border-primary/30 rounded px-2 py-1 text-center">
-                <span className="text-[9px] text-primary font-medium">{t('pickingCoordsMessage')}</span>
+                <span className="text-[9px] text-primary font-medium">{t('automator.pickingCoordsMessage')}</span>
               </div>
             )}
           </div>
@@ -213,7 +210,7 @@ export const ActionNode = memo((props: NodeProps) => {
              <input
                 type="text"
                 className="w-full bg-background border border-border rounded px-2 py-1"
-                placeholder={t('textToType')}
+                placeholder={t('automator.textToType')}
                 value={(payload as { text: string }).text}
                 onChange={(e) => handleChange('text', e.target.value)}
               />
@@ -226,15 +223,15 @@ export const ActionNode = memo((props: NodeProps) => {
              value={(payload as { button: MouseButton }).button}
              onChange={(e) => handleChange('button', e.target.value as MouseButton)}
            >
-             <option value="Left">{t('leftButton')}</option>
-             <option value="Right">{t('rightButton')}</option>
-             <option value="Middle">{t('middleButton')}</option>
+             <option value="Left">{t('automator.leftButton')}</option>
+             <option value="Right">{t('automator.rightButton')}</option>
+             <option value="Middle">{t('automator.middleButton')}</option>
            </select>
         )}
 
         {actionType === 'KeyPress' && (
           <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground block">{t('pressKey')}</label>
+            <label className="text-[10px] text-muted-foreground block">{t('automator.pressKey')}</label>
             <div className="flex gap-1">
               <div
                 ref={recordingRef}
@@ -265,7 +262,7 @@ export const ActionNode = memo((props: NodeProps) => {
                 <button
                   onClick={() => handleChange('key', '')}
                   className="px-2 rounded border border-border bg-secondary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-                  title={t('clear')}
+                  title={t('automator.clear')}
                 >
                   <X size={12} />
                 </button>

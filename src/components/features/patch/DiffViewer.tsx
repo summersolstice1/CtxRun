@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DiffEditor, DiffOnMount } from '@monaco-editor/react';
 import { Columns, Rows, FileCode, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { getMonacoLanguage } from '@/lib/langs';
 
@@ -16,7 +16,7 @@ interface DiffViewerProps {
 export function DiffViewer({ original, modified, fileName = '', placeholder }: DiffViewerProps) {
   const { theme } = useAppStore();
   const [renderSideBySide, setRenderSideBySide] = useState(true);
-  const { language: appLang } = useAppStore();
+  const { t } = useTranslation();
   const monacoRef = useRef<any>(null);
 
   const monacoLanguage = getMonacoLanguage(fileName);
@@ -125,7 +125,7 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
             loading={
                 <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
                     <Loader2 className="animate-spin" size={20} />
-                    <span className="text-xs">{getText('common', 'loadingDiff', appLang)}</span>
+                    <span className="text-xs">{t('common.loadingDiff')}</span>
                 </div>
             }
             options={{

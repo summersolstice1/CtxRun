@@ -4,7 +4,7 @@ import { Prompt } from '@/types/prompt';
 import { fillTemplate } from '@/lib/template';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface VariableFillerDialogProps {
   isOpen: boolean;
@@ -15,15 +15,16 @@ interface VariableFillerDialogProps {
   onConfirm: (filledContent: string) => void;
 }
 
-export function VariableFillerDialog({ 
-  isOpen, 
-  onClose, 
-  prompt, 
-  variables, 
+export function VariableFillerDialog({
+  isOpen,
+  onClose,
+  prompt,
+  variables,
   confirmText,
   onConfirm
 }: VariableFillerDialogProps) {
   const { language } = useAppStore();
+  const { t } = useTranslation();
   
   const [values, setValues] = useState<Record<string, string>>({});
   const [preview, setPreview] = useState('');
@@ -71,7 +72,7 @@ export function VariableFillerDialog({
         <div className="h-14 px-6 border-b border-border flex items-center justify-between bg-secondary/10">
           <h3 className="font-semibold text-base flex items-center gap-2">
             <Terminal size={16} className="text-primary" />
-            {getText('filler', 'title', language)}: <span className="text-foreground/80">{prompt.title}</span>
+            {t('filler.title', language)}: <span className="text-foreground/80">{prompt.title}</span>
           </h3>
           <button onClick={onClose} className="hover:bg-secondary p-1.5 rounded-md transition-colors text-muted-foreground hover:text-foreground">
             <X size={18} />
@@ -100,7 +101,7 @@ export function VariableFillerDialog({
           <div className="pt-2">
              <div className="flex items-center justify-between mb-2 ml-1">
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  {getText('filler', 'preview', language)}
+                  {t('filler.preview', language)}
                 </label>
                 <span className="text-[10px] text-muted-foreground/60 bg-secondary/50 px-1.5 py-0.5 rounded">Preview</span>
              </div>
@@ -114,7 +115,7 @@ export function VariableFillerDialog({
 
         <div className="p-4 border-t border-border bg-secondary/5 flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium rounded-lg border border-transparent hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-            {getText('filler', 'btnCancel', language)}
+            {t('filler.btnCancel', language)}
           </button>
           <button 
             onClick={handleConfirm} 
@@ -126,7 +127,7 @@ export function VariableFillerDialog({
             )}
           >
             {isExecutable ? <Zap size={16} /> : <Copy size={16} />}
-            {confirmText || getText('filler', 'btnCopy', language)}
+            {confirmText || t('filler.btnCopy', language)}
           </button>
         </div>
       </div>

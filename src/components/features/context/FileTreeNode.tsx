@@ -1,8 +1,7 @@
 import { ChevronRight, ChevronDown, Folder, FileCode, Lock, Eye } from 'lucide-react';
 import { FileNode } from '@/types/context';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { CSSProperties } from 'react';
 
 interface FileTreeNodeProps {
@@ -26,7 +25,7 @@ export function FileTreeNode({
   onToggleExpand,
   onPreview
 }: FileTreeNodeProps) {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   // 计算缩进
   const indent = depth * 16 + 12;
@@ -76,8 +75,8 @@ export function FileTreeNode({
       onDoubleClick={handleDoubleClick}
       title={node.isLocked
         ? (node.ignoreSource === 'git'
-          ? getText('common', 'ignoredByGit', language)
-          : getText('common', 'ignoredByFilter', language))
+          ? t('common.ignoredByGit')
+          : t('common.ignoredByFilter'))
         : node.path}
     >
       <div className="w-5 h-5 flex items-center justify-center shrink-0 text-muted-foreground">

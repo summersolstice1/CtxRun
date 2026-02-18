@@ -3,10 +3,9 @@ import { getVersion, getName } from '@tauri-apps/api/app';
 import { open } from '@tauri-apps/plugin-shell';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { motion, Variants } from 'framer-motion'; 
+import { motion, Variants } from 'framer-motion';
 import { Github, Loader2, AlertCircle, ExternalLink, BookOpen } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { useUsageGuide } from './hooks/useUsageGuide';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import iconUrl from '../../../src-tauri/icons/128x128.png';
@@ -31,7 +30,7 @@ const itemVariants: Variants = {
 };
 
 export function AboutSection() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const [appVersion, setAppVersion] = useState<string>('');
   const [appName, setAppName] = useState<string>('CtxRun');
   const { content, isLoading, error } = useUsageGuide();
@@ -183,7 +182,7 @@ export function AboutSection() {
       <div className="sticky top-0 z-20 px-8 py-3 bg-background/80 backdrop-blur-xl border-y border-border/40 flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider shadow-sm transition-all">
          <div className="flex items-center gap-2">
             <BookOpen size={14} className="text-primary" />
-            {getText('settings', 'usageGuide', language)}
+            {t('settings.usageGuide')}
          </div>
       </div>
 
@@ -191,7 +190,7 @@ export function AboutSection() {
          {isLoading ? (
              <div className="flex flex-col items-center justify-center py-32 text-muted-foreground gap-4 opacity-70">
                  <Loader2 size={32} className="animate-spin text-primary/50" />
-                 <span className="text-sm font-medium animate-pulse">{getText('settings', 'loadingUsage', language)}</span>
+                 <span className="text-sm font-medium animate-pulse">{t('settings.loadingUsage')}</span>
              </div>
          ) : error ? (
              <motion.div 
@@ -208,7 +207,7 @@ export function AboutSection() {
                      onClick={() => open(`${REPO_URL}/blob/main/USAGE.md`)}
                      className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-secondary hover:bg-secondary/80 text-foreground transition-colors text-xs font-medium"
                  >
-                     {getText('settings', 'viewSource', language)} <ExternalLink size={12} />
+                     {t('settings.viewSource')} <ExternalLink size={12} />
                  </button>
              </motion.div>
          ) : (

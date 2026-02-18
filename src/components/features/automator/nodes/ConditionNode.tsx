@@ -3,8 +3,7 @@ import { Handle, Position, NodeProps } from '@xyflow/react';
 import { Pipette, Crosshair } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { NumberInput } from '@/components/ui/NumberInput';
 
 interface ConditionNodeData {
@@ -23,9 +22,7 @@ export const ConditionNode = memo((props: NodeProps) => {
   const isExecuting = data.isExecuting;
   const [isPicking, setIsPicking] = useState(false);
 
-  const { language } = useAppStore();
-
-  const t = (key: string, vars?: Record<string, string>) => getText('automator', key, language, vars);
+  const { t } = useTranslation();
 
   const handleChange = (key: string, value: any) => {
     const newPayload = { ...payload, [key]: value };
@@ -65,7 +62,7 @@ export const ConditionNode = memo((props: NodeProps) => {
         "bg-orange-500/10 text-orange-600 px-3 py-2 text-[10px] font-bold border-b border-orange-500/20 flex items-center gap-2 rounded-t-lg"
       )}>
         <Pipette size={12} />
-        <span>{t('colorCondition')}</span>
+        <span>{t('automator.colorCondition')}</span>
         {isExecuting && <div className="ml-auto w-2 h-2 bg-orange-500 rounded-full animate-ping" />}
       </div>
 
@@ -84,7 +81,7 @@ export const ConditionNode = memo((props: NodeProps) => {
                 "hover:bg-black/20 active:bg-black/30",
                 isPicking && "bg-black/10 animate-pulse"
               )}
-              title={isPicking ? t('pickingColor') : t('pickCoordsTooltip')}
+              title={isPicking ? t('automator.pickingColor') : t('automator.pickCoordsTooltip')}
             >
               <Crosshair size={14} className={cn("text-white drop-shadow-md", isPicking && "animate-spin")} />
             </button>
@@ -112,7 +109,7 @@ export const ConditionNode = memo((props: NodeProps) => {
             onChange={(val) => handleChange('y', val)}
           />
           <NumberInput
-            label={t('toleranceRange')}
+            label={t('automator.toleranceRange')}
             value={payload.tolerance ?? 10}
             min={0}
             max={255}
@@ -123,7 +120,7 @@ export const ConditionNode = memo((props: NodeProps) => {
 
         {isPicking && (
           <div className="bg-orange-500/10 border border-orange-500/30 rounded px-2 py-1.5 text-center">
-            <span className="text-[9px] text-orange-600 font-medium">{t('pickingColor')}</span>
+            <span className="text-[9px] text-orange-600 font-medium">{t('automator.pickingColor')}</span>
           </div>
         )}
 

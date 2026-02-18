@@ -10,8 +10,7 @@ import { cn } from '@/lib/utils';
 import { CommitSelector } from './CommitSelector';
 import { PatchFileItem, PatchMode } from './patch_types';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { useAppStore } from '@/store/useAppStore'; 
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { useSmartContextMenu } from '@/lib/hooks';
 
 const AI_SYSTEM_PROMPT = `You are a top-tier software engineer. Generate a code patch based on the user's request.
@@ -100,7 +99,7 @@ export function PatchSidebar({
   
   const [isPromptOpen, setIsPromptOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   const handleCopyPrompt = async () => {
     await writeText(AI_SYSTEM_PROMPT);
@@ -151,7 +150,7 @@ export function PatchSidebar({
                 />
              )}
              <span className="relative z-10 flex items-center gap-2">
-                <ArrowRightLeft size={14} /> {getText('patch', 'manual', language)}
+                <ArrowRightLeft size={14} /> {t('patch.manual')}
              </span>
            </button>
            <button
@@ -169,7 +168,7 @@ export function PatchSidebar({
                 />
              )}
              <span className="relative z-10 flex items-center gap-2">
-                <Sparkles size={14} /> {getText('patch', 'aiPatch', language)}
+                <Sparkles size={14} /> {t('patch.aiPatch')}
              </span>
            </button>
         </div>
@@ -180,7 +179,7 @@ export function PatchSidebar({
           {mode === 'patch' && (
             <div className="flex-1 flex flex-col min-h-0">
               <div className="p-4 border-b border-border">
-                <button onClick={onLoadProject} className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all", projectRoot ? "bg-background border-border text-foreground shadow-sm hover:border-primary/50" : "bg-primary/5 border-dashed border-primary/30 text-primary hover:bg-primary/10")} title={projectRoot || getText('common', 'selectFolder', language)}>
+                <button onClick={onLoadProject} className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all", projectRoot ? "bg-background border-border text-foreground shadow-sm hover:border-primary/50" : "bg-primary/5 border-dashed border-primary/30 text-primary hover:bg-primary/10")} title={projectRoot || t('common.selectFolder')}>
                     <div className="flex items-center gap-2 truncate"><FolderOpen size={14} /> <span className="truncate font-medium">{projectRoot || "Browse Project..."}</span></div>
                     {projectRoot && <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />}
                 </button>
@@ -188,16 +187,16 @@ export function PatchSidebar({
 
               <div className="bg-background border-b border-border shrink-0">
                   <button onClick={() => setIsPromptOpen(!isPromptOpen)} className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:bg-secondary/50 transition-colors">
-                      <span className="flex items-center gap-1.5"><Info size={12} /> {getText('patch', 'aiInstruction', language)}</span>
+                      <span className="flex items-center gap-1.5"><Info size={12} /> {t('patch.aiInstruction')}</span>
                       {isPromptOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
                   </button>
                   {isPromptOpen && (
                       <div className="px-4 pb-3 animate-in slide-in-from-top-2 duration-200">
                           <div className="bg-secondary/30 rounded-lg border border-border p-2 space-y-2">
-                              <p className="text-[10px] text-muted-foreground leading-relaxed">{getText('patch', 'promptTip', language)}</p>
+                              <p className="text-[10px] text-muted-foreground leading-relaxed">{t('patch.promptTip')}</p>
                               <button onClick={handleCopyPrompt} className={cn("w-full flex items-center justify-center gap-2 py-1.5 rounded text-xs font-medium transition-all", isCopied ? "bg-green-500 text-white shadow-sm" : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm")}>
                                   {isCopied ? <CheckCircle2 size={12} /> : <Copy size={12} />}
-                                  {isCopied ? getText('patch', 'copied', language) : getText('patch', 'copySystemPrompt', language)}
+                                  {isCopied ? t('patch.copied') : t('patch.copySystemPrompt')}
                               </button>
                           </div>
                       </div>
@@ -205,12 +204,12 @@ export function PatchSidebar({
               </div>
               <div className="flex-1 flex flex-col min-h-0 border-b border-border bg-background">
                 <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between bg-secondary/5 shrink-0">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><FileCode size={12} /> {getText('patch', 'aiResponseInput', language)}</span>
-                  <button onClick={onClearYaml} className="p-1 rounded hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors" title={getText('common', 'clear', language)}>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><FileCode size={12} /> {t('patch.aiResponseInput')}</span>
+                  <button onClick={onClearYaml} className="p-1 rounded hover:bg-destructive/10 hover:text-destructive text-muted-foreground transition-colors" title={t('common.clear')}>
                       <Trash2 size={12} />
                   </button>
                 </div>
-                <textarea value={yamlInput} onChange={e => onYamlChange(e.target.value)} onContextMenu={onContextMenu} placeholder={getText('patch', 'pasteAIResponse', language) + '\n\nFile: src/App.tsx\n<<<<<<< SEARCH\n...\n=======\n...\n>>>>>>> REPLACE'} className="flex-1 w-full bg-transparent p-4 resize-none outline-none font-mono text-[11px] leading-relaxed custom-scrollbar placeholder:text-muted-foreground/30 text-muted-foreground focus:text-foreground transition-colors" spellCheck="false" />
+                <textarea value={yamlInput} onChange={e => onYamlChange(e.target.value)} onContextMenu={onContextMenu} placeholder={t('patch.pasteAIResponse') + '\n\nFile: src/App.tsx\n<<<<<<< SEARCH\n...\n=======\n...\n>>>>>>> REPLACE'} className="flex-1 w-full bg-transparent p-4 resize-none outline-none font-mono text-[11px] leading-relaxed custom-scrollbar placeholder:text-muted-foreground/30 text-muted-foreground focus:text-foreground transition-colors" spellCheck="false" />
               </div>
               <div className="h-[40%] flex flex-col min-h-0 bg-secondary/5">
                 <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between bg-secondary/10 shrink-0">
@@ -231,25 +230,25 @@ export function PatchSidebar({
               <div className="p-4 border-b border-border bg-background/80 space-y-3 shrink-0">
                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><GitMerge size={12}/> Git Snapshot Compare</h3>
                 
-                <button onClick={onBrowseGitProject} className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all", gitProjectRoot ? "bg-background border-border text-foreground shadow-sm hover:border-primary/50" : "bg-primary/5 border-dashed border-primary/30 text-primary hover:bg-primary/10")} title={gitProjectRoot || getText('patch', 'browseGit', language)}>
-                  <div className="flex items-center gap-2 truncate"><FolderOpen size={14} className={gitProjectRoot ? "text-blue-500" : ""} /> <span className="truncate font-medium">{gitProjectRoot || getText('patch', 'browseGit', language)}</span></div>
+                <button onClick={onBrowseGitProject} className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all", gitProjectRoot ? "bg-background border-border text-foreground shadow-sm hover:border-primary/50" : "bg-primary/5 border-dashed border-primary/30 text-primary hover:bg-primary/10")} title={gitProjectRoot || t('patch.browseGit')}>
+                  <div className="flex items-center gap-2 truncate"><FolderOpen size={14} className={gitProjectRoot ? "text-blue-500" : ""} /> <span className="truncate font-medium">{gitProjectRoot || t('patch.browseGit')}</span></div>
                   {gitProjectRoot && <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />}
                 </button>
 
                 {gitProjectRoot && (
                   <div className="space-y-3 animate-in fade-in duration-300">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-muted-foreground">{getText('patch', 'baseVersion', language)}</label>
+                      <label className="text-[10px] font-medium text-muted-foreground">{t('patch.baseVersion')}</label>
                       <CommitSelector commits={commits} selectedValue={baseHash} onSelect={setBaseHash} disabled={isGitLoading} />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[10px] font-medium text-muted-foreground">{getText('patch', 'compareVersion', language)}</label>
+                      <label className="text-[10px] font-medium text-muted-foreground">{t('patch.compareVersion')}</label>
                       {/* 这里使用新的 compareCommits 列表 */}
                       <CommitSelector commits={compareCommits} selectedValue={compareHash} onSelect={setCompareHash} disabled={isGitLoading} />
                     </div>
                     <button onClick={onCompare} disabled={isGitLoading || !baseHash || !compareHash} className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-xs font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 active:scale-95 shadow-sm shadow-primary/20">
                       {isGitLoading ? <Loader2 size={14} className="animate-spin"/> : <GitMerge size={14}/>}
-                      {isGitLoading ? getText('patch', 'comparing', language) : getText('patch', 'generateDiff', language)}
+                      {isGitLoading ? t('patch.comparing') : t('patch.generateDiff')}
                     </button>
                   </div>
                 )}
@@ -289,7 +288,7 @@ export function PatchSidebar({
                                     "pl-2 py-2 pr-1 cursor-pointer transition-opacity flex items-center justify-center",
                                     isDisabled ? "opacity-30 cursor-not-allowed" : "hover:text-primary opacity-60 hover:opacity-100"
                                 )}
-                                title={isDisabled ? getText('patch', 'binaryFile', language) : getText('patch', 'export', language)}
+                                title={isDisabled ? t('patch.binaryFile') : t('patch.export')}
                             >
                                 {isDisabled ? (
                                    <Square size={14} className="text-muted-foreground" />
@@ -309,11 +308,11 @@ export function PatchSidebar({
                             >
                                 <div className="flex items-center gap-2 min-w-0">
                                     {file.isBinary ? (
-                                        <div title={getText('patch', 'binaryFile', language)} className="shrink-0 text-orange-400 flex items-center">
+                                        <div title={t('patch.binaryFile')} className="shrink-0 text-orange-400 flex items-center">
                                             <FileImage size={12} />
                                         </div>
                                     ) : file.isLarge ? (
-                                        <div title={getText('patch', 'largeFile', language)} className="shrink-0 text-red-400 flex items-center">
+                                        <div title={t('patch.largeFile')} className="shrink-0 text-red-400 flex items-center">
                                             <AlertOctagon size={12} />
                                         </div>
                                     ) : null}
@@ -333,7 +332,7 @@ export function PatchSidebar({
 
                   {files.length <= 1 && !gitProjectRoot && (
                     <div className="text-center text-xs text-muted-foreground/60 p-4">
-                      {getText('patch', 'gitTip', language)}
+                      {t('patch.gitTip')}
                     </div>
                   )}
                 </div>

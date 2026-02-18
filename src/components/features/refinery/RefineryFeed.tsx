@@ -4,7 +4,8 @@ import { useAppStore } from '@/store/useAppStore';
 import { MoreHorizontal, Pin, Image as ImageIcon, FileText, Loader2, Filter, Search, X, PenTool, Edit3, Copy, Check, Globe, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { LangKey } from '@/lib/i18n';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { useMemo, useCallback, useState, useEffect } from 'react';
@@ -17,6 +18,7 @@ import { BundleCard } from './BundleCard';
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
 export function RefineryFeed() {
+  const { t } = useTranslation();
   const {
     items, setActiveId, activeId, togglePin, isLoading, hasMore,
     searchQuery, dateRange, kindFilter, pinnedOnly, manualOnly,
@@ -51,7 +53,7 @@ export function RefineryFeed() {
     // 2. 按日期分组 (注意时间戳获取方式)
     bundledItems.forEach(feedItem => {
       const ts = feedItem.type === 'single' ? feedItem.item.updatedAt : feedItem.timestamp;
-      const dateKey = getDateKey(ts, language);
+      const dateKey = getDateKey(ts, language, t);
       if (!groupMap.has(dateKey)) {
         groupMap.set(dateKey, []);
       }
@@ -108,7 +110,7 @@ export function RefineryFeed() {
           <div className="flex items-center justify-between px-3 py-2 bg-primary/5 border border-primary/20 rounded-lg mb-4 shrink-0">
             <div className="flex items-center gap-2 text-xs text-primary">
               <Filter size={12} />
-              <span>{getText('refinery', 'filteredResults', language)}</span>
+              <span>{t('refinery.filteredResults')}</span>
               <span className="text-muted-foreground">({items.length} {items.length === 1 ? 'item' : 'items'})</span>
             </div>
             <button
@@ -129,8 +131,8 @@ export function RefineryFeed() {
             </div>
             <p className="text-sm italic">
               {hasActiveFilter
-                ? getText('refinery', 'noResults', language)
-                : getText('refinery', 'waitingForFirstCopy', language)
+                ? t('refinery.noResults')
+                : t('refinery.waitingForFirstCopy')
               }
             </p>
           </div>
@@ -214,6 +216,7 @@ export function FeedCard({
   extraBadge?: React.ReactNode;
   className?: string;
 }) {
+  const { t } = useTranslation();
   const { language } = useAppStore();
   const { loadItemDetail } = useRefineryStore();
   // 智能判断图片路径：image 类型取 content，mixed 类型取 metaParsed.image_path
@@ -325,7 +328,7 @@ export function FeedCard({
               'p-1.5 rounded-md transition-all hover:bg-secondary',
               item.isPinned ? 'text-orange-500' : 'opacity-0 group-hover:opacity-100 text-muted-foreground'
             )}
-            title={item.isPinned ? getText('refinery', 'unpin', language) : getText('refinery', 'pin', language)}
+            title={item.isPinned ? t('refinery.unpin') : t('refinery.pin')}
           >
             <Pin size={14} className={cn(item.isPinned && 'fill-current')} />
           </button>
@@ -368,7 +371,7 @@ export function FeedCard({
         {/* 文本部分 (Text 或 Mixed) */}
         {(item.kind === 'text' || item.kind === 'mixed') && (
           <div className={cn("whitespace-pre-wrap", item.kind === 'mixed' ? "line-clamp-4" : "line-clamp-[10]")}>
-            {item.preview || getText('refinery', 'emptyContent', language)}
+            {item.preview || t('refinery.emptyContent')}
           </div>
         )}
 
@@ -384,7 +387,7 @@ export function FeedCard({
               </div>
             ) : error ? (
               <div className="absolute inset-0 flex items-center justify-center text-destructive/60 text-xs px-4 text-center">
-                {getText('refinery', 'failedToLoadImage', language)}
+                {t('refinery.failedToLoadImage')}
               </div>
             ) : imageUrl ? (
               <img
@@ -425,7 +428,7 @@ export function FeedCard({
 }
 
 // Helper function to get date key for grouping
-function getDateKey(timestamp: number, lang: LangKey): string {
+function getDateKey(timestamp: number, lang: LangKey, t: TFunction): string {
   const date = new Date(timestamp);
   const today = new Date();
   const yesterday = new Date(today);
@@ -434,8 +437,8 @@ function getDateKey(timestamp: number, lang: LangKey): string {
   const isToday = date.toDateString() === today.toDateString();
   const isYesterday = date.toDateString() === yesterday.toDateString();
 
-  if (isToday) return getText('refinery', 'today', lang);
-  if (isYesterday) return getText('refinery', 'yesterday', lang);
+  if (isToday) return t('refinery.today');
+  if (isYesterday) return t('refinery.yesterday');
 
   return date.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }

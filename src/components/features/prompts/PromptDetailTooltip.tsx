@@ -4,7 +4,7 @@ import { Terminal, Calendar, Tag, Box, Globe, Variable } from 'lucide-react';
 import { Prompt } from '@/types/prompt';
 import { parseVariables } from '@/lib/template';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 interface PromptDetailTooltipProps {
@@ -17,6 +17,7 @@ interface PromptDetailTooltipProps {
 
 export function PromptDetailTooltip({ prompt, anchorRect, isOpen, onMouseEnter, onMouseLeave }: PromptDetailTooltipProps) {
   const { language } = useAppStore();
+  const { t } = useTranslation();
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [isPositioned, setIsPositioned] = useState(false);
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -74,11 +75,11 @@ export function PromptDetailTooltip({ prompt, anchorRect, isOpen, onMouseEnter, 
                 <h3 className="font-bold text-base leading-tight">{prompt.title}</h3>
                 {prompt.source === 'official' ? (
                     <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-blue-500/10 text-blue-500 font-medium border border-blue-500/20">
-                        <Globe size={10} /> {getText('prompts', 'official', language)}
+                        <Globe size={10} /> {t('prompts.official', language)}
                     </span>
                 ) : (
                     <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-green-500/10 text-green-500 font-medium border border-green-500/20">
-                        <Terminal size={10} /> {getText('prompts', 'local', language)}
+                        <Terminal size={10} /> {t('prompts.local', language)}
                     </span>
                 )}
             </div>
@@ -114,7 +115,7 @@ export function PromptDetailTooltip({ prompt, anchorRect, isOpen, onMouseEnter, 
                 <div className="flex flex-wrap gap-2 p-2 bg-orange-500/5 border border-orange-500/20 rounded-lg">
                     <div className="w-full flex items-center gap-1 text-xs text-orange-600 font-medium mb-1">
                         <Variable size={12} />
-                        {getText('editor', 'tip', language).split(':')[0]}
+                        {t('editor.tip', language).split(':')[0]}
                     </div>
                     {variables.map(v => (
                         <span key={v} className="px-1.5 py-0.5 bg-orange-500/10 text-orange-600 text-[10px] rounded border border-orange-500/20 font-mono">
@@ -134,7 +135,7 @@ export function PromptDetailTooltip({ prompt, anchorRect, isOpen, onMouseEnter, 
                         {uniqueTags.map(t => <span key={t} className="hover:text-foreground transition-colors">#{t}</span>)}
                     </div>
                 ) : (
-                    <span className="opacity-50">{getText('common', 'noTags', language)}</span>
+                    <span className="opacity-50">{t('common.noTags', language)}</span>
                 )}
             </div>
             <div className="flex items-center gap-1.5 opacity-70">

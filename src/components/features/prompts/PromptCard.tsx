@@ -4,7 +4,7 @@ import { Prompt } from '@/types/prompt';
 import { cn } from '@/lib/utils';
 import { usePromptStore } from '@/store/usePromptStore';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { PromptDetailTooltip } from './PromptDetailTooltip';
 
 interface PromptCardProps {
@@ -17,6 +17,7 @@ interface PromptCardProps {
 function PromptCardComponent({ prompt, onEdit, onDelete, onTrigger }: PromptCardProps) {
   const { toggleFavorite } = usePromptStore();
   const { language } = useAppStore();
+  const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   
   const [showTooltip, setShowTooltip] = useState(false);
@@ -98,7 +99,7 @@ function PromptCardComponent({ prompt, onEdit, onDelete, onTrigger }: PromptCard
                     {prompt.title}
                 </h3>
                 {isOfficial && (
-                    <div title={getText('prompts', 'official', language)} className="shrink-0 text-blue-500 flex items-center">
+                    <div title={t('prompts.official', language)} className="shrink-0 text-blue-500 flex items-center">
                         <BadgeCheck size={14} />
                     </div>
                 )}
@@ -134,8 +135,8 @@ function PromptCardComponent({ prompt, onEdit, onDelete, onTrigger }: PromptCard
             )}>
                {!isOfficial && (
                     <>
-                        <ActionButton icon={<Edit3 size={14} />} onClick={() => onEdit(prompt)} title={getText('actions', 'edit', language)} />
-                        <ActionButton icon={<Trash2 size={14} />} onClick={() => onDelete(prompt)} title={getText('actions', 'delete', language)} danger />
+                        <ActionButton icon={<Edit3 size={14} />} onClick={() => onEdit(prompt)} title={t('actions.edit', language)} />
+                        <ActionButton icon={<Trash2 size={14} />} onClick={() => onDelete(prompt)} title={t('actions.delete', language)} danger />
                         <div className="w-px h-3 bg-border mx-1" />
                     </>
                )}
@@ -149,7 +150,7 @@ function PromptCardComponent({ prompt, onEdit, onDelete, onTrigger }: PromptCard
                  onClick={handleClick}
                >
                  {isExecutable ? <Zap size={12} /> : <Copy size={12} />}
-                 {isExecutable ? getText('actions', 'run', language) : getText('actions', 'copy', language)}
+                 {isExecutable ? t('actions.run', language) : t('actions.copy', language)}
                </button>
             </div>
           </div>

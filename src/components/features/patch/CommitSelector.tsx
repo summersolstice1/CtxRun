@@ -1,8 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface GitCommit {
   hash: string;
@@ -23,7 +22,7 @@ export function CommitSelector({ commits, selectedValue, onSelect, disabled }: C
   const [search, setSearch] = useState('');
   const triggerRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   const selectedCommit = useMemo(() => 
     commits.find(c => c.hash === selectedValue),
@@ -81,7 +80,7 @@ export function CommitSelector({ commits, selectedValue, onSelect, disabled }: C
             <span className="text-[10px] text-muted-foreground">{selectedCommit.hash.slice(0, 7)} - {selectedCommit.author}, {selectedCommit.date}</span>
           </div>
         ) : (
-          <span className="text-muted-foreground">{getText('patch', 'commitSelectPlaceholder', language)}</span>
+          <span className="text-muted-foreground">{t('patch.commitSelectPlaceholder')}</span>
         )}
         <ChevronsUpDown size={14} className="ml-2 text-muted-foreground shrink-0" />
       </button>
@@ -91,12 +90,12 @@ export function CommitSelector({ commits, selectedValue, onSelect, disabled }: C
           <div className="p-2 border-b border-border">
             <div className="relative">
               <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input 
+              <input
                 type="text"
                 autoFocus
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={getText('patch', 'commitSearchPlaceholder', language)}
+                placeholder={t('patch.commitSearchPlaceholder')}
                 className="w-full bg-background border border-border/50 rounded-md pl-8 pr-2 py-1.5 text-xs outline-none focus:ring-1 focus:ring-primary/50"
               />
             </div>

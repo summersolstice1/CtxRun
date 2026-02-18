@@ -5,9 +5,8 @@ import {
   Trash2, ShieldCheck, AlertCircle, RefreshCw,
   Copy, Check
 } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface IgnoredSecret {
   id: string;
@@ -17,7 +16,7 @@ interface IgnoredSecret {
 }
 
 export function IgnoredSecretsManager() {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   const [secrets, setSecrets] = useState<IgnoredSecret[]>([]);
   const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -39,7 +38,7 @@ export function IgnoredSecretsManager() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm(getText('settings', 'confirmDeleteSecret', language))) return;
+    if (!confirm(t('settings.confirmDeleteSecret'))) return;
     try {
       await invoke('delete_ignored_secret', { id });
       setSecrets(prev => prev.filter(s => s.id !== id));
@@ -63,17 +62,17 @@ export function IgnoredSecretsManager() {
          <div>
             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                 <ShieldCheck size={16} className="text-green-600"/>
-                {getText('settings', 'securityTitle', language)}
+                {t('settings.securityTitle')}
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-                {getText('settings', 'securityDesc', language)}
+                {t('settings.securityDesc')}
             </p>
          </div>
          <button
            onClick={fetchSecrets}
            disabled={loading}
            className="p-2 hover:bg-secondary rounded-full transition-colors"
-           title={getText('library', 'refresh', language)}
+           title={t('library.refresh')}
          >
             <RefreshCw size={16} className={cn(loading && "animate-spin")} />
          </button>
@@ -82,15 +81,15 @@ export function IgnoredSecretsManager() {
       <div className="flex-1 bg-secondary/5 border border-border rounded-lg overflow-hidden flex flex-col min-h-0">
           <div className="grid grid-cols-12 gap-4 px-4 py-2 bg-secondary/20 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider shrink-0">
              {/* 调整列宽：内容占9列，时间占3列 */}
-             <div className="col-span-9">{getText('settings', 'value', language)}</div>
-             <div className="col-span-3 text-right">{getText('settings', 'addedAt', language)}</div>
+             <div className="col-span-9">{t('settings.value')}</div>
+             <div className="col-span-3 text-right">{t('settings.addedAt')}</div>
           </div>
 
           <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
              {!loading && secrets.length === 0 && (
                  <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-50 gap-2">
                      <ShieldCheck size={32} />
-                     <span className="text-xs">{getText('settings', 'noIgnored', language)}</span>
+                     <span className="text-xs">{t('settings.noIgnored')}</span>
                  </div>
              )}
 
@@ -109,7 +108,7 @@ export function IgnoredSecretsManager() {
                                 "h-5 w-5 flex items-center justify-center rounded transition-all shrink-0 mt-0.5",
                                 copiedId === item.id ? "text-green-500 bg-green-500/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary opacity-0 group-hover:opacity-100"
                             )}
-                            title={getText('actions', 'copy', language)}
+                            title={t('actions.copy')}
                         >
                             {copiedId === item.id ? <Check size={12} /> : <Copy size={12} />}
                         </button>
@@ -121,7 +120,7 @@ export function IgnoredSecretsManager() {
                         <button
                             onClick={() => handleDelete(item.id)}
                             className="text-muted-foreground hover:text-destructive transition-colors opacity-0 group-hover:opacity-100 p-1 hover:bg-destructive/10 rounded"
-                            title={getText('actions', 'delete', language)}
+                            title={t('actions.delete')}
                         >
                             <Trash2 size={14} />
                         </button>
@@ -133,7 +132,7 @@ export function IgnoredSecretsManager() {
 
       <div className="mt-4 p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg flex gap-2 items-start text-xs text-yellow-600/80 shrink-0">
           <AlertCircle size={14} className="shrink-0 mt-0.5" />
-          <p>{getText('common', 'whitelistNote', language)}</p>
+          <p>{t('common.whitelistNote')}</p>
       </div>
     </div>
   );

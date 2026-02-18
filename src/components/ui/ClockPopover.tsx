@@ -4,7 +4,8 @@ import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { invoke } from '@tauri-apps/api/core';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n/config';
 
 interface SystemInfo {
   cpu_usage: number;           
@@ -22,7 +23,8 @@ interface ClockPopoverProps {
 }
 
 export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: ClockPopoverProps) {
-  const { language, setMonitorOpen } = useAppStore();
+  const { setMonitorOpen } = useAppStore();
+  const { t } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [copiedType, setCopiedType] = useState<string | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
   }, [isOpen, onClose, triggerRef]);
 
   const formatTime = (date: Date, includeSeconds = false) => {
-    return new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-US', {
+    return new Intl.DateTimeFormat(i18n.language === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -86,9 +88,9 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     
-    if (days > 0) return language === 'zh' ? `${days}天 ${hours}小时` : `${days}d ${hours}h`;
-    if (hours > 0) return language === 'zh' ? `${hours}小时 ${minutes}分钟` : `${hours}h ${minutes}m`;
-    return language === 'zh' ? `${minutes}分钟` : `${minutes}m`;
+    if (days > 0) return i18n.language === 'zh' ? `${days}天 ${hours}小时` : `${days}d ${hours}h`;
+    if (hours > 0) return i18n.language === 'zh' ? `${hours}小时 ${minutes}分钟` : `${hours}h ${minutes}m`;
+    return i18n.language === 'zh' ? `${minutes}分钟` : `${minutes}m`;
   };
 
   const formatBytes = (bytes: number) => {
@@ -125,7 +127,7 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
 
   const fullTime = formatTime(currentTime, true);
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const weekday = new Intl.DateTimeFormat(language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long' }).format(currentTime);
+  const weekday = new Intl.DateTimeFormat(i18n.language === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long' }).format(currentTime);
 
   return (
     <>
@@ -138,19 +140,19 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
               <Clock size={14} className="text-primary/70" />
-              <span>{getText('clock', 'timeDetails', language)}</span>
+              <span>{t('clock.timeDetails')}</span>
             </div>
             <div className="space-y-1.5 pl-6 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{getText('clock', 'fullTime', language)}:</span>
+                <span className="text-muted-foreground">{t('clock.fullTime')}:</span>
                 <span className="font-mono text-foreground">{fullTime}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{getText('clock', 'weekday', language)}:</span>
+                <span className="text-muted-foreground">{t('clock.weekday')}:</span>
                 <span className="text-foreground">{weekday}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{getText('clock', 'timezone', language)}:</span>
+                <span className="text-muted-foreground">{t('clock.timezone')}:</span>
                 <span className="font-mono text-foreground text-[10px]">{timezone}</span>
               </div>
             </div>
@@ -160,16 +162,16 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
                 <Monitor size={14} className="text-primary/70" />
-                <span>{getText('clock', 'systemInfo', language)}</span>
+                <span>{t('clock.systemInfo')}</span>
               </div>
               <div className="space-y-1.5 pl-6 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground flex items-center gap-1.5"><Cpu size={12} /> {getText('clock', 'cpuUsage', language)}:</span>
+                  <span className="text-muted-foreground flex items-center gap-1.5"><Cpu size={12} /> {t('clock.cpuUsage')}:</span>
                   <span className="font-mono text-foreground">{systemInfo.cpu_usage >= 0 ? `${systemInfo.cpu_usage.toFixed(1)}%` : 'N/A'}</span>
                 </div>
                 {systemInfo.memory_total > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><HardDrive size={12} /> {getText('clock', 'memory', language)}:</span>
+                    <span className="text-muted-foreground flex items-center gap-1.5"><HardDrive size={12} /> {t('clock.memory')}:</span>
                     <span className="font-mono text-foreground">
                       {formatBytes(systemInfo.memory_usage)} / {formatBytes(systemInfo.memory_total)}
                     </span>
@@ -177,7 +179,7 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
                 )}
                 {systemInfo.uptime > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground flex items-center gap-1.5"><Activity size={12} /> {getText('clock', 'systemUptime', language)}:</span>
+                    <span className="text-muted-foreground flex items-center gap-1.5"><Activity size={12} /> {t('clock.systemUptime')}:</span>
                     <span className="font-mono text-foreground">{formatUptime(systemInfo.uptime)}</span>
                   </div>
                 )}
@@ -186,19 +188,19 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
           )}
 
           <div className="space-y-2 pt-2 border-t border-border">
-            <div className="text-sm font-semibold text-foreground">{getText('clock', 'quickActions', language)}</div>
+            <div className="text-sm font-semibold text-foreground">{t('clock.quickActions')}</div>
             <div className="grid grid-cols-3 gap-2">
               <button onClick={() => handleCopy('timestamp')} className={cn("flex flex-col items-center gap-1 px-2 py-2 rounded-md text-xs transition-colors", copiedType === 'timestamp' ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-secondary/50 hover:bg-secondary text-foreground border border-border/50")}>
                 {copiedType === 'timestamp' ? <Check size={14} /> : <Copy size={14} />}
-                <span className="text-[10px]">{getText('clock', 'copyTimestamp', language)}</span>
+                <span className="text-[10px]">{t('clock.copyTimestamp')}</span>
               </button>
               <button onClick={() => handleCopy('iso')} className={cn("flex flex-col items-center gap-1 px-2 py-2 rounded-md text-xs transition-colors", copiedType === 'iso' ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-secondary/50 hover:bg-secondary text-foreground border border-border/50")}>
                 {copiedType === 'iso' ? <Check size={14} /> : <Copy size={14} />}
-                <span className="text-[10px]">{getText('clock', 'copyISO', language)}</span>
+                <span className="text-[10px]">{t('clock.copyISO')}</span>
               </button>
               <button onClick={() => handleCopy('full')} className={cn("flex flex-col items-center gap-1 px-2 py-2 rounded-md text-xs transition-colors", copiedType === 'full' ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-secondary/50 hover:bg-secondary text-foreground border border-border/50")}>
                 {copiedType === 'full' ? <Check size={14} /> : <Copy size={14} />}
-                <span className="text-[10px]">{getText('clock', 'copyFull', language)}</span>
+                <span className="text-[10px]">{t('clock.copyFull')}</span>
               </button>
             </div>
           </div>
@@ -210,7 +212,7 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
                 className="w-full flex items-center justify-center gap-2 py-2 text-xs font-medium text-primary hover:bg-primary/10 rounded-md transition-colors group"
             >
                 <Activity size={14} />
-                <span>{getText('monitor', 'title', language)}</span>
+                <span>{t('monitor.title')}</span>
                 <ExternalLink size={12} className="opacity-50 group-hover:opacity-100 transition-opacity ml-auto mr-1" />
             </button>
         </div>

@@ -1,14 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { 
-  Save, Copy, ArrowDownUp, PanelLeftClose, PanelLeftOpen, Trash2, 
-  FileDown 
+import {
+  Save, Copy, ArrowDownUp, PanelLeftClose, PanelLeftOpen, Trash2,
+  FileDown
 } from 'lucide-react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { DiffViewer } from './DiffViewer';
 import { PatchFileItem } from './patch_types';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { useSmartContextMenu } from '@/lib/hooks';
 
 interface DiffWorkspaceProps {
@@ -22,12 +21,12 @@ interface DiffWorkspaceProps {
   onExport?: () => void; 
 }
 
-export function DiffWorkspace({ 
-    selectedFile, onSave, onCopy, onManualUpdate, 
+export function DiffWorkspace({
+    selectedFile, onSave, onCopy, onManualUpdate,
     isSidebarOpen, onToggleSidebar, isReadOnly, onExport
 }: DiffWorkspaceProps) {
-  
-  const { language } = useAppStore();
+
+  const { t } = useTranslation();
   const [showInputs, setShowInputs] = useState(true);
   
   const [inputHeight, setInputHeight] = useState(200);
@@ -111,10 +110,10 @@ export function DiffWorkspace({
         
         {/* Left Side: Sidebar Toggle & File Info */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
-            <button 
+            <button
                 onClick={onToggleSidebar}
                 className="p-2 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                title={isSidebarOpen ? getText('common', 'hideSidebar', language) : getText('common', 'showSidebar', language)}
+                title={isSidebarOpen ? t('common.hideSidebar') : t('common.showSidebar')}
             >
                 {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
             </button>
@@ -124,8 +123,8 @@ export function DiffWorkspace({
                     <h2 className="text-sm font-semibold flex items-center gap-2 truncate">
                         <span className="truncate" title={selectedFile.path}>{selectedFile.path}</span>
                         {hasChanges ? 
-                            <span className="shrink-0 text-[10px] bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full border border-yellow-500/20 font-medium">{getText('patch', 'modified', language)}</span> :
-                            <span className="shrink-0 text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full font-medium">{getText('patch', 'noChangesLabel', language)}</span>
+                            <span className="shrink-0 text-[10px] bg-yellow-500/10 text-yellow-600 px-2 py-0.5 rounded-full border border-yellow-500/20 font-medium">{t('patch.modified')}</span> :
+                            <span className="shrink-0 text-[10px] bg-secondary text-muted-foreground px-2 py-0.5 rounded-full font-medium">{t('patch.noChangesLabel')}</span>
                         }
                     </h2>
                     <span className="text-[10px] text-muted-foreground/60 truncate font-mono mt-0.5">
@@ -146,49 +145,49 @@ export function DiffWorkspace({
                             showInputs ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
                         )}
                     >
-                        <ArrowDownUp size={14} /> {showInputs ? getText('patch', 'hideInputs', language) : getText('patch', 'editText', language)}
+                        <ArrowDownUp size={14} /> {showInputs ? t('patch.hideInputs') : t('patch.editText')}
                     </button>
-                    <button 
+                    <button
                         onClick={() => onManualUpdate?.('', '')}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all bg-secondary hover:bg-destructive/10 hover:text-destructive text-muted-foreground mr-2"
-                        title={getText('common', 'clearAll', language)}
+                        title={t('common.clearAll')}
                     >
-                        <Trash2 size={14} /> {getText('common', 'clear', language)}
+                        <Trash2 size={14} /> {t('common.clear')}
                     </button>
                 </>
             )}
 
             {selectedFile && (
-                <button 
+                <button
                     onClick={() => onCopy(selectedFile.modified)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground transition-colors active:scale-95"
                 >
-                    <Copy size={14} /> {getText('spotlight', 'copy', language)}
+                    <Copy size={14} /> {t('spotlight.copy')}
                 </button>
             )}
             
             {/* === Export 按钮 === */}
             {onExport && (
-              <button 
+              <button
                   onClick={onExport}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-secondary hover:bg-secondary/80 text-foreground transition-colors active:scale-95"
               >
-                  <FileDown size={14} />{getText('patch', 'export', language)}
+                  <FileDown size={14} />{t('patch.export')}
               </button>
             )}
             
             {selectedFile && !isManual && !isReadOnly && (
-                <button 
+                <button
                     onClick={() => onSave(selectedFile)}
                     disabled={!hasChanges}
                     className={cn(
                         "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all shadow-sm active:scale-95",
-                        hasChanges 
-                            ? "bg-primary text-primary-foreground hover:bg-primary/90" 
+                        hasChanges
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90"
                             : "bg-secondary text-muted-foreground opacity-50 cursor-not-allowed"
                     )}
                 >
-                    <Save size={14} /> {getText('patch', 'saveChanges', language)}
+                    <Save size={14} /> {t('patch.saveChanges')}
                 </button>
             )}
         </div>
@@ -200,7 +199,7 @@ export function DiffWorkspace({
              <div className="p-4 bg-secondary/30 rounded-full">
                 <PanelLeftOpen size={32} className="opacity-50" />
              </div>
-             <p className="text-xs">{getText('patch', 'selectFile', language)}</p>
+             <p className="text-xs">{t('patch.selectFile')}</p>
           </div>
       ) : (
           <>
@@ -208,24 +207,24 @@ export function DiffWorkspace({
                 <div className="shrink-0 flex flex-col border-b border-border bg-secondary/5 relative" style={{ height: inputHeight }}>
                     <div className="flex-1 flex min-h-0">
                         <div className="flex-1 flex flex-col border-r border-border">
-                            <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase bg-secondary/10 border-b border-border/50">{getText('patch', 'originalText', language)}</div>
-                            <textarea 
+                            <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase bg-secondary/10 border-b border-border/50">{t('patch.originalText')}</div>
+                            <textarea
                                 onContextMenu={onOriginalContextMenu}
                                 value={selectedFile.original}
                                 onChange={(e) => onManualUpdate?.(e.target.value, selectedFile.modified)}
                                 className="flex-1 bg-transparent p-3 resize-none outline-none font-mono text-xs leading-relaxed custom-scrollbar placeholder:text-muted-foreground/30"
-                                placeholder={getText('patch', 'pasteOriginal', language)}
+                                placeholder={t('patch.pasteOriginal')}
                                 spellCheck={false}
                             />
                         </div>
                         <div className="flex-1 flex flex-col">
-                            <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase bg-secondary/10 border-b border-border/50">{getText('patch', 'modifiedText', language)}</div>
-                            <textarea 
+                            <div className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase bg-secondary/10 border-b border-border/50">{t('patch.modifiedText')}</div>
+                            <textarea
                                 onContextMenu={onModifiedContextMenu}
                                 value={selectedFile.modified}
                                 onChange={(e) => onManualUpdate?.(selectedFile.original, e.target.value)}
                                 className="flex-1 bg-transparent p-3 resize-none outline-none font-mono text-xs leading-relaxed custom-scrollbar placeholder:text-muted-foreground/30"
-                                placeholder={getText('patch', 'pasteModified', language)}
+                                placeholder={t('patch.pasteModified')}
                                 spellCheck={false}
                             />
                         </div>
@@ -241,11 +240,11 @@ export function DiffWorkspace({
                 </div>
             )}
             <div className="flex-1 relative overflow-hidden bg-background">
-                <DiffViewer 
+                <DiffViewer
                     original={selectedFile.original}
                     modified={selectedFile.modified}
                     fileName={selectedFile.path}
-                    placeholder={isManual ? getText('patch', 'pasteToCompare', language) : getText('common', 'waitingForInputs', language)}
+                    placeholder={isManual ? t('patch.pasteToCompare') : t('common.waitingForInputs')}
                 />
             </div>
           </>

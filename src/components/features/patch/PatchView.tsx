@@ -3,7 +3,7 @@ import { open as openDialog, save } from '@tauri-apps/plugin-dialog';
 import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { parseMultiFilePatch, applyPatches } from '@/lib/patch_parser';
 import { PatchSidebar } from './PatchSidebar';
 import { DiffWorkspace } from './DiffWorkspace';
@@ -36,7 +36,8 @@ interface GitDiffFile {
 }
 
 export function PatchView() {
-  const { language, aiConfig } = useAppStore();
+  const { aiConfig } = useAppStore();
+  const { t } = useTranslation();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mode, setMode] = useState<PatchMode>('diff');
@@ -98,7 +99,7 @@ export function PatchView() {
       const selected = await openDialog({ directory: true, multiple: false });
       if (typeof selected === 'string') {
         setPatchProjectRoot(selected);
-        showNotification(getText('patch', 'projectLoaded', language));
+        showNotification(t('patch.projectLoaded'));
       }
     } catch (e) {
       console.error(e);
@@ -138,7 +139,7 @@ export function PatchView() {
                     original, 
                     modified: result.modified, 
                     status: result.success ? 'success' : 'error', 
-                    errorMsg: result.success ? undefined : getText('patch', 'failedToMatch', language, { count: result.errors.length.toString() })
+                    errorMsg: result.success ? undefined : t('patch.failedToMatch', { count: result.errors.length })
                 };
             } catch (err) {
                 return { 
@@ -147,7 +148,7 @@ export function PatchView() {
                     original: '', 
                     modified: '', 
                     status: 'error', 
-                    errorMsg: getText('patch', 'fileNotFound', language) 
+                    errorMsg: t('patch.fileNotFound') 
                 };
             }
         }));
@@ -164,26 +165,26 @@ export function PatchView() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [mode, patchProjectRoot, yamlInput, language]);
+  }, [mode, patchProjectRoot, yamlInput, t]);
 
   const handleAiFix = async (file: PatchFileItem) => {
       if (isFixing || !file.original) return;
       const patchData = parseMultiFilePatch(yamlInput).find(p => p.filePath === file.path);
       if (!patchData) return;
       setIsFixing(true);
-      showNotification(getText('patch', 'aiRepairing', language), 'info');
+      showNotification(t('patch.aiRepairing'), 'info');
       const prompt = `...`; // 省略长字符串
       let fullResponse = "";
       try {
           await streamChatCompletion(
               [{ role: 'user', content: prompt }], aiConfig,
               (text) => { fullResponse += text; },
-              (err) => { console.error(err); showNotification(getText('patch', 'aiFixFailed', language), 'error'); },
+              (err) => { console.error(err); showNotification(t('patch.aiFixFailed'), 'error'); },
               () => {
                   const cleanCode = fullResponse.replace(/^```[\w]*\n/, '').replace(/\n```$/, '');
                   setFiles(prev => prev.map(f => f.id === file.id ? { ...f, modified: cleanCode, status: 'success', errorMsg: undefined } : f));
                   setIsFixing(false);
-                  showNotification(getText('patch', 'aiFixApplied', language), 'success');
+                  showNotification(t('patch.aiFixApplied'), 'success');
               }
           );
       } catch (e) {
@@ -201,12 +202,12 @@ export function PatchView() {
     if (!file) return;
     try {
         await writeTextFile(file.id, file.modified);
-        showNotification(getText('patch', 'toastSaved', language));
+        showNotification(t('patch.toastSaved'));
         setFiles(prev => prev.map(f => f.id === file.id ? { ...f, original: file.modified, status: 'success', errorMsg: undefined } : f));
         setConfirmDialog({ show: false, file: null });
     } catch (e) {
         console.error(e);
-        showNotification(getText('patch', 'saveFailed', language), 'error');
+        showNotification(t('patch.saveFailed'), 'error');
     }
   };
 
@@ -230,7 +231,7 @@ export function PatchView() {
             setCompareHash("__WORK_DIR__"); // Working Directory
           }
         } catch (err: any) {
-          showNotification(getText('common', 'errorMsg', language, { msg: err.toString() }), 'error');
+          showNotification(t('common.errorMsg', { msg: err.toString() }), 'error');
           setCommits([]);
         } finally {
           setIsGitLoading(false);
@@ -276,10 +277,10 @@ export function PatchView() {
         setSelectedFileId(newFiles[0].id);
       } else {
          setSelectedFileId(MANUAL_DIFF_ID);
-         showNotification(getText('patch', 'noDiff', language), 'info');
+         showNotification(t('patch.noDiff'), 'info');
       }
     } catch (err: any) {
-      showNotification(getText('common', 'errorMsg', language, { msg: err.toString() }), 'error');
+      showNotification(t('common.errorMsg', { msg: err.toString() }), 'error');
     } finally {
       setIsGitLoading(false);
     }
@@ -299,7 +300,7 @@ export function PatchView() {
   const handleExportTrigger = () => {
       if (!gitProjectRoot || !baseHash || !compareHash) return;
       if (selectedExportIds.size === 0) {
-          showNotification(getText('patch', 'selectOne', language), "warning");
+          showNotification(t('patch.selectOne'), "warning");
           return;
       }
       setIsExportDialogOpen(true);
@@ -335,10 +336,10 @@ export function PatchView() {
                 savePath: filePath,
                 selectedPaths: selectedList
             });
-            showNotification(getText('patch', 'exportSuccess', language), "success");
+            showNotification(t('patch.exportSuccess'), "success");
         }
     } catch (err: any) {
-        showNotification(getText('common', 'exportFailed', language, { msg: err.toString() }), 'error');
+        showNotification(t('common.exportFailed', { msg: err.toString() }), 'error');
     } finally {
         setIsExporting(false);
     }
@@ -370,7 +371,7 @@ export function PatchView() {
               <div className="absolute bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-2">
                   <button onClick={() => handleAiFix(currentFile)} disabled={isFixing} className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-full shadow-lg shadow-purple-500/20 transition-all active:scale-95 disabled:opacity-50">
                       {isFixing ? <Loader2 className="animate-spin" size={16} /> : <Wand2 size={16} />}
-                      {isFixing ? getText('patch', 'aiFixing', language) : getText('patch', 'fixAI', language)}
+                      {isFixing ? t('patch.aiFixing') : t('patch.fixAI')}
                   </button>
               </div>
           )}
@@ -378,7 +379,7 @@ export function PatchView() {
           <DiffWorkspace 
              selectedFile={currentFile || null}
              onSave={handleSaveClick}
-             onCopy={async (txt) => { await writeClipboard(txt); showNotification(getText('patch', 'copied', language)); }}
+             onCopy={async (txt) => { await writeClipboard(txt); showNotification(t('patch.copied')); }}
              onManualUpdate={handleManualUpdate}
              isSidebarOpen={isSidebarOpen}
              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -402,8 +403,8 @@ export function PatchView() {
                               <AlertTriangle size={24} />
                           </div>
                           <div>
-                              <h3 className="font-semibold text-lg text-foreground">{getText('patch', 'saveConfirmTitle', language)}</h3>
-                              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{confirmDialog.file.status === 'error' ? getText('common', 'fileHasErrors', language) : getText('patch', 'saveConfirmMessage', language, { path: '' }).replace('"{path}"', '')}</p>
+                              <h3 className="font-semibold text-lg text-foreground">{t('patch.saveConfirmTitle')}</h3>
+                              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{confirmDialog.file.status === 'error' ? t('common.fileHasErrors') : t('patch.saveConfirmMessage', { path: '' }).replace('"{path}"', '')}</p>
                           </div>
                       </div>
                       <div className="mt-5 bg-secondary/30 border border-border rounded-lg p-3 flex items-start gap-3">
@@ -412,9 +413,9 @@ export function PatchView() {
                       </div>
                   </div>
                   <div className="p-4 bg-secondary/5 border-t border-border flex justify-end gap-3">
-                      <button onClick={() => setConfirmDialog({ show: false, file: null })} className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">{getText('patch', 'cancel', language)}</button>
+                      <button onClick={() => setConfirmDialog({ show: false, file: null })} className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">{t('patch.cancel')}</button>
                       <button onClick={executeSave} className={cn("px-4 py-2 text-sm font-medium rounded-lg flex items-center gap-2 shadow-sm transition-colors", confirmDialog.file.status === 'error' ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : "bg-primary text-primary-foreground hover:bg-primary/90")}>
-                          {confirmDialog.file.status === 'error' ? (<><AlertTriangle size={16} />{getText('patch', 'forceSave', language)}</>) : (<><Check size={16} /> {getText('patch', 'confirm', language)}</>)}
+                          {confirmDialog.file.status === 'error' ? (<><AlertTriangle size={16} />{t('patch.forceSave')}</>) : (<><Check size={16} /> {t('patch.confirm')}</>)}
                       </button>
                   </div>
               </div>

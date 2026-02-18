@@ -6,6 +6,7 @@ import { emit } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, DEFAULT_PROVIDER_SETTINGS } from '@/types/model';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
+import i18n from '@/i18n/config';
 
 export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator';
 export type AppTheme = 'dark' | 'light' | 'black';
@@ -238,7 +239,11 @@ export const useAppStore = create<AppState>()(
       setRefinerySettings: (config) => set((state) => ({
         refinerySettings: { ...state.refinerySettings, ...config }
       })),
-      setLanguage: (language) => set({ language }),
+      setLanguage: (language) => {
+        set({ language });
+        // Also update i18next language
+        i18n.changeLanguage(language);
+      },
       updateGlobalIgnore: (type, action, value) => set((state) => {
         const currentList = state.globalIgnore[type];
         let newList = currentList;

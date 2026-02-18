@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { Prompt, DEFAULT_GROUP } from '@/types/prompt';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { parseVariables } from '@/lib/template';
-import { getText } from '@/lib/i18n'; 
+import { useTranslation } from 'react-i18next'; 
 import { Toast, ToastType } from '@/components/ui/Toast';
 
 import { PromptCard } from './PromptCard';
@@ -91,7 +91,8 @@ export function PromptView() {
   } = usePromptStore();
 
   const { isPromptSidebarOpen, setPromptSidebarOpen, language } = useAppStore();
-  const { projectRoot } = useContextStore(); 
+  const { projectRoot } = useContextStore();
+  const { t } = useTranslation(); 
 
   const [localSearchInput, setLocalSearchInput] = useState('');
   const debouncedSearchTerm = useDebounce(localSearchInput, 500);
@@ -128,8 +129,8 @@ export function PromptView() {
   const handleEdit = useCallback((prompt: Prompt) => { setEditingPrompt(prompt); setIsEditorOpen(true); }, []);
   const handleDeleteClick = useCallback((prompt: Prompt) => { setPromptToDelete(prompt); setIsDeleteConfirmOpen(true); }, []);
   
-  const triggerToast = (msg?: string, type: ToastType = 'success') => { 
-      setToastState({ show: true, msg: msg || getText('prompts', 'copySuccess', language), type }); 
+  const triggerToast = (msg?: string, type: ToastType = 'success') => {
+      setToastState({ show: true, msg: msg || t('prompts.copySuccess', language), type });
   };
 
   const confirmDelete = async () => {
@@ -188,7 +189,7 @@ export function PromptView() {
                 )}
                 <div className="flex items-center gap-2 relative z-10">
                     <Sparkles size={14} />
-                    <span>{getText('editor', 'typePrompt', language)}</span>
+                    <span>{t('editor.typePrompt', language)}</span>
                 </div>
                 <span className={cn(
                     "relative z-10 text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-mono",
@@ -213,7 +214,7 @@ export function PromptView() {
                 )}
                 <div className="flex items-center gap-2 relative z-10">
                     <Terminal size={14} />
-                    <span>{getText('editor', 'typeCommand', language)}</span>
+                    <span>{t('editor.typeCommand', language)}</span>
                 </div>
                 <span className={cn(
                     "relative z-10 text-[10px] px-1.5 py-0.5 rounded-full transition-colors font-mono",
@@ -226,14 +227,14 @@ export function PromptView() {
 
         <div className="p-4 pb-2 min-w-[13rem]">
            <div className="space-y-1">
-            <CategoryItem icon={<Layers size={16} />} label={getText('sidebar', 'all', language)} isActive={activeGroup === 'all'} onClick={() => setActiveGroup('all')} />
-            <CategoryItem icon={<Star size={16} />} label={getText('sidebar', 'favorites', language)} isActive={activeGroup === 'favorite'} onClick={() => setActiveGroup('favorite')} />
+            <CategoryItem icon={<Layers size={16} />} label={t('sidebar.all', language)} isActive={activeGroup === 'all'} onClick={() => setActiveGroup('all')} />
+            <CategoryItem icon={<Star size={16} />} label={t('sidebar.favorites', language)} isActive={activeGroup === 'favorite'} onClick={() => setActiveGroup('favorite')} />
           </div>
         </div>
         
         <div className="flex-1 overflow-y-auto p-4 pt-0 scrollbar-hide min-w-[13rem]">
             <h2 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 mt-4 flex justify-between items-center px-2">
-                {getText('sidebar', 'groups', language)}
+                {t('sidebar.groups', language)}
                 <button className="hover:text-primary transition-colors p-1 rounded hover:bg-secondary" onClick={handleCreate}>
                     <Plus size={14} />
                 </button>
@@ -257,9 +258,9 @@ export function PromptView() {
 
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-            <input 
+            <input
               type="text"
-              placeholder={getText('prompts', 'searchPlaceholder', language)}
+              placeholder={t('prompts.searchPlaceholder', language)}
               className="w-full bg-secondary/40 border border-transparent focus:border-primary/30 rounded-md pl-9 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
               value={localSearchInput}
               onChange={(e) => setLocalSearchInput(e.target.value)}
@@ -276,7 +277,7 @@ export function PromptView() {
           {prompts.length === 0 && !isLoading ? (
              <div className="flex flex-col items-center justify-center h-full text-muted-foreground opacity-60">
                 <div className="w-16 h-16 bg-secondary/50 rounded-2xl flex items-center justify-center mb-4"><Search size={32} /></div>
-                <p>{getText('prompts', 'noResults', language)}</p>
+                <p>{t('prompts.noResults', language)}</p>
              </div>
           ) : (
              <AutoSizer>
@@ -318,7 +319,7 @@ export function PromptView() {
           {isLoading && prompts.length > 0 && (
              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur px-4 py-2 rounded-full border border-border shadow-lg flex items-center gap-2 text-sm text-muted-foreground animate-in slide-in-from-bottom-2 z-10">
                  <Loader2 className="animate-spin text-primary" size={16} />
-                 {getText('common', 'loadingMore', language)}
+                 {t('common.loadingMore', language)}
              </div>
           )}
         </div>
@@ -331,7 +332,7 @@ export function PromptView() {
             onClose={() => setIsFillerOpen(false)}
             prompt={fillPrompt}
             variables={fillVars}
-            confirmText={fillPrompt?.isExecutable ? getText('common', 'runCommand', language) : getText('common', 'copyResult', language)}
+            confirmText={fillPrompt?.isExecutable ? t('common.runCommand', language) : t('common.copyResult', language)}
             onConfirm={async (filledContent) => {
                 if (fillPrompt?.isExecutable) {
                     await executeCommand(filledContent, fillPrompt.shellType, projectRoot);
@@ -351,18 +352,18 @@ export function PromptView() {
                   <AlertTriangle size={24} />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg">{getText('prompts', 'deleteTitle', language)}</h3>
+                  <h3 className="font-semibold text-lg">{t('prompts.deleteTitle', language)}</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    {getText('prompts', 'deleteMessage', language, { name: promptToDelete.title })}
+                    {t('prompts.deleteMessage', language, { name: promptToDelete.title })}
                   </p>
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
                 <button onClick={() => setIsDeleteConfirmOpen(false)} className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors">
-                  {getText('prompts', 'cancel', language)}
+                  {t('prompts.cancel', language)}
                 </button>
                 <button onClick={confirmDelete} className="px-4 py-2 text-sm font-medium rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors shadow-sm">
-                  {getText('prompts', 'confirmDelete', language)}
+                  {t('prompts.confirmDelete', language)}
                 </button>
               </div>
             </div>

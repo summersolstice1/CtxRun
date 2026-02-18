@@ -18,7 +18,7 @@ import { save, open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStore } from '@/store/useAppStore';
 import { usePromptStore } from '@/store/usePromptStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { formatRefineryBufferThreshold } from '@/lib/calculator';
 import { FilterManager } from '../features/context/FilterManager';
@@ -45,6 +45,7 @@ export function SettingsModal() {
     searchSettings, setSearchSettings,
     refinerySettings, setRefinerySettings
   } = useAppStore();
+  const { t } = useTranslation();
 
   const { loadPrompts, refreshGroups, refreshCounts } = usePromptStore();
 
@@ -53,12 +54,12 @@ export function SettingsModal() {
   const [isScanningApps, setIsScanningApps] = useState(false);
 
   const formatDuration = (seconds: number) => {
-    if (seconds === 0) return getText('settings', 'never', language);
-    if (seconds < 60) return `${seconds} ${getText('settings', 'seconds', language)}`;
+    if (seconds === 0) return t('settings.never');
+    if (seconds < 60) return `${seconds} ${t('settings.seconds')}`;
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    const minText = getText('settings', 'minutes', language);
-    const secText = getText('settings', 'seconds', language);
+    const minText = t('settings.minutes');
+    const secText = t('settings.seconds');
     if (secs === 0) return `${mins} ${minText}`;
     return `${mins} ${minText} ${secs} ${secText}`;
   };
@@ -115,7 +116,7 @@ export function SettingsModal() {
       if (!filePath) return;
 
       const count = await invoke<number>('export_prompts_to_csv', { savePath: filePath });
-      setImportStatus(`${getText('settings', 'exportSuccess', language)}: ${count} items`);
+      setImportStatus(`${t('settings.exportSuccess')}: ${count} items`);
     } catch (e) {
       console.error(e);
       setImportStatus(`Export failed: ${e}`);
@@ -131,16 +132,16 @@ export function SettingsModal() {
 
       if (!filePath || typeof filePath !== 'string') return;
 
-      const isOverwrite = confirm(getText('settings', 'importModeMsg', language));
+      const isOverwrite = confirm(t('settings.importModeMsg'));
       const mode = isOverwrite ? 'overwrite' : 'merge';
 
-      setImportStatus(getText('settings', 'loading', language));
+      setImportStatus(t('settings.loading'));
       const count = await invoke<number>('import_prompts_from_csv', {
         filePath,
         mode
       });
 
-      setImportStatus(`${getText('settings', 'importSuccess', language)}: ${count} items`);
+      setImportStatus(`${t('settings.importSuccess')}: ${count} items`);
 
       await loadPrompts(true);
       await refreshGroups();
@@ -162,7 +163,7 @@ export function SettingsModal() {
       if (!filePath) return;
 
       const count = await invoke<number>('export_project_configs', { savePath: filePath });
-      setImportStatus(`${getText('settings', 'exportSuccess', language)}: ${count} projects`);
+      setImportStatus(`${t('settings.exportSuccess')}: ${count} projects`);
     } catch (e) {
       console.error(e);
       setImportStatus(`Export failed: ${e}`);
@@ -178,16 +179,16 @@ export function SettingsModal() {
 
       if (!filePath || typeof filePath !== 'string') return;
 
-      const isOverwrite = confirm(getText('settings', 'importProjectConfigMsg', language));
+      const isOverwrite = confirm(t('settings.importProjectConfigMsg'));
       const mode = isOverwrite ? 'overwrite' : 'merge';
 
-      setImportStatus(getText('settings', 'loading', language));
+      setImportStatus(t('settings.loading'));
       const count = await invoke<number>('import_project_configs', {
         filePath,
         mode
       });
 
-      setImportStatus(`${getText('settings', 'importSuccess', language)}: ${count} projects`);
+      setImportStatus(`${t('settings.importSuccess')}: ${count} projects`);
     } catch (e) {
       console.error(e);
       setImportStatus(`Import failed: ${e}`);
@@ -196,7 +197,7 @@ export function SettingsModal() {
 
   const handleRefreshApps = async () => {
     setIsScanningApps(true);
-    setImportStatus(getText('common', 'loading', language));
+    setImportStatus(t('common.loading'));
     try {
       const msg = await invoke<string>('refresh_apps');
       setImportStatus(msg);
@@ -210,9 +211,9 @@ export function SettingsModal() {
   const handleManualCleanup = async () => {
     try {
       const count = await invoke<number>('manual_cleanup');
-      setImportStatus(getText('settings', 'cleanupSuccess', language).replace('{count}', count.toString()));
+      setImportStatus(t('settings.cleanupSuccess').replace('{count}', count.toString()));
     } catch (e) {
-      setImportStatus(getText('settings', 'cleanupFailed', language).replace('{error}', String(e)));
+      setImportStatus(t('settings.cleanupFailed').replace('{error}', String(e)));
     }
   };
 
@@ -226,7 +227,7 @@ export function SettingsModal() {
         <div className="h-14 px-6 border-b border-border flex items-center justify-between bg-secondary/10 shrink-0">
           <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
             <SettingsIcon />
-            {getText('settings', 'title', language)}
+            {t('settings.title')}
           </h2>
           <button 
             onClick={() => setSettingsOpen(false)}
@@ -238,17 +239,17 @@ export function SettingsModal() {
 
         <div className="flex flex-1 overflow-hidden min-h-0">
             <div className="w-40 bg-secondary/5 border-r border-border p-2 space-y-1 overflow-y-auto custom-scrollbar shrink-0">
-                <NavBtn active={activeSection === 'appearance'} onClick={() => setActiveSection('appearance')} icon={<Monitor size={14} />} label={getText('settings', 'navAppearance', language)}  />
-                <NavBtn active={activeSection === 'language'} onClick={() => setActiveSection('language')} icon={<Languages size={14} />} label={getText('settings', 'navLanguage', language)} />
-                <NavBtn active={activeSection === 'search'} onClick={() => setActiveSection('search')} icon={<SearchIcon size={14} />} label={getText('settings', 'navSearch', language)} />
-                <NavBtn active={activeSection === 'ai'} onClick={() => setActiveSection('ai')} icon={<Bot size={14} />} label={getText('settings', 'navAI', language)} />
-                <NavBtn active={activeSection === 'security'} onClick={() => setActiveSection('security')} icon={<Shield size={14} />} label={getText('settings', 'navSecurity', language)} />
+                <NavBtn active={activeSection === 'appearance'} onClick={() => setActiveSection('appearance')} icon={<Monitor size={14} />} label={t('settings.navAppearance')}  />
+                <NavBtn active={activeSection === 'language'} onClick={() => setActiveSection('language')} icon={<Languages size={14} />} label={t('settings.navLanguage')} />
+                <NavBtn active={activeSection === 'search'} onClick={() => setActiveSection('search')} icon={<SearchIcon size={14} />} label={t('settings.navSearch')} />
+                <NavBtn active={activeSection === 'ai'} onClick={() => setActiveSection('ai')} icon={<Bot size={14} />} label={t('settings.navAI')} />
+                <NavBtn active={activeSection === 'security'} onClick={() => setActiveSection('security')} icon={<Shield size={14} />} label={t('settings.navSecurity')} />
                 <div className="my-2 h-px bg-border/50 mx-2" />
-                <NavBtn active={activeSection === 'filters'} onClick={() => setActiveSection('filters')} icon={<Filter size={14} />} label={getText('settings', 'navFilters', language)} />
-                <NavBtn active={activeSection === 'library'} onClick={() => setActiveSection('library')} icon={<DownloadCloud size={14} />} label={getText('settings', 'navLibrary', language)} />
-                <NavBtn active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<Database size={14} />} label={getText('settings', 'navData', language)} />
+                <NavBtn active={activeSection === 'filters'} onClick={() => setActiveSection('filters')} icon={<Filter size={14} />} label={t('settings.navFilters')} />
+                <NavBtn active={activeSection === 'library'} onClick={() => setActiveSection('library')} icon={<DownloadCloud size={14} />} label={t('settings.navLibrary')} />
+                <NavBtn active={activeSection === 'data'} onClick={() => setActiveSection('data')} icon={<Database size={14} />} label={t('settings.navData')} />
                 <div className="my-2 h-px bg-border/50 mx-2" />
-                <NavBtn active={activeSection === 'about'} onClick={() => setActiveSection('about')} icon={<Info size={14} />} label={getText('settings', 'navAbout', language)} />
+                <NavBtn active={activeSection === 'about'} onClick={() => setActiveSection('about')} icon={<Info size={14} />} label={t('settings.navAbout')} />
             </div>
 
             {/* Main Content Area */}
@@ -268,12 +269,12 @@ export function SettingsModal() {
                         {activeSection === 'appearance' && (
                     <div className="space-y-4">
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                            {getText('settings', 'appearance', language)}
+                            {t('settings.appearance')}
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                            <ThemeCard active={theme === 'dark'} onClick={() => setTheme('dark')} icon={<Moon size={24} />} label={getText('settings', 'themeDark', language)} />
-                            <ThemeCard active={theme === 'light'} onClick={() => setTheme('light')} icon={<Sun size={24} />} label={getText('settings', 'themeLight', language)} />
-                            <ThemeCard active={theme === 'black'} onClick={() => setTheme('black')} icon={<Circle size={24} fill="currentColor" />} label={getText('settings', 'themeBlack', language)} />
+                            <ThemeCard active={theme === 'dark'} onClick={() => setTheme('dark')} icon={<Moon size={24} />} label={t('settings.themeDark')} />
+                            <ThemeCard active={theme === 'light'} onClick={() => setTheme('light')} icon={<Sun size={24} />} label={t('settings.themeLight')} />
+                            <ThemeCard active={theme === 'black'} onClick={() => setTheme('black')} icon={<Circle size={24} fill="currentColor" />} label={t('settings.themeBlack')} />
                         </div>
                         
                         <div className="w-full h-px bg-border/50 my-4" />
@@ -281,13 +282,13 @@ export function SettingsModal() {
                         {/* 快捷键配置区域 */}
                         <div className="grid grid-cols-1 gap-4">
                           <ShortcutInput
-                            label={getText('settings', 'shortcutLabel', language)}
+                            label={t('settings.shortcutLabel')}
                             value={spotlightShortcut}
                             onChange={setSpotlightShortcut}
-                            tip={getText('settings', 'shortcutTip', language)}
+                            tip={t('settings.shortcutTip')}
                           />
                           <ShortcutInput
-                            label={getText('settings', 'automatorShortcutLabel', language)}
+                            label={t('settings.automatorShortcutLabel')}
                             value={automatorShortcut}
                             onChange={setAutomatorShortcut}
                             tip="推荐: Alt+F1, Ctrl+Shift+A"
@@ -296,12 +297,12 @@ export function SettingsModal() {
 
                         <div className="space-y-4 pt-4 border-t border-border/50">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                                {getText('settings', 'spotlightSize', language)}
+                                {t('settings.spotlightSize')}
                             </h3>
 
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
-                                    <span>{getText('settings', 'width', language)}</span>
+                                    <span>{t('settings.width')}</span>
                                     <span className="font-mono text-muted-foreground">{spotlightAppearance.width}px</span>
                                 </div>
                                 <input 
@@ -317,7 +318,7 @@ export function SettingsModal() {
 
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
-                                    <span>{getText('settings', 'defaultHeight', language)}</span>
+                                    <span>{t('settings.defaultHeight')}</span>
                                     <span className="font-mono text-muted-foreground">{spotlightAppearance.defaultHeight}px</span>
                                 </div>
                                 <input 
@@ -333,7 +334,7 @@ export function SettingsModal() {
 
                             <div className="space-y-3">
                                 <div className="flex justify-between text-xs">
-                                    <span>{getText('settings', 'chatHeight', language)}</span>
+                                    <span>{t('settings.chatHeight')}</span>
                                     <span className="font-mono text-muted-foreground">{spotlightAppearance.maxChatHeight}px</span>
                                 </div>
                                 <input 
@@ -353,17 +354,17 @@ export function SettingsModal() {
                         <div className="space-y-4">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                 <Bell size={14} />
-                                {getText('settings', 'restReminder', language)}
+                                {t('settings.restReminder')}
                             </h3>
 
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
                                     <div>
                                         <div className="text-sm font-medium text-foreground">
-                                            {getText('settings', 'restReminderEnabled', language)}
+                                            {t('settings.restReminderEnabled')}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                            {getText('settings', 'restReminderDesc', language)}
+                                            {t('settings.restReminderDesc')}
                                         </div>
                                     </div>
                                     <button
@@ -385,10 +386,10 @@ export function SettingsModal() {
                                     <div className="space-y-3 p-3 rounded-lg bg-secondary/10 border border-border">
                                         <div className="flex justify-between text-xs">
                                             <span className="text-foreground">
-                                                {getText('settings', 'restReminderInterval', language)}
+                                                {t('settings.restReminderInterval')}
                                             </span>
                                             <span className="font-mono text-muted-foreground">
-                                                {restReminder.intervalMinutes} {getText('settings', 'minutes', language)}
+                                                {restReminder.intervalMinutes} {t('settings.minutes')}
                                             </span>
                                         </div>
                                         <input 
@@ -401,8 +402,8 @@ export function SettingsModal() {
                                             onChange={(e) => setRestReminder({ intervalMinutes: parseInt(e.target.value) })}
                                         />
                                         <div className="flex justify-between text-[10px] text-muted-foreground">
-                                            <span>1 {getText('settings', 'minutes', language)}</span>
-                                            <span>180 {getText('settings', 'minutes', language)}</span>
+                                            <span>1 {t('settings.minutes')}</span>
+                                            <span>180 {t('settings.minutes')}</span>
                                         </div>
                                     </div>
                                 )}
@@ -414,17 +415,17 @@ export function SettingsModal() {
                         <div className="space-y-4">
                             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                                 <X size={14} />
-                                {getText('settings', 'autoDestroy', language)}
+                                {t('settings.autoDestroy')}
                             </h3>
 
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border">
                                     <div>
                                         <div className="text-sm font-medium text-foreground">
-                                           {getText('settings', 'autoDestroy', language)}
+                                           {t('settings.autoDestroy')}
                                         </div>
                                         <div className="text-xs text-muted-foreground mt-0.5">
-                                           {getText('settings', 'autoDestroyDesc', language)}
+                                           {t('settings.autoDestroyDesc')}
                                         </div>
                                     </div>
                                 </div>
@@ -432,7 +433,7 @@ export function SettingsModal() {
                                 <div className="space-y-3 p-3 rounded-lg bg-secondary/10 border border-border">
                                     <div className="flex justify-between text-xs">
                                         <span className="text-foreground">
-                                            {getText('settings', 'destroyDelay', language)}
+                                            {t('settings.destroyDelay')}
                                         </span>
                                         <span className="font-mono text-muted-foreground">
                                             {formatDuration(windowDestroyDelay)}
@@ -448,8 +449,8 @@ export function SettingsModal() {
                                         onChange={(e) => setWindowDestroyDelay(parseInt(e.target.value))}
                                     />
                                     <div className="flex justify-between text-[10px] text-muted-foreground">
-                                        <span>{getText('settings', 'never', language)}</span>
-                                        <span>30 {getText('settings', 'minutes', language)}</span>
+                                        <span>{t('settings.never')}</span>
+                                        <span>30 {t('settings.minutes')}</span>
                                     </div>
                                 </div>
                             </div>
@@ -460,11 +461,11 @@ export function SettingsModal() {
                 {activeSection === 'language' && (
                      <div className="space-y-4">
                         <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                            {getText('settings', 'language', language)}
+                            {t('settings.language')}
                         </h3>
                         <div className="space-y-2">
-                            <LangItem active={language === 'zh'} onClick={() => setLanguage('zh')} label={getText('settings', 'langZh', language)} subLabel={getText('settings', 'langSubLabelZh', language)} />
-                            <LangItem active={language === 'en'} onClick={() => setLanguage('en')} label={getText('settings', 'langEn', language)} subLabel={getText('settings', 'langSubLabelEn', language)} />
+                            <LangItem active={language === 'zh'} onClick={() => setLanguage('zh')} label={t('settings.langZh')} subLabel={t('settings.langSubLabelZh')} />
+                            <LangItem active={language === 'en'} onClick={() => setLanguage('en')} label={t('settings.langEn')} subLabel={t('settings.langSubLabelEn')} />
                         </div>
                      </div>
                 )}
@@ -472,42 +473,42 @@ export function SettingsModal() {
                 {activeSection === 'search' && (
                     <div className="p-6 space-y-6 animate-in fade-in slide-in-from-right-4 duration-200 overflow-y-auto custom-scrollbar">
                         <div>
-                            <h3 className="text-sm font-medium text-foreground">{getText('settings', 'searchTitle', language)}</h3>
-                            <p className="text-xs text-muted-foreground mt-1">{getText('settings', 'searchDesc', language)}</p>
+                            <h3 className="text-sm font-medium text-foreground">{t('settings.searchTitle')}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">{t('settings.searchDesc')}</p>
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'defaultEngine', language)}</label>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.defaultEngine')}</label>
                             <div className="grid grid-cols-2 gap-3">
                                 <ThemeCard
                                     active={searchSettings.defaultEngine === 'google'}
                                     onClick={() => setSearchSettings({ defaultEngine: 'google' })}
                                     icon={<SearchEngineIcon engine="google" size={24} />}
-                                    label={getText('settings', 'engineGoogle', language)}
+                                    label={t('settings.engineGoogle')}
                                 />
                                 <ThemeCard
                                     active={searchSettings.defaultEngine === 'bing'}
                                     onClick={() => setSearchSettings({ defaultEngine: 'bing' })}
                                     icon={<SearchEngineIcon engine="bing" size={24} />}
-                                    label={getText('settings', 'engineBing', language)}
+                                    label={t('settings.engineBing')}
                                 />
                                 <ThemeCard
                                     active={searchSettings.defaultEngine === 'baidu'}
                                     onClick={() => setSearchSettings({ defaultEngine: 'baidu' })}
                                     icon={<SearchEngineIcon engine="baidu" size={24} />}
-                                    label={getText('settings', 'engineBaidu', language)}
+                                    label={t('settings.engineBaidu')}
                                 />
                                 <ThemeCard
                                     active={searchSettings.defaultEngine === 'custom'}
                                     onClick={() => setSearchSettings({ defaultEngine: 'custom' })}
                                     icon={<SearchEngineIcon engine="custom" size={24} />}
-                                    label={getText('settings', 'engineCustom', language)}
+                                    label={t('settings.engineCustom')}
                                 />
                             </div>
                         </div>
 
                         <div className="space-y-2 pt-4 border-t border-border/50">
-                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'customUrlLabel', language)}</label>
+                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.customUrlLabel')}</label>
                             <input
                                 type="text"
                                 className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-mono"
@@ -516,7 +517,7 @@ export function SettingsModal() {
                                 onChange={e => setSearchSettings({ customUrl: e.target.value })}
                             />
                             <p className="text-[10px] text-muted-foreground leading-relaxed italic">
-                                {getText('settings', 'customUrlTip', language)}
+                                {t('settings.customUrlTip')}
                             </p>
                         </div>
                     </div>
@@ -525,9 +526,9 @@ export function SettingsModal() {
                 {activeSection === 'filters' && (
                     <div className="h-full flex flex-col">
                         <div className="mb-4">
-                            <h3 className="text-sm font-medium text-foreground">{getText('settings', 'filtersTitle', language)}</h3>
+                            <h3 className="text-sm font-medium text-foreground">{t('settings.filtersTitle')}</h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {getText('settings', 'filtersDesc', language)}
+                                {t('settings.filtersDesc')}
                             </p>
                         </div>
                         <div className="flex-1 border border-border rounded-lg p-4 bg-secondary/5 overflow-hidden flex flex-col min-h-[200px]">
@@ -548,13 +549,13 @@ export function SettingsModal() {
                 {activeSection === 'ai' && (
                     <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-200">
                         <div>
-                            <h3 className="text-sm font-medium text-foreground">{getText('settings', 'aiTitle', language)}</h3>
-                            <p className="text-xs text-muted-foreground mt-1">{getText('settings', 'aiDesc', language)}</p>
+                            <h3 className="text-sm font-medium text-foreground">{t('settings.aiTitle')}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">{t('settings.aiDesc')}</p>
                         </div>
 
                         <div className="space-y-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'provider', language)}</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.provider')}</label>
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                                     {Object.keys(savedProviderSettings).map((p) => {
                                         const isActive = aiConfig.providerId === p;
@@ -604,7 +605,7 @@ export function SettingsModal() {
                                                             setIsRenaming(true);
                                                         }}
                                                         className="opacity-50 hover:opacity-100 hover:bg-background/50 p-0.5 rounded transition-all cursor-pointer"
-                                                        title={getText('common', 'rename', language)}
+                                                        title={t('common.rename')}
                                                     >
                                                         <Edit3 size={12} />
                                                     </span>
@@ -614,12 +615,12 @@ export function SettingsModal() {
                                     })}
                                 </div>
                                 <p className="text-[10px] text-muted-foreground/60 text-right pt-1">
-                                    {getText('common', 'renameHelp', language)}
+                                    {t('common.renameHelp')}
                                 </p>
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'apiKey', language)}</label>
+                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.apiKey')}</label>
                                 <input 
                                     type="password"
                                     className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/30 font-mono"
@@ -627,12 +628,12 @@ export function SettingsModal() {
                                     value={aiConfig.apiKey}
                                     onChange={e => setAIConfig({ apiKey: e.target.value })}
                                 />
-                                <p className="text-[10px] text-muted-foreground/60">{getText('settings', 'apiKeyTip', language)}</p>
+                                <p className="text-[10px] text-muted-foreground/60">{t('settings.apiKeyTip')}</p>
                             </div>
                             
                             <div className="space-y-1.5">
                                 <div className="flex justify-between items-center">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'temp', language)}</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.temp')}</label>
                                     <span className="font-mono text-sm text-foreground">{aiConfig.temperature.toFixed(1)}</span>
                                 </div>
                                 <input 
@@ -645,24 +646,24 @@ export function SettingsModal() {
                                     onChange={e => setAIConfig({ temperature: parseFloat(e.target.value) })}
                                 />
                                 <p className="text-[10px] text-muted-foreground/60">
-                                    {getText('settings', 'tempTip', language)}
+                                    {t('settings.tempTip')}
                                 </p>
                             </div>
 
                             {/* Base URL & Model */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'baseUrl', language)}</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.baseUrl')}</label>
                                     <input
                                         type="text"
                                         className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/30"
-                                        placeholder={getText('settings', 'baseUrlPlaceholder', language)}
+                                        placeholder={t('settings.baseUrlPlaceholder')}
                                         value={aiConfig.baseUrl || ''}
                                         onChange={e => setAIConfig({ baseUrl: e.target.value })}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{getText('settings', 'modelId', language)}</label>
+                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('settings.modelId')}</label>
                                     <input 
                                         type="text"
                                         className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/30"
@@ -684,10 +685,10 @@ export function SettingsModal() {
                         <div>
                             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                                 <FileSpreadsheet size={18} className="text-green-600"/>
-                                {getText('settings', 'dataTitle', language)}
+                                {t('settings.dataTitle')}
                             </h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {getText('settings', 'dataDesc', language)}
+                                {t('settings.dataDesc')}
                             </p>
                         </div>
 
@@ -699,7 +700,7 @@ export function SettingsModal() {
                                         <Database size={20} />
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-medium">{getText('settings', 'promptsBackup', language)}</h4>
+                                        <h4 className="text-sm font-medium">{t('settings.promptsBackup')}</h4>
                                         <p className="text-xs text-muted-foreground">CSV Format</p>
                                     </div>
                                 </div>
@@ -711,14 +712,14 @@ export function SettingsModal() {
                                     className="flex items-center justify-center gap-2 py-2 bg-background border border-border hover:border-primary/50 hover:text-primary rounded-md text-xs font-medium transition-all shadow-sm"
                                 >
                                     <Download size={14} />
-                                    {getText('settings', 'btnExportCsv', language)}
+                                    {t('settings.btnExportCsv')}
                                 </button>
                                 <button
                                     onClick={handleImport}
                                     className="flex items-center justify-center gap-2 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-xs font-medium transition-all shadow-sm"
                                 >
                                     <Upload size={14} />
-                                    {getText('settings', 'btnImportCsv', language)}
+                                    {t('settings.btnImportCsv')}
                                 </button>
                             </div>
 
@@ -735,10 +736,10 @@ export function SettingsModal() {
                         <div>
                             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                                 <FolderCog size={18} className="text-blue-600"/>
-                                {getText('settings', 'projectConfigTitle', language)}
+                                {t('settings.projectConfigTitle')}
                             </h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {getText('settings', 'projectConfigDesc', language)}
+                                {t('settings.projectConfigDesc')}
                             </p>
                         </div>
 
@@ -749,7 +750,7 @@ export function SettingsModal() {
                                         <Database size={20} />
                                     </div>
                                     <div>
-                                        <h4 className="text-sm font-medium">{getText('settings', 'configBackup', language)}</h4>
+                                        <h4 className="text-sm font-medium">{t('settings.configBackup')}</h4>
                                         <p className="text-xs text-muted-foreground">JSON Format</p>
                                     </div>
                                 </div>
@@ -761,14 +762,14 @@ export function SettingsModal() {
                                     className="flex items-center justify-center gap-2 py-2 bg-background border border-border hover:border-primary/50 hover:text-primary rounded-md text-xs font-medium transition-all shadow-sm"
                                 >
                                     <Download size={14} />
-                                    {getText('settings', 'btnExportJson', language)}
+                                    {t('settings.btnExportJson')}
                                 </button>
                                 <button
                                     onClick={handleImportProjectConfigs}
                                     className="flex items-center justify-center gap-2 py-2 bg-background border border-border hover:border-primary/50 hover:text-primary rounded-md text-xs font-medium transition-all shadow-sm"
                                 >
                                     <Upload size={14} />
-                                    {getText('settings', 'btnImportJson', language)}
+                                    {t('settings.btnImportJson')}
                                 </button>
                             </div>
                         </div>
@@ -776,7 +777,7 @@ export function SettingsModal() {
                         {/* 底部提示 */}
                         <div className="p-3 bg-yellow-500/5 border border-yellow-500/20 rounded-lg flex gap-2 items-start text-xs text-yellow-600/80">
                             <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-                            <p>{getText('settings', 'csvTip', language)}</p>
+                            <p>{t('settings.csvTip')}</p>
                         </div>
 
                         {/* 分割线 */}
@@ -786,16 +787,16 @@ export function SettingsModal() {
                         <div>
                             <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                                 <AppWindow size={18} className="text-cyan-600"/>
-                                {getText('spotlight', 'appIndex', language)}
+                                {t('spotlight.appIndex')}
                             </h3>
                             <p className="text-xs text-muted-foreground mt-1">
-                                {getText('spotlight', 'rebuildAppIndex', language)}
+                                {t('spotlight.rebuildAppIndex')}
                             </p>
                         </div>
 
                         <div className="bg-secondary/20 border border-border rounded-lg p-4 flex items-center justify-between">
                             <div className="text-xs text-muted-foreground">
-                                {getText('spotlight', 'appIndexStored', language)}
+                                {t('spotlight.appIndexStored')}
                             </div>
                             <button
                                 onClick={handleRefreshApps}
@@ -803,7 +804,7 @@ export function SettingsModal() {
                                 className="flex items-center gap-2 px-3 py-1.5 bg-background border border-border hover:border-primary/50 hover:text-primary rounded-md text-xs font-medium transition-all shadow-sm disabled:opacity-50"
                             >
                                 <RefreshCw size={14} className={cn(isScanningApps && "animate-spin")} />
-                                {getText('spotlight', 'refreshIndexNow', language)}
+                                {t('spotlight.refreshIndexNow')}
                             </button>
                         </div>
                     </div>
@@ -818,10 +819,10 @@ export function SettingsModal() {
                     <div>
                         <h3 className="text-sm font-medium text-foreground flex items-center gap-2">
                             <Database size={18} className="text-purple-600"/>
-                            {getText('settings', 'refineryCleanup', language)}
+                            {t('settings.refineryCleanup')}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-1">
-                            {getText('settings', 'refineryCleanupDesc', language)}
+                            {t('settings.refineryCleanupDesc')}
                         </p>
                     </div>
                 )}
@@ -832,10 +833,10 @@ export function SettingsModal() {
                         <div className="flex items-center justify-between">
                             <div>
                                 <div className="text-sm font-medium text-foreground">
-                                    {getText('settings', 'cleanupEnabled', language)}
+                                    {t('settings.cleanupEnabled')}
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-0.5">
-                                    {getText('settings', 'refineryCleanupDesc', language)}
+                                    {t('settings.refineryCleanupDesc')}
                                 </div>
                             </div>
                             <button
@@ -857,7 +858,7 @@ export function SettingsModal() {
                                 {/* 清理策略选择 */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                                        {getText('settings', 'cleanupStrategy', language)}
+                                        {t('settings.cleanupStrategy')}
                                     </label>
                                     <div className="grid grid-cols-3 gap-2">
                                         <button
@@ -869,7 +870,7 @@ export function SettingsModal() {
                                                     : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
                                             )}
                                         >
-                                            {getText('settings', 'strategyTime', language)}
+                                            {t('settings.strategyTime')}
                                         </button>
                                         <button
                                             onClick={() => setRefinerySettings({ strategy: 'count' })}
@@ -880,7 +881,7 @@ export function SettingsModal() {
                                                     : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
                                             )}
                                         >
-                                            {getText('settings', 'strategyCount', language)}
+                                            {t('settings.strategyCount')}
                                         </button>
                                         <button
                                             onClick={() => setRefinerySettings({ strategy: 'both' })}
@@ -891,7 +892,7 @@ export function SettingsModal() {
                                                     : "bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50"
                                             )}
                                         >
-                                            {getText('settings', 'strategyBoth', language)}
+                                            {t('settings.strategyBoth')}
                                         </button>
                                     </div>
                                 </div>
@@ -900,9 +901,9 @@ export function SettingsModal() {
                                 {(refinerySettings.strategy === 'time' || refinerySettings.strategy === 'both') && (
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-foreground">{getText('settings', 'timeLimit', language)}</span>
+                                            <span className="text-foreground">{t('settings.timeLimit')}</span>
                                             <span className="font-mono text-muted-foreground">
-                                                {refinerySettings.days || 30} {getText('settings', 'daysLabel', language)}
+                                                {refinerySettings.days || 30} {t('settings.daysLabel')}
                                             </span>
                                         </div>
                                         <input
@@ -915,8 +916,8 @@ export function SettingsModal() {
                                             onChange={(e) => setRefinerySettings({ days: parseInt(e.target.value) })}
                                         />
                                         <div className="flex justify-between text-[10px] text-muted-foreground">
-                                            <span>7 {getText('settings', 'daysLabel', language)}</span>
-                                            <span>90 {getText('settings', 'daysLabel', language)}</span>
+                                            <span>7 {t('settings.daysLabel')}</span>
+                                            <span>90 {t('settings.daysLabel')}</span>
                                         </div>
                                     </div>
                                 )}
@@ -925,9 +926,9 @@ export function SettingsModal() {
                                 {(refinerySettings.strategy === 'count' || refinerySettings.strategy === 'both') && (
                                     <div className="space-y-2">
                                         <div className="flex justify-between text-xs">
-                                            <span className="text-foreground">{getText('settings', 'countLimit', language)}</span>
+                                            <span className="text-foreground">{t('settings.countLimit')}</span>
                                             <span className="font-mono text-muted-foreground">
-                                                {refinerySettings.maxCount || 1000} {getText('settings', 'entriesLabel', language)}
+                                                {refinerySettings.maxCount || 1000} {t('settings.entriesLabel')}
                                             </span>
                                         </div>
                                         <input
@@ -940,11 +941,11 @@ export function SettingsModal() {
                                             onChange={(e) => setRefinerySettings({ maxCount: parseInt(e.target.value) })}
                                         />
                                         <div className="flex justify-between text-[10px] text-muted-foreground">
-                                            <span>100 {getText('settings', 'entriesLabel', language)}</span>
-                                            <span>5000 {getText('settings', 'entriesLabel', language)}</span>
+                                            <span>100 {t('settings.entriesLabel')}</span>
+                                            <span>5000 {t('settings.entriesLabel')}</span>
                                         </div>
                                         <div className="text-[10px] text-muted-foreground italic">
-                                            {getText('settings', 'bufferInfo', language).replace('{threshold}', formatRefineryBufferThreshold(refinerySettings.maxCount || 1000).toString())}
+                                            {t('settings.bufferInfo').replace('{threshold}', formatRefineryBufferThreshold(refinerySettings.maxCount || 1000).toString())}
                                         </div>
                                     </div>
                                 )}
@@ -966,7 +967,7 @@ export function SettingsModal() {
                                                 {refinerySettings.keepPinned && <Check size={12} className="text-primary-foreground" />}
                                             </div>
                                             <span className="text-sm text-foreground select-none">
-                                                {getText('settings', 'keepPinned', language)}
+                                                {t('settings.keepPinned')}
                                             </span>
                                         </div>
 
@@ -982,7 +983,7 @@ export function SettingsModal() {
                                             <div className="w-4 h-4 border-2 border-green-500 bg-green-500 rounded flex items-center justify-center">
                                                 <Check size={12} className="text-white" />
                                             </div>
-                                            <span className="text-sm text-foreground">{getText('settings', 'keepNotes', language)}</span>
+                                            <span className="text-sm text-foreground">{t('settings.keepNotes')}</span>
                                         </div>
                                         <span className="text-[10px] text-muted-foreground ml-auto">(Protected)</span>
                                     </div>
@@ -992,7 +993,7 @@ export function SettingsModal() {
                                 <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20">
                                     <div>
                                         <div className="text-sm font-medium text-primary">
-                                            {getText('settings', 'btnCleanupNow', language)}
+                                            {t('settings.btnCleanupNow')}
                                         </div>
                                     </div>
                                     <button

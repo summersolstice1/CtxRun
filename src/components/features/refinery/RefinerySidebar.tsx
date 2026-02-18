@@ -3,10 +3,11 @@ import { Hash, Star, Type, Image as ImageIcon, Trash2, ChevronLeft, ChevronRight
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
 import { cn } from '@/lib/utils';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export function RefinerySidebar() {
+  const { t } = useTranslation();
   const {
     kindFilter, setKindFilter, pinnedOnly, togglePinnedOnly, manualOnly, toggleManualOnly, clearHistory,
     calendarMonth, calendarYear, dateRange,
@@ -242,7 +243,7 @@ export function RefinerySidebar() {
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
           <input
             className="w-full bg-secondary/50 border border-border/50 rounded-lg pl-8 pr-8 py-2 text-xs focus:ring-1 focus:ring-primary/30 focus:bg-background transition-all outline-none"
-            placeholder={getText('refinery', 'search', language)}
+            placeholder={t('refinery.search')}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
           />
@@ -383,7 +384,7 @@ export function RefinerySidebar() {
 
         {/* Quick Filters */}
         <div className="space-y-2">
-          <Label>{getText('refinery', 'filters', language)}</Label>
+          <Label>{t('refinery.filters')}</Label>
           <NavBtn
             active={kindFilter === 'all' && !pinnedOnly && !manualOnly}
             onClick={() => {
@@ -392,13 +393,13 @@ export function RefinerySidebar() {
               if (manualOnly) toggleManualOnly();
             }}
             icon={<Hash size={14} />}
-            label={getText('refinery', 'allMemos', language)}
+            label={t('refinery.allMemos')}
           />
           <NavBtn
             active={pinnedOnly}
             onClick={togglePinnedOnly}
             icon={<Star size={14} />}
-            label={getText('refinery', 'favorites', language)}
+            label={t('refinery.favorites')}
           />
           <NavBtn
             active={manualOnly}
@@ -410,19 +411,19 @@ export function RefinerySidebar() {
             active={kindFilter === 'text'}
             onClick={() => setKindFilter('text')}
             icon={<Type size={14} />}
-            label={getText('refinery', 'texts', language)}
+            label={t('refinery.texts')}
           />
           <NavBtn
             active={kindFilter === 'image'}
             onClick={() => setKindFilter('image')}
             icon={<ImageIcon size={14} />}
-            label={getText('refinery', 'images', language)}
+            label={t('refinery.images')}
           />
         </div>
 
         {/* Source Stats */}
         <div className="space-y-2">
-          <Label>{getText('refinery', 'statistics', language)}</Label>
+          <Label>{t('refinery.statistics')}</Label>
           <div className="px-2 space-y-1">
             {statisticsLoading ? (
               <div className="flex items-center justify-center py-2 text-muted-foreground/40">
@@ -430,15 +431,15 @@ export function RefinerySidebar() {
               </div>
             ) : statistics ? (
               <>
-                <StatItem label={getText('refinery', 'totalEntries', language)} count={statistics.totalEntries} />
-                <StatItem label={getText('refinery', 'thisWeek', language)} count={statistics.thisWeek} />
-                <StatItem label={getText('refinery', 'favorites', language)} count={statistics.favorites} />
+                <StatItem label={t('refinery.totalEntries')} count={statistics.totalEntries} />
+                <StatItem label={t('refinery.thisWeek')} count={statistics.thisWeek} />
+                <StatItem label={t('refinery.favorites')} count={statistics.favorites} />
               </>
             ) : (
               <>
-                <StatItem label={getText('refinery', 'totalEntries', language)} count={0} />
-                <StatItem label={getText('refinery', 'thisWeek', language)} count={0} />
-                <StatItem label={getText('refinery', 'favorites', language)} count={0} />
+                <StatItem label={t('refinery.totalEntries')} count={0} />
+                <StatItem label={t('refinery.thisWeek')} count={0} />
+                <StatItem label={t('refinery.favorites')} count={0} />
               </>
             )}
           </div>
@@ -452,7 +453,7 @@ export function RefinerySidebar() {
           className="flex items-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors w-full px-2 py-1.5 rounded hover:bg-destructive/5"
         >
           <Trash2 size={14} />
-          {getText('refinery', 'clearDaysAgo', language, { days: '7' })}
+          {t('refinery.clearDaysAgo', { days: '7' })}
         </button>
       </div>
     </div>

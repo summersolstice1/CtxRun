@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Keyboard, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 interface ShortcutInputProps {
   value: string;
@@ -15,7 +14,7 @@ export function ShortcutInput({ value, onChange, label, tip }: ShortcutInputProp
   const [isRecording, setIsRecording] = useState(false);
   const [currentKeys, setCurrentKeys] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLDivElement>(null);
-  const { language } = useAppStore();
+  const { t } = useTranslation();
   useEffect(() => {
     if (!isRecording) return;
 
@@ -68,7 +67,7 @@ export function ShortcutInput({ value, onChange, label, tip }: ShortcutInputProp
   return (
     <div className="space-y-2">
         <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            {label || getText('settings', 'shortcutLabel', language)}
+            {label || t('settings.shortcutLabel')}
         </label>
         <div className="flex gap-2">
             <div
@@ -85,13 +84,13 @@ export function ShortcutInput({ value, onChange, label, tip }: ShortcutInputProp
                     <span className="text-primary font-medium animate-pulse">
                         {currentKeys.size > 0 
                             ? Array.from(currentKeys).join(' + ') 
-                            : getText('settings', 'shortcutPressKeys', language)}
+                            : t('settings.shortcutPressKeys')}
                     </span>
                 ) : (
                     <div className="flex items-center gap-2 w-full">
                         <Keyboard size={14} className="text-muted-foreground" />
                         <span className={cn("font-mono font-medium", !value && "text-muted-foreground italic")}>
-                            {value || getText('settings', 'shortcutNotSet', language)}
+                            {value || t('settings.shortcutNotSet')}
                         </span>
                     </div>
                 )}
@@ -101,7 +100,7 @@ export function ShortcutInput({ value, onChange, label, tip }: ShortcutInputProp
                 <button 
                     onClick={() => onChange('')}
                     className="h-9 w-9 flex items-center justify-center rounded-lg border border-border bg-secondary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-                    title={getText('settings', 'shortcutClear', language)}
+                    title={t('settings.shortcutClear')}
                 >
                     <X size={14} />
                 </button>

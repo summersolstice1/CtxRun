@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { ShieldAlert, AlertTriangle, ShieldCheck, X, CheckSquare, Square, ArrowRight, ArrowRightLeft, MinusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useAppStore } from '@/store/useAppStore';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 export interface SecretMatch {
   kind: String;
@@ -24,7 +23,7 @@ interface ScanResultDialogProps {
 }
 
 export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanResultDialogProps) {
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [ignorePermanently, setIgnorePermanently] = useState(false);
@@ -139,13 +138,13 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
                 </div>
                 <div>
                     <h3 className="font-semibold text-lg text-foreground flex items-center gap-2">
-                        {getText('context', 'securityAlert', language)}
+                        {t('context.securityAlert')}
                         <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-600 border border-orange-500/20">
-                            {getText('context', 'issuesFound', language, { count: results.length.toString() })}
+                            {t('context.issuesFound', { count: results.length })}
                         </span>
                     </h3>
                     <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                        {getText('context', 'securityMsg', language)}
+                        {t('context.securityMsg')}
                     </p>
                 </div>
                 <button onClick={onCancel} className="ml-auto text-muted-foreground hover:text-foreground">
@@ -159,28 +158,28 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
           <button
             onClick={handleSelectAll}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-            title={getText('context', 'selectAll', language)}
+            title={t('context.selectAll')}
           >
             <CheckSquare size={14} />
-            {getText('context', 'selectAll', language)}
+            {t('context.selectAll')}
           </button>
           <div className="w-px h-4 bg-border/50" />
           <button
             onClick={handleDeselectAll}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-            title={getText('context', 'deselectAll', language)}
+            title={t('context.deselectAll')}
           >
             <MinusCircle size={14} />
-            {getText('context', 'deselectAll', language)}
+            {t('context.deselectAll')}
           </button>
           <div className="w-px h-4 bg-border/50" />
           <button
             onClick={handleInvert}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-            title={getText('context', 'invertSel', language)}
+            title={t('context.invertSel')}
           >
             <ArrowRightLeft size={14} />
-            {getText('context', 'invertSel', language)}
+            {t('context.invertSel')}
           </button>
         </div>
 
@@ -220,7 +219,7 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
                                 "text-[10px] px-1.5 py-0.5 rounded font-mono uppercase shrink-0",
                                 item.risk_level === 'High' ? "bg-red-500/10 text-red-500" : "bg-yellow-500/10 text-yellow-500"
                             )}>
-                                {isSelected ? getText('context', 'willRedact', language) : getText('context', 'keepRaw', language)}
+                                {isSelected ? t('context.willRedact') : t('context.keepRaw')}
                             </span>
                         </div>
                         
@@ -255,18 +254,18 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
                     className="w-3.5 h-3.5 rounded border-slate-600 bg-transparent text-primary focus:ring-0 cursor-pointer accent-primary"
                 />
                 <span className="text-xs text-muted-foreground font-medium select-none">
-                    {getText('context', 'ignoreForever', language)}
+                    {t('context.ignoreForever')}
                 </span>
             </label>
 
             <div className="p-4 flex justify-between items-center gap-3">
                 <div className="text-xs text-muted-foreground flex gap-1">
                     <span dangerouslySetInnerHTML={{
-                        __html: getText('context', 'itemsSelected', language, { count: `<strong>${selectedIndices.size}</strong>` })
+                        __html: t('context.itemsSelected', { count: selectedIndices.size })
                     }} />
                     <span className="opacity-50">|</span>
                     <span dangerouslySetInnerHTML={{
-                        __html: getText('context', 'itemsIgnored', language, { count: `<strong>${results.length - selectedIndices.size}</strong>` })
+                        __html: t('context.itemsIgnored', { count: results.length - selectedIndices.size })
                     }} />
                 </div>
 
@@ -275,7 +274,7 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
                         onClick={() => onConfirm(new Set())}
                         className="px-4 py-2 text-sm font-medium rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors"
                     >
-                        {getText('context', 'ignoreAll', language)}
+                        {t('context.ignoreAll')}
                     </button>
                     <button
                         onClick={handleConfirm}
@@ -283,8 +282,8 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
                     >
                         <ShieldCheck size={16} />
                         {selectedIndices.size === results.length
-                            ? getText('context', 'redactAll', language)
-                            : getText('context', 'redactSelected', language)}
+                            ? t('context.redactAll')
+                            : t('context.redactSelected')}
                     </button>
                 </div>
             </div>

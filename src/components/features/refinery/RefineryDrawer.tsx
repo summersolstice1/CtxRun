@@ -15,9 +15,10 @@ import { CodeBlock } from '@/components/ui/CodeBlock';
 import { useImageLoader } from '@/hooks/useImageLoader';
 
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
-import { getText } from '@/lib/i18n';
+import { useTranslation } from 'react-i18next';
 
 export function RefineryDrawer() {
+  const { t } = useTranslation();
   const {
     activeId, items, isDrawerOpen, setDrawerOpen,
     deleteItem, togglePin, updateNote, loadItemDetail
@@ -282,7 +283,7 @@ export function RefineryDrawer() {
               <div className="p-4 border-t border-border bg-background/95 backdrop-blur shrink-0 flex justify-end">
                 <button className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-md text-xs font-medium shadow-sm transition-all active:scale-95">
                   <ArrowUpRight size={14} />
-                  {getText('refinery', 'sendToContext', language)}
+                  {t('refinery.sendToContext')}
                 </button>
               </div>
             )}
