@@ -31,8 +31,8 @@ async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
         crate::inspector::resolve_target_to_coords(&t_clone)
     });
 
-    // 🚀 熔断机制：只等 2 秒
-    match tokio::time::timeout(Duration::from_secs(2), task).await {
+    // 🚀 熔断机制：只等 10 秒
+    match tokio::time::timeout(Duration::from_secs(10), task).await {
         Ok(Ok(Ok((x, y)))) => (x, y), // 成功拿到坐标
         Ok(Ok(Err(_))) => {
             // 内部逻辑错误，提取 fallback

@@ -34,6 +34,8 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
 interface PickedElement {
   name: string;
   role: string;
+  window_title?: string;
+  process_name?: string;
   x: number;
   y: number;
 }
@@ -81,6 +83,8 @@ export const ActionNode = memo((props: NodeProps) => {
           type: 'Semantic',
           name: element.name,
           role: element.role,
+          window_title: element.window_title,
+          process_name: element.process_name,
           fallbackX: element.x,
           fallbackY: element.y
         };

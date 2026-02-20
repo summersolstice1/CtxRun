@@ -19,6 +19,11 @@ pub enum ActionTarget {
     Semantic {
         name: String,
         role: String,
+        // 🚀 新增：窗口锚点信息 (Optional，因为在这个版本之前的数据可能没有)
+        #[serde(default)]
+        window_title: Option<String>,
+        #[serde(default)]
+        process_name: Option<String>,
         #[serde(rename = "fallbackX")]
         fallback_x: i32,
         #[serde(rename = "fallbackY")]
