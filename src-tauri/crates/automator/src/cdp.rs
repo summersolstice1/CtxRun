@@ -8,6 +8,7 @@ use crate::error::{AutomatorError, Result};
 
 #[derive(Debug, Deserialize)]
 struct TargetInfo {
+    #[allow(dead_code)]
     id: String,
     title: String,
     #[serde(rename = "type")]

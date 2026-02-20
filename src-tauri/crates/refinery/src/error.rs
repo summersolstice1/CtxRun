@@ -3,78 +3,34 @@
 use image::ImageError;
 use rusqlite::Error as DbError;
 use serde::Serialize;
-use std::fmt;
 use std::io::Error as IoError;
 use std::sync::PoisonError;
 use tauri::Error as TauriError;
+use thiserror::Error;
 
 /// Main error type for refinery operations
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum RefineryError {
-    /// Clipboard error
+    #[error("Clipboard error: {0}")]
     ClipboardError(String),
 
-    /// Tauri error
+    #[error("Tauri error: {0}")]
     TauriError(String),
 
-    /// Database error
-    DbError(DbError),
+    #[error("Database error: {0}")]
+    DbError(#[from] DbError),
 
-    /// IO error
-    IoError(IoError),
+    #[error("IO error: {0}")]
+    IoError(#[from] IoError),
 
-    /// Image processing error
-    ImageError(ImageError),
+    #[error("Image error: {0}")]
+    ImageError(#[from] ImageError),
 
-    /// Generic string error (for backward compatibility)
+    #[error("{0}")]
     String(String),
 
-    /// Join error from async operations
+    #[error("Async operation failed: {0}")]
     JoinError(String),
-}
-
-// Manual Display implementation
-impl fmt::Display for RefineryError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            RefineryError::ClipboardError(e) => write!(f, "Clipboard error: {}", e),
-            RefineryError::TauriError(e) => write!(f, "Tauri error: {}", e),
-            RefineryError::DbError(e) => write!(f, "Database error: {}", e),
-            RefineryError::IoError(e) => write!(f, "IO error: {}", e),
-            RefineryError::ImageError(e) => write!(f, "Image error: {}", e),
-            RefineryError::String(e) => write!(f, "{}", e),
-            RefineryError::JoinError(e) => write!(f, "Async operation failed: {}", e),
-        }
-    }
-}
-
-impl std::error::Error for RefineryError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            RefineryError::DbError(e) => Some(e),
-            RefineryError::IoError(e) => Some(e),
-            RefineryError::ImageError(e) => Some(e),
-            _ => None,
-        }
-    }
-}
-
-impl From<DbError> for RefineryError {
-    fn from(e: DbError) -> Self {
-        RefineryError::DbError(e)
-    }
-}
-
-impl From<IoError> for RefineryError {
-    fn from(e: IoError) -> Self {
-        RefineryError::IoError(e)
-    }
-}
-
-impl From<ImageError> for RefineryError {
-    fn from(e: ImageError) -> Self {
-        RefineryError::ImageError(e)
-    }
 }
 
 impl From<String> for RefineryError {
@@ -106,7 +62,7 @@ impl Serialize for RefineryError {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(&format!("{}", self))
+        serializer.serialize_str(&self.to_string())
     }
 }
 

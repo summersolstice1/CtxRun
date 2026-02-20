@@ -1,52 +1,37 @@
 //! Error types for context operations
 
 use serde::Serialize;
-use std::fmt;
 use std::io::Error as IoError;
+use thiserror::Error;
 
 /// Main error type for context operations
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ContextError {
-    /// Clipboard error
+    #[error("Clipboard error: {0}")]
     ClipboardError(String),
 
-    /// Database error
+    #[error("Database error: {0}")]
     DbError(String),
 
-    /// IO error
-    IoError(IoError),
+    #[error("IO error: {0}")]
+    IoError(#[from] IoError),
 
-    /// Gitignore parsing error
+    #[error("Gitignore error: {0}")]
     GitignoreError(String),
 
-    /// Join error from async operations
+    #[error("Async operation failed: {0}")]
     JoinError(String),
 }
 
-impl fmt::Display for ContextError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ContextError::ClipboardError(e) => write!(f, "Clipboard error: {}", e),
-            ContextError::DbError(e) => write!(f, "Database error: {}", e),
-            ContextError::IoError(e) => write!(f, "IO error: {}", e),
-            ContextError::GitignoreError(e) => write!(f, "Gitignore error: {}", e),
-            ContextError::JoinError(e) => write!(f, "Async operation failed: {}", e),
-        }
+impl From<String> for ContextError {
+    fn from(s: String) -> Self {
+        ContextError::DbError(s)
     }
 }
 
-impl std::error::Error for ContextError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            ContextError::IoError(e) => Some(e),
-            _ => None,
-        }
-    }
-}
-
-impl From<IoError> for ContextError {
-    fn from(e: IoError) -> Self {
-        ContextError::IoError(e)
+impl From<&str> for ContextError {
+    fn from(s: &str) -> Self {
+        ContextError::DbError(s.to_string())
     }
 }
 
@@ -55,7 +40,7 @@ impl Serialize for ContextError {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(&format!("{}", self))
+        serializer.serialize_str(&self.to_string())
     }
 }
 

@@ -38,7 +38,6 @@ interface LaunchBrowserData {
 export const LaunchBrowserNode = memo((props: NodeProps) => {
   const data = props.data as unknown as LaunchBrowserData;
   const { payload, onChange, isExecuting } = data;
-  const { t } = useTranslation();
 
   const handleChange = (key: string, val: any) => {
     onChange({ ...payload, [key]: val });
