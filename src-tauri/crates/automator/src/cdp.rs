@@ -45,8 +45,6 @@ impl CdpSession {
             "No matching browser tab found.".to_string()
         ))?;
 
-        println!("[CDP] 🔗 正在连接: {} ({})", target.title, target.url);
-
         let ws_url_str = target.ws_url.as_ref().unwrap().as_str();
 
         let (ws_stream, _) = connect_async(ws_url_str).await
@@ -83,11 +81,10 @@ impl CdpSession {
         }
     }
 
-    /// 🚀 新增：隐式等待机制 (最多等 5 秒)
     pub async fn wait_for_element(&mut self, selector: &str, _timeout_ms: u64) -> Result<()> {
         let js = format!("!!document.querySelector('{}')", selector);
 
-        for elapsed in 0..10 {
+        for _ in 0..10 {
             let res = self.send("Runtime.evaluate", serde_json::json!({
                 "expression": &js,
                 "returnByValue": true
@@ -98,19 +95,15 @@ impl CdpSession {
                 return Ok(());
             }
 
-            println!("[CDP] ⏳ 网页加载中，等待元素渲染: {}... ({}/10)", selector, elapsed + 1);
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
 
         Err(AutomatorError::CdpProtocolError(format!("Timeout (5000ms) waiting for element: {}", selector)))
     }
 
-    /// 3. 获取元素坐标 (自带隐式等待)
     pub async fn get_element_viewport_center(&mut self, selector: &str) -> Result<(i32, i32)> {
-        // 🚀 调用隐式等待，给网页 5 秒钟加载时间
         self.wait_for_element(selector, 5000).await?;
 
-        // 确保元素滚动到视野内
         let scroll_js = format!(r#"
             (function() {{
                 const el = document.querySelector('{}');
@@ -119,10 +112,8 @@ impl CdpSession {
         "#, selector);
         let _ = self.send("Runtime.evaluate", serde_json::json!({ "expression": scroll_js })).await;
 
-        // 给浏览器 100ms 处理滚动动画
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
-        // 计算坐标
         let js = format!(r#"
             (function() {{
                 const el = document.querySelector('{}');
@@ -144,20 +135,15 @@ impl CdpSession {
         Ok((val["x"].as_i64().unwrap_or(0) as i32, val["y"].as_i64().unwrap_or(0) as i32))
     }
 
-    /// 🚀 4. 真实模拟点击 (Input.dispatchMouseEvent)
-    /// 模拟鼠标按下和抬起，带 isTrusted 标记，能骗过 React
     pub async fn simulate_mouse_click(&mut self, x: i32, y: i32) -> Result<()> {
-        // 1. 鼠标移动过去
         self.send("Input.dispatchMouseEvent", serde_json::json!({
             "type": "mouseMoved", "x": x, "y": y
         })).await?;
 
-        // 2. 按下左键
         self.send("Input.dispatchMouseEvent", serde_json::json!({
             "type": "mousePressed", "x": x, "y": y, "button": "left", "clickCount": 1
         })).await?;
 
-        // 3. 抬起左键
         self.send("Input.dispatchMouseEvent", serde_json::json!({
             "type": "mouseReleased", "x": x, "y": y, "button": "left", "clickCount": 1
         })).await?;
@@ -165,12 +151,9 @@ impl CdpSession {
         Ok(())
     }
 
-    /// 🚀 5. 真实模拟输入 (自带隐式等待)
     pub async fn simulate_text_entry(&mut self, selector: &str, text: &str) -> Result<()> {
-        // 🚀 调用隐式等待，等输入框出现
         self.wait_for_element(selector, 5000).await?;
 
-        // 先聚焦并清空原内容
         let focus_js = format!(r#"
             const el = document.querySelector('{}');
             if(el) {{
@@ -180,16 +163,12 @@ impl CdpSession {
         "#, selector);
         self.send("Runtime.evaluate", serde_json::json!({ "expression": focus_js })).await?;
 
-        // 模拟键盘输入文本
         self.send("Input.insertText", serde_json::json!({ "text": text })).await?;
 
         Ok(())
     }
 
-    /// 🚀 6. 全仿真按键模拟 (Input.dispatchKeyEvent) - 带 code 属性
     pub async fn simulate_key_press(&mut self, key_str: &str) -> Result<()> {
-        // 映射表：字符 -> (WindowsVirtualKeyCode, key_name, code_name, is_char)
-        // 参考：https://www.w3.org/TR/uievents-code/
         let key_lower = key_str.to_lowercase();
         let (vkey, key_name, code_name, is_char) = match key_lower.as_str() {
             "enter" | "return" => (13, "Enter", "Enter", true),
@@ -198,16 +177,12 @@ impl CdpSession {
             "escape" | "esc" => (27, "Escape", "Escape", false),
             "space" => (32, " ", "Space", true),
             "/" => (191, "/", "Slash", true),
-            // 其他单字符的默认处理
             k => {
                 let c = k.chars().next().unwrap_or(' ');
                 (c as u32, k, "", true)
             }
         };
 
-        println!("[CDP] 正在模拟物理按键: key={}, code={}, vkey={}", key_name, code_name, vkey);
-
-        // 1. 发送 rawKeyDown (这是触发快捷键的关键)
         let mut down_params = serde_json::json!({
             "type": "rawKeyDown",
             "key": key_name,
@@ -215,14 +190,12 @@ impl CdpSession {
             "nativeVirtualKeyCode": vkey,
         });
 
-        // 现代网页极度依赖 code 属性
         if !code_name.is_empty() {
             down_params.as_object_mut().unwrap().insert("code".to_string(), serde_json::json!(code_name));
         }
 
         self.send("Input.dispatchKeyEvent", down_params).await?;
 
-        // 2. 发送 char (如果该键产生字符输入)
         if is_char {
             self.send("Input.dispatchKeyEvent", serde_json::json!({
                 "type": "char",
@@ -231,7 +204,6 @@ impl CdpSession {
             })).await?;
         }
 
-        // 3. 发送 keyUp
         let mut up_params = serde_json::json!({
             "type": "keyUp",
             "key": key_name,
@@ -245,7 +217,6 @@ impl CdpSession {
         Ok(())
     }
 
-    /// 7. 开启 Web 元素拾取模式 (高亮 + 点击捕获)
     pub async fn pick_element(&mut self) -> Result<String> {
         let picker_js = r#"
             (function() {

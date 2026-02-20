@@ -34,18 +34,9 @@ async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
 
     match tokio::time::timeout(Duration::from_secs(15), task).await {
         Ok(Ok(Ok((x, y)))) => (x, y),
-        Ok(Ok(Err(e))) => {
-            println!("[Engine] 解析失败: {}，使用回退坐标", e);
-            extract_fallback(target)
-        },
-        Ok(Err(e)) => {
-            println!("[Engine] 线程池执行错误: {}，使用回退坐标", e);
-            extract_fallback(target)
-        },
-        Err(_) => {
-            println!("[Engine] 严重超时 (15s)，强行终止等待，使用回退坐标");
-            extract_fallback(target)
-        }
+        Ok(Ok(Err(_e))) => extract_fallback(target),
+        Ok(Err(_e)) => extract_fallback(target),
+        Err(_) => extract_fallback(target)
     }
 }
 
@@ -61,7 +52,6 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
     match action {
         AutomatorAction::MoveTo { target } => {
             let (x, y) = resolve_coords_with_timeout(target).await;
-            println!("[Engine] 移动鼠标 -> ({}, {})", x, y);
             let _ = enigo.move_mouse(x, y, Coordinate::Abs);
         },
 
@@ -69,39 +59,32 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             let mut cdp_handled = false;
 
             if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
-                println!("[Engine] 🌐 CDP 点击: {}", selector);
                 match CdpSession::connect(9222, url_contain.as_deref()).await {
                     Ok(mut session) => {
-                        // 此处已经自带了 5秒的隐式等待
                         match session.get_element_viewport_center(selector).await {
                             Ok((x, y)) => {
-                                if let Ok(_) = session.simulate_mouse_click(x, y).await {
-                                    println!("[Engine] ✅ CDP 协议级点击完成 ({}, {})", x, y);
+                                if session.simulate_mouse_click(x, y).await.is_ok() {
                                     cdp_handled = true;
                                 }
                             },
-                            Err(e) => println!("[Engine] ⚠️ CDP 元素获取失败: {}", e),
+                            Err(_) => {},
                         }
                     },
-                    Err(e) => println!("[Engine] ⚠️ CDP 连接失败: {}", e),
+                    Err(_) => {}
                 }
             }
 
-            // 🖥️ 降级走物理点击 (加安全锁)
             if !cdp_handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
 
-                    // 🛡️ 核心安全锁：绝不点击 (0, 0)
                     if x == 0 && y == 0 {
-                        println!("[Engine] 🛑 目标坐标为 (0,0)，为防止误触系统菜单，已取消物理点击！");
-                    } else {
-                        println!("[Engine] 🖱️ 移动并点击 -> ({}, {})", x, y);
-                        let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                        tokio::time::sleep(Duration::from_millis(100)).await;
-                        let btn = map_button(button);
-                        let _ = enigo.button(btn, Direction::Click);
+                        return;
                     }
+                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    let btn = map_button(button);
+                    let _ = enigo.button(btn, Direction::Click);
                 }
             }
         },
@@ -109,7 +92,6 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
         AutomatorAction::DoubleClick { button, target } => {
             if let Some(t) = target {
                 let (x, y) = resolve_coords_with_timeout(t).await;
-                println!("[Engine] 移动并双击 -> ({}, {})", x, y);
                 let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                 tokio::time::sleep(Duration::from_millis(50)).await;
             }
@@ -123,11 +105,9 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             let mut cdp_handled = false;
 
             if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
-                println!("[Engine] 🌐 CDP 输入: '{}' -> {}", text, selector);
                 match CdpSession::connect(9222, url_contain.as_deref()).await {
                     Ok(mut session) => {
-                        if let Ok(_) = session.simulate_text_entry(selector, text).await {
-                            println!("[Engine] ✅ CDP 文本输入完成");
+                        if session.simulate_text_entry(selector, text).await.is_ok() {
                             cdp_handled = true;
                         }
                     },
@@ -139,16 +119,13 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
 
-                    // 🛡️ 核心安全锁
                     if x == 0 && y == 0 {
-                        println!("[Engine] 🛑 目标坐标为 (0,0)，已取消物理输入！");
-                    } else {
-                        println!("[Engine] 🖱️ 移动并输入 -> ({}, {})", x, y);
-                        let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                        tokio::time::sleep(Duration::from_millis(50)).await;
-                        let _ = enigo.button(Button::Left, Direction::Click);
-                        tokio::time::sleep(Duration::from_millis(200)).await;
+                        return;
                     }
+                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    let _ = enigo.button(Button::Left, Direction::Click);
+                    tokio::time::sleep(Duration::from_millis(200)).await;
                 }
                 let _ = enigo.text(text);
             }
@@ -157,61 +134,43 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
         AutomatorAction::KeyPress { key, target } => {
             let mut handled = false;
 
-            // 🚀 只有当用户明确指定为 WebSelector 目标时，才尝试 CDP
             if let Some(ActionTarget::WebSelector { url_contain, .. }) = target {
-                println!("[Engine] 🌐 预设为 Web 模式，尝试 CDP 发送: {}", key);
                 match CdpSession::connect(9222, url_contain.as_deref()).await {
                     Ok(mut session) => {
-                        if let Ok(_) = session.simulate_key_press(key).await {
-                            println!("[Engine] ✅ CDP 发送成功");
+                        if session.simulate_key_press(key).await.is_ok() {
                             handled = true;
                         }
                     },
-                    Err(e) => println!("[Engine] ❌ CDP 连接失败: {}", e),
+                    Err(_) => {}
                 }
             }
 
-            // 🚀 普通模式 (Coordinate/Semantic/None) 统统走 OS 物理按键
             if !handled {
-                println!("[Engine] ⌨️ 执行 OS 物理按键: {}", key);
                 execute_key_combination(enigo, key);
             }
         },
 
         AutomatorAction::Scroll { delta } => {
-            println!("[Engine] 滚轮: {} 单位", delta);
             let _ = enigo.scroll(*delta, Axis::Vertical);
         },
 
         AutomatorAction::Wait { ms } => {
-            println!("[Engine] 等待: {} ms", ms);
             tokio::time::sleep(Duration::from_millis(*ms)).await;
         },
 
-        AutomatorAction::CheckColor { .. } => {
-            println!("[Engine] 检查颜色条件");
-        },
-        AutomatorAction::Iterate { .. } => {
-            println!("[Engine] 迭代器");
-        },
+        AutomatorAction::CheckColor { .. } => {},
+        AutomatorAction::Iterate { .. } => {},
         AutomatorAction::LaunchBrowser { browser, url, use_temp_profile } => {
-            println!("[Engine] 🚀 正在启动 {} 浏览器...", browser);
-
             let is_edge = browser.to_lowercase().as_str() == "edge";
 
-            // 在阻塞线程中执行启动命令
             let url_clone = url.clone();
             let use_temp = *use_temp_profile;
             let res = tauri::async_runtime::spawn_blocking(move || {
                 launch_browser_internal(is_edge, url_clone, use_temp)
             }).await;
 
-            match res {
-                Ok(Ok(_)) => {
-                    println!("[Engine] ✅ 浏览器启动指令已发送，等待 2 秒初始化...");
-                    tokio::time::sleep(Duration::from_secs(2)).await;
-                },
-                _ => println!("[Engine] ❌ 浏览器启动失败"),
+            if res.is_ok() {
+                tokio::time::sleep(Duration::from_secs(2)).await;
             }
         },
     }
@@ -223,12 +182,9 @@ pub fn run_workflow_task<R: Runtime>(
     running_flag: Arc<AtomicBool>
 ) {
     tauri::async_runtime::spawn(async move {
-        println!("[Engine] 任务开始");
-
         let mut enigo = match Enigo::new(&Settings::default()) {
             Ok(e) => e,
-            Err(e) => {
-                eprintln!("[Engine] Enigo 初始化失败: {:?}", e);
+            Err(_e) => {
                 running_flag.store(false, Ordering::SeqCst);
                 let _ = app.emit("automator:status", false);
                 return;
@@ -244,7 +200,6 @@ pub fn run_workflow_task<R: Runtime>(
 
             for (index, action) in workflow.actions.iter().enumerate() {
                 if !running_flag.load(Ordering::SeqCst) {
-                    println!("[Engine] 检测到停止信号，退出");
                     break 'outer;
                 }
 
@@ -259,7 +214,6 @@ pub fn run_workflow_task<R: Runtime>(
             let _ = app.emit("automator:loop_count", current_loop);
         }
 
-        println!("[Engine] 任务结束，重置输入状态");
         reset_all_inputs_surgical(&mut enigo);
 
         running_flag.store(false, Ordering::SeqCst);
@@ -368,12 +322,9 @@ pub fn run_graph_task<R: Runtime>(
     running_flag: Arc<AtomicBool>
 ) {
     tauri::async_runtime::spawn(async move {
-        println!("[Engine] 图任务开始");
-
         let mut enigo = match Enigo::new(&Settings::default()) {
             Ok(e) => e,
-            Err(e) => {
-                eprintln!("[Engine] Enigo 初始化失败: {:?}", e);
+            Err(_e) => {
                 running_flag.store(false, Ordering::SeqCst);
                 let _ = app.emit("automator:status", false);
                 return;
@@ -388,12 +339,10 @@ pub fn run_graph_task<R: Runtime>(
         while let Some(id) = current_id {
             execution_count += 1;
             if execution_count > MAX_EXECUTION_COUNT {
-                eprintln!("[Engine] 执行次数超限 (安全中断)");
                 break;
             }
 
             if !running_flag.load(Ordering::SeqCst) {
-                println!("[Engine] 检测到停止信号，退出");
                 break;
             }
 
@@ -429,8 +378,7 @@ pub fn run_graph_task<R: Runtime>(
                         Ok(Err(_e)) => {
                             current_id = node.false_id.clone();
                         },
-                        Err(e) => {
-                            eprintln!("[Engine] 任务 joining 失败: {}", e);
+                        Err(_e) => {
                             break;
                         }
                     }
@@ -457,7 +405,6 @@ pub fn run_graph_task<R: Runtime>(
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
 
-        println!("[Engine] 图任务结束，重置输入状态");
         reset_all_inputs_surgical(&mut enigo);
 
         running_flag.store(false, Ordering::SeqCst);
@@ -465,7 +412,6 @@ pub fn run_graph_task<R: Runtime>(
     });
 }
 
-/// 内部浏览器启动辅助函数
 fn launch_browser_internal(is_edge: bool, url: Option<String>, use_temp_profile: bool) -> Result<(), String> {
     let mut paths = Vec::new();
 
@@ -511,8 +457,6 @@ fn launch_browser_internal(is_edge: bool, url: Option<String>, use_temp_profile:
         #[cfg(not(target_os = "linux"))]
         return p.exists();
     }).ok_or_else(|| "Browser executable not found".to_string())?;
-
-    println!("[Engine] Found executable: {:?}", exe_path);
 
     let mut cmd = Command::new(exe_path);
     cmd.arg("--remote-debugging-port=9222");

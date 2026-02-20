@@ -73,10 +73,8 @@ pub async fn execute_workflow_graph<R: Runtime>(
     Ok(())
 }
 
-// 新增：智能拾取命令
 #[tauri::command]
 pub async fn get_element_under_cursor() -> Result<PickedElement> {
-    // UIAutomation 涉及 COM 调用，必须丢进 spawn_blocking 避免阻塞异步运行时
     tauri::async_runtime::spawn_blocking(|| {
         crate::inspector::get_element_under_cursor_impl()
     })
@@ -84,15 +82,11 @@ pub async fn get_element_under_cursor() -> Result<PickedElement> {
     .map_err(|e| AutomatorError::JoinError(e.to_string()))?
 }
 
-// 新增：Web 元素拾取命令
 #[tauri::command]
 pub async fn pick_web_selector() -> Result<String> {
-    // 1. 连接浏览器 (默认端口 9222)
-    // 这里我们不传 url_filter，默认连当前最活跃的 Tab
     let mut session = CdpSession::connect(9222, None).await
         .map_err(|e| AutomatorError::CdpConnectionError(e.to_string()))?;
 
-    // 2. 启动拾取流程 (这是阻塞的，直到用户点击)
     let selector = session.pick_element().await
         .map_err(|e| AutomatorError::CdpProtocolError(e.to_string()))?;
 
