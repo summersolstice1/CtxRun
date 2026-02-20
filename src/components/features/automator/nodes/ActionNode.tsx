@@ -31,7 +31,6 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'Iterate': 'loopIteratorLabel',
 };
 
-// 在顶部补充 UIElementNode 接口
 interface UIElementNode {
   name: string;
   role: string;
@@ -43,7 +42,7 @@ interface PickedElement {
   role: string;
   window_title?: string;
   process_name?: string;
-  path: UIElementNode[]; // 🚀 接收路径
+  path: UIElementNode[];
   x: number;
   y: number;
 }
@@ -72,20 +71,16 @@ export const ActionNode = memo((props: NodeProps) => {
     onChange({ ...payload, [key]: value });
   };
 
-  // 核心：统一的 3 秒智能拾取逻辑
   const handleSmartPick = async () => {
     setIsPickingCoords(true);
 
-    // 给予 3 秒钟时间，用户可以移动鼠标到目标、甚至点开下拉菜单
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-      // 呼叫后端抓取当前鼠标位置的特征
       const element = await invoke<PickedElement>('plugin:ctxrun-plugin-automator|get_element_under_cursor');
 
       let target: ActionTarget;
 
-      // 判断只要抓到了，就把整个 path 存下来
       if (element.name && element.name.trim() !== '') {
         target = {
           type: 'Semantic',
@@ -93,7 +88,7 @@ export const ActionNode = memo((props: NodeProps) => {
           role: element.role,
           window_title: element.window_title,
           process_name: element.process_name,
-          path: element.path || [], // 🚀 保存路径
+          path: element.path || [],
           fallbackX: element.x,
           fallbackY: element.y
         };
@@ -113,7 +108,6 @@ export const ActionNode = memo((props: NodeProps) => {
     }
   };
 
-  // 键盘录制逻辑...
   useEffect(() => {
     if (!isRecording || actionType !== 'KeyPress') return;
 
@@ -167,7 +161,6 @@ export const ActionNode = memo((props: NodeProps) => {
     };
   }, [isRecording, actionType, payload]);
 
-  // 渲染拾取到的目标信息
   const renderTargetInfo = (target?: ActionTarget) => {
     if (!target) return null;
     return (
@@ -209,7 +202,6 @@ export const ActionNode = memo((props: NodeProps) => {
 
       <div className="p-3 space-y-2 nodrag">
 
-        {/* 支持智能拾取的节点类型 */}
         {(actionType === 'MoveTo' || actionType === 'Click' || actionType === 'DoubleClick' || actionType === 'Type') && (
           <div className="space-y-2">
             {renderTargetInfo((payload as { target?: ActionTarget }).target)}
@@ -252,7 +244,6 @@ export const ActionNode = memo((props: NodeProps) => {
             />
         )}
 
-        {/* 其他如 KeyPress, Wait 等保持不变... */}
         {actionType === 'KeyPress' && (
           <div className="space-y-1">
              <label className="text-[10px] text-muted-foreground block">{t('automator.pressKey')}</label>

@@ -1,13 +1,11 @@
 export type MouseButton = 'Left' | 'Right' | 'Middle';
 
-// 🚀 新增节点接口
 export interface UIElementNode {
   name: string;
   role: string;
   className: string;
 }
 
-// 核心：统一目标类型
 export type ActionTarget =
   | { type: 'Coordinate'; x: number; y: number }
   | {
@@ -16,12 +14,11 @@ export type ActionTarget =
       role: string;
       window_title?: string;
       process_name?: string;
-      path: UIElementNode[]; // 🚀 新增路径数组
+      path: UIElementNode[];
       fallbackX: number;
       fallbackY: number
     };
 
-// 动作定义
 export type AutomatorAction =
   | { type: 'MoveTo'; payload: { target: ActionTarget } }
   | { type: 'Click'; payload: { button: MouseButton; target?: ActionTarget } }
@@ -33,14 +30,12 @@ export type AutomatorAction =
   | { type: 'CheckColor'; payload: { x: number; y: number; expectedHex: string; tolerance: number } }
   | { type: 'Iterate'; payload: { targetCount: number } };
 
-// 图节点结构：通过 action.type 自动判断是否为条件节点
 export interface WorkflowNode {
   id: string;
   action: AutomatorAction;
-  // 连线关系
-  nextId?: string;     // 普通节点执行完走这里
-  trueId?: string;     // CheckColor 节点匹配成功走这里
-  falseId?: string;    // CheckColor 节点匹配失败走这里
+  nextId?: string;
+  trueId?: string;
+  falseId?: string;
 }
 
 export interface WorkflowGraph {
@@ -48,7 +43,6 @@ export interface WorkflowGraph {
   startNodeId: string;
 }
 
-// ============ 保留旧的 Workflow 类型用于兼容 ============
 export interface Workflow {
   id: string;
   name: string;

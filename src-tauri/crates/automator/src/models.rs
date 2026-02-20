@@ -7,7 +7,6 @@ pub enum MouseButton {
     Middle,
 }
 
-// 🚀 新增：表示 UI 树路径中的一个节点
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UIElementNode {
@@ -16,10 +15,8 @@ pub struct UIElementNode {
     pub class_name: String,
 }
 
-/// 统一的目标抽象
-/// 修复：去掉 content="payload"，改为扁平结构以匹配前端
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type")] // <--- 关键修改：只保留 tag，去掉 content
+#[serde(tag = "type")]
 pub enum ActionTarget {
     Coordinate {
         x: i32,
@@ -28,12 +25,10 @@ pub enum ActionTarget {
     Semantic {
         name: String,
         role: String,
-        // 🚀 新增：窗口锚点信息 (Optional，因为在这个版本之前的数据可能没有)
         #[serde(default)]
         window_title: Option<String>,
         #[serde(default)]
         process_name: Option<String>,
-        // 🚀 新增：记录从顶层窗口到目标元素的完整路径
         #[serde(default)]
         path: Vec<UIElementNode>,
         #[serde(rename = "fallbackX")]
@@ -44,7 +39,7 @@ pub enum ActionTarget {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", content = "payload")] // Action 保持不变，因为前端确实包了一层 payload
+#[serde(tag = "type", content = "payload")]
 pub enum AutomatorAction {
     MoveTo { target: ActionTarget },
     Click { button: MouseButton, target: Option<ActionTarget> },
@@ -57,16 +52,14 @@ pub enum AutomatorAction {
     Iterate { #[serde(rename = "targetCount")] target_count: u32 },
 }
 
-// 图节点结构：通过 action 类型自动判断是否为条件节点
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct WorkflowNode {
     pub id: String,
     pub action: AutomatorAction,
-    // 连线关系
-    pub next_id: Option<String>,   // 普通节点执行完走这里
-    pub true_id: Option<String>,   // CheckColor 节点匹配成功走这里
-    pub false_id: Option<String>,  // CheckColor 节点匹配失败走这里
+    pub next_id: Option<String>,
+    pub true_id: Option<String>,
+    pub false_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

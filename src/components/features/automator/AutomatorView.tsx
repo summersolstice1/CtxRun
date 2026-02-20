@@ -18,7 +18,6 @@ import { ActionPalette } from './sidebar/ActionPalette';
 import { AutomatorAction, WorkflowNode, WorkflowGraph } from '@/types/automator';
 import { cn } from '@/lib/utils';
 
-// 自定义节点注册
 const nodeTypes = {
   actionNode: ActionNode,
   conditionNode: ConditionNode,
@@ -30,7 +29,6 @@ const nodeTypes = {
 let id = 0;
 const getId = () => `node_${Date.now()}_${id++}`;
 
-// 根据字符串生成唯一颜色
 const getEdgeColor = (str: string) => {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -40,16 +38,13 @@ const getEdgeColor = (str: string) => {
   return `hsl(${hue}, 70%, 50%)`;
 };
 
-// --- 内部组件 (必须在 Provider 下) ---
 function DnDFlow() {
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<any>([]);
 
-  // 本地状态：当前执行的节点 ID 序列
   const [executingNodeIds, setExecutingNodeIds] = useState<string[]>([]);
 
-  // 核心 Hook：坐标转换
   const { screenToFlowPosition } = useReactFlow();
 
   const {
@@ -58,7 +53,6 @@ function DnDFlow() {
 
   const { t } = useTranslation();
 
-  // 状态同步：重置高亮
   useEffect(() => {
     if (!isRunning) {
         setNodes((nds) => nds.map((node) => ({
@@ -69,7 +63,6 @@ function DnDFlow() {
     }
   }, [isRunning, setNodes]);
 
-  // 初始模板：当画布为空时，默认生成 Start 和 End 节点
   useEffect(() => {
     if (nodes.length === 0) {
       const startNodeId = getId();
@@ -103,16 +96,13 @@ function DnDFlow() {
       setNodes(initialNodes);
       setEdges(initialEdges);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 只在组件挂载时执行一次
+  }, []);
 
-  // --- 关键 1: DragOver 必须 PreventDefault ---
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
   }, []);
 
-  // --- 关键 2: Drop 逻辑 ---
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
@@ -122,20 +112,16 @@ function DnDFlow() {
       const type = event.dataTransfer.getData('application/reactflow');
       const payloadStr = event.dataTransfer.getData('application/payload');
 
-      // 检查类型是否合法
       if (typeof type === 'undefined' || !type) {
         return;
       }
 
-      // 唯一性校验：只能有一个 Start 节点
       if (type === 'startNode' && nodes.some((n) => n.type === 'startNode')) {
-        // 弹出警告：工作流只能有一个起点
         return;
       }
 
       const payload = payloadStr ? JSON.parse(payloadStr) : {};
 
-      // V12 推荐的坐标转换方法
       const position = screenToFlowPosition({
         x: event.clientX,
         y: event.clientY,
@@ -164,7 +150,6 @@ function DnDFlow() {
 
       setNodes((nds) => nds.concat(newNode));
 
-      // 自动连线体验优化
       if (nodes.length > 0) {
           const lastNode = nodes[nodes.length - 1];
           const edgeId = `e-${lastNode.id}-${newNode.id}`;
@@ -192,12 +177,9 @@ function DnDFlow() {
     [setEdges],
   );
 
-  // --- 2. 图结构解析算法 ---
   const handleRun = async () => {
-    // 1. 基础检查
     if (nodes.length === 0) return;
 
-    // 2. 找到唯一的起点
     const startNode = nodes.find((n) => n.type === 'startNode');
     if (!startNode) {
       alert(t('automator.needStartPoint'));
@@ -229,7 +211,6 @@ function DnDFlow() {
         };
       }
 
-      // 查找连线关系
       const outgoingEdges = edges.filter((e) => e.source === node.id);
 
       const workflowNode: WorkflowNode = {
@@ -240,22 +221,18 @@ function DnDFlow() {
         falseId: undefined,
       };
 
-      // 通过 action 类型判断是否为条件节点（有 true/false 分支）
       const isConditionNode = action.type === 'CheckColor' || action.type === 'Iterate';
 
       for (const edge of outgoingEdges) {
         if (isConditionNode) {
-          // 条件节点的 true/false 分支
           if (edge.sourceHandle === 'true') {
             workflowNode.trueId = edge.target;
           } else if (edge.sourceHandle === 'false') {
             workflowNode.falseId = edge.target;
           } else {
-            // 未指定 handle，默认 false
             workflowNode.falseId = edge.target;
           }
         } else {
-          // 动作节点的下一个节点
           workflowNode.nextId = edge.target;
         }
       }
@@ -263,7 +240,6 @@ function DnDFlow() {
       graphNodes[node.id] = workflowNode;
     }
 
-    // 4. 找到 startNode 连接的第一个节点
     const firstEdge = edges.find((e) => e.source === startNode.id);
     if (!firstEdge) {
       alert(t('automator.noConnection'));
@@ -278,10 +254,8 @@ function DnDFlow() {
     const visited = new Set<string>();
     let currentId: string | undefined = workflowGraph.startNodeId;
     while (currentId && !visited.has(currentId)) {
-      // 检查节点是否存在于 graphNodes 中（可能指向 endNode）
       const node: WorkflowNode | undefined = graphNodes[currentId];
       if (!node) {
-        // 节点不存在（可能是 endNode），停止追踪
         break;
       }
       visited.add(currentId);
