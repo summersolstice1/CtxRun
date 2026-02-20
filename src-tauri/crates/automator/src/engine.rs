@@ -154,23 +154,26 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             }
         },
 
-        AutomatorAction::KeyPress { key } => {
-            let mut cdp_handled = false;
+        AutomatorAction::KeyPress { key, target } => {
+            let mut handled = false;
 
-            // 🛑 核心修改：不再检查 if key == "enter"
-            // 只要能连上浏览器，所有按键（包括 / ）统统走 CDP
-            // 这样就不需要浏览器窗口获得焦点了！
-            println!("[Engine] 尝试 CDP 发送按键: {}", key);
-            if let Ok(mut session) = CdpSession::connect(9222, None).await {
-                if let Ok(_) = session.simulate_key_press(key).await {
-                    println!("[Engine] ✅ CDP 按键发送成功: {}", key);
-                    cdp_handled = true;
+            // 🚀 只有当用户明确指定为 WebSelector 目标时，才尝试 CDP
+            if let Some(ActionTarget::WebSelector { url_contain, .. }) = target {
+                println!("[Engine] 🌐 预设为 Web 模式，尝试 CDP 发送: {}", key);
+                match CdpSession::connect(9222, url_contain.as_deref()).await {
+                    Ok(mut session) => {
+                        if let Ok(_) = session.simulate_key_press(key).await {
+                            println!("[Engine] ✅ CDP 发送成功");
+                            handled = true;
+                        }
+                    },
+                    Err(e) => println!("[Engine] ❌ CDP 连接失败: {}", e),
                 }
             }
 
-            // 只有连不上浏览器时，才降级走 OS 按键
-            if !cdp_handled {
-                println!("[Engine] ⌨️ 降级 OS 级按键 (需焦点): {}", key);
+            // 🚀 普通模式 (Coordinate/Semantic/None) 统统走 OS 物理按键
+            if !handled {
+                println!("[Engine] ⌨️ 执行 OS 物理按键: {}", key);
                 execute_key_combination(enigo, key);
             }
         },

@@ -54,7 +54,11 @@ pub enum AutomatorAction {
     Click { button: MouseButton, target: Option<ActionTarget> },
     DoubleClick { button: MouseButton, target: Option<ActionTarget> },
     Type { text: String, target: Option<ActionTarget> },
-    KeyPress { key: String },
+    KeyPress {
+        key: String,
+        #[serde(default)]
+        target: Option<ActionTarget>
+    },
     Scroll { delta: i32 },
     Wait { ms: u64 },
     CheckColor { x: i32, y: i32, #[serde(rename = "expectedHex")] expected_hex: String, tolerance: u32 },

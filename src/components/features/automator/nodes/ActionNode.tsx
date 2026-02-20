@@ -254,7 +254,7 @@ export const ActionNode = memo((props: NodeProps) => {
       )}>
         <Icon size={12} />
         <span className="font-bold text-[10px] uppercase">{title}</span>
-        {(actionType === 'MoveTo' || actionType === 'Click' || actionType === 'DoubleClick' || actionType === 'Type') && (
+        {(actionType === 'MoveTo' || actionType === 'Click' || actionType === 'DoubleClick' || actionType === 'Type' || actionType === 'KeyPress') && (
           <button
             onClick={toggleWebMode}
             className={cn(
@@ -350,7 +350,16 @@ export const ActionNode = memo((props: NodeProps) => {
         )}
 
         {actionType === 'KeyPress' && (
-          <div className="space-y-1">
+          <div className="space-y-2">
+             {isWebMode ? (
+               <div className="mb-2 px-2 py-1 bg-green-500/10 border border-green-500/20 rounded text-[9px] text-green-600 flex items-center gap-1">
+                 <Globe size={10}/> CDP 内核级按键 (无视焦点)
+               </div>
+             ) : (
+               <div className="mb-2 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] text-blue-600 flex items-center gap-1">
+                 <MousePointer2 size={10}/> 系统级模拟 (需窗口焦点)
+               </div>
+             )}
              <label className="text-[10px] text-muted-foreground block">{t('automator.pressKey')}</label>
              <div className="flex gap-1">
                <div

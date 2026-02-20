@@ -31,7 +31,7 @@ export type AutomatorAction =
   | { type: 'Click'; payload: { button: MouseButton; target?: ActionTarget } }
   | { type: 'DoubleClick'; payload: { button: MouseButton; target?: ActionTarget } }
   | { type: 'Type'; payload: { text: string; target?: ActionTarget } }
-  | { type: 'KeyPress'; payload: { key: string } }
+  | { type: 'KeyPress'; payload: { key: string; target?: ActionTarget } }
   | { type: 'Scroll'; payload: { delta: number } }
   | { type: 'Wait'; payload: { ms: number } }
   | { type: 'CheckColor'; payload: { x: number; y: number; expectedHex: string; tolerance: number } }
