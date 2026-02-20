@@ -7,6 +7,15 @@ pub enum MouseButton {
     Middle,
 }
 
+// 🚀 新增：表示 UI 树路径中的一个节点
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UIElementNode {
+    pub name: String,
+    pub role: String,
+    pub class_name: String,
+}
+
 /// 统一的目标抽象
 /// 修复：去掉 content="payload"，改为扁平结构以匹配前端
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -24,6 +33,9 @@ pub enum ActionTarget {
         window_title: Option<String>,
         #[serde(default)]
         process_name: Option<String>,
+        // 🚀 新增：记录从顶层窗口到目标元素的完整路径
+        #[serde(default)]
+        path: Vec<UIElementNode>,
         #[serde(rename = "fallbackX")]
         fallback_x: i32,
         #[serde(rename = "fallbackY")]

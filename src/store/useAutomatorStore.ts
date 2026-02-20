@@ -143,7 +143,9 @@ export const useAutomatorStore = create<AutomatorState>()(
 
             get().addAction({
                 type: 'MoveTo',
-                payload: { x, y }
+                payload: {
+                    target: { type: 'Coordinate', x, y }
+                }
             });
 
             set({ isPicking: false });

@@ -31,11 +31,19 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'Iterate': 'loopIteratorLabel',
 };
 
+// 在顶部补充 UIElementNode 接口
+interface UIElementNode {
+  name: string;
+  role: string;
+  className: string;
+}
+
 interface PickedElement {
   name: string;
   role: string;
   window_title?: string;
   process_name?: string;
+  path: UIElementNode[]; // 🚀 接收路径
   x: number;
   y: number;
 }
@@ -77,7 +85,7 @@ export const ActionNode = memo((props: NodeProps) => {
 
       let target: ActionTarget;
 
-      // 如果抓取到了有效语义 (Name非空)，就用语义定位；否则降级为绝对坐标
+      // 判断只要抓到了，就把整个 path 存下来
       if (element.name && element.name.trim() !== '') {
         target = {
           type: 'Semantic',
@@ -85,6 +93,7 @@ export const ActionNode = memo((props: NodeProps) => {
           role: element.role,
           window_title: element.window_title,
           process_name: element.process_name,
+          path: element.path || [], // 🚀 保存路径
           fallbackX: element.x,
           fallbackY: element.y
         };

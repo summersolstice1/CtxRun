@@ -26,24 +26,24 @@ impl AutomatorState {
 async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
     let t_clone = target.clone();
 
-    // 创建一个阻塞任务
     let task = tauri::async_runtime::spawn_blocking(move || {
         crate::inspector::resolve_target_to_coords(&t_clone)
     });
 
-    // 🚀 熔断机制：只等 10 秒
-    match tokio::time::timeout(Duration::from_secs(10), task).await {
-        Ok(Ok(Ok((x, y)))) => (x, y), // 成功拿到坐标
-        Ok(Ok(Err(_))) => {
-            // 内部逻辑错误，提取 fallback
+    // 🔴 将超时放宽到 15 秒，作为纯粹的安全兜底。
+    // 真正的业务超时应该由 inspector.rs 里的 2000ms + 4000ms 控制
+    match tokio::time::timeout(Duration::from_secs(15), task).await {
+        Ok(Ok(Ok((x, y)))) => (x, y),
+        Ok(Ok(Err(e))) => {
+            println!("[Engine] ⚠️ 解析失败: {}，使用回退坐标", e);
             extract_fallback(target)
         },
-        Ok(Err(_)) => {
-            // JoinError
+        Ok(Err(e)) => {
+            println!("[Engine] ⚠️ 线程池执行错误: {}，使用回退坐标", e);
             extract_fallback(target)
         },
         Err(_) => {
-            println!("[Engine] 🚨 语义解析超时 (Deadlock prevented)，强制使用回退坐标");
+            println!("[Engine] 🚨 严重超时 (15s)，强行终止等待，使用回退坐标");
             extract_fallback(target)
         }
     }

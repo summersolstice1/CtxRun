@@ -1,9 +1,25 @@
 export type MouseButton = 'Left' | 'Right' | 'Middle';
 
+// 🚀 新增节点接口
+export interface UIElementNode {
+  name: string;
+  role: string;
+  className: string;
+}
+
 // 核心：统一目标类型
 export type ActionTarget =
   | { type: 'Coordinate'; x: number; y: number }
-  | { type: 'Semantic'; name: string; role: string; window_title?: string; process_name?: string; fallbackX: number; fallbackY: number };
+  | {
+      type: 'Semantic';
+      name: string;
+      role: string;
+      window_title?: string;
+      process_name?: string;
+      path: UIElementNode[]; // 🚀 新增路径数组
+      fallbackX: number;
+      fallbackY: number
+    };
 
 // 动作定义
 export type AutomatorAction =
