@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AutomatorAction, MouseButton } from '@/types/automator';
+import { AutomatorAction, MouseButton, ActionTarget } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { NumberInput } from '@/components/ui/NumberInput';
@@ -19,7 +19,6 @@ const ICONS: Record<AutomatorAction['type'], any> = {
   'Iterate': Repeat,
 };
 
-// Title key mapping for i18n
 const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'MoveTo': 'moveTo',
   'Click': 'clickLabel',
@@ -32,6 +31,13 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'Iterate': 'loopIteratorLabel',
 };
 
+interface PickedElement {
+  name: string;
+  role: string;
+  x: number;
+  y: number;
+}
+
 interface ActionNodeData {
   actionType: AutomatorAction['type'];
   payload: AutomatorAction['payload'];
@@ -41,55 +47,60 @@ interface ActionNodeData {
 
 export const ActionNode = memo((props: NodeProps) => {
   const data = props.data as unknown as ActionNodeData;
-  const selected = props.selected;
-
-  const actionType = data.actionType;
-  const payload = data.payload;
-  const isExecuting = data.isExecuting;
-
+  const { actionType, payload, isExecuting, onChange } = data;
   const { t } = useTranslation();
 
   const Icon = ICONS[actionType] || MousePointer2;
   const title = t(`automator.${TITLE_KEYS[actionType] || actionType}`);
 
-  // 取坐标状态（仅用于 MoveTo）
   const [isPickingCoords, setIsPickingCoords] = useState(false);
-
-  // 按键录制状态（仅用于 KeyPress）
   const [isRecording, setIsRecording] = useState(false);
   const [currentKeys, setCurrentKeys] = useState<Set<string>>(new Set());
   const recordingRef = useRef<HTMLDivElement>(null);
 
   const handleChange = (key: string, value: any) => {
-    const newPayload = { ...payload, [key]: value };
-    data.onChange(newPayload);
+    onChange({ ...payload, [key]: value });
   };
 
-  // 取坐标功能：延迟 3 秒后获取鼠标位置
-  const handlePickCoordinates = async () => {
+  // 核心：统一的 3 秒智能拾取逻辑
+  const handleSmartPick = async () => {
     setIsPickingCoords(true);
 
-    // 延迟 3 秒让用户移动鼠标到目标位置
+    // 给予 3 秒钟时间，用户可以移动鼠标到目标、甚至点开下拉菜单
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
-      // 获取鼠标位置
-      const [x, y] = await invoke<[number, number]>('plugin:ctxrun-plugin-automator|get_mouse_position');
+      // 呼叫后端抓取当前鼠标位置的特征
+      const element = await invoke<PickedElement>('plugin:ctxrun-plugin-automator|get_element_under_cursor');
 
-      // 一次性更新所有坐标字段
-      data.onChange({
-        ...payload,
-        x,
-        y
-      });
+      let target: ActionTarget;
+
+      // 如果抓取到了有效语义 (Name非空)，就用语义定位；否则降级为绝对坐标
+      if (element.name && element.name.trim() !== '') {
+        target = {
+          type: 'Semantic',
+          name: element.name,
+          role: element.role,
+          fallbackX: element.x,
+          fallbackY: element.y
+        };
+      } else {
+        target = {
+          type: 'Coordinate',
+          x: element.x,
+          y: element.y
+        };
+      }
+
+      handleChange('target', target);
     } catch (error) {
-      console.error('取坐标失败:', error);
+      console.error('智能拾取失败:', error);
     } finally {
       setIsPickingCoords(false);
     }
   };
 
-  // 按键录制处理
+  // 键盘录制逻辑...
   useEffect(() => {
     if (!isRecording || actionType !== 'KeyPress') return;
 
@@ -103,25 +114,20 @@ export const ActionNode = memo((props: NodeProps) => {
       if (e.shiftKey) keys.add('Shift');
       if (e.metaKey) keys.add('Meta');
 
-      // 排除单纯的修饰键
       if (!['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) {
         let key = e.key;
-        // 标准化键名
         if (key === ' ') key = 'Space';
         if (key.length === 1) key = key.toUpperCase();
         keys.add(key);
 
-        // 格式化为 "Alt+F1" 这种字符串
         const shortcut = Array.from(keys).join('+');
         handleChange('key', shortcut);
         setIsRecording(false);
         setCurrentKeys(new Set());
       }
-
       setCurrentKeys(keys);
     };
 
-    // ESC 取消录制
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isRecording) {
         e.preventDefault();
@@ -130,7 +136,6 @@ export const ActionNode = memo((props: NodeProps) => {
       }
     };
 
-    // 点击外部取消录制
     const handleClickOutside = (e: MouseEvent) => {
       if (recordingRef.current && !recordingRef.current.contains(e.target as Node)) {
         setIsRecording(false);
@@ -149,10 +154,35 @@ export const ActionNode = memo((props: NodeProps) => {
     };
   }, [isRecording, actionType, payload]);
 
+  // 渲染拾取到的目标信息
+  const renderTargetInfo = (target?: ActionTarget) => {
+    if (!target) return null;
+    return (
+      <div className="text-[10px] bg-secondary/50 p-2 rounded border border-border">
+        {target.type === 'Semantic' ? (
+          <>
+            <div className="font-bold text-blue-500 mb-0.5">{target.role}</div>
+            <div className="truncate opacity-80 font-medium" title={target.name}>
+              "{target.name}"
+            </div>
+            <div className="text-[9px] text-muted-foreground mt-1">Fallback: {target.fallbackX}, {target.fallbackY}</div>
+          </>
+        ) : (
+          <>
+            <div className="font-bold text-orange-500 mb-0.5">绝对坐标 (Coordinate)</div>
+            <div className="font-mono opacity-80">
+              X: {target.x}, Y: {target.y}
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={cn(
       "w-[250px] bg-card border rounded-lg shadow-sm transition-all duration-300 text-xs",
-      selected ? "border-primary ring-1 ring-primary" : "border-border",
+      props.selected ? "border-primary ring-1 ring-primary" : "border-border",
       isExecuting && "border-primary ring-4 ring-primary/20 shadow-[0_0_15px_rgba(59,130,246,0.5)] scale-105 z-50"
     )}>
       <div className={cn(
@@ -166,122 +196,77 @@ export const ActionNode = memo((props: NodeProps) => {
 
       <div className="p-3 space-y-2 nodrag">
 
-        {actionType === 'MoveTo' && (
+        {/* 支持智能拾取的节点类型 */}
+        {(actionType === 'MoveTo' || actionType === 'Click' || actionType === 'DoubleClick' || actionType === 'Type') && (
           <div className="space-y-2">
-            <div className="flex gap-2">
-              <NumberInput
-                label="X"
-                value={(payload as { x: number }).x}
-                onChange={(val) => handleChange('x', val)}
-                className="flex-1"
-              />
-              <NumberInput
-                label="Y"
-                value={(payload as { y: number }).y}
-                onChange={(val) => handleChange('y', val)}
-                className="flex-1"
-              />
-            </div>
-            {/* 取坐标按钮 */}
+            {renderTargetInfo((payload as { target?: ActionTarget }).target)}
+
             <button
-              onClick={handlePickCoordinates}
+              onClick={handleSmartPick}
               disabled={isPickingCoords}
               className={cn(
-                "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-[10px] font-medium transition-all",
-                "bg-primary/10 text-primary hover:bg-primary/20",
-                isPickingCoords && "bg-primary/5 animate-pulse"
+                "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all",
+                isPickingCoords
+                  ? "bg-primary/20 text-primary animate-pulse"
+                  : "bg-primary/10 text-primary hover:bg-primary/20 hover:shadow-sm"
               )}
-              title={isPickingCoords ? t('automator.pickingCoordsMessage') : t('automator.pickCoordsTooltip')}
             >
-              <Crosshair size={12} className={cn(isPickingCoords && "animate-spin")} />
-              <span>{isPickingCoords ? t('automator.pickingCoords') : t('automator.pickCoords')}</span>
+              <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
+              {isPickingCoords ? "请将鼠标悬停在目标上..." : "智能拾取目标 (3秒延迟)"}
             </button>
-            {/* 取坐标状态提示 */}
-            {isPickingCoords && (
-              <div className="bg-primary/10 border border-primary/30 rounded px-2 py-1 text-center">
-                <span className="text-[9px] text-primary font-medium">{t('automator.pickingCoordsMessage')}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {actionType === 'Type' && (
-          <div>
-             <input
-                type="text"
-                className="w-full bg-background border border-border rounded px-2 py-1"
-                placeholder={t('automator.textToType')}
-                value={(payload as { text: string }).text}
-                onChange={(e) => handleChange('text', e.target.value)}
-              />
           </div>
         )}
 
         {(actionType === 'Click' || actionType === 'DoubleClick') && (
-           <select
-             className="w-full bg-background border border-border rounded px-2 py-1"
-             value={(payload as { button: MouseButton }).button}
-             onChange={(e) => handleChange('button', e.target.value as MouseButton)}
-           >
-             <option value="Left">{t('automator.leftButton')}</option>
-             <option value="Right">{t('automator.rightButton')}</option>
-             <option value="Middle">{t('automator.middleButton')}</option>
-           </select>
+          <select
+            className="w-full bg-background border border-border rounded px-2 py-1 mt-2"
+            value={(payload as { button: MouseButton }).button}
+            onChange={(e) => handleChange('button', e.target.value as MouseButton)}
+          >
+            <option value="Left">{t('automator.leftButton')}</option>
+            <option value="Right">{t('automator.rightButton')}</option>
+            <option value="Middle">{t('automator.middleButton')}</option>
+          </select>
         )}
 
+        {actionType === 'Type' && (
+           <input
+              type="text"
+              className="w-full bg-background border border-border rounded px-2 py-1 mt-2"
+              placeholder={t('automator.textToType')}
+              value={(payload as { text: string }).text}
+              onChange={(e) => handleChange('text', e.target.value)}
+            />
+        )}
+
+        {/* 其他如 KeyPress, Wait 等保持不变... */}
         {actionType === 'KeyPress' && (
           <div className="space-y-1">
-            <label className="text-[10px] text-muted-foreground block">{t('automator.pressKey')}</label>
-            <div className="flex gap-1">
-              <div
-                ref={recordingRef}
-                onClick={() => {
-                  setIsRecording(true);
-                  setCurrentKeys(new Set());
-                }}
-                className={cn(
-                  "flex-1 px-2 py-1.5 rounded border border-border bg-background text-center cursor-pointer transition-all select-none",
-                  isRecording
-                    ? "border-primary bg-primary/10 ring-2 ring-primary/20"
-                    : "hover:border-primary/50"
-                )}
-              >
-                <span className={cn(
-                  "font-mono text-[11px]",
-                  isRecording ? "text-primary" : "text-foreground"
-                )}>
-                  {isRecording
-                    ? currentKeys.size > 0
-                      ? Array.from(currentKeys).join(' + ')
-                      : "Press keys..."
-                    : ((payload as { key: string }).key || "Click to record")
-                  }
-                </span>
-              </div>
-              {((payload as { key: string }).key) && !isRecording && (
-                <button
-                  onClick={() => handleChange('key', '')}
-                  className="px-2 rounded border border-border bg-secondary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors"
-                  title={t('automator.clear')}
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-            {isRecording && (
-              <p className="text-[9px] text-center text-muted-foreground">
-                Press combination or ESC to cancel
-              </p>
-            )}
+             <label className="text-[10px] text-muted-foreground block">{t('automator.pressKey')}</label>
+             <div className="flex gap-1">
+               <div
+                 ref={recordingRef}
+                 onClick={() => { setIsRecording(true); setCurrentKeys(new Set()); }}
+                 className={cn(
+                   "flex-1 px-2 py-1.5 rounded border border-border bg-background text-center cursor-pointer transition-all select-none",
+                   isRecording ? "border-primary bg-primary/10 ring-2 ring-primary/20" : "hover:border-primary/50"
+                 )}
+               >
+                 <span className={cn("font-mono text-[11px]", isRecording ? "text-primary" : "text-foreground")}>
+                   {isRecording ? (currentKeys.size > 0 ? Array.from(currentKeys).join(' + ') : "Press keys...") : ((payload as { key: string }).key || "Click to record")}
+                 </span>
+               </div>
+               {((payload as { key: string }).key) && !isRecording && (
+                 <button onClick={() => handleChange('key', '')} className="px-2 rounded border border-border bg-secondary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors">
+                   <X size={12} />
+                 </button>
+               )}
+             </div>
           </div>
         )}
 
         {actionType === 'Wait' && (
-           <NumberInput
-              value={(payload as { ms: number }).ms}
-              onChange={(val) => handleChange('ms', val)}
-              className="flex-1"
-           />
+           <NumberInput value={(payload as { ms: number }).ms} onChange={(val) => handleChange('ms', val)} className="flex-1" />
         )}
 
       </div>

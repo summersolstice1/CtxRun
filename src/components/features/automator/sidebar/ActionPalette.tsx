@@ -46,7 +46,7 @@ export function ActionPalette() {
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-1">{t('automator.mouse')}</div>
         <DraggableItem type="Click" label={t('automator.clickAction')} icon={MousePointerClick} payload={{ button: 'Left' }} />
         <DraggableItem type="DoubleClick" label={t('automator.doubleClickAction')} icon={MousePointerClick} payload={{ button: 'Left' }} />
-        <DraggableItem type="MoveTo" label={t('automator.moveMouse')} icon={Move} payload={{ x: 0, y: 0 }} />
+        <DraggableItem type="MoveTo" label={t('automator.moveMouse')} icon={Move} payload={{ target: { type: 'Coordinate', x: 0, y: 0 } } } />
 
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">{t('automator.keyboard')}</div>
         <DraggableItem type="Type" label={t('automator.inputText')} icon={Type} payload={{ text: '' }} />

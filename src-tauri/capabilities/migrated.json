@@ -69,6 +69,7 @@
     "ctxrun-plugin-automator:allow-stop-workflow",
     "ctxrun-plugin-automator:allow-get-mouse-position",
     "ctxrun-plugin-automator:allow-get-pixel-color",
+    "ctxrun-plugin-automator:allow-get-element-under-cursor",
     "ctxrun-plugin-context:allow-calculate-context-stats",
     "ctxrun-plugin-context:allow-scan-for-secrets",
     "ctxrun-plugin-context:allow-get-context-content",

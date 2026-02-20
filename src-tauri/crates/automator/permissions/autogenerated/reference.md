@@ -62,6 +62,32 @@ Denies the execute_workflow_graph command without any pre-configured scope.
 <tr>
 <td>
 
+`ctxrun-plugin-automator:allow-get-element-under-cursor`
+
+</td>
+<td>
+
+Enables the get_element_under_cursor command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-automator:deny-get-element-under-cursor`
+
+</td>
+<td>
+
+Denies the get_element_under_cursor command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-automator:allow-get-mouse-position`
 
 </td>

@@ -4,6 +4,7 @@ use crate::engine::{AutomatorState, run_workflow_task, run_graph_task};
 use crate::models::{Workflow, WorkflowGraph};
 use crate::screen;
 use crate::error::{AutomatorError, Result};
+use crate::inspector::PickedElement;
 
 #[tauri::command]
 pub async fn execute_workflow<R: Runtime>(
@@ -69,4 +70,15 @@ pub async fn execute_workflow_graph<R: Runtime>(
     run_graph_task(app, graph, state.is_running.clone());
 
     Ok(())
+}
+
+// 新增：智能拾取命令
+#[tauri::command]
+pub async fn get_element_under_cursor() -> Result<PickedElement> {
+    // UIAutomation 涉及 COM 调用，必须丢进 spawn_blocking 避免阻塞异步运行时
+    tauri::async_runtime::spawn_blocking(|| {
+        crate::inspector::get_element_under_cursor_impl()
+    })
+    .await
+    .map_err(|e| AutomatorError::JoinError(e.to_string()))?
 }

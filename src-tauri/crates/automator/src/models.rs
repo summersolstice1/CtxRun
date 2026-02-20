@@ -7,18 +7,36 @@ pub enum MouseButton {
     Middle,
 }
 
+/// 统一的目标抽象
+/// 修复：去掉 content="payload"，改为扁平结构以匹配前端
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", content = "payload")]
+#[serde(tag = "type")] // <--- 关键修改：只保留 tag，去掉 content
+pub enum ActionTarget {
+    Coordinate {
+        x: i32,
+        y: i32
+    },
+    Semantic {
+        name: String,
+        role: String,
+        #[serde(rename = "fallbackX")]
+        fallback_x: i32,
+        #[serde(rename = "fallbackY")]
+        fallback_y: i32,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "payload")] // Action 保持不变，因为前端确实包了一层 payload
 pub enum AutomatorAction {
-    MoveTo { x: i32, y: i32 },
-    Click { button: MouseButton },
-    DoubleClick { button: MouseButton },
-    Type { text: String },
+    MoveTo { target: ActionTarget },
+    Click { button: MouseButton, target: Option<ActionTarget> },
+    DoubleClick { button: MouseButton, target: Option<ActionTarget> },
+    Type { text: String, target: Option<ActionTarget> },
     KeyPress { key: String },
     Scroll { delta: i32 },
     Wait { ms: u64 },
     CheckColor { x: i32, y: i32, #[serde(rename = "expectedHex")] expected_hex: String, tolerance: u32 },
-    /// 迭代计数器
     Iterate { #[serde(rename = "targetCount")] target_count: u32 },
 }
 

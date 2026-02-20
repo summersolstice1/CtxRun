@@ -1,16 +1,20 @@
 export type MouseButton = 'Left' | 'Right' | 'Middle';
 
+// 核心：统一目标类型
+export type ActionTarget =
+  | { type: 'Coordinate'; x: number; y: number }
+  | { type: 'Semantic'; name: string; role: string; fallbackX: number; fallbackY: number };
+
 // 动作定义
 export type AutomatorAction =
-  | { type: 'MoveTo'; payload: { x: number; y: number } }
-  | { type: 'Click'; payload: { button: MouseButton } }
-  | { type: 'DoubleClick'; payload: { button: MouseButton } }
-  | { type: 'Type'; payload: { text: string } }
+  | { type: 'MoveTo'; payload: { target: ActionTarget } }
+  | { type: 'Click'; payload: { button: MouseButton; target?: ActionTarget } }
+  | { type: 'DoubleClick'; payload: { button: MouseButton; target?: ActionTarget } }
+  | { type: 'Type'; payload: { text: string; target?: ActionTarget } }
   | { type: 'KeyPress'; payload: { key: string } }
   | { type: 'Scroll'; payload: { delta: number } }
   | { type: 'Wait'; payload: { ms: number } }
   | { type: 'CheckColor'; payload: { x: number; y: number; expectedHex: string; tolerance: number } }
-  // 迭代计数器
   | { type: 'Iterate'; payload: { targetCount: number } };
 
 // 图节点结构：通过 action.type 自动判断是否为条件节点

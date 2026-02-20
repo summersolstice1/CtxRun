@@ -3,7 +3,8 @@ const COMMANDS: &[&str] = &[
     "execute_workflow_graph",
     "stop_workflow",
     "get_mouse_position",
-    "get_pixel_color"
+    "get_pixel_color",
+    "get_element_under_cursor"
 ];
 
 fn main() {
