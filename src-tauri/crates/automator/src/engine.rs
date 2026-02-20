@@ -69,32 +69,40 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             let mut cdp_handled = false;
 
             if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
-                println!("[Engine] 检测到 Web 选择器，尝试 CDP 直连...");
-
+                println!("[Engine] 🌐 CDP 点击: {}", selector);
                 match CdpSession::connect(9222, url_contain.as_deref()).await {
                     Ok(mut session) => {
-                        println!("[Engine] CDP 连接成功，执行 JS 点击...");
-                        match session.js_click(selector).await {
-                            Ok(_) => {
-                                println!("[Engine] JS 点击执行成功 (无需移动鼠标)");
-                                cdp_handled = true;
+                        // 此处已经自带了 5秒的隐式等待
+                        match session.get_element_viewport_center(selector).await {
+                            Ok((x, y)) => {
+                                if let Ok(_) = session.simulate_mouse_click(x, y).await {
+                                    println!("[Engine] ✅ CDP 协议级点击完成 ({}, {})", x, y);
+                                    cdp_handled = true;
+                                }
                             },
-                            Err(e) => println!("[Engine] JS 点击失败: {}", e),
+                            Err(e) => println!("[Engine] ⚠️ CDP 元素获取失败: {}", e),
                         }
                     },
-                    Err(e) => println!("[Engine] CDP 连接不可用: {}", e),
+                    Err(e) => println!("[Engine] ⚠️ CDP 连接失败: {}", e),
                 }
             }
 
+            // 🖥️ 降级走物理点击 (加安全锁)
             if !cdp_handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
-                    println!("[Engine] 移动并点击 -> ({}, {})", x, y);
-                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                    tokio::time::sleep(Duration::from_millis(100)).await;
+
+                    // 🛡️ 核心安全锁：绝不点击 (0, 0)
+                    if x == 0 && y == 0 {
+                        println!("[Engine] 🛑 目标坐标为 (0,0)，为防止误触系统菜单，已取消物理点击！");
+                    } else {
+                        println!("[Engine] 🖱️ 移动并点击 -> ({}, {})", x, y);
+                        let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                        tokio::time::sleep(Duration::from_millis(100)).await;
+                        let btn = map_button(button);
+                        let _ = enigo.button(btn, Direction::Click);
+                    }
                 }
-                let btn = map_button(button);
-                let _ = enigo.button(btn, Direction::Click);
             }
         },
 
@@ -115,15 +123,12 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             let mut cdp_handled = false;
 
             if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
-                println!("[Engine] 检测到 Web 选择器，尝试 CDP 输入...");
+                println!("[Engine] 🌐 CDP 输入: '{}' -> {}", text, selector);
                 match CdpSession::connect(9222, url_contain.as_deref()).await {
                     Ok(mut session) => {
-                        match session.js_type(selector, text).await {
-                            Ok(_) => {
-                                println!("[Engine] JS 输入成功");
-                                cdp_handled = true;
-                            },
-                            Err(e) => println!("[Engine] JS 输入失败: {}", e),
+                        if let Ok(_) = session.simulate_text_entry(selector, text).await {
+                            println!("[Engine] ✅ CDP 文本输入完成");
+                            cdp_handled = true;
                         }
                     },
                     Err(_) => {}
@@ -133,19 +138,41 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             if !cdp_handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
-                    println!("[Engine] 移动并输入 -> ({}, {})", x, y);
-                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                    tokio::time::sleep(Duration::from_millis(50)).await;
-                    let _ = enigo.button(Button::Left, Direction::Click);
-                    tokio::time::sleep(Duration::from_millis(200)).await;
+
+                    // 🛡️ 核心安全锁
+                    if x == 0 && y == 0 {
+                        println!("[Engine] 🛑 目标坐标为 (0,0)，已取消物理输入！");
+                    } else {
+                        println!("[Engine] 🖱️ 移动并输入 -> ({}, {})", x, y);
+                        let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                        tokio::time::sleep(Duration::from_millis(50)).await;
+                        let _ = enigo.button(Button::Left, Direction::Click);
+                        tokio::time::sleep(Duration::from_millis(200)).await;
+                    }
                 }
                 let _ = enigo.text(text);
             }
         },
 
         AutomatorAction::KeyPress { key } => {
-            println!("[Engine] 按键组合: {}", key);
-            execute_key_combination(enigo, key);
+            let mut cdp_handled = false;
+
+            // 🛑 核心修改：不再检查 if key == "enter"
+            // 只要能连上浏览器，所有按键（包括 / ）统统走 CDP
+            // 这样就不需要浏览器窗口获得焦点了！
+            println!("[Engine] 尝试 CDP 发送按键: {}", key);
+            if let Ok(mut session) = CdpSession::connect(9222, None).await {
+                if let Ok(_) = session.simulate_key_press(key).await {
+                    println!("[Engine] ✅ CDP 按键发送成功: {}", key);
+                    cdp_handled = true;
+                }
+            }
+
+            // 只有连不上浏览器时，才降级走 OS 按键
+            if !cdp_handled {
+                println!("[Engine] ⌨️ 降级 OS 级按键 (需焦点): {}", key);
+                execute_key_combination(enigo, key);
+            }
         },
 
         AutomatorAction::Scroll { delta } => {
