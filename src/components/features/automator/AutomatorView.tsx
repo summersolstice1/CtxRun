@@ -11,7 +11,7 @@ import { Play, Square, Move } from 'lucide-react';
 import { useAutomatorStore } from '@/store/useAutomatorStore';
 import { useTranslation } from 'react-i18next';
 import { ActionNode } from './nodes/ActionNode';
-import { StartNode, EndNode } from './nodes/SpecialNodes';
+import { StartNode, EndNode, LaunchBrowserNode } from './nodes/SpecialNodes';
 import { ConditionNode } from './nodes/ConditionNode';
 import { IteratorNode } from './nodes/IteratorNode';
 import { ActionPalette } from './sidebar/ActionPalette';
@@ -24,6 +24,7 @@ const nodeTypes = {
   iteratorNode: IteratorNode,
   startNode: StartNode,
   endNode: EndNode,
+  launchBrowserNode: LaunchBrowserNode,
 };
 
 let id = 0;
@@ -130,22 +131,33 @@ function DnDFlow() {
       const newNodeId = getId();
       const newNode: Node = {
         id: newNodeId,
-        type: type === 'startNode' || type === 'endNode'
+        type: type === 'startNode' || type === 'endNode' || type === 'launchBrowserNode'
           ? type
           : (type === 'conditionNode' || type === 'iteratorNode' ? type : 'actionNode'),
         position,
-        data: type === 'startNode' || type === 'endNode' ? {} : {
+        data: type === 'startNode' || type === 'endNode' ? {} :
+          (type === 'launchBrowserNode' ? {
+            payload: payload,
+            onChange: (newData: any) => {
+              setNodes((nds) => nds.map((node) => {
+                if (node.id === newNodeId) {
+                  return { ...node, data: { ...node.data, payload: newData } };
+                }
+                return node;
+              }));
+            }
+          } : {
             actionType: type === 'conditionNode' ? 'CheckColor' : (type === 'iteratorNode' ? 'Iterate' : type as AutomatorAction['type']),
             payload: payload,
             onChange: (newData: any) => {
-                setNodes((nds) => nds.map((node) => {
-                    if (node.id === newNodeId) {
-                        return { ...node, data: { ...node.data, payload: newData } };
-                    }
-                    return node;
-                }));
+              setNodes((nds) => nds.map((node) => {
+                if (node.id === newNodeId) {
+                  return { ...node, data: { ...node.data, payload: newData } };
+                }
+                return node;
+              }));
             }
-        },
+          }),
       };
 
       setNodes((nds) => nds.concat(newNode));
@@ -201,6 +213,12 @@ function DnDFlow() {
         const nodeData = node.data as { payload: any };
         action = {
           type: 'Iterate',
+          payload: nodeData.payload
+        };
+      } else if (node.type === 'launchBrowserNode') {
+        const nodeData = node.data as { payload: any };
+        action = {
+          type: 'LaunchBrowser',
           payload: nodeData.payload
         };
       } else {

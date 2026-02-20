@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use std::path::PathBuf;
+use std::process::Command;
 use tauri::{AppHandle, Emitter, Runtime};
 use enigo::{
     Enigo, Mouse, Keyboard, Button, Coordinate,
@@ -9,6 +11,7 @@ use enigo::{
 };
 use crate::models::{AutomatorAction, Workflow, WorkflowGraph, MouseButton, ActionTarget};
 use crate::screen;
+use crate::cdp::CdpSession;
 
 pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
@@ -22,7 +25,6 @@ impl AutomatorState {
     }
 }
 
-/// 辅助：带超时熔断的坐标解析器
 async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
     let t_clone = target.clone();
 
@@ -30,20 +32,18 @@ async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
         crate::inspector::resolve_target_to_coords(&t_clone)
     });
 
-    // 🔴 将超时放宽到 15 秒，作为纯粹的安全兜底。
-    // 真正的业务超时应该由 inspector.rs 里的 2000ms + 4000ms 控制
     match tokio::time::timeout(Duration::from_secs(15), task).await {
         Ok(Ok(Ok((x, y)))) => (x, y),
         Ok(Ok(Err(e))) => {
-            println!("[Engine] ⚠️ 解析失败: {}，使用回退坐标", e);
+            println!("[Engine] 解析失败: {}，使用回退坐标", e);
             extract_fallback(target)
         },
         Ok(Err(e)) => {
-            println!("[Engine] ⚠️ 线程池执行错误: {}，使用回退坐标", e);
+            println!("[Engine] 线程池执行错误: {}，使用回退坐标", e);
             extract_fallback(target)
         },
         Err(_) => {
-            println!("[Engine] 🚨 严重超时 (15s)，强行终止等待，使用回退坐标");
+            println!("[Engine] 严重超时 (15s)，强行终止等待，使用回退坐标");
             extract_fallback(target)
         }
     }
@@ -53,33 +53,55 @@ fn extract_fallback(target: &ActionTarget) -> (i32, i32) {
     match target {
         ActionTarget::Coordinate { x, y } => (*x, *y),
         ActionTarget::Semantic { fallback_x, fallback_y, .. } => (*fallback_x, *fallback_y),
+        ActionTarget::WebSelector { fallback_x, fallback_y, .. } => (*fallback_x, *fallback_y),
     }
 }
 
-/// 智能执行器
 async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
     match action {
         AutomatorAction::MoveTo { target } => {
             let (x, y) = resolve_coords_with_timeout(target).await;
-            println!("[Engine] 🖱️ 移动鼠标 -> ({}, {})", x, y);
+            println!("[Engine] 移动鼠标 -> ({}, {})", x, y);
             let _ = enigo.move_mouse(x, y, Coordinate::Abs);
         },
 
         AutomatorAction::Click { button, target } => {
-            if let Some(t) = target {
-                let (x, y) = resolve_coords_with_timeout(t).await;
-                println!("[Engine] 🖱️ 移动并点击 -> ({}, {})", x, y);
-                let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                tokio::time::sleep(Duration::from_millis(100)).await;
+            let mut cdp_handled = false;
+
+            if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
+                println!("[Engine] 检测到 Web 选择器，尝试 CDP 直连...");
+
+                match CdpSession::connect(9222, url_contain.as_deref()).await {
+                    Ok(mut session) => {
+                        println!("[Engine] CDP 连接成功，执行 JS 点击...");
+                        match session.js_click(selector).await {
+                            Ok(_) => {
+                                println!("[Engine] JS 点击执行成功 (无需移动鼠标)");
+                                cdp_handled = true;
+                            },
+                            Err(e) => println!("[Engine] JS 点击失败: {}", e),
+                        }
+                    },
+                    Err(e) => println!("[Engine] CDP 连接不可用: {}", e),
+                }
             }
-            let btn = map_button(button);
-            let _ = enigo.button(btn, Direction::Click);
+
+            if !cdp_handled {
+                if let Some(t) = target {
+                    let (x, y) = resolve_coords_with_timeout(t).await;
+                    println!("[Engine] 移动并点击 -> ({}, {})", x, y);
+                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                let btn = map_button(button);
+                let _ = enigo.button(btn, Direction::Click);
+            }
         },
 
         AutomatorAction::DoubleClick { button, target } => {
             if let Some(t) = target {
                 let (x, y) = resolve_coords_with_timeout(t).await;
-                println!("[Engine] 🖱️ 移动并双击 -> ({}, {})", x, y);
+                println!("[Engine] 移动并双击 -> ({}, {})", x, y);
                 let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                 tokio::time::sleep(Duration::from_millis(50)).await;
             }
@@ -90,38 +112,78 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
         },
 
         AutomatorAction::Type { text, target } => {
-            if let Some(t) = target {
-                let (x, y) = resolve_coords_with_timeout(t).await;
-                println!("[Engine] 🖱️ 移动并输入 -> ({}, {}) 文本: '{}'", x, y, text);
-                let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                tokio::time::sleep(Duration::from_millis(50)).await;
-                let _ = enigo.button(Button::Left, Direction::Click);
-                tokio::time::sleep(Duration::from_millis(200)).await;
+            let mut cdp_handled = false;
+
+            if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
+                println!("[Engine] 检测到 Web 选择器，尝试 CDP 输入...");
+                match CdpSession::connect(9222, url_contain.as_deref()).await {
+                    Ok(mut session) => {
+                        match session.js_type(selector, text).await {
+                            Ok(_) => {
+                                println!("[Engine] JS 输入成功");
+                                cdp_handled = true;
+                            },
+                            Err(e) => println!("[Engine] JS 输入失败: {}", e),
+                        }
+                    },
+                    Err(_) => {}
+                }
             }
-            let _ = enigo.text(text);
+
+            if !cdp_handled {
+                if let Some(t) = target {
+                    let (x, y) = resolve_coords_with_timeout(t).await;
+                    println!("[Engine] 移动并输入 -> ({}, {})", x, y);
+                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    let _ = enigo.button(Button::Left, Direction::Click);
+                    tokio::time::sleep(Duration::from_millis(200)).await;
+                }
+                let _ = enigo.text(text);
+            }
         },
 
         AutomatorAction::KeyPress { key } => {
-            println!("[Engine] ⌨️ 按键组合: {}", key);
+            println!("[Engine] 按键组合: {}", key);
             execute_key_combination(enigo, key);
         },
 
         AutomatorAction::Scroll { delta } => {
-            println!("[Engine] 📜 滚轮: {} 单位", delta);
+            println!("[Engine] 滚轮: {} 单位", delta);
             let _ = enigo.scroll(*delta, Axis::Vertical);
         },
 
         AutomatorAction::Wait { ms } => {
-            println!("[Engine] ⏱️ 等待: {} ms", ms);
+            println!("[Engine] 等待: {} ms", ms);
             tokio::time::sleep(Duration::from_millis(*ms)).await;
         },
 
         AutomatorAction::CheckColor { .. } => {
-            println!("[Engine] 🎨 检查颜色条件");
+            println!("[Engine] 检查颜色条件");
         },
         AutomatorAction::Iterate { .. } => {
-            println!("[Engine] 🔄 迭代器");
-        }
+            println!("[Engine] 迭代器");
+        },
+        AutomatorAction::LaunchBrowser { browser, url, use_temp_profile } => {
+            println!("[Engine] 🚀 正在启动 {} 浏览器...", browser);
+
+            let is_edge = browser.to_lowercase().as_str() == "edge";
+
+            // 在阻塞线程中执行启动命令
+            let url_clone = url.clone();
+            let use_temp = *use_temp_profile;
+            let res = tauri::async_runtime::spawn_blocking(move || {
+                launch_browser_internal(is_edge, url_clone, use_temp)
+            }).await;
+
+            match res {
+                Ok(Ok(_)) => {
+                    println!("[Engine] ✅ 浏览器启动指令已发送，等待 2 秒初始化...");
+                    tokio::time::sleep(Duration::from_secs(2)).await;
+                },
+                _ => println!("[Engine] ❌ 浏览器启动失败"),
+            }
+        },
     }
 }
 
@@ -158,7 +220,6 @@ pub fn run_workflow_task<R: Runtime>(
 
                 let _ = app.emit("automator:step", index);
 
-                // 执行动作
                 execute_smart_action(&mut enigo, action).await;
 
                 tokio::time::sleep(Duration::from_millis(100)).await;
@@ -168,7 +229,6 @@ pub fn run_workflow_task<R: Runtime>(
             let _ = app.emit("automator:loop_count", current_loop);
         }
 
-        // 安全清理
         println!("[Engine] 任务结束，重置输入状态");
         reset_all_inputs_surgical(&mut enigo);
 
@@ -176,10 +236,6 @@ pub fn run_workflow_task<R: Runtime>(
         let _ = app.emit("automator:status", false);
     });
 }
-
-// ----------------------------------------------------------------------
-// 辅助函数
-// ----------------------------------------------------------------------
 
 fn map_button(btn: &MouseButton) -> Button {
     match btn {
@@ -260,7 +316,6 @@ fn reset_all_inputs_surgical(enigo: &mut Enigo) {
     for key in modifiers { let _ = enigo.key(key, Direction::Release); }
 }
 
-/// 颜色匹配函数（带容差）
 fn color_match(actual: &str, expected: &str, tolerance: u32) -> bool {
     if actual.len() != 7 || expected.len() != 7 {
         return false;
@@ -268,38 +323,15 @@ fn color_match(actual: &str, expected: &str, tolerance: u32) -> bool {
     if !actual.starts_with('#') || !expected.starts_with('#') {
         return false;
     }
-    let actual_r = match u32::from_str_radix(&actual[1..3], 16) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    let actual_g = match u32::from_str_radix(&actual[3..5], 16) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    let actual_b = match u32::from_str_radix(&actual[5..7], 16) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    let expected_r = match u32::from_str_radix(&expected[1..3], 16) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    let expected_g = match u32::from_str_radix(&expected[3..5], 16) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    let expected_b = match u32::from_str_radix(&expected[5..7], 16) {
-        Ok(v) => v,
-        Err(_) => return false,
-    };
-    let diff_r = (actual_r as i32 - expected_r as i32).unsigned_abs();
-    let diff_g = (actual_g as i32 - expected_g as i32).unsigned_abs();
-    let diff_b = (actual_b as i32 - expected_b as i32).unsigned_abs();
-
+    let parse = |s: &str| u32::from_str_radix(s, 16).unwrap_or(0);
+    let ar = parse(&actual[1..3]); let ag = parse(&actual[3..5]); let ab = parse(&actual[5..7]);
+    let er = parse(&expected[1..3]); let eg = parse(&expected[3..5]); let eb = parse(&expected[5..7]);
+    let diff_r = (ar as i32 - er as i32).unsigned_abs();
+    let diff_g = (ag as i32 - eg as i32).unsigned_abs();
+    let diff_b = (ab as i32 - eb as i32).unsigned_abs();
     diff_r <= tolerance && diff_g <= tolerance && diff_b <= tolerance
 }
 
-/// 图结构执行任务 - 完整实现
 pub fn run_graph_task<R: Runtime>(
     app: AppHandle<R>,
     graph: WorkflowGraph,
@@ -338,7 +370,6 @@ pub fn run_graph_task<R: Runtime>(
             let node = match graph.nodes.get(&id) {
                 Some(n) => n,
                 None => {
-                    // 节点不存在（可能是 endNode），正常结束
                     break;
                 }
             };
@@ -388,7 +419,6 @@ pub fn run_graph_task<R: Runtime>(
                 },
 
                 _ => {
-                    // 普通动作节点，执行后走向 nextId
                     execute_smart_action(&mut enigo, &node.action).await;
                     current_id = node.next_id.clone();
                 }
@@ -397,11 +427,87 @@ pub fn run_graph_task<R: Runtime>(
             tokio::time::sleep(Duration::from_millis(50)).await;
         }
 
-        // 安全清理
         println!("[Engine] 图任务结束，重置输入状态");
         reset_all_inputs_surgical(&mut enigo);
 
         running_flag.store(false, Ordering::SeqCst);
         let _ = app.emit("automator:status", false);
     });
+}
+
+/// 内部浏览器启动辅助函数
+fn launch_browser_internal(is_edge: bool, url: Option<String>, use_temp_profile: bool) -> Result<(), String> {
+    let mut paths = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        let program_files = std::env::var("ProgramFiles").unwrap_or(r"C:\Program Files".to_string());
+        let program_files_x86 = std::env::var("ProgramFiles(x86)").unwrap_or(r"C:\Program Files (x86)".to_string());
+        let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
+
+        if is_edge {
+            paths.push(PathBuf::from(&program_files).join(r"Microsoft\Edge\Application\msedge.exe"));
+            paths.push(PathBuf::from(&program_files_x86).join(r"Microsoft\Edge\Application\msedge.exe"));
+        } else {
+            paths.push(PathBuf::from(&program_files).join(r"Google\Chrome\Application\chrome.exe"));
+            paths.push(PathBuf::from(&program_files_x86).join(r"Google\Chrome\Application\chrome.exe"));
+            paths.push(PathBuf::from(&local_app_data).join(r"Google\Chrome\Application\chrome.exe"));
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        if is_edge {
+            paths.push(PathBuf::from("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"));
+        } else {
+            paths.push(PathBuf::from("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"));
+        }
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        if is_edge {
+            paths.push(PathBuf::from("microsoft-edge"));
+        } else {
+            paths.push(PathBuf::from("google-chrome"));
+            paths.push(PathBuf::from("google-chrome-stable"));
+            paths.push(PathBuf::from("chromium"));
+        }
+    }
+
+    let exe_path = paths.into_iter().find(|p| {
+        #[cfg(target_os = "linux")]
+        return which::which(p).is_ok();
+        #[cfg(not(target_os = "linux"))]
+        return p.exists();
+    }).ok_or_else(|| "Browser executable not found".to_string())?;
+
+    println!("[Engine] Found executable: {:?}", exe_path);
+
+    let mut cmd = Command::new(exe_path);
+    cmd.arg("--remote-debugging-port=9222");
+    cmd.arg("--no-first-run");
+    cmd.arg("--no-default-browser-check");
+
+    if use_temp_profile {
+        let temp_dir = std::env::temp_dir().join("ctxrun_browser_profile");
+        cmd.arg(format!("--user-data-dir={}", temp_dir.to_string_lossy()));
+    }
+
+    if let Some(u) = url {
+        cmd.arg(u);
+    } else {
+        cmd.arg("about:blank");
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const DETACHED_PROCESS: u32 = 0x00000008;
+        cmd.creation_flags(DETACHED_PROCESS);
+    }
+
+    cmd.spawn()
+        .map_err(|e| format!("Failed to launch browser: {}", e))?;
+    Ok(())
 }

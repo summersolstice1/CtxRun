@@ -17,6 +17,13 @@ export type ActionTarget =
       path: UIElementNode[];
       fallbackX: number;
       fallbackY: number
+    }
+  | {
+      type: 'WebSelector';
+      selector: string;
+      url_contain?: string;
+      fallbackX: number;
+      fallbackY: number;
     };
 
 export type AutomatorAction =
@@ -28,7 +35,15 @@ export type AutomatorAction =
   | { type: 'Scroll'; payload: { delta: number } }
   | { type: 'Wait'; payload: { ms: number } }
   | { type: 'CheckColor'; payload: { x: number; y: number; expectedHex: string; tolerance: number } }
-  | { type: 'Iterate'; payload: { targetCount: number } };
+  | { type: 'Iterate'; payload: { targetCount: number } }
+  | {
+      type: 'LaunchBrowser';
+      payload: {
+        browser: 'Chrome' | 'Edge';
+        url?: string;
+        useTempProfile: boolean;
+      };
+    };
 
 export interface WorkflowNode {
   id: string;

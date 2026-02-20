@@ -1,59 +1,32 @@
-//! Error types for automator operations
-
 use serde::Serialize;
-use std::fmt;
 use std::io::Error as IoError;
+use thiserror::Error;
 
-/// Main error type for automator operations
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum AutomatorError {
-    /// Workflow already running
+    #[error("Automation is already running")]
     AlreadyRunning,
 
-    /// Input operation failed (mouse/keyboard)
+    #[error("Input operation failed: {0}")]
     InputError(String),
 
-    /// IO error
-    IoError(IoError),
+    #[error("IO error: {0}")]
+    IoError(#[from] IoError),
 
-    /// Screen capture error
+    #[error("Screen capture failed: {0}")]
     ScreenError(String),
 
-    /// Join error from async operations
+    #[error("Async operation failed: {0}")]
     JoinError(String),
-}
 
-impl fmt::Display for AutomatorError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            AutomatorError::AlreadyRunning => write!(f, "Already running"),
-            AutomatorError::InputError(e) => write!(f, "Input operation failed: {}", e),
-            AutomatorError::IoError(e) => write!(f, "IO error: {}", e),
-            AutomatorError::ScreenError(e) => write!(f, "Screen capture failed: {}", e),
-            AutomatorError::JoinError(e) => write!(f, "Async operation failed: {}", e),
-        }
-    }
-}
+    #[error("CDP Connection failed: {0}")]
+    CdpConnectionError(String),
 
-impl std::error::Error for AutomatorError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            AutomatorError::IoError(e) => Some(e),
-            _ => None,
-        }
-    }
-}
+    #[error("CDP Protocol error: {0}")]
+    CdpProtocolError(String),
 
-impl From<IoError> for AutomatorError {
-    fn from(e: IoError) -> Self {
-        AutomatorError::IoError(e)
-    }
-}
-
-impl From<String> for AutomatorError {
-    fn from(s: String) -> Self {
-        AutomatorError::InputError(s)
-    }
+    #[error("JSON parsing error: {0}")]
+    JsonError(#[from] serde_json::Error),
 }
 
 impl Serialize for AutomatorError {
@@ -61,9 +34,8 @@ impl Serialize for AutomatorError {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_str(&format!("{}", self))
+        serializer.serialize_str(&self.to_string())
     }
 }
 
-/// Result type alias for automator operations
 pub type Result<T> = std::result::Result<T, AutomatorError>;

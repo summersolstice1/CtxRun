@@ -8,10 +8,10 @@ pub enum MouseButton {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct UIElementNode {
     pub name: String,
     pub role: String,
+    #[serde(rename = "className")]
     pub class_name: String,
 }
 
@@ -29,13 +29,22 @@ pub enum ActionTarget {
         window_title: Option<String>,
         #[serde(default)]
         process_name: Option<String>,
-        #[serde(default)]
-        path: Vec<UIElementNode>,
         #[serde(rename = "fallbackX")]
         fallback_x: i32,
         #[serde(rename = "fallbackY")]
         fallback_y: i32,
+        #[serde(default)]
+        path: Vec<UIElementNode>,
     },
+    WebSelector {
+        selector: String,
+        #[serde(default)]
+        url_contain: Option<String>,
+        #[serde(rename = "fallbackX")]
+        fallback_x: i32,
+        #[serde(rename = "fallbackY")]
+        fallback_y: i32,
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +59,13 @@ pub enum AutomatorAction {
     Wait { ms: u64 },
     CheckColor { x: i32, y: i32, #[serde(rename = "expectedHex")] expected_hex: String, tolerance: u32 },
     Iterate { #[serde(rename = "targetCount")] target_count: u32 },
+    LaunchBrowser {
+        browser: String,
+        #[serde(default)]
+        url: Option<String>,
+        #[serde(rename = "useTempProfile")]
+        use_temp_profile: bool,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

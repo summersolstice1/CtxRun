@@ -1,6 +1,6 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair, X } from 'lucide-react';
+import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair, X, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AutomatorAction, MouseButton, ActionTarget } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
@@ -17,6 +17,7 @@ const ICONS: Record<AutomatorAction['type'], any> = {
   'Scroll': Move,
   'CheckColor': MousePointer2,
   'Iterate': Repeat,
+  'LaunchBrowser': Globe,
 };
 
 const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
@@ -29,6 +30,7 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'Scroll': 'scroll',
   'CheckColor': 'checkColorLabel',
   'Iterate': 'loopIteratorLabel',
+  'LaunchBrowser': 'launchBrowser',
 };
 
 interface UIElementNode {
@@ -71,9 +73,51 @@ export const ActionNode = memo((props: NodeProps) => {
     onChange({ ...payload, [key]: value });
   };
 
+  const target = (payload as { target?: ActionTarget }).target;
+  const isWebMode = target?.type === 'WebSelector';
+
+  const toggleWebMode = () => {
+    if (isWebMode) {
+      handleChange('target', { type: 'Coordinate', x: 0, y: 0 });
+    } else {
+      handleChange('target', {
+        type: 'WebSelector',
+        selector: '',
+        url_contain: '',
+        fallbackX: 0,
+        fallbackY: 0
+      });
+    }
+  };
+
+  const updateWebSelector = (key: 'selector' | 'url_contain', val: string) => {
+    if (target?.type !== 'WebSelector') return;
+    handleChange('target', { ...target, [key]: val });
+  };
+
   const handleSmartPick = async () => {
     setIsPickingCoords(true);
 
+    // 🚀 分支逻辑：Web 模式走 CDP，桌面模式走 UIA
+    if (isWebMode) {
+      try {
+        // 调用我们刚才写的 Rust 命令
+        // 注意：这个 Promise 会一直 pending 直到你在 Chrome 里点击了元素
+        const selector = await invoke<string>('plugin:ctxrun-plugin-automator|pick_web_selector');
+
+        if (selector) {
+          updateWebSelector('selector', selector);
+        }
+      } catch (error) {
+        console.error('Web 拾取失败:', error);
+        alert(t('automator.pickColorFailed') + ": 请确保 Chrome 已开启 --remote-debugging-port=9222");
+      } finally {
+        setIsPickingCoords(false);
+      }
+      return; // Web 模式结束
+    }
+
+    // =========== 下面是原有的桌面 UIA 拾取逻辑 (保持不变) ===========
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
@@ -173,6 +217,19 @@ export const ActionNode = memo((props: NodeProps) => {
             </div>
             <div className="text-[9px] text-muted-foreground mt-1">Fallback: {target.fallbackX}, {target.fallbackY}</div>
           </>
+        ) : target.type === 'WebSelector' ? (
+          <>
+            <div className="flex items-center gap-1 mb-0.5">
+              <Globe size={10} className="text-green-500" />
+              <div className="font-bold text-green-500">WebSelector</div>
+            </div>
+            <div className="truncate opacity-80 font-mono" title={target.selector}>
+              "{target.selector}"
+            </div>
+            {target.url_contain && (
+              <div className="text-[9px] text-muted-foreground mt-1">URL: {target.url_contain}</div>
+            )}
+          </>
         ) : (
           <>
             <div className="font-bold text-orange-500 mb-0.5">绝对坐标 (Coordinate)</div>
@@ -197,7 +254,21 @@ export const ActionNode = memo((props: NodeProps) => {
       )}>
         <Icon size={12} />
         <span className="font-bold text-[10px] uppercase">{title}</span>
-        {isExecuting && <div className="ml-auto w-2 h-2 bg-white rounded-full animate-ping" />}
+        {(actionType === 'MoveTo' || actionType === 'Click' || actionType === 'DoubleClick' || actionType === 'Type') && (
+          <button
+            onClick={toggleWebMode}
+            className={cn(
+              "ml-auto flex items-center gap-1 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold transition-all",
+              isWebMode
+                ? "bg-green-500/20 text-green-600 border border-green-500/30"
+                : "bg-orange-500/20 text-orange-600 border border-orange-500/30"
+            )}
+          >
+            {isWebMode ? <Globe size={10} /> : <MousePointer2 size={10} />}
+            {isWebMode ? "WEB" : "DESK"}
+          </button>
+        )}
+        {isExecuting && <div className="w-2 h-2 bg-white rounded-full animate-ping" />}
       </div>
 
       <div className="p-3 space-y-2 nodrag">
@@ -206,19 +277,53 @@ export const ActionNode = memo((props: NodeProps) => {
           <div className="space-y-2">
             {renderTargetInfo((payload as { target?: ActionTarget }).target)}
 
-            <button
-              onClick={handleSmartPick}
-              disabled={isPickingCoords}
-              className={cn(
-                "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all",
-                isPickingCoords
-                  ? "bg-primary/20 text-primary animate-pulse"
-                  : "bg-primary/10 text-primary hover:bg-primary/20 hover:shadow-sm"
-              )}
-            >
-              <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
-              {isPickingCoords ? "请将鼠标悬停在目标上..." : "智能拾取目标 (3秒延迟)"}
-            </button>
+            {isWebMode ? (
+              <>
+                <div className="space-y-1.5">
+                  <input
+                    type="text"
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px]"
+                    placeholder={t('automator.cssSelector')}
+                    value={target?.type === 'WebSelector' ? target.selector : ''}
+                    onChange={(e) => updateWebSelector('selector', e.target.value)}
+                  />
+                  <input
+                    type="text"
+                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px]"
+                    placeholder={t('automator.urlFilter')}
+                    value={target?.type === 'WebSelector' ? (target.url_contain || '') : ''}
+                    onChange={(e) => updateWebSelector('url_contain', e.target.value)}
+                  />
+                </div>
+                <button
+                  onClick={handleSmartPick}
+                  disabled={isPickingCoords}
+                  className={cn(
+                    "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all",
+                    isPickingCoords
+                      ? "bg-green-500/20 text-green-600 animate-pulse"
+                      : "bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:shadow-sm"
+                  )}
+                >
+                  <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
+                  {isPickingCoords ? "请在 Chrome 点击目标..." : "拾取 Web 元素"}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleSmartPick}
+                disabled={isPickingCoords}
+                className={cn(
+                  "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all",
+                  isPickingCoords
+                    ? "bg-primary/20 text-primary animate-pulse"
+                    : "bg-primary/10 text-primary hover:bg-primary/20 hover:shadow-sm"
+                )}
+              >
+                <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
+                {isPickingCoords ? "请将鼠标悬停在目标上..." : "智能拾取目标 (3秒延迟)"}
+              </button>
+            )}
           </div>
         )}
 

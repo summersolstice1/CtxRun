@@ -124,6 +124,11 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
     match target {
         ActionTarget::Coordinate { x, y } => Ok((*x, *y)),
 
+        ActionTarget::WebSelector { fallback_x, fallback_y, .. } => {
+            println!("[Inspector] WebSelector: 使用回退坐标 ({}, {})", fallback_x, fallback_y);
+            Ok((*fallback_x, *fallback_y))
+        }
+
         ActionTarget::Semantic { name, role: _, window_title, process_name: _, path, fallback_x, fallback_y } => {
             println!("[Inspector] 解析目标: '{}' (预期窗口: {:?})", name, window_title);
 

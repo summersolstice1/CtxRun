@@ -140,6 +140,32 @@ Denies the get_pixel_color command without any pre-configured scope.
 <tr>
 <td>
 
+`ctxrun-plugin-automator:allow-pick-web-selector`
+
+</td>
+<td>
+
+Enables the pick_web_selector command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-automator:deny-pick-web-selector`
+
+</td>
+<td>
+
+Denies the pick_web_selector command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-automator:allow-start-clicker`
 
 </td>

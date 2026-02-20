@@ -4389,6 +4389,12 @@
           "markdownDescription": "Enables the get_pixel_color command without any pre-configured scope."
         },
         {
+          "description": "Enables the pick_web_selector command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:allow-pick-web-selector",
+          "markdownDescription": "Enables the pick_web_selector command without any pre-configured scope."
+        },
+        {
           "description": "Enables the start_clicker command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-automator:allow-start-clicker",
@@ -4435,6 +4441,12 @@
           "type": "string",
           "const": "ctxrun-plugin-automator:deny-get-pixel-color",
           "markdownDescription": "Denies the get_pixel_color command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the pick_web_selector command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-automator:deny-pick-web-selector",
+          "markdownDescription": "Denies the pick_web_selector command without any pre-configured scope."
         },
         {
           "description": "Denies the start_clicker command without any pre-configured scope.",

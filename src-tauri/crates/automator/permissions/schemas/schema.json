@@ -355,6 +355,18 @@
           "markdownDescription": "Denies the get_pixel_color command without any pre-configured scope."
         },
         {
+          "description": "Enables the pick_web_selector command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-pick-web-selector",
+          "markdownDescription": "Enables the pick_web_selector command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the pick_web_selector command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-pick-web-selector",
+          "markdownDescription": "Denies the pick_web_selector command without any pre-configured scope."
+        },
+        {
           "description": "Enables the start_clicker command without any pre-configured scope.",
           "type": "string",
           "const": "allow-start-clicker",

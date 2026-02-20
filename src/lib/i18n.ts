@@ -101,6 +101,7 @@ const translations = {
       scroll: "Scroll",
       checkColorLabel: "Check Color",
       loopIteratorLabel: "Loop Iterator",
+      launchBrowser: "Launch Browser",
       // Node Labels
       pickCoords: "Pick Coordinates",
       pickingCoords: "Picking...",
@@ -126,7 +127,9 @@ const translations = {
       noConnection: "Start point is not connected to any node.",
       executionFailed: "Execution failed: {error}",
       pickCoordsFailed: "Failed to pick coordinates",
-      pickColorFailed: "Failed to pick color"
+      pickColorFailed: "Failed to pick color",
+      cssSelector: "CSS Selector (e.g. button.submit)",
+      urlFilter: "URL Filter (optional)"
     },
     sidebar: {
       library: "LIBRARY",
@@ -790,6 +793,7 @@ const translations = {
       scroll: "滚动",
       checkColorLabel: "颜色检测",
       loopIteratorLabel: "循环迭代器",
+      launchBrowser: "启动浏览器",
       // Node Labels
       pickCoords: "取坐标",
       pickingCoords: "取坐标中...",
@@ -815,7 +819,9 @@ const translations = {
       noConnection: "起点没有连接任何节点。",
       executionFailed: "执行失败: {error}",
       pickCoordsFailed: "取坐标失败",
-      pickColorFailed: "取色失败"
+      pickColorFailed: "取色失败",
+      cssSelector: "CSS 选择器 (如: button.submit)",
+      urlFilter: "URL 过滤 (可选)"
     },
     sidebar: {
       library: "资料库",

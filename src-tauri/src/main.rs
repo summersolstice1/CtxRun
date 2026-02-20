@@ -219,6 +219,7 @@ fn main() {
             db::apps::search_apps_in_db,
             apps::refresh_apps,
             apps::open_app,
+            apps::launch_browser,
             db::shell_history::record_shell_command,
             db::shell_history::get_recent_shell_history,
             db::shell_history::search_shell_history,

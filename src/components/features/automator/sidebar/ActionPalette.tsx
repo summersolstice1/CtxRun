@@ -1,4 +1,4 @@
-import { MousePointerClick, Move, Type, Clock, Keyboard, PlayCircle, StopCircle, Eye, Repeat } from 'lucide-react';
+import { MousePointerClick, Move, Type, Clock, Keyboard, PlayCircle, StopCircle, Eye, Repeat, Globe } from 'lucide-react';
 import { DragEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -58,6 +58,14 @@ export function ActionPalette() {
 
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">{t('automator.condition')}</div>
         <DraggableItem type="conditionNode" label={t('automator.checkColorAction')} icon={Eye} payload={{ x: 0, y: 0, expectedHex: '#00FF00', tolerance: 10 }} />
+
+        <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">WEB 自动化</div>
+        <DraggableItem
+            type="launchBrowserNode"
+            label="启动浏览器"
+            icon={Globe}
+            payload={{ browser: 'Chrome', url: 'https://www.bing.com', useTempProfile: true }}
+        />
       </div>
     </div>
   );

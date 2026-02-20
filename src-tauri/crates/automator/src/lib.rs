@@ -11,6 +11,7 @@ pub mod commands;
 pub mod screen;
 pub mod error;
 pub mod inspector;
+pub mod cdp;
 
 pub use error::{AutomatorError, Result};
 
@@ -25,7 +26,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::stop_workflow,
             commands::get_mouse_position,
             commands::get_pixel_color,
-            commands::get_element_under_cursor
+            commands::get_element_under_cursor,
+            commands::pick_web_selector
         ])
         .setup(|app, _api| {
             app.manage(AutomatorState::new());

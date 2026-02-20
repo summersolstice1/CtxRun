@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-pick-web-selector"
+description = "Enables the pick_web_selector command without any pre-configured scope."
+commands.allow = ["pick_web_selector"]
+
+[[permission]]
+identifier = "deny-pick-web-selector"
+description = "Denies the pick_web_selector command without any pre-configured scope."
+commands.deny = ["pick_web_selector"]
