@@ -22,12 +22,6 @@ pub enum MinerError {
     SystemError(String),
 }
 
-impl From<anyhow::Error> for MinerError {
-    fn from(err: anyhow::Error) -> Self {
-        MinerError::BrowserError(err.to_string())
-    }
-}
-
 // 允许将错误序列化后返回给前端
 impl Serialize for MinerError {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>

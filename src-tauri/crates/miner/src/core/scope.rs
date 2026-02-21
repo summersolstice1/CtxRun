@@ -1,27 +1,25 @@
+// src-tauri/crates/miner/src/core/scope.rs
 use url::Url;
 
 /// 判断发现的链接是否在允许的抓取范围内
 pub fn is_url_allowed(target_url: &str, allowed_prefix: &str) -> bool {
-    // 1. 必须以指定的 URL 前缀开头（完美解决你提的需求）
+    // 1. 严格的前缀匹配
     if !target_url.starts_with(allowed_prefix) {
         return false;
     }
 
-    // 2. 过滤掉无用的资源或锚点链接
-    if target_url.contains('#') {
-        // 如果只是当前页面的锚点跳转，不作为新页面抓取
-        let base_target = target_url.split('#').next().unwrap_or(target_url);
-        let base_prefix = allowed_prefix.split('#').next().unwrap_or(allowed_prefix);
-        if base_target == base_prefix {
-            return false;
-        }
-    }
+    // 2. 排除非 HTML 资源
+    let lower = target_url.to_lowercase();
+    let blacklist = [
+        ".png", ".jpg", ".jpeg", ".gif", ".svg",
+        ".pdf", ".zip", ".tar", ".gz", ".exe", ".dmg", ".iso",
+        ".css", ".js", ".json", ".xml", ".ico",
+        "/source/", // docs.rs 特有：如果不想要源代码页面，可以过滤这个
+        "src/"      // 同上
+    ];
 
-    // 3. 排除多媒体或文件下载链接
-    let lower_url = target_url.to_lowercase();
-    let ext_blacklist = [".png", ".jpg", ".pdf", ".zip", ".tar.gz", ".exe", ".mp4"];
-    for ext in ext_blacklist.iter() {
-        if lower_url.ends_with(ext) {
+    for ext in blacklist.iter() {
+        if lower.contains(ext) {
             return false;
         }
     }
@@ -29,23 +27,26 @@ pub fn is_url_allowed(target_url: &str, allowed_prefix: &str) -> bool {
     true
 }
 
-/// 规范化 URL（去除 UTM 参数等噪音，防止同一页面被抓多次）
+/// 规范化 URL（彻底去重）
 pub fn normalize_url(raw_url: &str) -> String {
-    if let Ok(mut parsed) = Url::parse(raw_url) {
-        // 移除诸如 ?utm_source=xxx 这样的追踪参数
-        let mut query_pairs: Vec<(String, String)> = parsed.query_pairs().into_owned().collect();
-        query_pairs.retain(|(k, _)| !k.starts_with("utm_"));
+    match Url::parse(raw_url) {
+        Ok(mut parsed) => {
+            // 1. 强制移除所有锚点 (Fragment) -> 解决 docs.rs 链接爆炸的核心
+            parsed.set_fragment(None);
 
-        parsed.query_pairs_mut().clear();
-        for (k, v) in query_pairs {
-            parsed.query_pairs_mut().append_pair(&k, &v);
-        }
+            // 2. 清理查询参数 (对于静态文档站，通常查询参数也是多余的)
+            // 如果你需要支持某些带参数的文档（如 php?id=1），请注释掉下面这行
+            parsed.set_query(None);
 
-        // 移除 fragment 锚点 (#)
-        parsed.set_fragment(None);
+            // 3. 移除末尾的斜杠，统一标准 (docs/ 和 docs 视为同一个)
+            let mut path = parsed.path().to_string();
+            if path.len() > 1 && path.ends_with('/') {
+                path.pop();
+                parsed.set_path(&path);
+            }
 
-        parsed.into()
-    } else {
-        raw_url.to_string()
+            parsed.to_string()
+        },
+        Err(_) => raw_url.to_string()
     }
 }

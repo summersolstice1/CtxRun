@@ -21,7 +21,8 @@ pub fn extract_page(tab: &Arc<Tab>, url: &str) -> Result<PageResult> {
     }
 
     // 深度等待，确保 SPA 页面渲染完毕
-    std::thread::sleep(Duration::from_millis(2000));
+    // 复用 Tab 后可以利用浏览器缓存，稍微缩短等待时间
+    std::thread::sleep(Duration::from_millis(1000));
     let _ = tab.evaluate("window.scrollTo(0, document.body.scrollHeight);", false);
     std::thread::sleep(Duration::from_millis(500));
 
