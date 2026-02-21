@@ -79,7 +79,7 @@ export function MinerView() {
                 value={config.url}
                 onChange={e => handleUrlChange(e.target.value)}
                 placeholder={t('miner.urlPlaceholder')}
-                className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50"
+                className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-50 font-mono"
               />
             </div>
 
@@ -89,7 +89,7 @@ export function MinerView() {
                 disabled={isRunning}
                 value={config.matchPrefix}
                 onChange={e => setConfig({ matchPrefix: e.target.value })}
-                className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono text-[12px] disabled:opacity-50"
+                className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all font-mono"
               />
               <p className="text-[10px] text-muted-foreground leading-relaxed">
                 {t('miner.scopePrefixTooltip')}
