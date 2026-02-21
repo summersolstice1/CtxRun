@@ -94,6 +94,8 @@
     "ctxrun-plugin-refinery:allow-update-note",
     "ctxrun-plugin-refinery:allow-spotlight-paste",
     "ctxrun-plugin-refinery:allow-update-cleanup-config",
-    "ctxrun-plugin-refinery:allow-manual-cleanup"
+    "ctxrun-plugin-refinery:allow-manual-cleanup",
+    "ctxrun-plugin-miner:allow-start-mining",
+    "ctxrun-plugin-miner:allow-stop-mining"
   ]
 }

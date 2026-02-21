@@ -9,7 +9,7 @@ import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
 import { useContextStore } from './useContextStore';
 
-export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator';
+export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner';
 export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';

@@ -4599,6 +4599,30 @@
           "markdownDescription": "Denies the get_git_diff_text command without any pre-configured scope."
         },
         {
+          "description": "Enables the start_mining command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-miner:allow-start-mining",
+          "markdownDescription": "Enables the start_mining command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop_mining command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-miner:allow-stop-mining",
+          "markdownDescription": "Enables the stop_mining command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the start_mining command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-miner:deny-start-mining",
+          "markdownDescription": "Denies the start_mining command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop_mining command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-miner:deny-stop-mining",
+          "markdownDescription": "Denies the stop_mining command without any pre-configured scope."
+        },
+        {
           "description": "Enables the clear_refinery_history command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-refinery:allow-clear-refinery-history",

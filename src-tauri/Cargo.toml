@@ -76,6 +76,7 @@ ctxrun-plugin-automator = { path = "crates/automator" }
 ctxrun-plugin-context = { path = "crates/context" }
 ctxrun-plugin-git = { path = "crates/git" }
 ctxrun-plugin-refinery = { path = "crates/refinery" }
+ctxrun-plugin-miner = { path = "crates/miner" }
 
 ctxrun-db = { workspace = true } 
 

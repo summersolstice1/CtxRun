@@ -1,0 +1,24 @@
+[package]
+name = "ctxrun-plugin-miner"
+version = "2.0.0"
+edition = "2024"
+description = "High-accuracy web scraper for AI context generation"
+links = "ctxrun-plugin-miner"
+
+[dependencies]
+# Tauri 基础
+tauri = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+# 核心能力库
+headless_chrome = { version = "1.0", features = ["fetch"] } # 浏览器控制
+url = "2.5"                 # URL 解析与规范化
+sanitize-filename = "0.6"   # 文件名安全处理
+chrono = { workspace = true } # 时间处理
+anyhow = "1.0"              # 通用错误处理
+
+[build-dependencies]
+tauri-plugin = { workspace = true }
