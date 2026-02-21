@@ -1155,6 +1155,7 @@ dependencies = [
  "tokio-tungstenite",
  "uiautomation",
  "url",
+ "which",
  "windows 0.61.3",
  "xcap",
 ]

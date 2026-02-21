@@ -37,6 +37,7 @@ futures = "0.3"
 
 # Automation
 enigo = "0.6.1"
+which = "8"
 
 # Context
 rayon = "1.10"
@@ -107,7 +108,7 @@ serde_rusqlite = "0.40"
 uuid = { version = "1.19", features = ["v4"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 listeners = "0.3"
-which = "8.0"
+which = { workspace = true }
 wait-timeout = "0.2"
 csv = "1.4"
 walkdir = "2"

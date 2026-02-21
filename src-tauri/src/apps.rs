@@ -1,6 +1,9 @@
 use ctxrun_db::{AppEntry, DbState};
 use tauri::State;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+use std::path::Path;
 
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
@@ -30,14 +33,17 @@ pub async fn launch_browser(
     let exe_path = find_browser_executable(&browser_type)?;
 
     // 构建启动命令
-    let mut cmd = if cfg!(target_os = "windows") {
+    #[cfg(target_os = "windows")]
+    let mut cmd = {
+        use std::os::windows::process::CommandExt;
         let mut c = std::process::Command::new(&exe_path);
         // DETACHED_PROCESS = 0x00000008，让进程独立运行
         c.creation_flags(0x00000008);
         c
-    } else {
-        std::process::Command::new(&exe_path)
     };
+
+    #[cfg(not(target_os = "windows"))]
+    let mut cmd = std::process::Command::new(&exe_path);
 
     // 添加调试端口参数
     cmd.arg("--remote-debugging-port=9222");
