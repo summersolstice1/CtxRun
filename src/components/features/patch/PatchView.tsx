@@ -36,13 +36,12 @@ interface GitDiffFile {
 }
 
 export function PatchView() {
-  const { aiConfig } = useAppStore();
+  const { aiConfig, projectRoot: globalProjectRoot, setProjectRoot } = useAppStore();
   const { t } = useTranslation();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [mode, setMode] = useState<PatchMode>('diff');
 
-  const [patchProjectRoot, setPatchProjectRoot] = useState<string | null>(null);
   const [yamlInput, setYamlInput] = useState('');
 
   const [files, setFiles] = useState<PatchFileItem[]>([]);
@@ -62,7 +61,6 @@ export function PatchView() {
       file: null
   });
 
-  const [gitProjectRoot, setGitProjectRoot] = useState<string | null>(null);
   const [commits, setCommits] = useState<GitCommit[]>([]);
   const [baseHash, setBaseHash] = useState<string>('');
   const [compareHash, setCompareHash] = useState<string>('');
@@ -81,7 +79,7 @@ export function PatchView() {
       if (!files.some(f => f.id === MANUAL_DIFF_ID)) {
         const manualItem: PatchFileItem = { id: MANUAL_DIFF_ID, path: 'Manual Comparison', original: '', modified: '', status: 'success', isManual: true };
         setFiles(prev => [manualItem, ...prev]);
-        if (!selectedFileId && !gitProjectRoot) {
+        if (!selectedFileId && !globalProjectRoot) {
           setSelectedFileId(MANUAL_DIFF_ID);
         }
       }
@@ -98,7 +96,8 @@ export function PatchView() {
     try {
       const selected = await openDialog({ directory: true, multiple: false });
       if (typeof selected === 'string') {
-        setPatchProjectRoot(selected);
+        // Update global project root - shared across all features
+        setProjectRoot(selected);
         showNotification(t('patch.projectLoaded'));
       }
     } catch (e) {
@@ -121,7 +120,7 @@ export function PatchView() {
   };
 
   useEffect(() => {
-    if (mode !== 'patch' || !patchProjectRoot || !yamlInput.trim()) {
+    if (mode !== 'patch' || !globalProjectRoot || !yamlInput.trim()) {
       if(mode === 'patch') setFiles([]);
       return;
     }
@@ -129,7 +128,7 @@ export function PatchView() {
     const timer = setTimeout(async () => {
         const filePatches = parseMultiFilePatch(yamlInput);
         const newFiles: PatchFileItem[] = await Promise.all(filePatches.map(async (fp) => {
-            const fullPath = `${patchProjectRoot}/${fp.filePath}`;
+            const fullPath = `${globalProjectRoot}/${fp.filePath}`;
             try {
                 const original = await readTextFile(fullPath);
                 const result = applyPatches(original, fp.operations);
@@ -165,7 +164,7 @@ export function PatchView() {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [mode, patchProjectRoot, yamlInput, t]);
+  }, [mode, globalProjectRoot, yamlInput, t]);
 
   const handleAiFix = async (file: PatchFileItem) => {
       if (isFixing || !file.original) return;
@@ -219,7 +218,8 @@ export function PatchView() {
     try {
       const selected = await openDialog({ directory: true, multiple: false });
       if (typeof selected === 'string') {
-        setGitProjectRoot(selected);
+        // Update global project root - shared across all features
+        setProjectRoot(selected);
         setIsGitLoading(true);
         try {
           const result = await invoke<GitCommit[]>(`${GIT_PLUGIN_PREFIX}get_git_commits`, { projectPath: selected });
@@ -241,13 +241,13 @@ export function PatchView() {
   };
 
   const handleGenerateDiff = async () => {
-    if (!gitProjectRoot || !baseHash || !compareHash) return;
+    if (!globalProjectRoot || !baseHash || !compareHash) return;
     setIsGitLoading(true);
-    setFiles(prev => prev.filter(p => p.isManual)); 
+    setFiles(prev => prev.filter(p => p.isManual));
     setSelectedFileId(null);
     try {
       const result = await invoke<GitDiffFile[]>(`${GIT_PLUGIN_PREFIX}get_git_diff`, {
-        projectPath: gitProjectRoot,
+        projectPath: globalProjectRoot,
         oldHash: baseHash,
         newHash: compareHash,
       });
@@ -298,7 +298,7 @@ export function PatchView() {
   };
 
   const handleExportTrigger = () => {
-      if (!gitProjectRoot || !baseHash || !compareHash) return;
+      if (!globalProjectRoot || !baseHash || !compareHash) return;
       if (selectedExportIds.size === 0) {
           showNotification(t('patch.selectOne'), "warning");
           return;
@@ -307,9 +307,9 @@ export function PatchView() {
   };
 
   const performExport = async (format: ExportFormat, layout: ExportLayout) => {
-    setIsExportDialogOpen(false); 
+    setIsExportDialogOpen(false);
     setIsExporting(true);
-    
+
     try {
         const extMap: Record<ExportFormat, string> = {
             'Markdown': 'md',
@@ -328,7 +328,7 @@ export function PatchView() {
             const selectedList = Array.from(selectedExportIds);
 
             await invoke(`${GIT_PLUGIN_PREFIX}export_git_diff`, {
-                projectPath: gitProjectRoot,
+                projectPath: globalProjectRoot,
                 oldHash: baseHash,
                 newHash: compareHash,
                 format: format,
@@ -351,12 +351,12 @@ export function PatchView() {
     <div className="h-full flex overflow-hidden bg-background relative">
       <div className={cn("shrink-0 transition-all duration-300 ease-in-out overflow-hidden border-r border-border", isSidebarOpen ? "w-[350px] opacity-100" : "w-0 opacity-0 border-none")}>
         <div className="w-[350px] h-full">
-            <PatchSidebar 
+            <PatchSidebar
                 mode={mode} setMode={setMode}
-                projectRoot={patchProjectRoot} onLoadProject={handleLoadPatchProject}
+                projectRoot={globalProjectRoot} onLoadProject={handleLoadPatchProject}
                 yamlInput={yamlInput} onYamlChange={setYamlInput} onClearYaml={handleClear}
                 files={files} selectedFileId={selectedFileId} onSelectFile={setSelectedFileId}
-                gitProjectRoot={gitProjectRoot} onBrowseGitProject={handleBrowseGitProject}
+                gitProjectRoot={globalProjectRoot} onBrowseGitProject={handleBrowseGitProject}
                 commits={commits} baseHash={baseHash} setBaseHash={setBaseHash}
                 compareHash={compareHash} setCompareHash={setCompareHash}
                 onCompare={handleGenerateDiff} isGitLoading={isGitLoading}
@@ -376,7 +376,7 @@ export function PatchView() {
               </div>
           )}
 
-          <DiffWorkspace 
+          <DiffWorkspace
              selectedFile={currentFile || null}
              onSave={handleSaveClick}
              onCopy={async (txt) => { await writeClipboard(txt); showNotification(t('patch.copied')); }}
@@ -384,7 +384,7 @@ export function PatchView() {
              isSidebarOpen={isSidebarOpen}
              onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
              isReadOnly={currentFile?.isManual !== true}
-             onExport={mode === 'diff' && gitProjectRoot ? handleExportTrigger : undefined} 
+             onExport={mode === 'diff' && globalProjectRoot ? handleExportTrigger : undefined}
           />
       </div>
       <ExportDialog 

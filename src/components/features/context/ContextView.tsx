@@ -69,10 +69,10 @@ const Row = memo(function Row({ index, style, data }: RowProps) {
 export function ContextView() {
   const { t } = useTranslation();
   const {
-    projectRoot, fileTree, isScanning,
+    fileTree, isScanning,
     projectIgnore, updateProjectIgnore,
     refreshTreeStatus,
-    setProjectRoot, setFileTree, setIsScanning, toggleSelect,
+    setFileTree, setIsScanning, toggleSelect,
     removeComments, detectSecrets, invertSelection,
     expandedIds, toggleExpand,
     hasProjectIgnoreFiles, isIgnoreSyncActive, toggleIgnoreSync, checkIgnoreFiles
@@ -82,7 +82,9 @@ export function ContextView() {
     isContextSidebarOpen, setContextSidebarOpen,
     contextSidebarWidth, setContextSidebarWidth,
     globalIgnore,
-    models
+    models,
+    projectRoot: globalProjectRoot,
+    setProjectRoot: setGlobalProjectRoot
   } = useAppStore();
 
   const { openPreview } = usePreviewStore();
@@ -114,14 +116,15 @@ export function ContextView() {
   const activeModels = (models && models.length > 0) ? models : DEFAULT_MODELS;
 
   useEffect(() => {
-    if (projectRoot) setPathInput(projectRoot);
-  }, [projectRoot]);
+    // Sync global project root to local input
+    if (globalProjectRoot) setPathInput(globalProjectRoot);
+  }, [globalProjectRoot]);
 
   useEffect(() => {
-    if (projectRoot) {
+    if (globalProjectRoot) {
       checkIgnoreFiles();
     }
-  }, [projectRoot]);
+  }, [globalProjectRoot]);
 
   useEffect(() => {
     if (fileTree.length > 0) {
@@ -159,13 +162,13 @@ export function ContextView() {
   const getDefaultSavePath = async () => {
     let namePart = 'context';
 
-    if (projectRoot) {
+    if (globalProjectRoot) {
       try {
-        const base = await basename(projectRoot);
+        const base = await basename(globalProjectRoot);
         if (base) namePart = base;
       } catch (e) {
-        const separator = projectRoot.includes('\\') ? '\\' : '/';
-        const cleanRoot = projectRoot.endsWith(separator) ? projectRoot.slice(0, -1) : projectRoot;
+        const separator = globalProjectRoot.includes('\\') ? '\\' : '/';
+        const cleanRoot = globalProjectRoot.endsWith(separator) ? globalProjectRoot.slice(0, -1) : globalProjectRoot;
         namePart = cleanRoot.split(separator).pop() || 'context';
       }
     }
@@ -339,7 +342,8 @@ export function ContextView() {
 
       const tree = await scanProject(path, effectiveConfig);
       setFileTree(tree);
-      await setProjectRoot(path);
+      // setGlobalProjectRoot will automatically sync to useContextStore
+      setGlobalProjectRoot(path);
       await checkIgnoreFiles();
 
       const idealWidth = calculateIdealTreeWidth(tree);
@@ -357,6 +361,8 @@ export function ContextView() {
       const selected = await open({ directory: true, multiple: false, recursive: false });
       if (selected && typeof selected === 'string') {
         setPathInput(selected);
+        // Update global project root - all components will receive this
+        setGlobalProjectRoot(selected);
         await performScan(selected);
       }
     } catch (err) { }
@@ -404,7 +410,7 @@ export function ContextView() {
             onChange={(e) => setPathInput(e.target.value)}
             onKeyDown={handleKeyDown}
           />
-          {pathInput && pathInput !== projectRoot && (
+          {pathInput && pathInput !== globalProjectRoot && (
              <button onClick={() => performScan(pathInput)} className="p-1 hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors"><ArrowRight size={14} /></button>
           )}
         </div>
@@ -412,7 +418,7 @@ export function ContextView() {
         <button onClick={handleBrowse} className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 border border-border rounded-md text-sm font-medium transition-colors whitespace-nowrap">
           <FolderOpen size={16} /><span>{t('context.browse')}</span>
         </button>
-        <button onClick={() => performScan(projectRoot || '')} disabled={!projectRoot || isScanning} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50">
+        <button onClick={() => performScan(globalProjectRoot || '')} disabled={!globalProjectRoot || isScanning} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50">
           <RefreshCw size={16} className={cn(isScanning && "animate-spin")} />
         </button>
       </div>
@@ -454,7 +460,7 @@ export function ContextView() {
           </div>
           
           <div className="flex-1 overflow-hidden relative">
-            {!projectRoot ? (
+            {!globalProjectRoot ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2 text-center px-4"><p className="text-sm">{t('context.enterPath')}</p></div>
             ) : isScanning ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground animate-pulse"><Loader2 size={20} className="animate-spin text-primary" /><span>{t('context.scanning')}</span></div>

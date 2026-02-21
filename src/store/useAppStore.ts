@@ -7,6 +7,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, DEFAULT_PROVIDER_SETTINGS } from '@/types/model';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
+import { useContextStore } from './useContextStore';
 
 export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator';
 export type AppTheme = 'dark' | 'light' | 'black';
@@ -94,6 +95,9 @@ interface AppState {
   restReminder: RestReminderConfig;
   windowDestroyDelay: WindowDestroyDelay;
 
+  // Global project root - shared across all features (Context, Patch, Git Diff)
+  projectRoot: string | null;
+
   models: AIModelConfig[];
   lastUpdated: number;
 
@@ -108,6 +112,7 @@ interface AppState {
   refinerySettings: RefinerySettings;
 
   setView: (view: AppView) => void;
+  setProjectRoot: (path: string | null) => void;
   toggleSidebar: () => void;
   setSettingsOpen: (open: boolean) => void;
   setMonitorOpen: (open: boolean) => void;
@@ -152,6 +157,7 @@ export const useAppStore = create<AppState>()(
         intervalMinutes: 45
       },
       windowDestroyDelay: 0,
+      projectRoot: null,
 
       models: DEFAULT_MODELS,
       lastUpdated: 0,
@@ -166,6 +172,13 @@ export const useAppStore = create<AppState>()(
         spotlightAppearance: { ...state.spotlightAppearance, ...config }
       })),
       setView: (view) => set({ currentView: view }),
+      setProjectRoot: (path) => {
+        set({ projectRoot: path });
+        // Sync with context store to keep states consistent
+        if (path) {
+          useContextStore.getState().setProjectRoot(path);
+        }
+      },
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
       setSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setMonitorOpen: (open) => set({ isMonitorOpen: open }),
