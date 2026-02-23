@@ -45,6 +45,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-dos-cls-0",
+    "type": "command",
+    "title": "cls - 清除屏幕，并将颜色重置为黑底白字",
+    "content": "CLS",
+    "group": "Dos",
+    "description": "cls: 清除屏幕并重置颜色。 (清除屏幕，并将颜色重置为黑底白字)",
+    "tags": [
+      "dos",
+      "cls",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-dos-chdir-0",
     "type": "command",
     "title": "chdir - 查看原命令的文档",
@@ -144,21 +159,6 @@
     "tags": [
       "dos",
       "path",
-      "tldr",
-      "zh"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-zh-dos-cls-0",
-    "type": "command",
-    "title": "cls - 清除屏幕，并将颜色重置为黑底白字",
-    "content": "CLS",
-    "group": "Dos",
-    "description": "cls: 清除屏幕并重置颜色。 (清除屏幕，并将颜色重置为黑底白字)",
-    "tags": [
-      "dos",
-      "cls",
       "tldr",
       "zh"
     ],
