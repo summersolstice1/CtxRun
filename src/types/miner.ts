@@ -5,6 +5,7 @@ export interface MinerConfig {
   matchPrefix: string;
   maxDepth: number;
   maxPages: number;
+  concurrency: number;
 }
 
 export interface MinerProgressEvent {

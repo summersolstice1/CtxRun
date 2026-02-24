@@ -13,33 +13,31 @@ use super::scope::{is_url_allowed, normalize_url};
 use super::storage::save_markdown;
 use super::extractor::extract_page;
 
-/// 最佳并发数：5-8 个并发是 CPU/内存利用率的最甜点
-const CONCURRENCY: usize = 5;
+/// 最大并发数限制
+const MAX_CONCURRENCY: usize = 10;
 
 pub async fn run_crawl_task<R: Runtime>(
     app: AppHandle<R>,
     config: MinerConfig,
     is_running: Arc<AtomicBool>,
 ) -> Result<()> {
-    // 1. 初始化共享状态
+    // 从配置获取并发数，限制在 1-10 之间
+    let concurrency = config.concurrency.clamp(1, MAX_CONCURRENCY as u32) as usize;
+
     let visited = Arc::new(Mutex::new(HashSet::new()));
     let crawled_count = Arc::new(AtomicU32::new(0));
     let active_tasks = Arc::new(AtomicUsize::new(0));
 
-    // 任务通道：(目标URL, 当前深度)
     let (tx, rx) = unbounded::<(String, u32)>();
 
-    // 压入种子 URL
     let seed_url = normalize_url(&config.url);
     visited.lock().unwrap().insert(seed_url.clone());
     tx.send((seed_url, 0)).unwrap();
 
-    // 2. 初始化单例浏览器驱动
     let driver = Arc::new(MinerDriver::new()?);
     let mut worker_handles = vec![];
 
-    // 3. 启动 Worker 线程池
-    for worker_id in 0..CONCURRENCY {
+    for worker_id in 0..concurrency {
         let app_clone = app.clone();
         let config_clone = config.clone();
         let is_running_clone = is_running.clone();
@@ -50,7 +48,6 @@ pub async fn run_crawl_task<R: Runtime>(
         let active_tasks_clone = active_tasks.clone();
         let driver_clone = driver.clone();
 
-        // 每个 Worker 独占一个 Tab
         let tab = match driver_clone.new_tab() {
             Ok(t) => t,
             Err(e) => {
@@ -63,19 +60,19 @@ pub async fn run_crawl_task<R: Runtime>(
             loop {
                 match rx_clone.recv_timeout(Duration::from_millis(500)) {
                     Ok((current_url, current_depth)) => {
+                        let task_number = crawled_count_clone.fetch_add(1, Ordering::SeqCst) + 1;
+
                         active_tasks_clone.fetch_add(1, Ordering::SeqCst);
 
-                        if !is_running_clone.load(Ordering::SeqCst) ||
-                           crawled_count_clone.load(Ordering::SeqCst) >= config_clone.max_pages {
+                        if task_number > config_clone.max_pages || !is_running_clone.load(Ordering::SeqCst) {
                             active_tasks_clone.fetch_sub(1, Ordering::SeqCst);
                             continue;
                         }
 
-                        let current_idx = crawled_count_clone.load(Ordering::SeqCst) + 1;
                         let discovered = visited_clone.lock().unwrap().len() as u32;
 
                         let _ = app_clone.emit("miner:progress", MinerEvent::Progress {
-                            current: current_idx,
+                            current: task_number,
                             total_discovered: discovered,
                             current_url: current_url.clone(),
                             status: "Fetching".to_string(),
@@ -87,16 +84,13 @@ pub async fn run_crawl_task<R: Runtime>(
                                     eprintln!("[Miner] Failed to save {}: {}", current_url, e);
                                 }
 
-                                let new_count = crawled_count_clone.fetch_add(1, Ordering::SeqCst) + 1;
-
                                 let _ = app_clone.emit("miner:progress", MinerEvent::Progress {
-                                    current: new_count,
+                                    current: task_number,
                                     total_discovered: discovered,
                                     current_url: current_url.clone(),
                                     status: "Saved".to_string(),
                                 });
 
-                                // 解析新链接并推入队列
                                 if current_depth < config_clone.max_depth {
                                     let mut v_lock = visited_clone.lock().unwrap();
                                     for link in page_result.links {
@@ -122,7 +116,8 @@ pub async fn run_crawl_task<R: Runtime>(
                     },
                     Err(_) => {
                         let is_stop = !is_running_clone.load(Ordering::SeqCst);
-                        let is_full = crawled_count_clone.load(Ordering::SeqCst) >= config_clone.max_pages;
+                        let current_count = crawled_count_clone.load(Ordering::SeqCst);
+                        let is_full = current_count >= config_clone.max_pages;
                         let is_idle = active_tasks_clone.load(Ordering::SeqCst) == 0;
 
                         if is_stop || is_full || is_idle {
@@ -135,7 +130,6 @@ pub async fn run_crawl_task<R: Runtime>(
         worker_handles.push(handle);
     }
 
-    // 4. 在异步运行时中等待所有物理线程结束
     tauri::async_runtime::spawn_blocking(move || {
         for h in worker_handles {
             let _ = h.join();

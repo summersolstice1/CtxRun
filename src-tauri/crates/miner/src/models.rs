@@ -15,8 +15,15 @@ pub struct MinerConfig {
     pub max_depth: u32,
     /// 最大页面数量限制 (防止失控)
     pub max_pages: u32,
+    /// 并发数 (1-10，默认 5)
+    #[serde(default = "default_concurrency")]
+    pub concurrency: u32,
     /// 输出目录 (绝对路径)
     pub output_dir: String,
+}
+
+fn default_concurrency() -> u32 {
+    5
 }
 
 /// 爬取过程中的状态更新事件

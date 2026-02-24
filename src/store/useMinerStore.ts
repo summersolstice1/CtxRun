@@ -16,6 +16,7 @@ export const DEFAULT_MINER_CONFIG: MinerConfig = {
   matchPrefix: 'https://react.dev/reference/react/',
   maxDepth: 2,
   maxPages: 100,
+  concurrency: 5,
 };
 
 interface MinerState {

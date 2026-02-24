@@ -118,7 +118,7 @@ export function MinerView() {
               <ShieldCheck size={14} /> {t('miner.limitsSafety')}
             </h3>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <NumberInput
                 label={t('miner.maxDepth')}
                 value={config.maxDepth}
@@ -131,6 +131,13 @@ export function MinerView() {
                 value={config.maxPages}
                 onChange={v => setConfig({ maxPages: v })}
                 min={1} max={5000} step={10}
+                className={isRunning ? "opacity-50 pointer-events-none" : ""}
+              />
+              <NumberInput
+                label={t('miner.concurrency')}
+                value={config.concurrency ?? 5}
+                onChange={v => setConfig({ concurrency: Math.max(1, Math.min(10, v)) })}
+                min={1} max={10}
                 className={isRunning ? "opacity-50 pointer-events-none" : ""}
               />
             </div>
@@ -153,30 +160,32 @@ export function MinerView() {
             </button>
           </div>
 
-          {/* 进度条展示区 */}
-          {isRunning && progress && (
-            <div className="p-4 border-b border-border bg-primary/5 shrink-0">
-              <div className="flex justify-between items-end mb-2">
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold text-foreground">{t('miner.processing')} {progress.currentUrl.replace(/^https?:\/\//, '')}</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-2">
-                    {progress.status === 'Fetching' ? <Loader2 size={12} className="animate-spin text-primary" /> : <CheckCircle2 size={12} className="text-green-500" />}
-                    {progress.status === 'Fetching' ? t('miner.logStatusFetching') : t('miner.logStatusSaved')}...
-                  </span>
+          {/* 进度条展示区 - 使用固定高度避免跳动 */}
+          <div className="p-4 border-b border-border bg-primary/5 shrink-0" style={{ minHeight: isRunning ? 'auto' : '0', padding: isRunning ? '16px' : '0' }}>
+            {isRunning && progress && (
+              <div className="flex flex-col gap-3">
+                <div className="flex justify-between items-end">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold text-foreground truncate max-w-md">{t('miner.processing')} {progress.currentUrl.replace(/^https?:\/\//, '')}</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-2">
+                      {progress.status === 'Fetching' ? <Loader2 size={12} className="animate-spin text-primary" /> : <CheckCircle2 size={12} className="text-green-500" />}
+                      {progress.status === 'Fetching' ? t('miner.logStatusFetching') : t('miner.logStatusSaved')}...
+                    </span>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                     <span className="text-xs font-mono font-bold">{progress.current} / {Math.min(progress.totalDiscovered, config.maxPages)}</span>
+                     <span className="text-[10px] text-muted-foreground">{progress.totalDiscovered} {t('miner.discovered')}</span>
+                  </div>
                 </div>
-                <div className="text-right flex flex-col items-end">
-                   <span className="text-xs font-mono font-bold">{progress.current} / {progress.totalDiscovered} {t('miner.discovered')}</span>
-                   <span className="text-[10px] text-muted-foreground uppercase">{t('miner.queueStatus')}</span>
+                <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300 ease-out"
+                    style={{ width: `${Math.min((progress.current / Math.max(Math.min(progress.totalDiscovered, config.maxPages), 1)) * 100, 100)}%` }}
+                  />
                 </div>
               </div>
-              <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${Math.min((progress.current / config.maxPages) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* 日志输出区 */}
           <div className="flex-1 overflow-y-auto p-4 font-mono text-[11px] leading-relaxed custom-scrollbar bg-[#0f111a] text-slate-300">
