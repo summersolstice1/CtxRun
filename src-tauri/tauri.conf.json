@@ -41,7 +41,7 @@
   },
   "productName": "CtxRun",
   "mainBinaryName": "CtxRun",
-  "version": "2.2.2",
+  "version": "2.2.3",
   "identifier": "com.ctxrun",
   "plugins": {},
   "app": {
