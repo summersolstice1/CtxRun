@@ -8,6 +8,7 @@ const translations = {
       patch: "Patch Weaver",
       refinery: "Refinery",
       automator: "Automator",
+      miner: "Knowledge Miner",
       settings: "Settings"
     },
     refinery: {
@@ -40,6 +41,33 @@ const translations = {
       clearDateFilter: "Clear date filter",
       noResults: "No results found",
       filteredResults: "Filtered results"
+    },
+    miner: {
+      title: "Knowledge Miner",
+      stopTask: "Stop Task",
+      startMining: "Start Mining",
+      basicSettings: "Basic Settings",
+      seedUrl: "Seed URL",
+      urlPlaceholder: "https://example.com/docs/",
+      scopeMatchPrefix: "Scope Match Prefix (Boundary)",
+      scopePrefixTooltip: "Only links starting with this exact prefix will be crawled.",
+      outputDirectory: "Output Directory",
+      selectFolder: "Select local folder...",
+      limitsSafety: "Limits & Safety",
+      maxDepth: "Max Depth",
+      maxPages: "Max Pages",
+      concurrency: "Concurrent",
+      contextForgeTip: "Saved markdown files can be loaded into <strong>Context Forge</strong> directly for AI usage.",
+      executionConsole: "Execution Console",
+      clearLogs: "Clear Logs",
+      processing: "Processing:",
+      fetching: "Fetching",
+      saved: "Saved",
+      queueStatus: "Queue Status",
+      discovered: "Discovered",
+      readyToExecute: "Ready to execute.",
+      logStatusFetching: "Fetching",
+      logStatusSaved: "Saved"
     },
     automator: {
       title: "Automator",
@@ -700,6 +728,7 @@ const translations = {
       patch: "代码对比",
       refinery: "剪贴板",
       automator: "自动化",
+      miner: "知识抓取",
       settings: "设置"
     },
     refinery: {
@@ -732,6 +761,33 @@ const translations = {
       clearDateFilter: "清除日期筛选",
       noResults: "没有找到结果",
       filteredResults: "筛选结果"
+    },
+    miner: {
+      title: "网页抓取",
+      stopTask: "停止任务",
+      startMining: "开始抓取",
+      basicSettings: "基本设置",
+      seedUrl: "种子 URL",
+      urlPlaceholder: "https://example.com/docs/",
+      scopeMatchPrefix: "范围匹配前缀（边界）",
+      scopePrefixTooltip: "仅抓取以此前缀开头的链接。",
+      outputDirectory: "输出目录",
+      selectFolder: "选择本地文件夹...",
+      limitsSafety: "限制与安全",
+      maxDepth: "最大深度",
+      maxPages: "最大页面数",
+      concurrency: "并发数",
+      contextForgeTip: "保存的 Markdown 文件可直接加载到「文件整合」中供 AI 使用。",
+      executionConsole: "执行控制台",
+      clearLogs: "清空日志",
+      processing: "处理中：",
+      fetching: "获取中",
+      saved: "已保存",
+      queueStatus: "队列状态",
+      discovered: "已发现",
+      readyToExecute: "准备执行。",
+      logStatusFetching: "获取中",
+      logStatusSaved: "已保存"
     },
     automator: {
       title: "自动化",

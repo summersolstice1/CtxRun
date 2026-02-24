@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-start-mining"
+description = "Enables the start_mining command without any pre-configured scope."
+commands.allow = ["start_mining"]
+
+[[permission]]
+identifier = "deny-start-mining"
+description = "Denies the start_mining command without any pre-configured scope."
+commands.deny = ["start_mining"]

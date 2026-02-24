@@ -68,6 +68,9 @@ xxhash-rust = { version = "0.8", features = ["xxh3"] }
 crossbeam-channel = "0.5"
 x-win = "5.5"
 
+# Browser utilities
+ctxrun-browser-utils = { path = "crates/browser-utils" }
+
 [build-dependencies]
 tauri-build = { workspace = true }
 
@@ -77,8 +80,10 @@ ctxrun-plugin-automator = { path = "crates/automator" }
 ctxrun-plugin-context = { path = "crates/context" }
 ctxrun-plugin-git = { path = "crates/git" }
 ctxrun-plugin-refinery = { path = "crates/refinery" }
+ctxrun-plugin-miner = { path = "crates/miner" }
 
-ctxrun-db = { workspace = true } 
+ctxrun-db = { workspace = true }
+ctxrun-browser-utils = { workspace = true } 
 
 tauri-plugin-single-instance = { workspace = true }
 serde_json = "1.0"

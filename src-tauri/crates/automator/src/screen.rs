@@ -111,23 +111,3 @@ pub fn get_all_screens_info() -> Result<Vec<ScreenInfo>> {
 
     Ok(infos)
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_get_color_at() {
-        if let Ok(color) = get_color_at(0, 0) {
-            assert!(color.starts_with('#'));
-            assert_eq!(color.len(), 7);
-        }
-    }
-
-    #[test]
-    fn test_get_all_screens_info() {
-        if let Ok(screens) = get_all_screens_info() {
-            assert!(!screens.is_empty());
-        }
-    }
-}

@@ -187,6 +187,7 @@ fn main() {
         .plugin(ctxrun_plugin_context::init())
         .plugin(ctxrun_plugin_git::init())
         .plugin(ctxrun_plugin_refinery::init())
+        .plugin(ctxrun_plugin_miner::init())
 
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![

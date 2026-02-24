@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use std::path::PathBuf;
 use std::process::Command;
 use tauri::{AppHandle, Emitter, Runtime};
+use ctxrun_browser_utils::{locate_browser, BrowserType as UtilsBrowserType};
 use enigo::{
     Enigo, Mouse, Keyboard, Button, Coordinate,
     Settings, Direction, Key, Axis
@@ -413,50 +413,11 @@ pub fn run_graph_task<R: Runtime>(
 }
 
 fn launch_browser_internal(is_edge: bool, url: Option<String>, use_temp_profile: bool) -> Result<(), String> {
-    let mut paths = Vec::new();
+    let target_browser = if is_edge { UtilsBrowserType::Edge } else { UtilsBrowserType::Chrome };
 
-    #[cfg(target_os = "windows")]
-    {
-        let program_files = std::env::var("ProgramFiles").unwrap_or(r"C:\Program Files".to_string());
-        let program_files_x86 = std::env::var("ProgramFiles(x86)").unwrap_or(r"C:\Program Files (x86)".to_string());
-        let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
-
-        if is_edge {
-            paths.push(PathBuf::from(&program_files).join(r"Microsoft\Edge\Application\msedge.exe"));
-            paths.push(PathBuf::from(&program_files_x86).join(r"Microsoft\Edge\Application\msedge.exe"));
-        } else {
-            paths.push(PathBuf::from(&program_files).join(r"Google\Chrome\Application\chrome.exe"));
-            paths.push(PathBuf::from(&program_files_x86).join(r"Google\Chrome\Application\chrome.exe"));
-            paths.push(PathBuf::from(&local_app_data).join(r"Google\Chrome\Application\chrome.exe"));
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        if is_edge {
-            paths.push(PathBuf::from("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"));
-        } else {
-            paths.push(PathBuf::from("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"));
-        }
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        if is_edge {
-            paths.push(PathBuf::from("microsoft-edge"));
-        } else {
-            paths.push(PathBuf::from("google-chrome"));
-            paths.push(PathBuf::from("google-chrome-stable"));
-            paths.push(PathBuf::from("chromium"));
-        }
-    }
-
-    let exe_path = paths.into_iter().find(|p| {
-        #[cfg(target_os = "linux")]
-        return which::which(p).is_ok();
-        #[cfg(not(target_os = "linux"))]
-        return p.exists();
-    }).ok_or_else(|| "Browser executable not found".to_string())?;
+    // 1. 调用统一的探测工具
+    let exe_path = locate_browser(target_browser)
+        .ok_or_else(|| format!("未检测到 {:?} 浏览器", target_browser))?;
 
     let mut cmd = Command::new(exe_path);
     cmd.arg("--remote-debugging-port=9222");
@@ -481,7 +442,6 @@ fn launch_browser_internal(is_edge: bool, url: Option<String>, use_temp_profile:
         cmd.creation_flags(DETACHED_PROCESS);
     }
 
-    cmd.spawn()
-        .map_err(|e| format!("Failed to launch browser: {}", e))?;
+    cmd.spawn().map_err(|e| format!("Failed to launch browser: {}", e))?;
     Ok(())
 }

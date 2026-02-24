@@ -1,0 +1,9 @@
+[package]
+name = "ctxrun-browser-utils"
+version = "2.0.0"
+edition = "2024"
+description = "Shared browser detection utility for CtxRun"
+
+[dependencies]
+# 跨平台依赖：Linux 用 which 查找，Windows 作为兜底
+which = "8.0"
