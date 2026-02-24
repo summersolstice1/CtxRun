@@ -79,8 +79,6 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
 
                     path.reverse();
 
-                    println!("[Inspector] 构建路径成功，层级深度: {}", path.len());
-
                     return Ok(PickedElement {
                         name,
                         role,
@@ -125,13 +123,10 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
         ActionTarget::Coordinate { x, y } => Ok((*x, *y)),
 
         ActionTarget::WebSelector { fallback_x, fallback_y, .. } => {
-            println!("[Inspector] WebSelector: 使用回退坐标 ({}, {})", fallback_x, fallback_y);
             Ok((*fallback_x, *fallback_y))
         }
 
         ActionTarget::Semantic { name, role: _, window_title, process_name: _, path, fallback_x, fallback_y } => {
-            println!("[Inspector] 解析目标: '{}' (预期窗口: {:?})", name, window_title);
-
             #[cfg(target_os = "windows")]
             {
                 use uiautomation::UIAutomation;
@@ -145,8 +140,7 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
 
                 let automation = match UIAutomation::new() {
                     Ok(a) => a,
-                    Err(e) => {
-                        println!("[Inspector] UIA 初始化失败: {}", e);
+                    Err(_) => {
                         return Ok((*fallback_x, *fallback_y));
                     }
                 };
@@ -155,7 +149,6 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                 if let Ok(element) = automation.element_from_point(Point::new(*fallback_x, *fallback_y)) {
                     if let Ok(current_name) = element.get_name() {
                         if current_name == *name {
-                            println!("[Inspector] 极速命中原坐标");
                             return Ok((*fallback_x, *fallback_y));
                         }
                     }
@@ -199,9 +192,6 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                                         if let Ok(parent) = walker.get_parent(&curr) {
                                             if automation.compare_elements(&parent, &root).unwrap_or(false) {
                                                 target_window = Some(curr.clone());
-                                                if attempt == 1 {
-                                                    println!("[Inspector] 标题失效，已通过历史坐标逆推锁定目标窗口");
-                                                }
                                                 break;
                                             }
                                             curr = parent;
@@ -215,7 +205,6 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                             if let Some(win) = target_window {
                                 let matcher = automation.create_matcher().from(win.clone()).name(name).timeout(500);
                                 if let Ok(elem) = matcher.find_first() {
-                                    println!("[Inspector] 原生匹配成功");
                                     found_element = Some(elem);
                                 } else {
                                     let mut queue = std::collections::VecDeque::new();
@@ -229,7 +218,6 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                                         let c_name = node.get_name().unwrap_or_default();
 
                                         if c_name == *name {
-                                            println!("[Inspector] BFS 扫描精确命中 (扫描节点数: {})", count);
                                             found_element = Some(node);
                                             break;
                                         } else if !name.is_empty() && c_name.contains(name) {
@@ -252,7 +240,6 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                             }
 
                             if attempt < max_attempts {
-                                println!("[Inspector] 元素未就绪，等待 800ms 后重试 ({}/{})", attempt, max_attempts);
                                 thread::sleep(Duration::from_millis(800));
                             }
                         }
@@ -262,7 +249,6 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                 if let Some(elem) = found_element {
                     if let Ok(Some(point)) = elem.get_clickable_point() {
                         if point.get_x() > 0 && point.get_y() > 0 {
-                            println!("[Inspector] 提取 Clickable Point: ({}, {})", point.get_x(), point.get_y());
                             return Ok((point.get_x(), point.get_y()));
                         }
                     }
@@ -270,13 +256,11 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                         let cx = rect.get_left() + (rect.get_width() / 2);
                         let cy = rect.get_top() + (rect.get_height() / 2);
                         if cx > 0 && cy > 0 {
-                            println!("[Inspector] 提取 Rect Center: ({}, {})", cx, cy);
                             return Ok((cx, cy));
                         }
                     }
                 }
 
-                println!("[Inspector] 搜索失败，使用回退坐标 ({}, {})", fallback_x, fallback_y);
                 Ok((*fallback_x, *fallback_y))
             }
 

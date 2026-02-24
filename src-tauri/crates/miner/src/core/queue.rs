@@ -1,6 +1,9 @@
-use std::collections::{HashSet, VecDeque};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
+use std::thread;
+use std::time::Duration;
+use crossbeam_channel::unbounded;
 use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::models::{MinerConfig, MinerEvent};
@@ -8,103 +11,144 @@ use crate::error::Result;
 use super::driver::MinerDriver;
 use super::scope::{is_url_allowed, normalize_url};
 use super::storage::save_markdown;
+use super::extractor::extract_page;
 
-/// 执行完整的爬虫任务
+/// 最佳并发数：5-8 个并发是 CPU/内存利用率的最甜点
+const CONCURRENCY: usize = 5;
+
 pub async fn run_crawl_task<R: Runtime>(
     app: AppHandle<R>,
     config: MinerConfig,
     is_running: Arc<AtomicBool>,
 ) -> Result<()> {
-    // --- 启动阶段 ---
-    // 只有运行到这一行，Chrome 才会出现在进程列表里
-    let driver = MinerDriver::new()?;
+    // 1. 初始化共享状态
+    let visited = Arc::new(Mutex::new(HashSet::new()));
+    let crawled_count = Arc::new(AtomicU32::new(0));
+    let active_tasks = Arc::new(AtomicUsize::new(0));
 
-    // 2. 初始化 BFS 队列和已访问集合
-    let mut queue: VecDeque<(String, u32)> = VecDeque::new();
-    let mut visited: HashSet<String> = HashSet::new();
+    // 任务通道：(目标URL, 当前深度)
+    let (tx, rx) = unbounded::<(String, u32)>();
 
-    // 放入种子 URL
+    // 压入种子 URL
     let seed_url = normalize_url(&config.url);
-    queue.push_back((seed_url.clone(), 0));
-    visited.insert(seed_url);
+    visited.lock().unwrap().insert(seed_url.clone());
+    tx.send((seed_url, 0)).unwrap();
 
-    let mut crawled_count = 0;
+    // 2. 初始化单例浏览器驱动
+    let driver = Arc::new(MinerDriver::new()?);
+    let mut worker_handles = vec![];
 
-    // 3. 开始消费队列
-    while let Some((current_url, current_depth)) = queue.pop_front() {
-        // 检查用户是否在 UI 上点击了"停止"
-        if !is_running.load(Ordering::SeqCst) {
-            println!("[Miner] Stop signal detected, cleaning up...");
-            break;
-        }
+    // 3. 启动 Worker 线程池
+    for worker_id in 0..CONCURRENCY {
+        let app_clone = app.clone();
+        let config_clone = config.clone();
+        let is_running_clone = is_running.clone();
+        let visited_clone = visited.clone();
+        let tx_clone = tx.clone();
+        let rx_clone = rx.clone();
+        let crawled_count_clone = crawled_count.clone();
+        let active_tasks_clone = active_tasks.clone();
+        let driver_clone = driver.clone();
 
-        // 检查全局数量限制
-        if crawled_count >= config.max_pages {
-            break;
-        }
+        // 每个 Worker 独占一个 Tab
+        let tab = match driver_clone.new_tab() {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("[Miner] Worker {} failed to create tab: {}", worker_id, e);
+                continue;
+            }
+        };
 
-        // 通知前端：开始处理
-        let _ = app.emit("miner:progress", MinerEvent::Progress {
-            current: crawled_count + 1,
-            total_discovered: visited.len() as u32,
-            current_url: current_url.clone(),
-            status: "Fetching".to_string(),
-        });
+        let handle = thread::spawn(move || {
+            loop {
+                match rx_clone.recv_timeout(Duration::from_millis(500)) {
+                    Ok((current_url, current_depth)) => {
+                        active_tasks_clone.fetch_add(1, Ordering::SeqCst);
 
-        // 4. 调用 Driver 提取页面
-        match driver.process_url(&current_url) {
-            Ok(page_result) => {
-                // 5. 保存到本地
-                if let Err(e) = save_markdown(&config.output_dir, &page_result) {
-                    eprintln!("[Miner] Failed to save {}: {}", current_url, e);
-                }
+                        if !is_running_clone.load(Ordering::SeqCst) ||
+                           crawled_count_clone.load(Ordering::SeqCst) >= config_clone.max_pages {
+                            active_tasks_clone.fetch_sub(1, Ordering::SeqCst);
+                            continue;
+                        }
 
-                crawled_count += 1;
+                        let current_idx = crawled_count_clone.load(Ordering::SeqCst) + 1;
+                        let discovered = visited_clone.lock().unwrap().len() as u32;
 
-                // 通知前端：保存成功
-                let _ = app.emit("miner:progress", MinerEvent::Progress {
-                    current: crawled_count,
-                    total_discovered: visited.len() as u32,
-                    current_url: current_url.clone(),
-                    status: "Saved".to_string(),
-                });
+                        let _ = app_clone.emit("miner:progress", MinerEvent::Progress {
+                            current: current_idx,
+                            total_discovered: discovered,
+                            current_url: current_url.clone(),
+                            status: "Fetching".to_string(),
+                        });
 
-                // 6. 将新发现的、符合限制条件的链接加入队列
-                if current_depth < config.max_depth {
-                    for link in page_result.links {
-                        let normalized_link = normalize_url(&link);
+                        match extract_page(&tab, &current_url) {
+                            Ok(page_result) => {
+                                if let Err(e) = save_markdown(&config_clone.output_dir, &page_result) {
+                                    eprintln!("[Miner] Failed to save {}: {}", current_url, e);
+                                }
 
-                        // 核心：使用我们在 scope.rs 里写的严格判断
-                        if is_url_allowed(&normalized_link, &config.match_prefix) {
-                            if !visited.contains(&normalized_link) {
-                                visited.insert(normalized_link.clone());
-                                queue.push_back((normalized_link, current_depth + 1));
+                                let new_count = crawled_count_clone.fetch_add(1, Ordering::SeqCst) + 1;
+
+                                let _ = app_clone.emit("miner:progress", MinerEvent::Progress {
+                                    current: new_count,
+                                    total_discovered: discovered,
+                                    current_url: current_url.clone(),
+                                    status: "Saved".to_string(),
+                                });
+
+                                // 解析新链接并推入队列
+                                if current_depth < config_clone.max_depth {
+                                    let mut v_lock = visited_clone.lock().unwrap();
+                                    for link in page_result.links {
+                                        let norm_link = normalize_url(&link);
+                                        if is_url_allowed(&norm_link, &config_clone.match_prefix) {
+                                            if !v_lock.contains(&norm_link) {
+                                                v_lock.insert(norm_link.clone());
+                                                let _ = tx_clone.send((norm_link, current_depth + 1));
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            Err(e) => {
+                                let _ = app_clone.emit("miner:error", MinerEvent::Error {
+                                    url: current_url.clone(),
+                                    message: e.to_string(),
+                                });
                             }
+                        }
+
+                        active_tasks_clone.fetch_sub(1, Ordering::SeqCst);
+                    },
+                    Err(_) => {
+                        let is_stop = !is_running_clone.load(Ordering::SeqCst);
+                        let is_full = crawled_count_clone.load(Ordering::SeqCst) >= config_clone.max_pages;
+                        let is_idle = active_tasks_clone.load(Ordering::SeqCst) == 0;
+
+                        if is_stop || is_full || is_idle {
+                            break;
                         }
                     }
                 }
-            },
-            Err(e) => {
-                let _ = app.emit("miner:error", MinerEvent::Error {
-                    url: current_url.clone(),
-                    message: e.to_string(),
-                });
             }
-        }
+        });
+        worker_handles.push(handle);
     }
 
-    // --- 清理阶段 ---
-    // 显式释放所有 CDP 相关的句柄
-    drop(driver); // 显式释放驱动。此时 Browser 对象的 Drop 被触发，进程关闭。
+    // 4. 在异步运行时中等待所有物理线程结束
+    tauri::async_runtime::spawn_blocking(move || {
+        for h in worker_handles {
+            let _ = h.join();
+        }
 
-    println!("[Miner] Browser process terminated. Resources freed.");
+        let final_count = crawled_count.load(Ordering::SeqCst);
+        is_running.store(false, Ordering::SeqCst);
 
-    // 7. 任务结束
-    is_running.store(false, Ordering::SeqCst);
-    let _ = app.emit("miner:finished", MinerEvent::Finished {
-        total_pages: crawled_count,
-        output_dir: config.output_dir,
-    });
+        let _ = app.emit("miner:finished", MinerEvent::Finished {
+            total_pages: final_count,
+            output_dir: config.output_dir,
+        });
+    }).await.unwrap();
 
     Ok(())
 }

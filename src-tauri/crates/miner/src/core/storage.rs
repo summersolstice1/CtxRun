@@ -1,58 +1,107 @@
+//! Miner storage module - hierarchical file storage mirroring URL structure.
+
 use std::path::{Path, PathBuf};
 use chrono::Utc;
-use crate::models::PageResult;
-use crate::error::Result;
+use url::Url;
 
-// 子目录名称，用于存放抓取的文档
+use crate::models::PageResult;
+use crate::error::{MinerError, Result};
+
 const MINER_OUTPUT_DIR: &str = "ctxrun_docs";
 
-/// 将 URL 安全地转换为本地文件名
-fn url_to_filename(url: &str) -> String {
-    let no_protocol = url.replace("https://", "").replace("http://", "");
-    let mut safe_name = sanitize_filename::sanitize(&no_protocol);
-
-    // 如果文件名太长，截断它
-    if safe_name.len() > 100 {
-        safe_name = safe_name[..100].to_string();
+fn html_to_markdown_path(path: &str) -> String {
+    if path.ends_with(".html") {
+        path.trim_end_matches(".html").to_string() + ".md"
+    } else if path.ends_with(".htm") {
+        path.trim_end_matches(".htm").to_string() + ".md"
+    } else if !path.contains('.') {
+        let trimmed = path.trim_end_matches('/');
+        if trimmed.is_empty() {
+            "index.md".to_string()
+        } else {
+            format!("{}/index.md", trimmed)
+        }
+    } else {
+        format!("{}.md", path)
     }
-
-    if safe_name.is_empty() {
-        safe_name = "index".to_string();
-    }
-
-    format!("{}.md", safe_name.replace(' ', "_"))
 }
 
-/// 保存结果到磁盘
+fn sanitize_path_segment(segment: &str) -> String {
+    let sanitized = sanitize_filename::sanitize(segment);
+    if sanitized.is_empty() || sanitized == "." {
+        "index".to_string()
+    } else {
+        sanitized
+    }
+}
+
+fn url_to_filepath(url: &str) -> Result<PathBuf> {
+    let parsed = Url::parse(url)
+        .map_err(|e| MinerError::SystemError(format!("Invalid URL '{}': {}", url, e)))?;
+
+    let domain = parsed.host_str()
+        .ok_or_else(|| MinerError::SystemError(format!("URL missing host: {}", url)))?;
+
+    let path = parsed.path();
+    let markdown_path = html_to_markdown_path(path);
+
+    let mut relative_path = PathBuf::from(domain);
+
+    for segment in markdown_path.split('/') {
+        if !segment.is_empty() {
+            relative_path.push(sanitize_path_segment(segment));
+        }
+    }
+
+    if relative_path.extension().is_none() && relative_path.file_name().is_some() {
+        relative_path.push("index.md");
+    }
+
+    Ok(relative_path)
+}
+
 pub fn save_markdown(output_dir: &str, result: &PageResult) -> Result<PathBuf> {
-    // 在输出目录下创建 ctxrun_docs 子目录
     let base_path = Path::new(output_dir);
     let miner_dir = base_path.join(MINER_OUTPUT_DIR);
 
-    if !miner_dir.exists() {
-        std::fs::create_dir_all(&miner_dir)?;
+    let relative_path = url_to_filepath(&result.url)?;
+    let file_path = miner_dir.join(&relative_path);
+
+    if let Some(parent_dir) = file_path.parent() {
+        std::fs::create_dir_all(parent_dir)
+            .map_err(|e| MinerError::SystemError(format!(
+                "Failed to create directory '{}': {}",
+                parent_dir.display(),
+                e
+            )))?;
     }
 
-    let filename = url_to_filename(&result.url);
-    let file_path = miner_dir.join(filename);
-
     let now = Utc::now().to_rfc3339();
+    let content = build_markdown_content(result, &now);
 
-    // 构造大模型极易读取的 YAML Frontmatter
-    let content = format!(
-        "---\n\
-        title: \"{}\"\n\
-        source_url: \"{}\"\n\
-        crawled_at: \"{}\"\n\
-        ---\n\n\
-        {}",
-        result.title.replace('"', "\\\""), // 简单转义引号
-        result.url,
-        now,
-        result.markdown
-    );
-
-    std::fs::write(&file_path, content)?;
+    std::fs::write(&file_path, content)
+        .map_err(|e| MinerError::SystemError(format!(
+            "Failed to write file '{}': {}",
+            file_path.display(),
+            e
+        )))?;
 
     Ok(file_path)
+}
+
+fn build_markdown_content(result: &PageResult, crawled_at: &str) -> String {
+    let escaped_title = result.title.replace('\\', "\\\\").replace('"', "\\\"");
+
+    format!(
+        "---\n\
+         title: \"{}\"\n\
+         source_url: \"{}\"\n\
+         crawled_at: \"{}\"\n\
+         ---\n\n\
+         {}",
+        escaped_title,
+        result.url,
+        crawled_at,
+        result.markdown
+    )
 }

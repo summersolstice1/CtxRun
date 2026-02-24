@@ -1267,6 +1267,7 @@ name = "ctxrun-plugin-miner"
 version = "2.0.0"
 dependencies = [
  "chrono",
+ "crossbeam-channel",
  "headless_chrome",
  "sanitize-filename",
  "serde",
