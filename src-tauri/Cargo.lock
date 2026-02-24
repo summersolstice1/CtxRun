@@ -1082,7 +1082,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun"
-version = "2.2.1"
+version = "2.2.2"
 dependencies = [
  "arboard",
  "base64 0.22.1",
@@ -1179,6 +1179,7 @@ dependencies = [
  "tokio-tungstenite",
  "uiautomation",
  "url",
+ "which",
  "windows 0.61.3",
  "xcap",
 ]

@@ -26,14 +26,17 @@ pub async fn launch_browser(
         .ok_or_else(|| format!("未能在系统中找到 {:?} 浏览器", browser_type))?;
 
     // 构建启动命令
-    let mut cmd = if cfg!(target_os = "windows") {
+    #[cfg(target_os = "windows")]
+    let mut cmd = {
+        use std::os::windows::process::CommandExt;
         let mut c = std::process::Command::new(&exe_path);
         // DETACHED_PROCESS = 0x00000008，让进程独立运行
         c.creation_flags(0x00000008);
         c
-    } else {
-        std::process::Command::new(&exe_path)
     };
+
+    #[cfg(not(target_os = "windows"))]
+    let mut cmd = std::process::Command::new(&exe_path);
 
     // 添加调试端口参数
     cmd.arg("--remote-debugging-port=9222");

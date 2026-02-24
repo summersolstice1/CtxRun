@@ -3,9 +3,6 @@ use crate::env_probe::{common, ToolInfo};
 use std::path::Path;
 use rayon::prelude::*;
 
-#[cfg(target_os = "macos")]
-use std::process::Command;
-
 
 #[allow(dead_code)]
 struct BrowserConfig {
