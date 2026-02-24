@@ -1,6 +1,7 @@
 use headless_chrome::{Browser, LaunchOptions, Tab};
 use std::sync::Arc;
 use std::ffi::OsStr;
+use ctxrun_browser_utils::{locate_browser, BrowserType};
 use crate::error::{MinerError, Result};
 
 /// 浏览器驱动器（工厂模式），负责管理浏览器生命周期并派生 Tab
@@ -12,6 +13,14 @@ impl MinerDriver {
     pub fn new() -> Result<Self> {
         let mut launch_options = LaunchOptions::default();
 
+        // 1. 调用公共组件，探测系统现有的浏览器
+        let browser_path = locate_browser(BrowserType::Any)
+            .ok_or_else(|| MinerError::BrowserError("未检测到本地 Chrome 或 Edge 浏览器".into()))?;
+
+        println!("[Miner] 复用本地浏览器: {:?}", browser_path);
+        launch_options.path = Some(browser_path);
+
+        // 2. 基础无头配置
         launch_options.headless = true;
         launch_options.window_size = Some((1920, 1080));
         launch_options.idle_browser_timeout = std::time::Duration::from_secs(60);
@@ -19,7 +28,7 @@ impl MinerDriver {
         let temp_dir = std::env::temp_dir().join("ctxrun_miner_tmp");
         launch_options.user_data_dir = Some(temp_dir);
 
-        // V1 核心优化：注入性能 Flags，阻断多媒体与字体加载
+        // 3. 性能优化：禁用图片/字体加载，提速渲染
         launch_options.args = vec![
             "--no-sandbox",
             "--disable-extensions",

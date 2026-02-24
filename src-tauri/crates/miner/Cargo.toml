@@ -13,11 +13,12 @@ thiserror = { workspace = true }
 tokio = { workspace = true }
 
 # 核心能力库
-headless_chrome = { version = "1.0", features = ["fetch"] }
+headless_chrome = { version = "1.0" }
 url = "2.5"
 sanitize-filename = "0.6"
 chrono = { workspace = true }
 crossbeam-channel = { workspace = true }
+ctxrun-browser-utils = { workspace = true }
 
 [build-dependencies]
 tauri-plugin = { workspace = true }
