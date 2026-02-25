@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { X, Save, Tag, FileText, Folder, ChevronDown, Check, Plus, Sparkles, Terminal, Loader2, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
+import { X, Save, Tag, FileText, Folder, Check, Plus, Sparkles, Terminal, Loader2, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
 import { usePromptStore } from '@/store/usePromptStore';
 import { Prompt, DEFAULT_GROUP, ShellType } from '@/types/prompt';
 import { cn } from '@/lib/utils';
@@ -67,8 +67,6 @@ export function PromptEditorDialog({ isOpen, onClose, initialData }: PromptEdito
       }
       setNewGroupMode(false);
       setNewGroupName('');
-      setIsGroupOpen(false);
-      setIsShellOpen(false);
       setIsSaving(false);
       setPythonStatus({ loading: false, available: false, version: '', checked: false });
     }
@@ -144,8 +142,6 @@ export function PromptEditorDialog({ isOpen, onClose, initialData }: PromptEdito
         setIsSaving(false);
     }
   };
-
-  const currentShellLabel = SHELL_OPTIONS.find(opt => opt.value === shellType)?.label || 'Auto Detect';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 p-4">
