@@ -119,6 +119,11 @@ const translations = {
       loopIterator: "Loop / Iterator",
       condition: "CONDITION",
       checkColorAction: "Check Color",
+      // Workflow management
+      workflows: "Workflows",
+      workflowCount: "workflows",
+      confirmDeleteWorkflow: "Are you sure you want to delete this workflow?",
+      createWorkflow: "Create Workflow",
       // Action Nodes
       moveTo: "Move Mouse",
       clickLabel: "Click",
@@ -559,6 +564,9 @@ const translations = {
       unified: "Unified",
       copied: "Copied",
       copy: "Copy",
+      rename: "Rename",
+      duplicate: "Duplicate",
+      delete: "Delete",
       error: "Error",
       loadingEditor: "Loading Editor...",
       previewError: "Preview generation failed",
@@ -584,7 +592,6 @@ const translations = {
       chatSlashCommand: "Chat Slash Command",
       chatSlashCommandDesc: "Type '/' + Title in chat to invoke",
       triggerLabel: "Trigger:",
-      rename: "Rename",
       renameHelp: "Double-click or use the icon to rename."
     },
     export: {
@@ -839,6 +846,11 @@ const translations = {
       loopIterator: "循环/迭代器",
       condition: "条件",
       checkColorAction: "颜色检测",
+      // Workflow management
+      workflows: "工作流",
+      workflowCount: "个工作流",
+      confirmDeleteWorkflow: "确定要删除此工作流吗？",
+      createWorkflow: "创建工作流",
       // Action Nodes
       moveTo: "移动鼠标",
       clickLabel: "点击",
@@ -1279,6 +1291,9 @@ const translations = {
       unified: "合并",
       copied: "已复制",
       copy: "复制",
+      rename: "重命名",
+      duplicate: "复制",
+      delete: "删除",
       error: "错误",
       loadingEditor: "加载编辑器中...",
       previewError: "预览生成失败",
@@ -1304,7 +1319,6 @@ const translations = {
       chatSlashCommand: "聊天快捷指令",
       chatSlashCommandDesc: "在 AI 聊天中输入 '/' + 标题 快速调用",
       triggerLabel: "调用指令：",
-      rename: "重命名",
       renameHelp: "双击或使用图标重命名"
     },
     export: {

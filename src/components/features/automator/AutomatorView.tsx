@@ -7,7 +7,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { Play, Square, Move } from 'lucide-react';
+import { Play, Square, Move, Plus, MoreVertical, Edit2, Copy, Trash2 } from 'lucide-react';
 import { useAutomatorStore } from '@/store/useAutomatorStore';
 import { useTranslation } from 'react-i18next';
 import { ActionNode } from './nodes/ActionNode';
@@ -15,6 +15,16 @@ import { StartNode, EndNode, LaunchBrowserNode } from './nodes/SpecialNodes';
 import { ConditionNode } from './nodes/ConditionNode';
 import { IteratorNode } from './nodes/IteratorNode';
 import { ActionPalette } from './sidebar/ActionPalette';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import { AutomatorAction, WorkflowNode, WorkflowGraph } from '@/types/automator';
 import { cn } from '@/lib/utils';
 
@@ -49,10 +59,44 @@ function DnDFlow() {
   const { screenToFlowPosition } = useReactFlow();
 
   const {
-    stop, isRunning, currentStepIndex
+    stop, isRunning, currentStepIndex,
+    getCurrentWorkflow, updateFlowState, activeWorkflowId,
+    workflows, switchWorkflow, createWorkflow, deleteWorkflow,
+    duplicateWorkflow, renameWorkflow
   } = useAutomatorStore();
 
+  const activeWorkflow = getCurrentWorkflow();
+
   const { t } = useTranslation();
+
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renamingValue, setRenamingValue] = useState('');
+
+  const handleStartRename = () => {
+    setIsRenaming(true);
+    setRenamingValue(activeWorkflow.name);
+  };
+
+  const handleSaveRename = () => {
+    if (renamingValue.trim()) {
+      renameWorkflow(activeWorkflowId, renamingValue.trim());
+    }
+    setIsRenaming(false);
+  };
+
+  const handleCancelRename = () => {
+    setIsRenaming(false);
+    setRenamingValue('');
+  };
+
+  const handleDelete = () => {
+    if (workflows.length === 1) {
+      return;
+    }
+    if (confirm(t('automator.confirmDeleteWorkflow'))) {
+      deleteWorkflow(activeWorkflowId);
+    }
+  };
 
   useEffect(() => {
     if (!isRunning) {
@@ -64,8 +108,13 @@ function DnDFlow() {
     }
   }, [isRunning, setNodes]);
 
+  // Load saved flow state when workflow changes
   useEffect(() => {
-    if (nodes.length === 0) {
+    if (activeWorkflow.flowNodes && activeWorkflow.flowNodes.length > 0) {
+      setNodes(activeWorkflow.flowNodes);
+      setEdges(activeWorkflow.flowEdges || []);
+    } else {
+      // Initialize with default nodes if workflow is empty
       const startNodeId = getId();
       const endNodeId = getId();
 
@@ -97,7 +146,14 @@ function DnDFlow() {
       setNodes(initialNodes);
       setEdges(initialEdges);
     }
-  }, []);
+  }, [activeWorkflowId]); // Re-run when workflow changes
+
+  // Auto-save flow state to store when nodes or edges change
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      updateFlowState(nodes, edges);
+    }
+  }, [nodes, edges, updateFlowState]);
 
   const onDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -310,6 +366,90 @@ function DnDFlow() {
          <div className="flex items-center gap-3">
             <h2 className="font-semibold text-foreground">{t('automator.designerTitle')}</h2>
             <div className="px-2 py-0.5 rounded-full bg-secondary text-[10px] text-muted-foreground border border-border">{t('automator.manualMode')}</div>
+
+            {/* Workflow Selector */}
+            <div className="flex items-center gap-2 ml-4">
+              {isRenaming ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={renamingValue}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRenamingValue(e.target.value)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === 'Enter') handleSaveRename();
+                      if (e.key === 'Escape') handleCancelRename();
+                    }}
+                    className="h-8 w-48 text-sm"
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={handleSaveRename}
+                  >
+                    ✓
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    onClick={handleCancelRename}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Select
+                    value={activeWorkflowId}
+                    onChange={(value) => switchWorkflow(value)}
+                    options={workflows.map((workflow) => ({
+                      value: workflow.id,
+                      label: workflow.name,
+                    }))}
+                    size="sm"
+                    className="w-48"
+                  />
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button
+                        className="h-8 w-8 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                      >
+                        <MoreVertical size={16} />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={handleStartRename}>
+                        <Edit2 size={14} className="mr-2" />
+                        {t('common.rename')}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => duplicateWorkflow(activeWorkflowId)}>
+                        <Copy size={14} className="mr-2" />
+                        {t('common.duplicate')}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={handleDelete}
+                        disabled={workflows.length === 1}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 size={14} className="mr-2" />
+                        {t('common.delete')}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <button
+                    onClick={() => createWorkflow()}
+                    className="h-8 w-8 flex items-center justify-center rounded-md border border-input bg-background hover:bg-accent transition-colors"
+                    title={t('automator.createWorkflow')}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </>
+              )}
+            </div>
          </div>
          <div className="flex items-center gap-2">
             <button onClick={isRunning ? stop : handleRun} className={cn("flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all shadow-sm", isRunning ? "bg-destructive text-white" : "bg-primary text-primary-foreground")}>

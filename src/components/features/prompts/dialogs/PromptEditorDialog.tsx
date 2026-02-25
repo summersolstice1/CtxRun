@@ -5,6 +5,7 @@ import { usePromptStore } from '@/store/usePromptStore';
 import { Prompt, DEFAULT_GROUP, ShellType } from '@/types/prompt';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { Select } from '@/components/ui/select';
 
 interface PromptEditorDialogProps {
   isOpen: boolean;
@@ -36,8 +37,6 @@ export function PromptEditorDialog({ isOpen, onClose, initialData }: PromptEdito
   const [newGroupMode, setNewGroupMode] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
 
-  const [isGroupOpen, setIsGroupOpen] = useState(false);
-  const [isShellOpen, setIsShellOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [pythonStatus, setPythonStatus] = useState<{
@@ -249,13 +248,12 @@ export function PromptEditorDialog({ isOpen, onClose, initialData }: PromptEdito
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"> <Folder size={14} /> {t('editor.labelGroup')} </label>
             {!newGroupMode ? (
               <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <button type="button" onClick={() => setIsGroupOpen(!isGroupOpen)} className={cn( "w-full flex items-center justify-between bg-secondary/20 border border-border rounded-lg px-3 py-2.5 text-sm text-left outline-none transition-all", isGroupOpen ? "ring-2 ring-primary/50 border-primary/50" : "hover:border-primary/30" )} >
-                    <span className="truncate">{group}</span>
-                    <ChevronDown size={16} className={cn("text-muted-foreground transition-transform duration-200", isGroupOpen && "rotate-180")} />
-                  </button>
-                  {isGroupOpen && ( <> <div className="fixed inset-0 z-10" onClick={() => setIsGroupOpen(false)} /> <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border rounded-lg shadow-xl z-20 max-h-60 overflow-y-auto py-1 animate-in fade-in zoom-in-95 duration-100"> {groups.map(g => ( <button key={g} type="button" onClick={() => { setGroup(g); setIsGroupOpen(false); }} className={cn("w-full flex items-center justify-between px-3 py-2 text-sm transition-colors", group === g ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-secondary/50")} > <span>{g}</span> {group === g && <Check size={14} />} </button> ))} </div> </> )}
-                </div>
+                <Select
+                  value={group}
+                  onChange={setGroup}
+                  options={groups.map(g => ({ value: g, label: g }))}
+                  className="flex-1"
+                />
                 <button onClick={() => setNewGroupMode(true)} className="px-3 flex items-center gap-1 text-xs font-medium border border-border rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap"> <Plus size={14} /> {t('editor.btnNewGroup')} </button>
               </div>
             ) : (
@@ -282,47 +280,12 @@ export function PromptEditorDialog({ isOpen, onClose, initialData }: PromptEdito
               {isExecutable && (
                   <div className="space-y-2 pl-6 animate-in fade-in slide-in-from-top-2 duration-300">
                       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t('editor.execShell')}</label>
-                      
-                      <div className="relative">
-                          <button
-                              type="button"
-                              onClick={() => setIsShellOpen(!isShellOpen)}
-                              className={cn(
-                                  "w-full flex items-center justify-between bg-secondary/20 border border-border rounded-lg px-3 py-2.5 text-sm text-left outline-none transition-all",
-                                  isShellOpen ? "ring-2 ring-primary/50 border-primary/50" : "hover:border-primary/30"
-                              )}
-                          >
-                              <span>{currentShellLabel}</span>
-                              <ChevronDown size={16} className={cn("text-muted-foreground transition-transform duration-200", isShellOpen && "rotate-180")} />
-                          </button>
 
-                          {isShellOpen && (
-                              <>
-                                  <div className="fixed inset-0 z-10" onClick={() => setIsShellOpen(false)} />
-                                  <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border rounded-lg shadow-xl z-20 py-1 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
-                                      {SHELL_OPTIONS.map(opt => (
-                                          <button
-                                              key={opt.value}
-                                              type="button"
-                                              onClick={() => {
-                                                  setShellType(opt.value);
-                                                  setIsShellOpen(false);
-                                              }}
-                                              className={cn(
-                                                  "w-full flex items-center justify-between px-3 py-2 text-sm transition-colors text-left",
-                                                  shellType === opt.value 
-                                                      ? "bg-primary/10 text-primary font-medium" 
-                                                      : "text-foreground hover:bg-secondary/50"
-                                              )}
-                                          >
-                                              <span>{opt.value === 'auto' ? t('editor.autoDetect') : opt.label}</span>
-                                              {shellType === opt.value && <Check size={14} />}
-                                          </button>
-                                      ))}
-                                  </div>
-                              </>
-                          )}
-                      </div>
+                      <Select
+                        value={shellType}
+                        onChange={(value) => setShellType(value as ShellType)}
+                        options={SHELL_OPTIONS}
+                      />
 
                       {shellType === 'python' && (
                           <div className={cn(

@@ -3,78 +3,205 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { fileStorage } from '@/lib/storage';
-import { Workflow, DEFAULT_WORKFLOW, AutomatorAction } from '@/types/automator';
+import { Workflow, AutomatorAction } from '@/types/automator';
 
 const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-automator|';
 
 interface AutomatorState {
-  activeWorkflow: Workflow;
+  // Multi-workflow management
+  workflows: Workflow[];
+  activeWorkflowId: string;
+
+  // Runtime state (not persisted)
   isRunning: boolean;
   currentLoop: number;
   currentStepIndex: number;
   isPicking: boolean;
+  _unlistenFns: UnlistenFn[];
 
-  setWorkflow: (workflow: Partial<Workflow>) => void;
+  // Workflow CRUD
+  createWorkflow: (name?: string) => string;
+  deleteWorkflow: (id: string) => void;
+  duplicateWorkflow: (id: string) => string;
+  renameWorkflow: (id: string, name: string) => void;
+  switchWorkflow: (id: string) => void;
+
+  // Current workflow operations
+  getCurrentWorkflow: () => Workflow;
+  updateCurrentWorkflow: (updates: Partial<Workflow>) => void;
+
+  // Legacy action operations (for backward compatibility)
   addAction: (action: AutomatorAction) => void;
   updateAction: (index: number, action: AutomatorAction) => void;
   removeAction: (index: number) => void;
   reorderActions: (oldIndex: number, newIndex: number) => void;
 
+  // Flow graph state management
+  setFlowNodes: (nodes: any[]) => void;
+  setFlowEdges: (edges: any[]) => void;
+  updateFlowState: (nodes: any[], edges: any[]) => void;
+
+  // Execution
   start: () => Promise<void>;
   stop: () => Promise<void>;
   toggle: () => Promise<void>;
 
+  // Utilities
   pickLocation: () => Promise<void>;
   initListeners: () => Promise<void>;
   unlisten: () => void;
-
-  _unlistenFns: UnlistenFn[];
 }
+
+const generateId = () => `wf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+const createDefaultWorkflow = (name?: string): Workflow => ({
+  id: generateId(),
+  name: name || `Workflow ${new Date().toLocaleString()}`,
+  actions: [],
+  repeatCount: 1,
+  flowNodes: [],
+  flowEdges: [],
+  meta: {
+    createdAt: Date.now(),
+  }
+});
 
 export const useAutomatorStore = create<AutomatorState>()(
   persist(
     (set, get) => ({
-      activeWorkflow: DEFAULT_WORKFLOW,
+      // Initial state with one default workflow
+      workflows: [createDefaultWorkflow('Default Workflow')],
+      activeWorkflowId: '',
+
       isRunning: false,
       currentLoop: 0,
       currentStepIndex: -1,
       isPicking: false,
       _unlistenFns: [],
 
-      setWorkflow: (updates) => set((state) => ({
-        activeWorkflow: { ...state.activeWorkflow, ...updates }
-      })),
-
-      addAction: (action) => set((state) => ({
-        activeWorkflow: {
-          ...state.activeWorkflow,
-          actions: [...state.activeWorkflow.actions, action]
+      // Initialize activeWorkflowId if empty
+      ...((() => {
+        const state = get();
+        if (!state?.activeWorkflowId && state?.workflows?.length > 0) {
+          return { activeWorkflowId: state.workflows[0].id };
         }
-      })),
+        return {};
+      })()),
 
-      updateAction: (index, action) => set((state) => {
-        const newActions = [...state.activeWorkflow.actions];
-        newActions[index] = action;
+      // Workflow CRUD
+      createWorkflow: (name) => {
+        const newWorkflow = createDefaultWorkflow(name);
+        set((state) => ({
+          workflows: [...state.workflows, newWorkflow],
+          activeWorkflowId: newWorkflow.id,
+        }));
+        return newWorkflow.id;
+      },
+
+      deleteWorkflow: (id) => set((state) => {
+        const filtered = state.workflows.filter(w => w.id !== id);
+        if (filtered.length === 0) {
+          // Always keep at least one workflow
+          const newWorkflow = createDefaultWorkflow('Default Workflow');
+          return {
+            workflows: [newWorkflow],
+            activeWorkflowId: newWorkflow.id,
+          };
+        }
+        // If deleting active workflow, switch to first remaining
+        const newActiveId = state.activeWorkflowId === id
+          ? filtered[0].id
+          : state.activeWorkflowId;
         return {
-          activeWorkflow: { ...state.activeWorkflow, actions: newActions }
+          workflows: filtered,
+          activeWorkflowId: newActiveId,
         };
       }),
 
-      removeAction: (index) => set((state) => ({
-        activeWorkflow: {
-          ...state.activeWorkflow,
-          actions: state.activeWorkflow.actions.filter((_, i) => i !== index)
-        }
+      duplicateWorkflow: (id) => {
+        const state = get();
+        const original = state.workflows.find(w => w.id === id);
+        if (!original) return '';
+
+        const duplicate: Workflow = {
+          ...original,
+          id: generateId(),
+          name: `${original.name} (Copy)`,
+          meta: {
+            ...original.meta,
+            createdAt: Date.now(),
+          }
+        };
+
+        set((state) => ({
+          workflows: [...state.workflows, duplicate],
+          activeWorkflowId: duplicate.id,
+        }));
+        return duplicate.id;
+      },
+
+      renameWorkflow: (id, name) => set((state) => ({
+        workflows: state.workflows.map(w =>
+          w.id === id ? { ...w, name } : w
+        )
       })),
 
-      reorderActions: (oldIndex, newIndex) => set((state) => {
-        const items = Array.from(state.activeWorkflow.actions);
+      switchWorkflow: (id) => set({ activeWorkflowId: id }),
+
+      getCurrentWorkflow: () => {
+        const state = get();
+        return state.workflows.find(w => w.id === state.activeWorkflowId)
+          || state.workflows[0]
+          || createDefaultWorkflow();
+      },
+
+      updateCurrentWorkflow: (updates) => set((state) => ({
+        workflows: state.workflows.map(w =>
+          w.id === state.activeWorkflowId ? { ...w, ...updates } : w
+        )
+      })),
+
+      // Legacy action operations (operate on current workflow)
+      addAction: (action) => {
+        const current = get().getCurrentWorkflow();
+        get().updateCurrentWorkflow({
+          actions: [...current.actions, action]
+        });
+      },
+
+      updateAction: (index, action) => {
+        const current = get().getCurrentWorkflow();
+        const newActions = [...current.actions];
+        newActions[index] = action;
+        get().updateCurrentWorkflow({ actions: newActions });
+      },
+
+      removeAction: (index) => {
+        const current = get().getCurrentWorkflow();
+        get().updateCurrentWorkflow({
+          actions: current.actions.filter((_, i) => i !== index)
+        });
+      },
+
+      reorderActions: (oldIndex, newIndex) => {
+        const current = get().getCurrentWorkflow();
+        const items = Array.from(current.actions);
         const [reorderedItem] = items.splice(oldIndex, 1);
         items.splice(newIndex, 0, reorderedItem);
-        return {
-          activeWorkflow: { ...state.activeWorkflow, actions: items }
-        };
-      }),
+        get().updateCurrentWorkflow({ actions: items });
+      },
+
+      setFlowNodes: (nodes) => {
+        get().updateCurrentWorkflow({ flowNodes: nodes });
+      },
+
+      setFlowEdges: (edges) => {
+        get().updateCurrentWorkflow({ flowEdges: edges });
+      },
+
+      updateFlowState: (nodes, edges) => {
+        get().updateCurrentWorkflow({ flowNodes: nodes, flowEdges: edges });
+      },
 
       initListeners: async () => {
         if (get()._unlistenFns.length > 0) return;
@@ -103,18 +230,19 @@ export const useAutomatorStore = create<AutomatorState>()(
       },
 
       start: async () => {
-        const { activeWorkflow } = get();
+        const current = get().getCurrentWorkflow();
         try {
           set({ currentLoop: 0, currentStepIndex: -1 });
           await invoke(`${PLUGIN_PREFIX}execute_workflow`, {
             workflow: {
-                id: activeWorkflow.id,
-                name: activeWorkflow.name,
-                actions: activeWorkflow.actions,
-                repeatCount: activeWorkflow.repeatCount
+                id: current.id,
+                name: current.name,
+                actions: current.actions,
+                repeatCount: current.repeatCount
             }
           });
         } catch (e) {
+          console.error('Failed to start workflow:', e);
         }
       },
 
@@ -159,8 +287,18 @@ export const useAutomatorStore = create<AutomatorState>()(
       name: 'automator-config',
       storage: createJSONStorage(() => fileStorage),
       partialize: (state) => ({
-          activeWorkflow: state.activeWorkflow
+        workflows: state.workflows,
+        activeWorkflowId: state.activeWorkflowId,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Ensure activeWorkflowId is valid after rehydration
+        if (state && state.workflows.length > 0) {
+          const hasActiveWorkflow = state.workflows.some(w => w.id === state.activeWorkflowId);
+          if (!hasActiveWorkflow) {
+            state.activeWorkflowId = state.workflows[0].id;
+          }
+        }
+      },
     }
   )
 );

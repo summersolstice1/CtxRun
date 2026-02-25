@@ -67,11 +67,16 @@ export interface Workflow {
     description?: string;
     createdAt?: number;
   };
+  // React Flow graph state (for visual editor)
+  flowNodes?: any[];
+  flowEdges?: any[];
 }
 
 export const DEFAULT_WORKFLOW: Workflow = {
   id: 'default',
   name: 'New Workflow',
   actions: [],
-  repeatCount: 1
+  repeatCount: 1,
+  flowNodes: [],
+  flowEdges: []
 };

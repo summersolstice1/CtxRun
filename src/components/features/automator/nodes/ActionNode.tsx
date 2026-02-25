@@ -6,6 +6,7 @@ import { AutomatorAction, MouseButton, ActionTarget } from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { NumberInput } from '@/components/ui/NumberInput';
+import { Select } from '@/components/ui/select';
 
 const ICONS: Record<AutomatorAction['type'], any> = {
   'MoveTo': Move,
@@ -328,15 +329,17 @@ export const ActionNode = memo((props: NodeProps) => {
         )}
 
         {(actionType === 'Click' || actionType === 'DoubleClick') && (
-          <select
-            className="w-full bg-background border border-border rounded px-2 py-1 mt-2"
+          <Select
             value={(payload as { button: MouseButton }).button}
-            onChange={(e) => handleChange('button', e.target.value as MouseButton)}
-          >
-            <option value="Left">{t('automator.leftButton')}</option>
-            <option value="Right">{t('automator.rightButton')}</option>
-            <option value="Middle">{t('automator.middleButton')}</option>
-          </select>
+            onChange={(value) => handleChange('button', value as MouseButton)}
+            options={[
+              { value: 'Left', label: t('automator.leftButton') },
+              { value: 'Right', label: t('automator.rightButton') },
+              { value: 'Middle', label: t('automator.middleButton') },
+            ]}
+            size="sm"
+            className="mt-2"
+          />
         )}
 
         {actionType === 'Type' && (
