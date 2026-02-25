@@ -362,7 +362,7 @@ function DnDFlow() {
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="h-14 border-b border-border flex items-center px-4 justify-between bg-secondary/5 shrink-0 z-10">
+      <div className="h-14 border-b border-border flex items-center px-4 justify-between bg-secondary/5 shrink-0 z-50 relative">
          <div className="flex items-center gap-3">
             <h2 className="font-semibold text-foreground">{t('automator.designerTitle')}</h2>
             <div className="px-2 py-0.5 rounded-full bg-secondary text-[10px] text-muted-foreground border border-border">{t('automator.manualMode')}</div>
