@@ -11,7 +11,7 @@ pub mod commands;
 pub mod screen;
 pub mod error;
 pub mod inspector;
-pub mod cdp;
+pub mod browser;
 
 pub use error::{AutomatorError, Result};
 

@@ -5,7 +5,7 @@ use crate::models::{Workflow, WorkflowGraph};
 use crate::screen;
 use crate::error::{AutomatorError, Result};
 use crate::inspector::PickedElement;
-use crate::cdp::CdpSession;
+use crate::browser::TabSession;
 
 #[tauri::command]
 pub async fn execute_workflow<R: Runtime>(
@@ -84,11 +84,10 @@ pub async fn get_element_under_cursor() -> Result<PickedElement> {
 
 #[tauri::command]
 pub async fn pick_web_selector() -> Result<String> {
-    let mut session = CdpSession::connect(9222, None).await
-        .map_err(|e| AutomatorError::CdpConnectionError(e.to_string()))?;
-
-    let selector = session.pick_element().await
-        .map_err(|e| AutomatorError::CdpProtocolError(e.to_string()))?;
-
-    Ok(selector)
+    tauri::async_runtime::spawn_blocking(|| {
+        let session = TabSession::connect_and_find(None)?;
+        session.pick_element()
+    })
+    .await
+    .map_err(|e| AutomatorError::JoinError(e.to_string()))?
 }

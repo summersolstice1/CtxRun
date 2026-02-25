@@ -19,11 +19,8 @@ pub enum AutomatorError {
     #[error("Async operation failed: {0}")]
     JoinError(String),
 
-    #[error("CDP Connection failed: {0}")]
-    CdpConnectionError(String),
-
-    #[error("CDP Protocol error: {0}")]
-    CdpProtocolError(String),
+    #[error("Browser automation failed: {0}")]
+    BrowserError(String),
 
     #[error("JSON parsing error: {0}")]
     JsonError(#[from] serde_json::Error),

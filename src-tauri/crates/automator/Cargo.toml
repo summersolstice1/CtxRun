@@ -16,10 +16,7 @@ image = { workspace = true }
 thiserror = { workspace = true }
 which = { workspace = true }
 
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
-tokio-tungstenite = { version = "0.26", features = ["rustls-tls-native-roots"] }
-futures-util = "0.3"
-url = "2.5"
+headless_chrome = { version = "1.0" }
 ctxrun-browser-utils = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]

@@ -2,16 +2,14 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use std::process::Command;
 use tauri::{AppHandle, Emitter, Runtime};
-use ctxrun_browser_utils::{locate_browser, BrowserType as UtilsBrowserType};
 use enigo::{
     Enigo, Mouse, Keyboard, Button, Coordinate,
     Settings, Direction, Key, Axis
 };
 use crate::models::{AutomatorAction, Workflow, WorkflowGraph, MouseButton, ActionTarget};
 use crate::screen;
-use crate::cdp::CdpSession;
+use crate::browser::{TabSession, launch_debug_browser};
 
 pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
@@ -25,6 +23,10 @@ impl AutomatorState {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Target resolution helpers
+// ---------------------------------------------------------------------------
+
 async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
     let t_clone = target.clone();
 
@@ -34,9 +36,7 @@ async fn resolve_coords_with_timeout(target: &ActionTarget) -> (i32, i32) {
 
     match tokio::time::timeout(Duration::from_secs(15), task).await {
         Ok(Ok(Ok((x, y)))) => (x, y),
-        Ok(Ok(Err(_e))) => extract_fallback(target),
-        Ok(Err(_e)) => extract_fallback(target),
-        Err(_) => extract_fallback(target)
+        _ => extract_fallback(target),
     }
 }
 
@@ -48,6 +48,42 @@ fn extract_fallback(target: &ActionTarget) -> (i32, i32) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Browser-assisted action helpers (sync, run inside spawn_blocking)
+// ---------------------------------------------------------------------------
+
+/// Try to click an element via headless_chrome. Returns true if successful.
+fn try_browser_click(selector: &str, url_filter: Option<&str>) -> bool {
+    TabSession::connect_and_find(url_filter)
+        .and_then(|s| s.click_element(selector))
+        .is_ok()
+}
+
+/// Try to type into an element via headless_chrome. Returns true if successful.
+fn try_browser_type(selector: &str, text: &str, url_filter: Option<&str>) -> bool {
+    TabSession::connect_and_find(url_filter)
+        .and_then(|s| s.type_into_element(selector, text))
+        .is_ok()
+}
+
+/// Try to press a key via headless_chrome. Returns true if successful.
+fn try_browser_key(key: &str, url_filter: Option<&str>) -> bool {
+    let session = match TabSession::connect_and_find(url_filter) {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+    // Try as combo first (e.g. "Ctrl+A"), fall back to single key
+    if key.contains('+') {
+        session.press_key_combo(key).is_ok()
+    } else {
+        session.press_key(key).is_ok()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Smart action executor — browser-first with physical input fallback
+// ---------------------------------------------------------------------------
+
 async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
     match action {
         AutomatorAction::MoveTo { target } => {
@@ -56,35 +92,23 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
         },
 
         AutomatorAction::Click { button, target } => {
-            let mut cdp_handled = false;
+            let mut handled = false;
 
             if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
-                match CdpSession::connect(9222, url_contain.as_deref()).await {
-                    Ok(mut session) => {
-                        match session.get_element_viewport_center(selector).await {
-                            Ok((x, y)) => {
-                                if session.simulate_mouse_click(x, y).await.is_ok() {
-                                    cdp_handled = true;
-                                }
-                            },
-                            Err(_) => {},
-                        }
-                    },
-                    Err(_) => {}
-                }
+                let sel = selector.clone();
+                let filter = url_contain.clone();
+                handled = tauri::async_runtime::spawn_blocking(move || {
+                    try_browser_click(&sel, filter.as_deref())
+                }).await.unwrap_or(false);
             }
 
-            if !cdp_handled {
+            if !handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
-
-                    if x == 0 && y == 0 {
-                        return;
-                    }
+                    if x == 0 && y == 0 { return; }
                     let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                     tokio::time::sleep(Duration::from_millis(100)).await;
-                    let btn = map_button(button);
-                    let _ = enigo.button(btn, Direction::Click);
+                    let _ = enigo.button(map_button(button), Direction::Click);
                 }
             }
         },
@@ -102,26 +126,21 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
         },
 
         AutomatorAction::Type { text, target } => {
-            let mut cdp_handled = false;
+            let mut handled = false;
 
             if let Some(ActionTarget::WebSelector { selector, url_contain, .. }) = target {
-                match CdpSession::connect(9222, url_contain.as_deref()).await {
-                    Ok(mut session) => {
-                        if session.simulate_text_entry(selector, text).await.is_ok() {
-                            cdp_handled = true;
-                        }
-                    },
-                    Err(_) => {}
-                }
+                let sel = selector.clone();
+                let txt = text.clone();
+                let filter = url_contain.clone();
+                handled = tauri::async_runtime::spawn_blocking(move || {
+                    try_browser_type(&sel, &txt, filter.as_deref())
+                }).await.unwrap_or(false);
             }
 
-            if !cdp_handled {
+            if !handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
-
-                    if x == 0 && y == 0 {
-                        return;
-                    }
+                    if x == 0 && y == 0 { return; }
                     let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                     tokio::time::sleep(Duration::from_millis(50)).await;
                     let _ = enigo.button(Button::Left, Direction::Click);
@@ -135,14 +154,11 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             let mut handled = false;
 
             if let Some(ActionTarget::WebSelector { url_contain, .. }) = target {
-                match CdpSession::connect(9222, url_contain.as_deref()).await {
-                    Ok(mut session) => {
-                        if session.simulate_key_press(key).await.is_ok() {
-                            handled = true;
-                        }
-                    },
-                    Err(_) => {}
-                }
+                let k = key.clone();
+                let filter = url_contain.clone();
+                handled = tauri::async_runtime::spawn_blocking(move || {
+                    try_browser_key(&k, filter.as_deref())
+                }).await.unwrap_or(false);
             }
 
             if !handled {
@@ -160,13 +176,13 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
 
         AutomatorAction::CheckColor { .. } => {},
         AutomatorAction::Iterate { .. } => {},
-        AutomatorAction::LaunchBrowser { browser, url, use_temp_profile } => {
-            let is_edge = browser.to_lowercase().as_str() == "edge";
 
+        AutomatorAction::LaunchBrowser { browser, url, use_temp_profile } => {
+            let is_edge = browser.to_lowercase() == "edge";
             let url_clone = url.clone();
             let use_temp = *use_temp_profile;
             let res = tauri::async_runtime::spawn_blocking(move || {
-                launch_browser_internal(is_edge, url_clone, use_temp)
+                launch_debug_browser(is_edge, url_clone, use_temp)
             }).await;
 
             if res.is_ok() {
@@ -412,36 +428,3 @@ pub fn run_graph_task<R: Runtime>(
     });
 }
 
-fn launch_browser_internal(is_edge: bool, url: Option<String>, use_temp_profile: bool) -> Result<(), String> {
-    let target_browser = if is_edge { UtilsBrowserType::Edge } else { UtilsBrowserType::Chrome };
-
-    // 1. 调用统一的探测工具
-    let exe_path = locate_browser(target_browser)
-        .ok_or_else(|| format!("未检测到 {:?} 浏览器", target_browser))?;
-
-    let mut cmd = Command::new(exe_path);
-    cmd.arg("--remote-debugging-port=9222");
-    cmd.arg("--no-first-run");
-    cmd.arg("--no-default-browser-check");
-
-    if use_temp_profile {
-        let temp_dir = std::env::temp_dir().join("ctxrun_browser_profile");
-        cmd.arg(format!("--user-data-dir={}", temp_dir.to_string_lossy()));
-    }
-
-    if let Some(u) = url {
-        cmd.arg(u);
-    } else {
-        cmd.arg("about:blank");
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        cmd.creation_flags(DETACHED_PROCESS);
-    }
-
-    cmd.spawn().map_err(|e| format!("Failed to launch browser: {}", e))?;
-    Ok(())
-}
