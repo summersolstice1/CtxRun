@@ -1,7 +1,6 @@
 use ctxrun_db::{AppEntry, DbState};
 use tauri::State;
 use std::path::Path;
-use ctxrun_browser_utils::{locate_browser, BrowserType as UtilsBrowserType};
 
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
@@ -16,50 +15,8 @@ pub async fn launch_browser(
     url: Option<String>,
     use_temp_profile: bool
 ) -> Result<(), String> {
-    let browser_type = match browser.to_lowercase().as_str() {
-        "edge" => UtilsBrowserType::Edge,
-        _ => UtilsBrowserType::Chrome,
-    };
-
-    // 1. 调用统一的探测工具
-    let exe_path = locate_browser(browser_type)
-        .ok_or_else(|| format!("未能在系统中找到 {:?} 浏览器", browser_type))?;
-
-    // 构建启动命令
-    #[cfg(target_os = "windows")]
-    let mut cmd = {
-        use std::os::windows::process::CommandExt;
-        let mut c = std::process::Command::new(&exe_path);
-        // DETACHED_PROCESS = 0x00000008，让进程独立运行
-        c.creation_flags(0x00000008);
-        c
-    };
-
-    #[cfg(not(target_os = "windows"))]
-    let mut cmd = std::process::Command::new(&exe_path);
-
-    // 添加调试端口参数
-    cmd.arg("--remote-debugging-port=9222");
-    cmd.arg("--no-first-run");
-    cmd.arg("--no-default-browser-check");
-
-    // 使用独立用户数据目录
-    if use_temp_profile {
-        let temp_dir = std::env::temp_dir().join("ctxrun_browser_profile");
-        cmd.arg(format!("--user-data-dir={}", temp_dir.to_string_lossy()));
-    }
-
-    // 添加起始 URL
-    if let Some(u) = url {
-        cmd.arg(&u);
-    } else {
-        cmd.arg("about:blank");
-    }
-
-    cmd.spawn()
-        .map_err(|e| format!("Failed to launch browser: {}", e))?;
-
-    Ok(())
+    let is_edge = browser.to_lowercase() == "edge";
+    ctxrun_plugin_automator::browser::launch_debug_browser(is_edge, url, use_temp_profile)
 }
 
 #[tauri::command]
