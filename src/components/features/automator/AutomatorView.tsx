@@ -353,12 +353,22 @@ function DnDFlow() {
   const processedNodes = useMemo(() => {
     return nodes.map((node) => {
         const isActive = isRunning && executingNodeIds[currentStepIndex] === node.id;
+        const nodeId = node.id;
+        // 始终重新注入 onChange 回调，防止从持久化加载后丢失（函数无法序列化）
+        const onChange = (newData: any) => {
+          setNodes((nds) => nds.map((n) => {
+            if (n.id === nodeId) {
+              return { ...n, data: { ...n.data, payload: newData } };
+            }
+            return n;
+          }));
+        };
         return {
             ...node,
-            data: { ...node.data, isExecuting: isActive }
+            data: { ...node.data, isExecuting: isActive, onChange }
         };
     });
-  }, [nodes, isRunning, currentStepIndex, executingNodeIds]);
+  }, [nodes, isRunning, currentStepIndex, executingNodeIds, setNodes]);
 
   return (
     <div className="h-full flex flex-col bg-background">
