@@ -29,17 +29,17 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
       inherit: true,
       rules: [],
       colors: {
-        'editor.background': '#020817', 
-        'editor.lineHighlightBackground': '#1e293b20',
-        'scrollbarSlider.background': '#33415550',
-        'scrollbarSlider.hoverBackground': '#33415580',
-        'editor.selectionBackground': '#3b82f640',
-        'editorGutter.background': '#020817',
+        'editor.background': '#161b2e',
+        'editor.lineHighlightBackground': '#1e2540',
+        'scrollbarSlider.background': '#2d3555',
+        'scrollbarSlider.hoverBackground': '#3a4368',
+        'editor.selectionBackground': '#0078d440',
+        'editorGutter.background': '#161b2e',
         'diffEditor.insertedTextBackground': '#22c55e15',
         'diffEditor.removedTextBackground': '#ef444415',
-        'diffEditor.diagonalFill': '#33415540',
-        'editorWidget.background': '#0f172a',
-        'editorWidget.border': '#1e293b',
+        'diffEditor.diagonalFill': '#2d355540',
+        'editorWidget.background': '#1a2038',
+        'editorWidget.border': '#2d3555',
       }
     });
 
@@ -48,13 +48,13 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
       inherit: true,
       rules: [],
       colors: {
-        'editor.background': '#ffffff',
-        'editor.lineHighlightBackground': '#f1f5f9',
-        'scrollbarSlider.background': '#94a3b850',
-        'editor.selectionBackground': '#bfdbfe',
-        'editorGutter.background': '#ffffff',
-        'diffEditor.insertedTextBackground': '#22c55e20',
-        'diffEditor.removedTextBackground': '#ef444420',
+        'editor.background': '#fbfaf5',
+        'editor.lineHighlightBackground': '#f2f0ea',
+        'scrollbarSlider.background': '#c8c4bc50',
+        'editor.selectionBackground': '#d8f0fa70',
+        'editorGutter.background': '#fbfaf5',
+        'diffEditor.insertedTextBackground': '#d8f0fa25',
+        'diffEditor.removedTextBackground': '#f5d0cc25',
       }
     });
 
