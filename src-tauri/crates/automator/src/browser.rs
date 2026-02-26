@@ -7,55 +7,15 @@ use std::sync::Arc;
 use std::time::Duration;
 use headless_chrome::{Browser, Tab};
 use headless_chrome::browser::tab::ModifierKey;
-use ctxrun_browser_utils::{locate_browser, BrowserType as UtilsBrowserType};
+use ctxrun_browser_utils::{
+    locate_browser, BrowserType as UtilsBrowserType,
+    app_chrome_data_dir, is_debug_port_available, is_browser_running, kill_browser_processes,
+};
 use crate::error::{AutomatorError, Result};
 
 const DEFAULT_DEBUG_PORT: u16 = 9222;
 const ELEMENT_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 const BROWSER_IDLE_TIMEOUT: Duration = Duration::from_secs(120);
-
-// ---------------------------------------------------------------------------
-// BrowserSession — connection to an external browser
-// ---------------------------------------------------------------------------
-
-/// A session connected to an externally-launched Chrome/Edge debugging port.
-pub struct BrowserSession {
-    browser: Browser,
-}
-
-impl BrowserSession {
-    /// Connect to a browser already running with `--remote-debugging-port`.
-    pub fn connect(port: u16) -> Result<Self> {
-        let ws_url = format!("ws://127.0.0.1:{}", port);
-        let browser = Browser::connect_with_timeout(ws_url, BROWSER_IDLE_TIMEOUT)
-            .map_err(|e| AutomatorError::BrowserError(format!("Failed to connect: {}", e)))?;
-        Ok(Self { browser })
-    }
-
-    /// Connect using the default debug port (9222).
-    pub fn connect_default() -> Result<Self> {
-        Self::connect(DEFAULT_DEBUG_PORT)
-    }
-
-    /// Find a tab whose URL or title contains `filter`. Returns the first match.
-    pub fn find_tab(&self, filter: Option<&str>) -> Result<Arc<Tab>> {
-        let tabs = self.browser.get_tabs().lock()
-            .map_err(|e| AutomatorError::BrowserError(format!("Lock poisoned: {}", e)))?;
-
-        let tab = tabs.iter().find(|t| {
-            match filter {
-                Some(f) => {
-                    let url = t.get_url();
-                    let title = t.get_title().unwrap_or_default();
-                    url.contains(f) || title.contains(f)
-                }
-                None => true,
-            }
-        }).cloned();
-
-        tab.ok_or_else(|| AutomatorError::BrowserError("No matching tab found".into()))
-    }
-}
 
 // ---------------------------------------------------------------------------
 // TabSession — operations on a single tab
@@ -64,18 +24,64 @@ impl BrowserSession {
 /// High-level wrapper around a single browser tab for automation actions.
 pub struct TabSession {
     tab: Arc<Tab>,
+    _browser: Browser, // Must keep Browser alive to maintain the WebSocket connection
 }
 
 impl TabSession {
-    pub fn new(tab: Arc<Tab>) -> Self {
-        Self { tab }
-    }
-
     /// Connect to the default port and find a tab matching the optional filter.
     pub fn connect_and_find(url_filter: Option<&str>) -> Result<Self> {
-        let session = BrowserSession::connect_default()?;
-        let tab = session.find_tab(url_filter)?;
-        Ok(Self { tab })
+        // Query the /json endpoint to get list of all targets (tabs)
+        let url = format!("http://127.0.0.1:{}/json", DEFAULT_DEBUG_PORT);
+        let targets: Vec<serde_json::Value> = reqwest::blocking::Client::new()
+            .get(&url)
+            .timeout(Duration::from_secs(5))
+            .send()
+            .and_then(|r| r.json())
+            .map_err(|e| AutomatorError::BrowserError(format!("Failed to connect to debug port: {}. Make sure Chrome is running with --remote-debugging-port={}", e, DEFAULT_DEBUG_PORT)))?;
+
+        // Find a matching "page" type target
+        let page_target = targets.iter()
+            .find(|t| {
+                let is_page = t["type"].as_str() == Some("page");
+                let has_ws = t["webSocketDebuggerUrl"].is_string();
+                let matches_filter = match url_filter {
+                    Some(filter) => {
+                        let url = t["url"].as_str().unwrap_or("");
+                        let title = t["title"].as_str().unwrap_or("");
+                        url.contains(filter) || title.contains(filter)
+                    }
+                    None => true
+                };
+                is_page && has_ws && matches_filter
+            })
+            .ok_or_else(|| AutomatorError::BrowserError("No matching page tab found. Please open a web page in the browser.".into()))?;
+
+        let ws_url = page_target["webSocketDebuggerUrl"]
+            .as_str()
+            .ok_or_else(|| AutomatorError::BrowserError("No webSocketDebuggerUrl found in page target".into()))?
+            .to_string();
+
+        // Connect directly to the page's WebSocket
+        let browser = Browser::connect_with_timeout(ws_url, BROWSER_IDLE_TIMEOUT)
+            .map_err(|e| AutomatorError::BrowserError(format!("Failed to connect to page: {}", e)))?;
+
+        // Wait a moment for the tab info to sync, then find the tab
+        std::thread::sleep(Duration::from_millis(500));
+
+        // Register any missing tabs
+        let _ = browser.register_missing_tabs();
+
+        let tab = {
+            let tabs = browser.get_tabs().lock()
+                .map_err(|e| AutomatorError::BrowserError(format!("Lock poisoned: {}", e)))?;
+            tabs.first().cloned()
+        }; // tabs lock is dropped here
+
+        let tab = tab.ok_or_else(|| AutomatorError::BrowserError(
+            "No tab available after connection. Please ensure the browser has an open page.".into()
+        ))?;
+
+        Ok(Self { tab, _browser: browser })
     }
 
     // -- Element interaction ------------------------------------------------
@@ -262,18 +268,28 @@ pub fn launch_debug_browser(
 ) -> std::result::Result<(), String> {
     use std::process::Command;
 
+    if is_debug_port_available(DEFAULT_DEBUG_PORT) {
+        return Ok(());
+    }
+
     let target = if is_edge { UtilsBrowserType::Edge } else { UtilsBrowserType::Chrome };
     let exe_path = locate_browser(target)
         .ok_or_else(|| format!("Browser {:?} not found", target))?;
+
+    if is_browser_running(target) {
+        kill_browser_processes(target)?;
+    }
 
     let mut cmd = Command::new(exe_path);
     cmd.arg(format!("--remote-debugging-port={}", DEFAULT_DEBUG_PORT));
     cmd.arg("--no-first-run");
     cmd.arg("--no-default-browser-check");
 
+    let base_dir = app_chrome_data_dir();
     if use_temp_profile {
-        let temp_dir = std::env::temp_dir().join("ctxrun_browser_profile");
-        cmd.arg(format!("--user-data-dir={}", temp_dir.to_string_lossy()));
+        cmd.arg(format!("--user-data-dir={}", base_dir.join("temp").to_string_lossy()));
+    } else {
+        cmd.arg(format!("--user-data-dir={}", base_dir.join("persistent").to_string_lossy()));
     }
 
     cmd.arg(url.unwrap_or_else(|| "about:blank".into()));
@@ -286,5 +302,16 @@ pub fn launch_debug_browser(
     }
 
     cmd.spawn().map_err(|e| format!("Failed to launch browser: {}", e))?;
+
+    for i in 0..10 {
+        std::thread::sleep(Duration::from_millis(500));
+        if is_debug_port_available(DEFAULT_DEBUG_PORT) {
+            return Ok(());
+        }
+        if i == 9 {
+            return Err("Browser started but debug port is not available after 5 seconds. This may be a Chrome profile lock issue.".into());
+        }
+    }
+
     Ok(())
 }

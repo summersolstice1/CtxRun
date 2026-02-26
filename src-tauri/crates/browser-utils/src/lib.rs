@@ -1,4 +1,6 @@
 use std::path::PathBuf;
+use std::time::Duration;
+use std::net::TcpStream;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BrowserType {
@@ -93,4 +95,99 @@ pub fn locate_all_browsers() -> Vec<(BrowserType, PathBuf)> {
     }
 
     result
+}
+
+// ---------------------------------------------------------------------------
+// Browser process management utilities
+// ---------------------------------------------------------------------------
+
+const APP_ID: &str = "com.ctxrun";
+
+/// Get the Chrome user data directory under app's own data dir.
+pub fn app_chrome_data_dir() -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
+        PathBuf::from(local_app_data).join(APP_ID).join("chrome_user_data")
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let home = std::env::var("HOME").unwrap_or_default();
+        PathBuf::from(home).join("Library/Application Support").join(APP_ID).join("chrome_user_data")
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let config = std::env::var("XDG_DATA_HOME")
+            .unwrap_or_else(|_| format!("{}/.local/share", std::env::var("HOME").unwrap_or_default()));
+        PathBuf::from(config).join(APP_ID).join("chrome_user_data")
+    }
+}
+
+/// Check if a CDP debug port is responding.
+pub fn is_debug_port_available(port: u16) -> bool {
+    TcpStream::connect_timeout(
+        &format!("127.0.0.1:{}", port).parse().unwrap(),
+        Duration::from_secs(1),
+    ).is_ok()
+}
+
+/// Check if a browser process is running.
+pub fn is_browser_running(browser_type: BrowserType) -> bool {
+    let name = browser_process_name(browser_type);
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("tasklist")
+            .args(["/FI", &format!("IMAGENAME eq {}", name), "/NH"])
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).contains(name))
+            .unwrap_or(false)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::process::Command::new("pgrep")
+            .arg("-x")
+            .arg(name)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+    }
+}
+
+/// Kill all running browser processes of the given type.
+pub fn kill_browser_processes(browser_type: BrowserType) -> Result<(), String> {
+    let name = browser_process_name(browser_type);
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("taskkill")
+            .args(["/F", "/IM", name])
+            .output()
+            .map_err(|e| format!("Failed to kill browser: {}", e))?;
+        std::thread::sleep(Duration::from_millis(1000));
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        std::process::Command::new("pkill")
+            .arg(name)
+            .output()
+            .map_err(|e| format!("Failed to kill browser: {}", e))?;
+        std::thread::sleep(Duration::from_millis(1000));
+    }
+    Ok(())
+}
+
+fn browser_process_name(browser_type: BrowserType) -> &'static str {
+    #[cfg(target_os = "windows")]
+    {
+        match browser_type {
+            BrowserType::Edge => "msedge.exe",
+            _ => "chrome.exe",
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        match browser_type {
+            BrowserType::Edge => "msedge",
+            _ => "chrome",
+        }
+    }
 }
