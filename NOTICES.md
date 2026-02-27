@@ -15,18 +15,30 @@ CtxRun is distributed under the **GNU General Public License v3.0 (GPL-3.0)**. S
 | Package | License | Author |
 |---------|---------|--------|
 | **React** | MIT | Meta Platforms, Inc. |
+| **React DOM** | MIT | Meta Platforms, Inc. |
 | **Zustand** | MIT | pmndrs |
 | **Monaco Editor** | MIT | Microsoft Corporation |
+| **Monaco Editor React** | MIT | Suren A. Chilingaryan |
 | **Tailwind CSS** | MIT | Tailwind Labs |
 | **Vite** | MIT | Vue.js Team |
 | **Framer Motion** | MIT | Framer Motion, Inc. |
 | **Lucide React** | MIT | Lucide Contributors |
 | **React Markdown** | MIT | Espen Hovlandsdal |
-| **Monaco Editor React** | MIT | Suren A. Chilingaryan |
+| **remark-gfm** | MIT | Titus Wormer |
 | **Tailwind Merge** | MIT | dcastil |
 | **Class Variance Authority** | MIT | Mateusz Burzyński |
 | **UUID** | MIT | Robert Kieffer |
-| **Diff** | BSD-3-Clause | Kevin Decker |
+| **i18next** | MIT | Jan Mühlemann |
+| **react-i18next** | MIT | Jan Mühlemann |
+| **@xyflow/react** | BUSL-1.1 | xyflow GmbH (formerly React Flow) |
+| **clsx** | MIT | Sergey Sova |
+| **react-virtuoso** | MIT | Petyo Ivanov |
+| **react-window** | MIT | Brian Vaughn |
+| **react-virtualized-auto-sizer** | MIT | bvaughn |
+| **strip-comments** | MIT | Brandon Mills |
+| **react-icons** | MIT | Gonçalo Marques |
+| **react-syntax-highlighter** | MIT | Connor Taylor |
+| **tailwindcss-animate** | MIT | Hero Labs |
 
 ### Backend Dependencies (Rust)
 
@@ -39,9 +51,43 @@ CtxRun is distributed under the **GNU General Public License v3.0 (GPL-3.0)**. S
 | **reqwest** | MIT OR Apache-2.0 | HTTP client |
 | **tokio** | MIT | Async runtime |
 | **serde** | MIT OR Apache-2.0 | Serialization |
+| **serde_json** | MIT OR Apache-2.0 | JSON serialization |
 | **refinery** | MIT OR Apache-2.0 | Database migrations |
-| **gitleaks** | MIT | Secrets detection (inspiration for security scanning) |
 | **regex** | MIT OR Apache-2.0 | Regular expressions |
+| **rayon** | MIT OR Apache-2.0 | Parallelism |
+| **enigo** | MIT | Mouse/Keyboard input simulation |
+| **arboard** | MIT OR Apache-2.0 | Clipboard access |
+| **entropy** | MIT | Shannon entropy calculation |
+| **ignore** | MIT OR Apache-2.0 | .gitignore parsing |
+| **tiktoken-rs** | MIT | OpenAI token counting |
+| **which** | MIT | Find executable in PATH |
+| **once_cell** | MIT OR Apache-2.0 | Lazy static initialization |
+| **uuid** | MIT OR Apache-2.0 | UUID generation |
+| **chrono** | MIT OR Apache-2.0 | Date and time |
+| **clipboard-rs** | MIT OR Apache-2.0 | Clipboard monitoring |
+| **image** | MIT OR Apache-2.0 | Image encoding |
+| **xxhash-rust** | BSD-2-Clause | Fast hashing |
+| **crossbeam-channel** | MIT OR Apache-2.0 | Multi-producer multi-consumer channels |
+| **x-win** | MIT | Windows window manipulation |
+| **csv** | MIT OR Apache-2.0 | CSV parsing |
+| **walkdir** | MIT OR Apache-2.0 | Directory traversal |
+| **infer** | MIT | File type detection |
+| **mime_guess** | MIT | MIME type detection |
+| **url** | MIT OR Apache-2.0 | URL parsing |
+| **percent-encoding** | MIT OR Apache-2.0 | Percent encoding |
+| **base64** | MIT OR Apache-2.0 | Base64 encoding |
+| **genai** | Apache-2.0 | Generative AI |
+| **listeners** | MIT | Event listeners |
+| **wait-timeout** | MIT | Timeout wait |
+| **windows** | MIT OR Apache-2.0 | Windows API bindings |
+| **futures** | MIT OR Apache-2.0 | Future utilities |
+| **similar** | MIT | Text diffing |
+| **thiserror** | MIT OR Apache-2.0 | Error handling |
+| **git2** | MIT OR Apache-2.0 | Git library |
+| **headless_chrome** | MIT OR Apache-2.0 | Headless Chrome control |
+| **sanitize-filename** | MIT | Filename sanitization |
+| **xcap** | MIT OR Apache-2.0 | Screen capture |
+| **uiautomation** | MIT | Windows UI Automation bindings |
 
 ---
 
@@ -99,4 +145,4 @@ We thank all the maintainers and contributors of the open source projects that m
 
 ---
 
-*This document was last updated on 2026-01-23.*
+*This document was last updated on 2026-02-27.*

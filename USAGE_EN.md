@@ -8,11 +8,12 @@ This document provides detailed usage instructions, configuration guides, and ke
 2.  [Spotlight (Global AI Terminal)](#2-spotlight-global-ai-terminal)
 3.  [Prompt Verse (Prompt Library)](#3-prompt-verse-prompt-library)
 4.  [Patch Weaver (AI Completer)](#4-patch-weaver-ai-completer)
-5.  [Refinery (Clipboard History)](#5-refinery-clipboard-history)
-6.  [Automator (Auto-Clicker)](#6-automator-auto-clicker)
-7.  [System Monitor (System Monitoring)](#7-system-monitor-system-monitoring)
-8.  [Setup Guide](#8-setup-guide)
-9.  [Common Keyboard Shortcuts Reference](#9-common-keyboard-shortcuts-reference)
+5.  [Model Miner (Web Content Mining)](#5-model-miner-web-content-mining)
+6.  [Automator (Workflow Automation)](#6-automator-workflow-automation)
+7.  [Refinery (Clipboard History)](#7-refinery-clipboard-history)
+8.  [System Monitor (System Monitoring)](#8-system-monitor-system-monitoring)
+9.  [Setup Guide](#9-setup-guide)
+10. [Common Keyboard Shortcuts Reference](#10-common-keyboard-shortcuts-reference)
 
 ---
 
@@ -82,7 +83,7 @@ Quickly search and use your command library, applications, and system functions.
 *   Supports constants: pi, e
 
 **Shell Command Mode:**
-*   Enter prefix `>` to enter Shell command mode
+*   Enter prefix `>` or `》` to enter Shell command mode
 *   Linux/Mac example: `>ls -la`
 *   Windows example: `>dir`
 *   Results are displayed directly in the Spotlight window
@@ -90,7 +91,7 @@ Quickly search and use your command library, applications, and system functions.
 *   Supports command history matching, use arrow keys to browse
 
 **Web Search Mode:**
-*   Enter prefix `?` to enter Web search mode
+*   Enter prefix `?` or `？` to enter Web search mode
 *   Example: `?react hooks`
 *   Supports multiple search engines: Google, Bing, Baidu
 *   Configure default search engine and custom search URL in settings
@@ -237,8 +238,194 @@ A powerful Git visualization tool.
 *   Layouts: Split, Unified, Git Patch
 
 ---
+### 5. Model Miner (Web Content Mining)
 
-### 5. Refinery (Clipboard History)
+**Solves the pain point:** Intelligently crawl website content and convert to Markdown format, with depth control and concurrent processing.
+
+#### Core Features
+
+**Smart Content Extraction:**
+*   Uses **Readability.js** to extract core page content
+*   Automatically converts to Markdown format (turndown.js)
+*   Filters ads and irrelevant elements, keeps valuable content
+
+**Concurrent Crawling Engine:**
+*   Browser automation based on **headless_chrome**
+*   Supports 1-10 concurrent threads (default 5)
+*   Uses crossbeam-channel for task queue
+*   Each thread independently manages browser tabs
+
+**Depth and Scope Control:**
+*   **URL Prefix Matching**: Strictly limits crawling scope, prevents runaway
+*   **Max Depth**: Controls link recursion level (0 means current page only)
+*   **Max Pages**: Prevents crawling too many pages
+
+**Hierarchical File Storage:**
+*   Automatically generates directory tree based on URL structure
+*   Example: `example.com/docs/api/guide.md`
+*   Automatically adds metadata: title, source URL, crawl time
+
+#### Usage Workflow
+
+**Configuration Parameters:**
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| URL | Starting URL | `https://docs.rs/ort` |
+| Match Prefix | URL prefix restriction | `https://docs.rs/ort/2.0.0-rc.11/ort/` |
+| Max Depth | Maximum crawl depth | `2` (0=current page only) |
+| Max Pages | Maximum page count | `100` |
+| Concurrency | Concurrent thread count | `5` (1-10) |
+| Output Dir | Output directory | `E:\Docs\output` |
+
+**Execution Steps:**
+
+1. Fill in configuration parameters, set crawling scope and limits
+2. Click "Start Crawling" to launch the task
+3. Monitor progress in real-time:
+    *   Current page count processed
+    *   Total URLs discovered
+    *   Currently processing URL
+    *   Processing status (Fetching/Processing/Saved)
+4. Automatically stops after crawling completes
+5. View results in output directory
+
+**Output Format:**
+
+Each Markdown file contains Front Matter metadata:
+
+```markdown
+---
+title: "Page Title"
+source_url: "https://example.com/page"
+crawled_at: "2025-02-27T10:30:00+00:00"
+---
+
+Page content...
+```
+
+#### Notes
+
+*   **Browser Requirement**: Chrome/Edge browser must be installed
+*   **Network Limits**: High concurrency may be restricted by target website, recommend reducing concurrency
+*   **URL Matching**: Match Prefix must be set accurately to prevent crawling irrelevant pages
+*   **Output Directory**: Creates `ctxrun_docs` subfolder in specified directory
+
+---
+
+### 6. Automator (Workflow Automation)
+
+**Solves the pain point:** Visual workflow orchestration with browser automation, UI element targeting, and physical input simulation.
+
+#### Workflow Modes
+
+**1. Sequential Workflow (Workflow)**
+
+Execute a series of actions in sequence, with configurable repeat count.
+
+**2. Node Graph Workflow (WorkflowGraph)**
+
+Visual node-based orchestration with conditional branching and loop control.
+
+#### Supported Actions
+
+**Mouse Operations:**
+*   **MoveTo**: Move mouse to target position
+*   **Click**: Single-click (left/right/middle button)
+*   **DoubleClick**: Double-click
+
+**Keyboard Operations:**
+*   **Type**: Input text
+*   **KeyPress**: Key/key combination (e.g., `Ctrl+A`, `Alt+F4`)
+
+**Other Operations:**
+*   **Scroll**: Scroll mouse wheel
+*   **Wait**: Wait specified milliseconds
+*   **CheckColor**: Check pixel color at coordinates (conditional branch)
+*   **Iterate**: Loop counter (conditional branch)
+*   **LaunchBrowser**: Launch debug mode browser
+
+#### Target Targeting Methods
+
+**1. Coordinate Targeting (Coordinate)**
+*   Directly specify screen coordinates (X, Y)
+*   Most precise but lacks flexibility
+
+**2. Semantic Targeting (Semantic)**
+*   Target UI elements via Windows UIAutomation API
+*   Supports name, role, window title, process name matching
+*   Automatically finds element's clickable point
+*   Supports fallback coordinates as backup
+
+**3. Web Selector (WebSelector)**
+*   Target web elements via CSS selectors
+*   Browser tries first, falls back to physical click on failure
+*   Supports URL filtering (multi-tab scenarios)
+
+#### Browser Automation
+
+**Debug Mode Launch:**
+*   Automatically launches Chrome/Edge remote debug mode
+*   Supports temporary user profile isolation
+*   Auto-connects to debug port
+
+**Web Element Operations:**
+*   **Click**: Click element via CSS selector
+*   **Type**: Input text in input field
+*   **Key**: Send shortcut keys (e.g., `Ctrl+A`, `Enter`)
+
+**Physical Input Fallback:**
+*   Automatically falls back when browser operations fail
+*   Uses enigo to simulate physical mouse/keyboard input
+*   Ensures operation reliability
+
+#### Conditional Branching
+
+**CheckColor (Color Check):**
+*   Checks pixel color at specified coordinates
+*   Supports tolerance setting (RGB component difference)
+*   Jumps to true_id or false_id branch based on result
+
+**Iterate (Loop Counter):**
+*   Node-level loop counter
+*   Jumps to false_id after reaching target count
+*   Jumps to true_id when not reached
+
+#### UI Element Picking
+
+**Picking Features:**
+*   Real-time UI element info under mouse cursor
+*   Shows element name, role, class name
+*   Records complete path from root to current element
+*   Gets element's clickable coordinates
+
+#### Usage Examples
+
+**Simple Click Flow:**
+```
+LaunchBrowser → Wait → Click (selector) → Type text → Press Enter
+```
+
+**Conditional Branch Flow:**
+```
+Click button → CheckColor (success=green, failure=red) → [True] Continue next step
+                                                        → [False] Retry
+```
+
+#### Keyboard Shortcuts
+
+*   **Alt + F1**: Stop workflow execution (customizable, test if it can close first to prevent being unable to close during loop execution. Note: laptops may require Alt + Fn + F1)
+
+#### Notes
+
+*   **Windows Only**: UIAutomation is only available on Windows
+*   **Browser Requirement**: Chrome/Edge browser required
+*   **Timeout Setting**: Semantic targeting falls back to fallback coordinates after 15 second timeout
+*   **Max Execution Count**: Node graph executes max 10000 steps to prevent infinite loops
+
+---
+
+### 7. Refinery (Clipboard History)
 
 **Core Features:**
 *   Full clipboard history manager supporting text and images
@@ -264,32 +451,7 @@ A powerful Git visualization tool.
 
 ---
 
-### 6. Automator (Auto-Clicker)
-
-**Core Features:**
-*   Powerful auto-click automation tool
-*   Support left, right, middle click types
-*   Configurable click interval (millisecond precision)
-*   Support fixed count or infinite clicks
-*   Fixed position or follow mouse cursor
-
-**Access Methods:**
-*   Click "Auto-Clicker" icon in sidebar to open
-*   Or search for "click" or "auto" in Spotlight
-
-**Usage Guide:**
-*   **Start Clicking**: Click "Start" button to begin auto-click
-*   **Configuration Options**:
-    *   **Click Type**: Choose left/right/middle button
-    *   **Interval**: Set time between clicks (milliseconds)
-    *   **Stop Condition**: Choose fixed count or infinite
-    *   **Position Mode**: Fixed position or follow mouse
-    *   **Fixed Coordinates**: Set X/Y coordinates when using fixed mode
-*   **Stop Clicking**: Click "Stop" button or use global shortcut
-
----
-
-### 7. System Monitor (System Monitoring)
+### 8. System Monitor (System Monitoring)
 
 Real-time monitoring of system status and development environment.
 
@@ -322,7 +484,7 @@ Real-time monitoring of system status and development environment.
 
 ---
 
-### 8. Setup Guide
+### 9. Setup Guide
 
 #### AI Configuration
 
@@ -342,7 +504,7 @@ To use Spotlight's AI chat feature, you need to configure model providers.
     *   **Model ID**: Enter model name
         *   DeepSeek example: `deepseek-chat`, `deepseek-reasoner`
         *   OpenAI example: `gpt-4o`, `gpt-4o-mini`
-    *   **Temperature**: Set model output randomness (0-2, default 0.7)
+    *   **Temperature**: Set model output randomness (0-1, default 0.7)
 
 **Recommended Configuration:**
 *   **Free Option**: GLM models (has free quota)
@@ -401,7 +563,7 @@ Configure files and folders to ignore across all features:
 
 ---
 
-### 9. Common Keyboard Shortcuts Reference
+### 10. Common Keyboard Shortcuts Reference
 
 #### Global Shortcuts
 
@@ -414,15 +576,15 @@ Configure files and folders to ignore across all features:
 
 | Shortcut | Search Mode Function | AI Chat Mode Function |
 | :--- | :--- | :--- |
-| `Tab` | Switch to AI chat mode | Switch to search mode |
+| `Tab/Alt+1、2、3` | Switch to AI chat mode | Switch to search mode |
 | `Enter` | Execute command/copy content/open app | Send message |
 | `Arrow Up/Down` | Navigate in search results | Navigate in chat history |
 | `Ctrl/Cmd + K` | - | Clear current chat history |
 | `Escape` | Clear input or close Spotlight | Clear input or close Spotlight |
 | `/` | Open command menu | Open command menu |
 | `=` | Switch to calculator mode | - |
-| `>` | Switch to Shell command mode | - |
-| `?` | Switch to Web search mode | - |
+| `>` or `》` | Switch to Shell command mode | - |
+| `?` or `？` | Switch to Web search mode | - |
 
 ---
 

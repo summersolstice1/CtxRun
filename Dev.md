@@ -17,6 +17,30 @@
 
 ## 版本历史
 
+### v2.2.4 (2026-02-25)
+Bug 修复和性能优化
+
+### v2.2.3 (2026-02-24)
+性能优化和 Bug 修复
+
+### v2.2.2 (2026-02-21) ⛏️ Model Miner
+**智能网页内容挖掘模块**
+- headless_chrome 复用本地浏览器
+- Readability.js 提取内容 → turndown.js 转 Markdown
+- 多线程并发爬取 (1-10)，深度/页数限制，URL 前缀过滤
+- 层次化 `{domain}/path/index.md` 存储，YAML front matter
+
+---
+
+### v2.2.1 (2026-02-17)
+颜色主题选项
+
+### v2.2.0 (2026-02-16) 🌍 i18n + 🖱️ UI Auto Tree
+- **i18n 重构**: 迁移至 i18next + react-i18next，语法 `$var` → `{var}`
+- **UI 自动树**: Automator 支持 Windows UIAutomation API 语义化元素定位
+
+---
+
 ### v2.1.1 (2026-02-14)
 
 | 提交哈希 | 变更内容 | 详细说明 |
@@ -908,6 +932,16 @@ src/lib/i18n.ts                   | +-44 国际化支持
 | v2.0.0 | 左键/右键/中键点击 |
 | v2.0.0 | 可配置间隔和次数 |
 | v2.0.0 | 固定位置或跟随鼠标 |
+| v2.2.0 | UI 自动树元素识别 |
+| v2.2.0 | `get_element_under_cursor` 命令 |
+
+### 7. Model Miner (内容挖掘)
+| 版本 | 功能 |
+|-----|------|
+| v2.2.2 | 网页内容提取 (Readability.js) |
+| v2.2.2 | HTML 转 Markdown |
+| v2.2.2 | 队列化任务处理 |
+| v2.2.2 | 挖掘范围管理 |
 
 ---
 
@@ -987,14 +1021,18 @@ ctxrun/
 ├── src/                          # React 前端源码
 │   ├── components/                # UI 组件
 │   │   ├── features/            # 功能组件
+│   │   │   ├── automator/       # 自动点击器
 │   │   │   ├── context/         # 上下文组装
-│   │   │   ├── prompts/         # 提示词管理
+│   │   │   ├── miner/           # 内容挖掘 (v2.2.2+)
 │   │   │   ├── patch/           # 代码对比
-│   │   │   ├── refinery/        # 剪贴板历史 (v1.5.0+)
-│   │   │   └── automator/       # 自动点击器 (v2.0.0+)
+│   │   │   ├── prompts/         # 提示词管理
+│   │   │   └── refinery/        # 剪贴板历史 (v1.5.0+)
 │   │   ├── layout/             # 布局组件
 │   │   ├── settings/           # 设置界面
 │   │   └── ui/                # 基础 UI
+│   ├── i18n/                    # 国际化 (v2.2.0+)
+│   │   ├── config.ts           # i18n 配置
+│   │   └── resources.ts        # 翻译资源
 │   ├── lib/                     # 工具函数
 │   ├── store/                   # Zustand 状态管理
 │   └── types/                   # TypeScript 类型
@@ -1004,6 +1042,7 @@ ctxrun/
 │   │   ├── context/             # 上下文处理模块
 │   │   ├── db/                  # 数据库模块
 │   │   ├── git/                 # Git 操作模块
+│   │   ├── miner/               # 内容挖掘模块 (v2.2.2+)
 │   │   └── refinery/            # Refinery 模块
 │   ├── src/                     # 遗留代码 (逐步迁移)
 │   │   ├── hyperview/           # 文件预览
@@ -1017,5 +1056,5 @@ ctxrun/
 
 ---
 
-*文档最后更新: 2026-02-14*
+*文档最后更新: 2026-02-27*
 *基于 git 提交历史和代码 diff 分析编写*

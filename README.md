@@ -45,7 +45,8 @@
 *   **🔄 Patch Weaver (AI Completer & Git Diff)**: Apply AI-generated code patches with smart fuzzy matching for precise modification location. Also a powerful Git Diff visualizer with Working Directory comparison, version comparison, and diverse export formats.
 *   **🛡️ Privacy Security Scan**: Built-in sensitive information detection engine with whitelist management to prevent API key and other secrets leakage.
 *   **📋 Refinery (Clipboard History)**: Comprehensive clipboard history manager supporting text and images. Features search/filtering, pinning important entries, note-taking, auto-cleanup, calendar view, and Spotlight quick paste integration.
-*   **🖱️ Automator (Auto-Clicker)**: Powerful auto-click automation tool supporting left/right/middle click, configurable interval and count, fixed position or follow mouse cursor.
+*   **🖱️ Automator (Workflow Automation)**: Visual workflow automation system with node graph orchestration and conditional branching. Integrates browser automation (headless_chrome), keyboard input simulation, mouse operations, color detection, loop control, and more. Features semantic UI element targeting via Windows UIAutomation API with physical input fallback.
+*   **⛏️ Model Miner (Web Content Mining)**: Intelligent web scraper that extracts clean content from web pages using Readability.js, converts to Markdown, and supports concurrent crawling with depth/page limits and hierarchical file storage.
 
 > ### 🚀 Want to learn how to use it?
 >

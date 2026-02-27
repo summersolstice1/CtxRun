@@ -17,6 +17,147 @@
 
 ## Version History
 
+### v2.2.4 (2026-02-25)
+Bug fixes and performance optimization
+
+### v2.2.3 (2026-02-24)
+Performance optimization and bug fixes
+
+### v2.2.2 (2026-02-21) ⛏️ Model Miner
+**Intelligent web content mining module**
+- Reuses local Chrome/Edge via headless_chrome
+- Readability.js extraction → turndown.js Markdown conversion
+- Multi-threaded concurrent crawling (1-10), depth/page limits, URL prefix filtering
+- Hierarchical `{domain}/path/index.md` storage with YAML front matter
+
+---
+
+### v2.2.1 (2026-02-17)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `d1367c8` | **Release** | Version 2.2.2 |
+| `87a620f` | **Fix Bugs** | Fix issues |
+| `1d687c4` | **Fix Bugs** | Fix bugs |
+| `4697d95` | **Fix Bugs** | Fix issues |
+| `fecf870` | **Add Model Miner** | Add content mining module |
+| `e02b449` | **Data Update** | Auto-sync prompts library |
+
+**v2.2.2 Model Miner Feature File Changes**:
+```
+src-tauri/crates/miner/Cargo.toml            | +XX   New miner crate
+src-tauri/crates/miner/assets/Readability.js | +XXX  Readability library (Mozilla)
+src-tauri/crates/miner/assets/extract.js     | +XX   Content extraction script
+src-tauri/crates/miner/assets/turndown.js    | +XXX  HTML to Markdown library
+src-tauri/crates/miner/assets/turndown-plugin-gfm.js | +XX  GFM support
+src-tauri/crates/miner/src/lib.rs            | +XX   Plugin entry
+src-tauri/crates/miner/src/commands.rs       | +XX   Tauri commands (start_mining, stop_mining)
+src-tauri/crates/miner/src/core/driver.rs    | +XX   Browser driver (headless_chrome)
+src-tauri/crates/miner/src/core/extractor.rs | +XX   Page extractor
+src-tauri/crates/miner/src/core/queue.rs     | +XX   Task queue (multi-threaded Workers)
+src-tauri/crates/miner/src/core/scope.rs     | +XX   URL scope control
+src-tauri/crates/miner/src/core/storage.rs   | +XX   Hierarchical file storage
+src-tauri/crates/miner/src/models.rs         | +XX   MinerConfig, MinerEvent, PageResult
+src/components/features/miner/MinerView.tsx  | +XXX  UI component
+src/store/useMinerStore.ts                  | +XXX  Zustand state management
+src/types/miner.ts                          | +XX   TypeScript type definitions
+src/lib/i18n.ts                             | +XX  i18n entries
+```
+
+**Major Updates**:
+- ⛏️ **Model Miner**: Intelligent web content mining module
+  - **Browser Driver**: Uses `headless_chrome` crate, auto-detects and reuses local Chrome/Edge browser
+  - **Content Extraction**: Injects Readability.js (Mozilla) to extract main content, strips ads/nav noise
+  - **Markdown Conversion**: Uses turndown.js + GFM plugin to convert HTML to Markdown
+  - **Concurrent Crawling**: Multi-threaded Worker pool based on crossbeam-channel, 1-10 concurrency, default 5
+  - **Depth Control**: Supports max crawl depth (`max_depth`) and page count limit (`max_pages`)
+  - **Scope Filtering**: Strict URL prefix filtering via `match_prefix` to prevent crawling off-site
+  - **Progress Push**: Real-time progress via Tauri events (`miner:progress`, `miner:error`, `miner:finished`)
+  - **Hierarchical Storage**: Stores as `domain/path/index.md` structure for easy reading
+  - **File Format**: Markdown files with YAML front matter (title, source_url, crawled_at)
+
+---
+
+### v2.2.1 (2026-02-17)
+Color theme options
+
+### v2.2.0 (2026-02-16) 🌍 i18n + 🖱️ UI Auto Tree
+- **i18n refactor**: Migrate to i18next + react-i18next, syntax `$var` → `{var}`
+- **UI Auto Tree**: Automator supports Windows UIAutomation API semantic element targeting
+
+---
+
+### v2.1.1 (2026-02-14)
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `0b2a41f` | **Release** | Version 2.2.0 |
+| `afe3736` | **Merge Branch** | Merge RE1 branch |
+| `3964786` | **Fix Bugs** | Fix issues |
+| `cfe7c6d` | **Fix Bugs** | Fix bugs |
+| `70ec2a5` | **Fix Bugs** | Fix issues |
+| `26a7297` | **Fix Bugs** | Fix and optimize |
+| `92a3362` | **i18n** | English-Chinese translation |
+| `c7ef8e` | **Fix Bugs** | Fix issues |
+| `f26234` | **Optimize** | Feature optimization |
+| `f95f76` | **Optimize** | UX improvements |
+| `feaf0a` | **Fix Bugs** | Fix bugs |
+| `099cef` | **Optimize** | Feature optimization |
+| `37e57d` | **Optimize** | UX improvements |
+| `a31a09` | **Auto** | Automation improvement |
+| `db4946` | **Fix Bugs** | Fix bugs |
+| `d22d2e` | **Data Update** | Auto-sync prompts library |
+
+**v2.2.0 i18n Refactor File Changes**:
+```
+src/i18n/config.ts                         | +XX  New i18next config
+src/i18n/resources.ts                      | +XX  Resource placeholder
+package.json                               | +2   Add i18next、react-i18next dependencies
+src/main.tsx                               | ~    Import i18n config
+src/components/features/automator/*.tsx    | +~   Replace getText() with useTranslation()
+src/components/features/context/*.tsx      | +~   Replace getText() with useTranslation()
+src/components/features/patch/*.tsx        | +~   Replace getText() with useTranslation()
+src/components/features/prompts/*.tsx      | +~   Replace getText() with useTranslation()
+src/components/features/refinery/*.tsx     | +~   Replace getText() with useTranslation()
+src/components/settings/*.tsx              | +~   Replace getText() with useTranslation()
+src/components/ui/*.tsx                    | +~   Replace getText() with useTranslation()
+```
+
+**v2.2.0 UI Auto Tree File Changes**:
+```
+src-tauri/crates/automator/src/inspector.rs              | +XXX  New UI inspector module
+src-tauri/crates/automator/src/models.rs                  | +~    Add ActionTarget::Semantic、UIElementNode
+src-tauri/crates/automator/src/engine.rs                  | +-XXX Adapt resolve_target_to_coords
+src-tauri/commands/get_element_under_cursor.toml          | +XX   New Tauri command
+src-tauri/Cargo.toml                                     | +XX   Add uiautomation (Windows)、enago dependencies
+src/components/features/automator/nodes/ActionNode.tsx    | +-XXX Add semantic target selection
+src/types/automator.ts                                    | +~    Add SemanticTarget type
+```
+
+**Major Updates**:
+- 🌍 **i18n Refactor**: Migrate to i18next standard solution
+  - Replace custom solution with `i18next` + `react-i18next`
+  - Translation resources remain in `src/lib/i18n.ts`, injected via i18next config
+  - Interpolation syntax changed from `$variable` to `{variable}` (more standard)
+  - All components changed from `getText(key, params)` to `useTranslation()` hook
+
+- 🖱️ **UI Auto Tree**: Automator supports semantic UI element targeting
+  - **get_element_under_cursor**: Uses Windows UIAutomation API to get element under cursor
+  - **Element Recognition**: Returns name, role (ControlType), window_title, process_name, path, etc.
+  - **Path Tracking**: Traverses from element up to window root, building complete UI tree path
+  - **resolve_target_to_coords**: Supports three targeting modes
+    - `Coordinate`: Absolute coordinate click
+    - `WebSelector`: Browser element selector (with fallback coordinates)
+    - `Semantic`: Semantic target (name + role + window_title + path, with fallback coordinates)
+  - **Element Finding**:
+    - First locate target window by window title
+    - Then match element by name + role precisely
+    - If not found, fuzzy match (contains)
+    - Max 4 retries with 800ms interval
+    - Max traverse 2500 nodes to prevent timeout
+
+---
+
 ### v2.1.1 (2026-02-14)
 
 | Commit Hash | Change | Description |
@@ -908,6 +1049,16 @@ src/lib/i18n.ts                   | +-44 i18n support
 | v2.0.0 | Left/Right/Middle click support |
 | v2.0.0 | Configurable interval and count |
 | v2.0.0 | Fixed position or follow mouse |
+| v2.2.0 | UI Auto Tree element recognition |
+| v2.2.0 | `get_element_under_cursor` command |
+
+### 7. Model Miner (Content Extraction)
+| Version | Feature |
+|---------|---------|
+| v2.2.2 | Web content extraction with Readability.js |
+| v2.2.2 | HTML to Markdown conversion |
+| v2.2.2 | Queue-based task processing |
+| v2.2.2 | Mining scope management |
 
 ---
 
@@ -987,14 +1138,18 @@ ctxrun/
 ├── src/                          # React frontend source
 │   ├── components/                # UI components
 │   │   ├── features/            # Feature components
+│   │   │   ├── automator/       # Auto-clicker
 │   │   │   ├── context/         # Context assembly
-│   │   │   ├── prompts/         # Prompt management
+│   │   │   ├── miner/           # Content mining (v2.2.2+)
 │   │   │   ├── patch/           # Code diff
-│   │   │   ├── refinery/        # Clipboard history (v1.5.0+)
-│   │   │   └── automator/       # Auto-clicker (v2.0.0+)
+│   │   │   ├── prompts/         # Prompt management
+│   │   │   └── refinery/        # Clipboard history (v1.5.0+)
 │   │   ├── layout/             # Layout components
 │   │   ├── settings/           # Settings UI
 │   │   └── ui/                # Base UI
+│   ├── i18n/                    # Internationalization (v2.2.0+)
+│   │   ├── config.ts           # i18n configuration
+│   │   └── resources.ts        # Translation resources
 │   ├── lib/                     # Utilities
 │   ├── store/                   # Zustand state management
 │   └── types/                   # TypeScript types
@@ -1004,6 +1159,7 @@ ctxrun/
 │   │   ├── context/             # Context processing module
 │   │   ├── db/                  # Database module
 │   │   ├── git/                 # Git operations module
+│   │   ├── miner/               # Content mining module (v2.2.2+)
 │   │   └── refinery/            # Refinery module
 │   ├── src/                     # Legacy code (gradually migrating)
 │   │   ├── hyperview/           # File preview
@@ -1017,5 +1173,5 @@ ctxrun/
 
 ---
 
-*Document last updated: 2026-02-14*
+*Document last updated: 2026-02-27*
 *Compiled based on git commit history and code diff analysis*
