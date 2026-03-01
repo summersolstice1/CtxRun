@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MouseButton {
@@ -96,6 +97,29 @@ pub struct Workflow {
     pub name: String,
     pub actions: Vec<AutomatorAction>,
     pub repeat_count: u32,
+    #[serde(default)]
+    pub flow_nodes: Vec<PersistedFlowNode>,
+    #[serde(default)]
+    pub flow_edges: Vec<PersistedFlowEdge>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersistedFlowNode {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub node_type: String,
+    #[serde(default)]
+    pub data: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PersistedFlowEdge {
+    pub source: String,
+    pub target: String,
+    #[serde(default)]
+    pub source_handle: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -105,5 +129,10 @@ pub struct AutomatorStoreRoot {
 
 #[derive(Debug, Deserialize)]
 pub struct AutomatorStoreState {
+    #[serde(default)]
+    pub workflows: Vec<Workflow>,
+    #[serde(default, alias = "activeWorkflowId")]
+    pub active_workflow_id: Option<String>,
+    #[serde(default, alias = "activeWorkflow")]
     pub active_workflow: Option<Workflow>,
 }
