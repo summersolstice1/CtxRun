@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use crate::error::{MinerError, Result};
 use crate::models::PageResult;
+use super::postprocess::post_process_markdown;
 
 const READABILITY_JS: &str = include_str!("../../assets/Readability.js");
 const TURNDOWN_JS: &str = include_str!("../../assets/turndown.js");
@@ -51,8 +52,11 @@ pub fn extract_page(tab: &Arc<Tab>, url: &str) -> Result<PageResult> {
             return Err(MinerError::ExtractionError(err_msg.to_string()));
         }
 
-        let result: PageResult = serde_json::from_value(parsed)
+        let mut result: PageResult = serde_json::from_value(parsed)
             .map_err(|e| MinerError::SystemError(format!("Failed to deserialize into PageResult: {}", e)))?;
+
+        // Apply post-processing to improve markdown quality
+        result.markdown = post_process_markdown(&result.markdown);
 
         Ok(result)
     } else {
