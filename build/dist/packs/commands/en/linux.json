@@ -9300,6 +9300,51 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-unrtf-0",
+    "type": "command",
+    "title": "unrtf - Convert an RTF file to HTML (default)",
+    "content": "unrtf {{path/to/file.rtf}}",
+    "group": "Linux Ops",
+    "description": "unrtf: Convert RTF files to other file formats. (Convert an RTF file to HTML (default))",
+    "tags": [
+      "linux",
+      "unrtf",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-unrtf-1",
+    "type": "command",
+    "title": "unrtf - Convert an RTF file to plain ASCII",
+    "content": "unrtf --text {{path/to/file.rtf}}",
+    "group": "Linux Ops",
+    "description": "unrtf: Convert RTF files to other file formats. (Convert an RTF file to plain ASCII)",
+    "tags": [
+      "linux",
+      "unrtf",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-unrtf-2",
+    "type": "command",
+    "title": "unrtf - Convert an RTF file to LaTeX",
+    "content": "unrtf --latex {{path/to/file.rtf}}",
+    "group": "Linux Ops",
+    "description": "unrtf: Convert RTF files to other file formats. (Convert an RTF file to LaTeX)",
+    "tags": [
+      "linux",
+      "unrtf",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-alternatives-0",
     "type": "command",
     "title": "alternatives - View documentation for the original command",
@@ -66414,6 +66459,126 @@
     "tags": [
       "linux",
       "spectre-meltdown-checker",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-0",
+    "type": "command",
+    "title": "pikman - Install a package",
+    "content": "pikman {{[i|install]}} {{package}}",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (Install a package)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-1",
+    "type": "command",
+    "title": "pikman - List installed packages",
+    "content": "pikman {{[l|list]}}",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (List installed packages)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-2",
+    "type": "command",
+    "title": "pikman - Search for a package",
+    "content": "pikman {{[s|search]}} {{package}}",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (Search for a package)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-3",
+    "type": "command",
+    "title": "pikman - Update the list of available packages",
+    "content": "pikman update",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (Update the list of available packages)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-4",
+    "type": "command",
+    "title": "pikman - Remove a package",
+    "content": "pikman {{[r|remove]}} {{package}}",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (Remove a package)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-5",
+    "type": "command",
+    "title": "pikman - Remove all unused packages",
+    "content": "pikman autoremove",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (Remove all unused packages)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-6",
+    "type": "command",
+    "title": "pikman - List available package updates",
+    "content": "pikman upgrades",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (List available package updates)",
+    "tags": [
+      "linux",
+      "pikman",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pikman-7",
+    "type": "command",
+    "title": "pikman - Install available package updates",
+    "content": "pikman upgrade",
+    "group": "Linux Ops",
+    "description": "pikman: PikaOS package manager utility. (Install available package updates)",
+    "tags": [
+      "linux",
+      "pikman",
       "tldr",
       "en"
     ],

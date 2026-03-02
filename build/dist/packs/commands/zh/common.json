@@ -51255,6 +51255,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-msedit-0",
+    "type": "command",
+    "title": "msedit - 查看原命令的文档",
+    "content": "tldr edit",
+    "group": "通用工具 (Common)",
+    "description": "msedit: 此命令为 `edit` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "msedit",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-airmon-ng-0",
     "type": "command",
     "title": "airmon-ng - 列出无线设备及其状态",
