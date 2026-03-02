@@ -1,5 +1,5 @@
 {
-  "updated_at": 1772419247522,
+  "updated_at": 1772425799852,
   "version": "2.1.0",
   "packages": [
     {
@@ -227,9 +227,9 @@
       "language": "en",
       "platform": "windows",
       "name": "Windows (EN)",
-      "description": "Contains 1089 en commands for windows.",
-      "count": 1089,
-      "size_kb": 532,
+      "description": "Contains 1090 en commands for windows.",
+      "count": 1090,
+      "size_kb": 533,
       "url": "packs/commands/en/windows.json",
       "category": "command"
     },
@@ -238,9 +238,9 @@
       "language": "en",
       "platform": "llm",
       "name": "ChatGPT Prompts (English)",
-      "description": "Collection of 1356 role-play prompts.",
-      "count": 1356,
-      "size_kb": 3456.5,
+      "description": "Collection of 1370 role-play prompts.",
+      "count": 1370,
+      "size_kb": 3485.51,
       "url": "packs/prompts/en/roles.json",
       "category": "prompt"
     },

@@ -11297,6 +11297,21 @@
   {
     "id": "tldr-en-windows-invoke-webrequest-1",
     "type": "command",
+    "title": "invoke-webrequest - Only return raw HTML data instead of parsing it under Internet Explorer (PowerShell 3.0-5.1 only)",
+    "content": "Invoke-WebRequest {{http://example.com}} -UseBasicParsing",
+    "group": "Windows",
+    "description": "invoke-webrequest: Perform a HTTP/HTTPS request to the Web. Note: This command can only be used through PowerShell. (Only return raw HTML data instead of parsing it under Internet Explorer (PowerShell 3.0-5.1 only))",
+    "tags": [
+      "windows",
+      "invoke-webrequest",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-invoke-webrequest-2",
+    "type": "command",
     "title": "invoke-webrequest - Send form-encoded data (POST request of type `application/x-www-form-urlencoded`)",
     "content": "Invoke-WebRequest -Method Post -Body @{ name='bob' } {{http://example.com/form}}",
     "group": "Windows",
@@ -11310,7 +11325,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-windows-invoke-webrequest-2",
+    "id": "tldr-en-windows-invoke-webrequest-3",
     "type": "command",
     "title": "invoke-webrequest - Send a request with an extra header, using a custom HTTP method",
     "content": "Invoke-WebRequest -Headers {{@{ X-My-Header = '123' }}} -Method {{PUT}} {{http://example.com}}",
@@ -11325,7 +11340,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-windows-invoke-webrequest-3",
+    "id": "tldr-en-windows-invoke-webrequest-4",
     "type": "command",
     "title": "invoke-webrequest - Send data in JSON format, specifying the appropriate content-type header",
     "content": "Invoke-WebRequest -Body '{{{\"name\":\"bob\"}}}' -ContentType 'application/json' {{http://example.com/users/1234}}",
@@ -11340,7 +11355,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-windows-invoke-webrequest-4",
+    "id": "tldr-en-windows-invoke-webrequest-5",
     "type": "command",
     "title": "invoke-webrequest - Pass a username and password for server authentication",
     "content": "Invoke-WebRequest -Headers @{ Authorization = \"Basic \"+ [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes(\"myusername:mypassword\")) } {{http://example.com}}",
