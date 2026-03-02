@@ -9,6 +9,7 @@ import { MinerConfig, MinerProgressEvent, MinerFinishedEvent, MinerErrorEvent, M
 import { useAppStore } from './useAppStore';
 
 const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-miner|';
+let listenersInitInFlight = false;
 
 // 默认配置
 export const DEFAULT_MINER_CONFIG: MinerConfig = {
@@ -97,25 +98,40 @@ export const useMinerStore = create<MinerState>()(
       },
 
       initListeners: async () => {
-        if (get()._unlistenFns.length > 0) return;
+        if (get()._unlistenFns.length > 0 || listenersInitInFlight) return;
+        listenersInitInFlight = true;
+        get().addLog('info', 'Miner event listeners initialized.');
 
-        const unlistenProgress = await listen<MinerProgressEvent>('miner:progress', (event) => {
-          set({ progress: event.payload });
-          if (event.payload.status === 'Saved') {
-             get().addLog('success', `Saved: ${event.payload.currentUrl}`, event.payload.currentUrl);
-          }
-        });
+        try {
+          const unlistenProgress = await listen<MinerProgressEvent>('miner:progress', (event) => {
+            const payload = event.payload as any;
+            const raw = payload?.Progress ?? payload?.progress ?? payload;
+            const normalized = {
+              current: Number(raw?.current ?? 0),
+              totalDiscovered: Number(raw?.totalDiscovered ?? raw?.total_discovered ?? 0),
+              currentUrl: String(raw?.currentUrl ?? raw?.current_url ?? ''),
+              status: String(raw?.status ?? payload?.status ?? payload?.type ?? ''),
+            };
 
-        const unlistenFinished = await listen<MinerFinishedEvent>('miner:finished', (event) => {
-          set({ isRunning: false, progress: null });
-          get().addLog('info', `Task finished. Total pages saved: ${event.payload.totalPages}.`);
-        });
+            set({ progress: normalized });
+            if (normalized.status.toLowerCase() === 'saved' && normalized.currentUrl) {
+               get().addLog('success', `Saved: ${normalized.currentUrl}`, normalized.currentUrl);
+            }
+          });
 
-        const unlistenError = await listen<MinerErrorEvent>('miner:error', (event) => {
-          get().addLog('error', `Error: ${event.payload.message}`, event.payload.url);
-        });
+          const unlistenFinished = await listen<MinerFinishedEvent>('miner:finished', (event) => {
+            set({ isRunning: false, progress: null });
+            get().addLog('info', `Task finished. Total pages saved: ${event.payload.totalPages}.`);
+          });
 
-        set({ _unlistenFns: [unlistenProgress, unlistenFinished, unlistenError] });
+          const unlistenError = await listen<MinerErrorEvent>('miner:error', (event) => {
+            get().addLog('error', `Error: ${event.payload.message}`, event.payload.url);
+          });
+
+          set({ _unlistenFns: [unlistenProgress, unlistenFinished, unlistenError] });
+        } finally {
+          listenersInitInFlight = false;
+        }
       },
 
       unlisten: () => {

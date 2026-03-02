@@ -16,13 +16,12 @@ export function MinerView() {
     config, setConfig,
     isRunning, progress, logs,
     startMining, stopMining, clearLogs,
-    initListeners, unlisten
+    initListeners
   } = useMinerStore();
 
-  // 组件挂载时初始化事件监听
+  // 只做初始化，不在切页时卸载，避免事件链路丢失
   useEffect(() => {
-    initListeners();
-    return () => { unlisten(); };
+    void initListeners();
   }, []);
 
   const handleSelectProjectRoot = async () => {
