@@ -81,7 +81,7 @@ pub async fn get_element_under_cursor() -> Result<PickedElement> {
 }
 
 #[tauri::command]
-pub async fn pick_web_selector() -> Result<String> {
-    let session = TabSession::connect_and_find(None).await?;
+pub async fn pick_web_selector(url_filter: Option<String>) -> Result<String> {
+    let session = TabSession::connect_and_find(url_filter.as_deref()).await?;
     session.pick_element().await
 }

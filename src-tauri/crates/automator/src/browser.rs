@@ -34,9 +34,23 @@ const TARGET_FETCH_RETRIES: usize = 8;
 const TARGET_FETCH_RETRY_DELAY: Duration = Duration::from_millis(200);
 const PAGE_FETCH_RETRIES: usize = 12;
 const PAGE_FETCH_RETRY_DELAY: Duration = Duration::from_millis(120);
+const MAX_FOCUS_CHECK_TABS: usize = 6;
 // Interactive picker waits up to 60s for a human click.
 const PICKER_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const PICKER_MAX_POLLS: usize = 600;
+const ACTIVE_PAGE_CHECK_TOKEN: &str = "__ctxrun_active__";
+const ACTIVE_PAGE_CHECK_JS: &str = r#"
+    (() => {
+        try {
+            if (typeof document === 'undefined') return '';
+            const visible = document.visibilityState === 'visible';
+            const focused = typeof document.hasFocus === 'function' ? document.hasFocus() : false;
+            return (visible && focused) ? '__ctxrun_active__' : '';
+        } catch (_) {
+            return '';
+        }
+    })()
+"#;
 
 // ---------------------------------------------------------------------------
 // TabSession — operations on a single tab
@@ -64,6 +78,15 @@ impl Drop for TabSession {
 impl TabSession {
     /// Connect to the debug port and find a tab matching the optional filter.
     pub async fn connect_and_find(url_filter: Option<&str>) -> Result<Self> {
+        let normalized_filter = url_filter.and_then(|raw| {
+            let trimmed = raw.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
+        });
+
         let debug_url = format!("http://127.0.0.1:{DEFAULT_DEBUG_PORT}");
         let (mut browser, mut handler) = Browser::connect(debug_url)
             .await
@@ -98,7 +121,7 @@ impl TabSession {
 
         tokio::time::sleep(TARGET_SYNC_WAIT).await;
 
-        let target = match find_target_with_retry(&mut browser, url_filter).await {
+        let target = match find_target_with_retry(&mut browser, normalized_filter).await {
             Ok(target) => target,
             Err(err) => {
                 cleanup_handler_task(&mut shutdown_tx, &mut handler_task);
@@ -146,6 +169,8 @@ impl TabSession {
 
     /// Click an element by CSS selector using CDP mouse events.
     pub async fn click_element(&self, selector: &str) -> Result<()> {
+        enforce_same_tab_click_navigation(&self.page, selector).await;
+
         let element = wait_for_element(&self.page, selector, ELEMENT_WAIT_TIMEOUT).await?;
 
         element
@@ -176,22 +201,19 @@ impl TabSession {
     /// Simulate a key press (e.g. "Enter", "Tab", "Escape").
     pub async fn press_key(&self, key: &str) -> Result<()> {
         let normalized = normalize_key_name(key);
-        let key_def = resolve_key_definition(&normalized).ok_or_else(|| {
-            AutomatorError::BrowserError(format!("Unsupported key '{}'", key))
-        })?;
+        let key_def = resolve_key_definition(&normalized)
+            .ok_or_else(|| AutomatorError::BrowserError(format!("Unsupported key '{}'", key)))?;
         let key_down = build_key_event(key_def, 0, true)
             .map_err(|e| AutomatorError::BrowserError(format!("Key press build failed: {}", e)))?;
         let key_up = build_key_event(key_def, 0, false)
             .map_err(|e| AutomatorError::BrowserError(format!("Key press build failed: {}", e)))?;
 
-        self.page
-            .execute(key_down)
-            .await
-            .map_err(|e| AutomatorError::BrowserError(format!("Key press '{}' failed: {}", key, e)))?;
-        self.page
-            .execute(key_up)
-            .await
-            .map_err(|e| AutomatorError::BrowserError(format!("Key press '{}' failed: {}", key, e)))?;
+        self.page.execute(key_down).await.map_err(|e| {
+            AutomatorError::BrowserError(format!("Key press '{}' failed: {}", key, e))
+        })?;
+        self.page.execute(key_up).await.map_err(|e| {
+            AutomatorError::BrowserError(format!("Key press '{}' failed: {}", key, e))
+        })?;
 
         Ok(())
     }
@@ -458,7 +480,12 @@ async fn find_target_with_retry(
             AutomatorError::BrowserError(format!("Failed to fetch browser targets: {}", e))
         })?;
 
-        if let Some(target) = targets.into_iter().find(|t| matches_target(t, url_filter)) {
+        let candidates: Vec<TargetInfo> = targets
+            .into_iter()
+            .filter(|t| matches_target(t, url_filter))
+            .collect();
+
+        if let Some(target) = choose_best_target(browser, &candidates, url_filter).await {
             return Ok(target);
         }
 
@@ -482,9 +509,136 @@ fn matches_target(target: &TargetInfo, url_filter: Option<&str>) -> bool {
     }
 
     match url_filter {
-        Some(filter) => target.url.contains(filter) || target.title.contains(filter),
+        Some(filter) => {
+            let query = filter.to_ascii_lowercase();
+            target.url.to_ascii_lowercase().contains(&query)
+                || target.title.to_ascii_lowercase().contains(&query)
+        }
         None => true,
     }
+}
+
+async fn choose_best_target(
+    browser: &Browser,
+    candidates: &[TargetInfo],
+    url_filter: Option<&str>,
+) -> Option<TargetInfo> {
+    if candidates.is_empty() {
+        return None;
+    }
+
+    if let Some(active) = find_active_candidate(browser, candidates).await {
+        return Some(active);
+    }
+
+    candidates
+        .iter()
+        .enumerate()
+        .max_by_key(|(idx, target)| score_target(target, *idx, url_filter))
+        .map(|(_, target)| target.clone())
+}
+
+async fn find_active_candidate(browser: &Browser, candidates: &[TargetInfo]) -> Option<TargetInfo> {
+    for target in candidates.iter().rev().take(MAX_FOCUS_CHECK_TABS) {
+        let page = match get_page_with_retry(browser, target.target_id.clone()).await {
+            Ok(page) => page,
+            Err(_) => continue,
+        };
+
+        if is_page_active(&page).await {
+            return Some(target.clone());
+        }
+    }
+
+    None
+}
+
+async fn is_page_active(page: &Page) -> bool {
+    match page.evaluate(ACTIVE_PAGE_CHECK_JS).await {
+        Ok(result) => result
+            .into_value::<String>()
+            .map(|value| value == ACTIVE_PAGE_CHECK_TOKEN)
+            .unwrap_or(false),
+        Err(_) => false,
+    }
+}
+
+fn score_target(target: &TargetInfo, index: usize, url_filter: Option<&str>) -> i64 {
+    let mut score = index as i64; // Keep a weak preference for newer entries in the returned order.
+
+    if target.attached {
+        score += 40;
+    }
+    if target.opener_id.is_some() {
+        score += 30;
+    }
+    if target.url.starts_with("http://") || target.url.starts_with("https://") {
+        score += 40;
+    }
+    if target.url.starts_with("about:blank") {
+        score -= 15;
+    }
+    if target.url.starts_with("chrome://") || target.url.starts_with("edge://") {
+        score -= 25;
+    }
+    if matches!(target.subtype.as_deref(), Some("prerender")) {
+        score -= 40;
+    }
+
+    if let Some(filter) = url_filter {
+        let query = filter.to_ascii_lowercase();
+        let url = target.url.to_ascii_lowercase();
+        let title = target.title.to_ascii_lowercase();
+        if url.contains(&query) {
+            score += 20;
+        }
+        if title.contains(&query) {
+            score += 10;
+        }
+    }
+
+    score
+}
+
+async fn enforce_same_tab_click_navigation(page: &Page, selector: &str) {
+    let selector_literal = match serde_json::to_string(selector) {
+        Ok(value) => value,
+        Err(_) => return,
+    };
+
+    let script = format!(
+        r#"(() => {{
+            try {{
+                const el = document.querySelector({selector});
+                if (!el) return false;
+
+                if (el instanceof HTMLAnchorElement) {{
+                    el.setAttribute('target', '_self');
+                    const rel = (el.getAttribute('rel') || '')
+                        .split(/\s+/)
+                        .filter(Boolean)
+                        .filter((item) => item !== 'noopener' && item !== 'noreferrer');
+                    if (rel.length > 0) {{
+                        el.setAttribute('rel', rel.join(' '));
+                    }} else {{
+                        el.removeAttribute('rel');
+                    }}
+                }}
+
+                const form = typeof el.closest === 'function' ? el.closest('form[target]') : null;
+                if (form) {{
+                    form.setAttribute('target', '_self');
+                }}
+
+                return true;
+            }} catch (_) {{
+                return false;
+            }}
+        }})()"#,
+        selector = selector_literal
+    );
+
+    let _ = page.evaluate(script).await;
 }
 
 async fn get_page_with_retry(browser: &Browser, target_id: TargetId) -> Result<Page> {

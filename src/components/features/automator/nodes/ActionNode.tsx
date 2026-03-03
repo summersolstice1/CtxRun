@@ -102,9 +102,16 @@ export const ActionNode = memo((props: NodeProps) => {
     // 🚀 分支逻辑：Web 模式走 CDP，桌面模式走 UIA
     if (isWebMode) {
       try {
+        const urlFilter = target?.type === 'WebSelector'
+          ? (target.url_contain?.trim() || null)
+          : null;
+
         // 调用我们刚才写的 Rust 命令
         // 注意：这个 Promise 会一直 pending 直到你在 Chrome 里点击了元素
-        const selector = await invoke<string>('plugin:ctxrun-plugin-automator|pick_web_selector');
+        const selector = await invoke<string>(
+          'plugin:ctxrun-plugin-automator|pick_web_selector',
+          { urlFilter }
+        );
 
         if (selector) {
           updateWebSelector('selector', selector);
