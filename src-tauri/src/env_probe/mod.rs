@@ -1,16 +1,16 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
-pub mod common;
-pub mod system;
 pub mod binaries;
 pub mod browsers;
+pub mod common;
 pub mod ides;
 pub mod npm;
-pub mod sdks;
 pub mod scan_logic;
-pub mod traits;
 pub mod scanners;
+pub mod sdks;
+pub mod system;
+pub mod traits;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct ToolInfo {

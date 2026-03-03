@@ -1,11 +1,11 @@
 //! Miner storage module - hierarchical file storage mirroring URL structure.
 
-use std::path::{Path, PathBuf};
 use chrono::Utc;
+use std::path::{Path, PathBuf};
 use url::Url;
 
-use crate::models::PageResult;
 use crate::error::{MinerError, Result};
+use crate::models::PageResult;
 
 const MINER_OUTPUT_DIR: &str = "ctxrun_docs";
 
@@ -39,7 +39,8 @@ fn url_to_filepath(url: &str) -> Result<PathBuf> {
     let parsed = Url::parse(url)
         .map_err(|e| MinerError::SystemError(format!("Invalid URL '{}': {}", url, e)))?;
 
-    let domain = parsed.host_str()
+    let domain = parsed
+        .host_str()
         .ok_or_else(|| MinerError::SystemError(format!("URL missing host: {}", url)))?;
 
     let path = parsed.path();
@@ -68,23 +69,25 @@ pub fn save_markdown(output_dir: &str, result: &PageResult) -> Result<PathBuf> {
     let file_path = miner_dir.join(&relative_path);
 
     if let Some(parent_dir) = file_path.parent() {
-        std::fs::create_dir_all(parent_dir)
-            .map_err(|e| MinerError::SystemError(format!(
+        std::fs::create_dir_all(parent_dir).map_err(|e| {
+            MinerError::SystemError(format!(
                 "Failed to create directory '{}': {}",
                 parent_dir.display(),
                 e
-            )))?;
+            ))
+        })?;
     }
 
     let now = Utc::now().to_rfc3339();
     let content = build_markdown_content(result, &now);
 
-    std::fs::write(&file_path, content)
-        .map_err(|e| MinerError::SystemError(format!(
+    std::fs::write(&file_path, content).map_err(|e| {
+        MinerError::SystemError(format!(
             "Failed to write file '{}': {}",
             file_path.display(),
             e
-        )))?;
+        ))
+    })?;
 
     Ok(file_path)
 }
@@ -99,9 +102,6 @@ fn build_markdown_content(result: &PageResult, crawled_at: &str) -> String {
          crawled_at: \"{}\"\n\
          ---\n\n\
          {}",
-        escaped_title,
-        result.url,
-        crawled_at,
-        result.markdown
+        escaped_title, result.url, crawled_at, result.markdown
     )
 }

@@ -1,9 +1,9 @@
-use serde::Serialize;
-use regex::Regex;
-use once_cell::sync::Lazy;
 use entropy::shannon_entropy;
-use std::str;
+use once_cell::sync::Lazy;
 use rayon::prelude::*;
+use regex::Regex;
+use serde::Serialize;
+use std::str;
 
 pub mod allowlist;
 pub mod rule;
@@ -23,14 +23,14 @@ pub struct Rule {
     #[allow(dead_code)]
     pub description: &'static str,
     pub regex: Regex,
-    pub entropy: Option<f64>,     
+    pub entropy: Option<f64>,
     pub keywords: &'static [&'static str],
 }
 
 #[derive(Serialize, Clone, Debug)]
 pub struct SecretMatch {
-    pub kind: String,        
-    pub value: String,       
+    pub kind: String,
+    pub value: String,
     pub index: usize,
     pub risk_level: String,
     pub utf16_index: usize,        // JS 兼容索引 (关键修复)
@@ -43,7 +43,7 @@ static RULES: Lazy<&'static [Rule]> = Lazy::new(|| get_all_rules());
 
 pub fn scan_text(text: &str) -> Vec<SecretMatch> {
     let rules = *RULES;
-    
+
     const FRAGMENT_SIZE: usize = 16 * 1024;
     const OVERLAP: usize = 512;
     let step = FRAGMENT_SIZE.saturating_sub(OVERLAP);
@@ -61,7 +61,8 @@ pub fn scan_text(text: &str) -> Vec<SecretMatch> {
     }
 
     let chunk_starts: Vec<usize> = (0..total_len).step_by(step).collect();
-    let matches: Vec<SecretMatch> = chunk_starts.par_iter()
+    let matches: Vec<SecretMatch> = chunk_starts
+        .par_iter()
         .flat_map(|&start| {
             let end = std::cmp::min(start + FRAGMENT_SIZE, total_len);
             let chunk = &bytes[start..end];
@@ -75,7 +76,7 @@ pub fn scan_text(text: &str) -> Vec<SecretMatch> {
                     let valid_up_to = e.valid_up_to();
                     if valid_up_to == 0 && start + 4 < total_len {
                         if let Ok(sub_str) = str::from_utf8(&chunk[1..]) {
-                             scan_fragment(sub_str, start + 1, rules, &mut local_matches);
+                            scan_fragment(sub_str, start + 1, rules, &mut local_matches);
                         }
                     } else {
                         let valid_chunk = &chunk[..valid_up_to];
@@ -110,9 +111,14 @@ fn enrich_context(full_text: &str, m: &mut SecretMatch) {
     let mut snippet_start = match_line_start;
     let mut lines_back = 0;
     for _ in 0..2 {
-        if snippet_start == 0 { break; }
+        if snippet_start == 0 {
+            break;
+        }
         let search_limit = snippet_start.saturating_sub(1);
-        snippet_start = full_text[..search_limit].rfind('\n').map(|i| i + 1).unwrap_or(0);
+        snippet_start = full_text[..search_limit]
+            .rfind('\n')
+            .map(|i| i + 1)
+            .unwrap_or(0);
         lines_back += 1;
     }
     m.snippet_start_line = match_line_num - lines_back;
@@ -131,7 +137,12 @@ fn enrich_context(full_text: &str, m: &mut SecretMatch) {
     m.snippet = full_text[snippet_start..snippet_end].trim_end().to_string();
 }
 
-fn scan_fragment(fragment_str: &str, base_offset: usize, rules: &[Rule], matches: &mut Vec<SecretMatch>) {
+fn scan_fragment(
+    fragment_str: &str,
+    base_offset: usize,
+    rules: &[Rule],
+    matches: &mut Vec<SecretMatch>,
+) {
     for rule in rules {
         if !rule.keywords.is_empty() && !rule.keywords.iter().any(|kw| fragment_str.contains(kw)) {
             continue;
@@ -142,7 +153,7 @@ fn scan_fragment(fragment_str: &str, base_offset: usize, rules: &[Rule], matches
             let Some(secret_match) = m else { continue };
 
             let secret = secret_match.as_str();
-            
+
             if is_safe_value(secret) {
                 continue;
             }
@@ -172,10 +183,14 @@ fn scan_fragment(fragment_str: &str, base_offset: usize, rules: &[Rule], matches
 }
 
 fn finalize_matches(mut matches: Vec<SecretMatch>) -> Vec<SecretMatch> {
-    if matches.is_empty() { return matches; }
+    if matches.is_empty() {
+        return matches;
+    }
 
     matches.sort_by(|a, b| {
-        a.index.cmp(&b.index).then_with(|| b.value.len().cmp(&a.value.len())) 
+        a.index
+            .cmp(&b.index)
+            .then_with(|| b.value.len().cmp(&a.value.len()))
     });
 
     let mut unique_matches = Vec::new();

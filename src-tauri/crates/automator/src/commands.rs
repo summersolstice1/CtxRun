@@ -1,17 +1,17 @@
-use tauri::{State, AppHandle, Emitter, Runtime};
-use std::sync::atomic::Ordering;
-use crate::engine::{AutomatorState, run_workflow_task, run_graph_task};
-use crate::models::{Workflow, WorkflowGraph};
-use crate::screen;
+use crate::browser::TabSession;
+use crate::engine::{AutomatorState, run_graph_task, run_workflow_task};
 use crate::error::{AutomatorError, Result};
 use crate::inspector::PickedElement;
-use crate::browser::TabSession;
+use crate::models::{Workflow, WorkflowGraph};
+use crate::screen;
+use std::sync::atomic::Ordering;
+use tauri::{AppHandle, Emitter, Runtime, State};
 
 #[tauri::command]
 pub async fn execute_workflow<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, AutomatorState>,
-    workflow: Workflow
+    workflow: Workflow,
 ) -> Result<()> {
     if state.is_running.load(Ordering::SeqCst) {
         return Err(AutomatorError::AlreadyRunning);
@@ -28,7 +28,7 @@ pub async fn execute_workflow<R: Runtime>(
 #[tauri::command]
 pub async fn stop_workflow<R: Runtime>(
     app: AppHandle<R>,
-    state: State<'_, AutomatorState>
+    state: State<'_, AutomatorState>,
 ) -> Result<()> {
     state.is_running.store(false, Ordering::SeqCst);
     let _ = app.emit("automator:status", false);
@@ -38,19 +38,19 @@ pub async fn stop_workflow<R: Runtime>(
 #[tauri::command]
 pub async fn get_mouse_position() -> Result<(i32, i32)> {
     use enigo::{Enigo, Mouse, Settings};
-    let enigo = Enigo::new(&Settings::default())
-        .map_err(|e| AutomatorError::InputError(e.to_string()))?;
-    let (x, y) = enigo.location()
+    let enigo =
+        Enigo::new(&Settings::default()).map_err(|e| AutomatorError::InputError(e.to_string()))?;
+    let (x, y) = enigo
+        .location()
         .map_err(|e| AutomatorError::InputError(e.to_string()))?;
     Ok((x, y))
 }
 
 #[tauri::command]
 pub async fn get_pixel_color(x: i32, y: i32) -> Result<String> {
-    let result = tauri::async_runtime::spawn_blocking(move || {
-        screen::get_color_at(x, y)
-    }).await
-    .map_err(|e| AutomatorError::JoinError(e.to_string()))??;
+    let result = tauri::async_runtime::spawn_blocking(move || screen::get_color_at(x, y))
+        .await
+        .map_err(|e| AutomatorError::JoinError(e.to_string()))??;
 
     Ok(result)
 }
@@ -59,7 +59,7 @@ pub async fn get_pixel_color(x: i32, y: i32) -> Result<String> {
 pub async fn execute_workflow_graph<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, AutomatorState>,
-    graph: WorkflowGraph
+    graph: WorkflowGraph,
 ) -> Result<()> {
     if state.is_running.load(Ordering::SeqCst) {
         return Err(AutomatorError::AlreadyRunning);
@@ -75,19 +75,13 @@ pub async fn execute_workflow_graph<R: Runtime>(
 
 #[tauri::command]
 pub async fn get_element_under_cursor() -> Result<PickedElement> {
-    tauri::async_runtime::spawn_blocking(|| {
-        crate::inspector::get_element_under_cursor_impl()
-    })
-    .await
-    .map_err(|e| AutomatorError::JoinError(e.to_string()))?
+    tauri::async_runtime::spawn_blocking(|| crate::inspector::get_element_under_cursor_impl())
+        .await
+        .map_err(|e| AutomatorError::JoinError(e.to_string()))?
 }
 
 #[tauri::command]
 pub async fn pick_web_selector() -> Result<String> {
-    tauri::async_runtime::spawn_blocking(|| {
-        let session = TabSession::connect_and_find(None)?;
-        session.pick_element()
-    })
-    .await
-    .map_err(|e| AutomatorError::JoinError(e.to_string()))?
+    let session = TabSession::connect_and_find(None).await?;
+    session.pick_element().await
 }

@@ -70,10 +70,14 @@ fn send_notification(app: &AppHandle) {
         config.interval_minutes
     };
 
-    let result = app.notification()
+    let result = app
+        .notification()
         .builder()
         .title("Rest Reminder / 休息提醒")
-        .body(format!("You've been working for {} minutes. Time to take a break!", interval))
+        .body(format!(
+            "You've been working for {} minutes. Time to take a break!",
+            interval
+        ))
         .show();
 
     let _ = result;
@@ -83,7 +87,7 @@ fn send_notification(app: &AppHandle) {
 pub fn update_reminder_config(
     state: tauri::State<ReminderState>,
     enabled: bool,
-    interval_minutes: u64
+    interval_minutes: u64,
 ) -> Result<(), String> {
     let mut config = state.0.lock().map_err(|e| e.to_string())?;
 

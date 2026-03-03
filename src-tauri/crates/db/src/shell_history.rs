@@ -25,30 +25,38 @@ pub fn record_shell_command(state: State<'_, DbState>, command: String) -> Resul
            execution_count = execution_count + 1,
            timestamp = ?2",
         params![trimmed, now],
-    ).map_err(|e| e.to_string())?;
+    )
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
 
 #[tauri::command]
-pub fn get_recent_shell_history(state: State<'_, DbState>, limit: u32) -> Result<Vec<ShellHistoryEntry>, String> {
+pub fn get_recent_shell_history(
+    state: State<'_, DbState>,
+    limit: u32,
+) -> Result<Vec<ShellHistoryEntry>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-    let mut stmt = conn.prepare(
-        "SELECT id, command, timestamp, execution_count
+    let mut stmt = conn
+        .prepare(
+            "SELECT id, command, timestamp, execution_count
          FROM shell_history
          ORDER BY timestamp DESC
-         LIMIT ?1"
-    ).map_err(|e| e.to_string())?;
+         LIMIT ?1",
+        )
+        .map_err(|e| e.to_string())?;
 
-    let rows = stmt.query_map(params![limit], |row| {
-        Ok(ShellHistoryEntry {
-            id: row.get(0)?,
-            command: row.get(1)?,
-            timestamp: row.get(2)?,
-            execution_count: row.get(3)?,
+    let rows = stmt
+        .query_map(params![limit], |row| {
+            Ok(ShellHistoryEntry {
+                id: row.get(0)?,
+                command: row.get(1)?,
+                timestamp: row.get(2)?,
+                execution_count: row.get(3)?,
+            })
         })
-    }).map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     let mut entries = Vec::new();
     for entry in rows {
@@ -59,7 +67,11 @@ pub fn get_recent_shell_history(state: State<'_, DbState>, limit: u32) -> Result
 }
 
 #[tauri::command]
-pub fn search_shell_history(state: State<'_, DbState>, query: String, limit: u32) -> Result<Vec<ShellHistoryEntry>, String> {
+pub fn search_shell_history(
+    state: State<'_, DbState>,
+    query: String,
+    limit: u32,
+) -> Result<Vec<ShellHistoryEntry>, String> {
     let trimmed_query = query.trim();
     if trimmed_query.is_empty() {
         return get_recent_shell_history(state, limit);
@@ -79,7 +91,7 @@ pub fn search_shell_history(state: State<'_, DbState>, query: String, limit: u32
             (execution_count * 5) +
             (CASE WHEN (?5 - timestamp) < 86400 THEN 50 ELSE 0 END)
         ) as score
-        FROM shell_history WHERE "
+        FROM shell_history WHERE ",
     );
 
     let mut where_clauses = Vec::new();
@@ -106,14 +118,16 @@ pub fn search_shell_history(state: State<'_, DbState>, query: String, limit: u32
 
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-    let rows = stmt.query_map(param_refs.as_slice(), |row| {
-        Ok(ShellHistoryEntry {
-            id: row.get("id")?,
-            command: row.get("command")?,
-            timestamp: row.get("timestamp")?,
-            execution_count: row.get("execution_count")?,
+    let rows = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok(ShellHistoryEntry {
+                id: row.get("id")?,
+                command: row.get("command")?,
+                timestamp: row.get("timestamp")?,
+                execution_count: row.get("execution_count")?,
+            })
         })
-    }).map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     let mut entries = Vec::new();
     for entry in rows {

@@ -1,11 +1,19 @@
-use xcap::Monitor;
 use crate::error::{AutomatorError, Result};
+use xcap::Monitor;
 
 #[derive(Debug)]
 pub enum ColorPickError {
-    NoScreenFound { x: i32, y: i32 },
+    NoScreenFound {
+        x: i32,
+        y: i32,
+    },
     CaptureFailed(String),
-    OutOfBounds { x: i32, y: i32, width: u32, height: u32 },
+    OutOfBounds {
+        x: i32,
+        y: i32,
+        width: u32,
+        height: u32,
+    },
 }
 
 impl std::fmt::Display for ColorPickError {
@@ -17,8 +25,17 @@ impl std::fmt::Display for ColorPickError {
             ColorPickError::CaptureFailed(msg) => {
                 write!(f, "Failed to capture screen: {}", msg)
             }
-            ColorPickError::OutOfBounds { x, y, width, height } => {
-                write!(f, "Coordinates ({}, {}) out of bounds ({}x{})", x, y, width, height)
+            ColorPickError::OutOfBounds {
+                x,
+                y,
+                width,
+                height,
+            } => {
+                write!(
+                    f,
+                    "Coordinates ({}, {}) out of bounds ({}x{})",
+                    x, y, width, height
+                )
             }
         }
     }
@@ -44,39 +61,42 @@ pub struct ScreenInfo {
 }
 
 pub fn get_color_at(x: i32, y: i32) -> Result<String> {
-    let monitors = Monitor::all().map_err(|e| {
-        ColorPickError::CaptureFailed(format!("Failed to get monitors: {}", e))
-    })?;
+    let monitors = Monitor::all()
+        .map_err(|e| ColorPickError::CaptureFailed(format!("Failed to get monitors: {}", e)))?;
 
     if monitors.is_empty() {
         return Err(ColorPickError::CaptureFailed("No monitors found".into()).into());
     }
 
-    let target_monitor = monitors
-        .iter()
-        .find(|m| {
-            let mx = m.x().unwrap_or(0);
-            let my = m.y().unwrap_or(0);
-            let mw = m.width().unwrap_or(0) as i32;
-            let mh = m.height().unwrap_or(0) as i32;
-            x >= mx && x < mx + mw && y >= my && y < my + mh
-        });
+    let target_monitor = monitors.iter().find(|m| {
+        let mx = m.x().unwrap_or(0);
+        let my = m.y().unwrap_or(0);
+        let mw = m.width().unwrap_or(0) as i32;
+        let mh = m.height().unwrap_or(0) as i32;
+        x >= mx && x < mx + mw && y >= my && y < my + mh
+    });
 
     let monitor = match target_monitor {
         Some(m) => m,
         None => return Err(ColorPickError::NoScreenFound { x, y }.into()),
     };
 
-    let image = monitor.capture_image().map_err(|e| {
-        ColorPickError::CaptureFailed(format!("capture_image failed: {}", e))
-    })?;
+    let image = monitor
+        .capture_image()
+        .map_err(|e| ColorPickError::CaptureFailed(format!("capture_image failed: {}", e)))?;
     let monitor_x = monitor.x().unwrap_or(0);
     let monitor_y = monitor.y().unwrap_or(0);
     let local_x = (x - monitor_x) as u32;
     let local_y = (y - monitor_y) as u32;
     let (img_w, img_h) = image.dimensions();
     if local_x >= img_w || local_y >= img_h {
-        return Err(ColorPickError::OutOfBounds { x, y, width: img_w, height: img_h }.into());
+        return Err(ColorPickError::OutOfBounds {
+            x,
+            y,
+            width: img_w,
+            height: img_h,
+        }
+        .into());
     }
     let pixel = image.get_pixel(local_x, local_y);
     let r = pixel[0];
@@ -86,11 +106,9 @@ pub fn get_color_at(x: i32, y: i32) -> Result<String> {
     Ok(format!("#{:02X}{:02X}{:02X}", r, g, b))
 }
 
-
 pub fn get_all_screens_info() -> Result<Vec<ScreenInfo>> {
-    let monitors = Monitor::all().map_err(|e| {
-        ColorPickError::CaptureFailed(format!("Failed to get monitors: {}", e))
-    })?;
+    let monitors = Monitor::all()
+        .map_err(|e| ColorPickError::CaptureFailed(format!("Failed to get monitors: {}", e)))?;
 
     let infos = monitors
         .into_iter()

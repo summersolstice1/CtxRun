@@ -1,12 +1,12 @@
-use std::fs;
-use std::path::PathBuf;
-use std::io::BufWriter;
-use rusqlite::{params, Connection, OptionalExtension};
 use chrono::Utc;
-use uuid::Uuid;
-use tauri::{AppHandle, Manager, Runtime};
+use image::codecs::png::{CompressionType, FilterType, PngEncoder};
 use image::{DynamicImage, ImageEncoder};
-use image::codecs::png::{PngEncoder, CompressionType, FilterType};
+use rusqlite::{Connection, OptionalExtension, params};
+use std::fs;
+use std::io::BufWriter;
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager, Runtime};
+use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_64;
 
 use super::models::{RefineryKind, RefineryMetadata};
@@ -17,7 +17,7 @@ const IMAGE_FOLDER: &str = "refinery_images";
 pub fn hash_dynamic_image(image: &DynamicImage) -> String {
     let raw_bytes = image.as_bytes();
     let hash_val = xxh3_64(raw_bytes);
-    format!("{:016x}", hash_val) 
+    format!("{:016x}", hash_val)
 }
 
 pub fn hash_content(content: &[u8]) -> String {
@@ -35,7 +35,10 @@ fn ensure_image_dir<R: Runtime>(app: &AppHandle<R>) -> Result<PathBuf> {
     Ok(image_dir)
 }
 
-pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) -> Result<(String, String)> {
+pub fn save_image_to_disk<R: Runtime>(
+    app: &AppHandle<R>,
+    image: &DynamicImage,
+) -> Result<(String, String)> {
     let hash = hash_dynamic_image(image);
 
     let dir = ensure_image_dir(app)?;
@@ -50,17 +53,14 @@ pub fn save_image_to_disk<R: Runtime>(app: &AppHandle<R>, image: &DynamicImage) 
     let file = fs::File::create(&file_path)?;
     let ref_writer = BufWriter::new(file);
 
-    let encoder = PngEncoder::new_with_quality(
-        ref_writer,
-        CompressionType::Fast,
-        FilterType::Adaptive
-    );
+    let encoder =
+        PngEncoder::new_with_quality(ref_writer, CompressionType::Fast, FilterType::Adaptive);
 
     encoder.write_image(
         image.as_bytes(),
         image.width(),
         image.height(),
-        image.color().into()
+        image.color().into(),
     )?;
 
     Ok((file_path_str, hash))
@@ -75,7 +75,7 @@ pub fn capture_clipboard_item(
     source_app: Option<String>,
     url: Option<String>,
     size_info: Option<String>,
-    metadata: RefineryMetadata
+    metadata: RefineryMetadata,
 ) -> Result<(bool, String)> {
     let now = Utc::now().timestamp_millis();
 
@@ -96,19 +96,19 @@ pub fn capture_clipboard_item(
             (Some(app), None) => {
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ?, source_app = ? WHERE id = ?",
-                    params![now, app, &id]
+                    params![now, app, &id],
                 )?;
             }
             (None, Some(u)) => {
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ?, url = ? WHERE id = ?",
-                    params![now, u, &id]
+                    params![now, u, &id],
                 )?;
             }
             (None, None) => {
                 conn.execute(
                     "UPDATE refinery_history SET updated_at = ? WHERE id = ?",
-                    params![now, &id]
+                    params![now, &id],
                 )?;
             }
         }
@@ -135,7 +135,7 @@ pub fn capture_clipboard_item(
                 meta_json,
                 now,
                 now
-            ]
+            ],
         )?;
 
         Ok((true, new_id))
@@ -171,15 +171,8 @@ pub fn create_manual_note_db(
             is_manual, is_edited, tags, title
         ) VALUES (?1, 'text', ?2, ?3, ?4, 'CtxRun', NULL, ?5, ?6, ?7, ?7, 0, 1, 0, '[]', ?8)",
         params![
-            &new_id,
-            content,
-            hash,
-            preview,
-            size_info,
-            meta_json,
-            now,
-            title
-        ]
+            &new_id, content, hash, preview, size_info, meta_json, now, title
+        ],
     )?;
 
     Ok(new_id)
@@ -189,7 +182,7 @@ pub fn update_note_db(
     conn: &Connection,
     id: &str,
     content: Option<String>,
-    title: Option<String>
+    title: Option<String>,
 ) -> Result<()> {
     let now = Utc::now().timestamp_millis();
 
@@ -209,12 +202,12 @@ pub fn update_note_db(
                 updated_at = ?6,
                 is_edited = 1
              WHERE id = ?7",
-            params![new_content, hash, preview, size_info, title, now, id]
+            params![new_content, hash, preview, size_info, title, now, id],
         )?;
     } else if let Some(new_title) = title {
         conn.execute(
             "UPDATE refinery_history SET title = ?1, updated_at = ?2 WHERE id = ?3",
-            params![new_title, now, id]
+            params![new_title, now, id],
         )?;
     }
 

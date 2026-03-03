@@ -1,21 +1,42 @@
-//! Browser automation layer built on headless_chrome.
+//! Browser automation layer built on chromiumoxide.
 //!
-//! Provides a high-level, sync API for interacting with an externally-launched
-//! Chrome/Edge browser via CDP. Designed to be called from `spawn_blocking`.
+//! Provides a high-level async API for interacting with an externally-launched
+//! Chrome/Edge browser via CDP.
 
-use std::sync::Arc;
 use std::time::Duration;
-use headless_chrome::{Browser, Tab};
-use headless_chrome::browser::tab::ModifierKey;
-use ctxrun_browser_utils::{
-    locate_browser, BrowserType as UtilsBrowserType,
-    app_chrome_data_dir, is_debug_port_available, is_browser_running, kill_browser_processes,
+
+use chromiumoxide::{
+    Browser, Element, Page,
+    cdp::browser_protocol::{
+        input::{DispatchKeyEventParams, DispatchKeyEventType},
+        target::{TargetId, TargetInfo},
+    },
+    keys::{self, KeyDefinition},
 };
+use ctxrun_browser_utils::{
+    BrowserType as UtilsBrowserType, app_chrome_data_dir, is_browser_running,
+    is_debug_port_available, kill_browser_processes, locate_browser,
+};
+use futures::StreamExt;
+use tauri::async_runtime::JoinHandle;
+use tokio::sync::oneshot;
+
 use crate::error::{AutomatorError, Result};
 
 const DEFAULT_DEBUG_PORT: u16 = 9222;
 const ELEMENT_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
-const BROWSER_IDLE_TIMEOUT: Duration = Duration::from_secs(120);
+// Poll cadence for selector wait. Keep short enough for responsiveness without busy polling.
+const ELEMENT_WAIT_POLL_INTERVAL: Duration = Duration::from_millis(120);
+// Allow a short settle window after initial connect before fetching targets.
+const TARGET_SYNC_WAIT: Duration = Duration::from_millis(250);
+// Retry target/page acquisition to tolerate startup races in remote-debug sessions.
+const TARGET_FETCH_RETRIES: usize = 8;
+const TARGET_FETCH_RETRY_DELAY: Duration = Duration::from_millis(200);
+const PAGE_FETCH_RETRIES: usize = 12;
+const PAGE_FETCH_RETRY_DELAY: Duration = Duration::from_millis(120);
+// Interactive picker waits up to 60s for a human click.
+const PICKER_POLL_INTERVAL: Duration = Duration::from_millis(100);
+const PICKER_MAX_POLLS: usize = 600;
 
 // ---------------------------------------------------------------------------
 // TabSession — operations on a single tab
@@ -23,161 +44,213 @@ const BROWSER_IDLE_TIMEOUT: Duration = Duration::from_secs(120);
 
 /// High-level wrapper around a single browser tab for automation actions.
 pub struct TabSession {
-    tab: Arc<Tab>,
-    _browser: Browser, // Must keep Browser alive to maintain the WebSocket connection
+    page: Page,
+    _browser: Browser, // Keep browser alive to maintain CDP connection
+    handler_task: Option<JoinHandle<()>>,
+    shutdown_tx: Option<oneshot::Sender<()>>,
+}
+
+impl Drop for TabSession {
+    fn drop(&mut self) {
+        if let Some(tx) = self.shutdown_tx.take() {
+            let _ = tx.send(());
+        }
+        if let Some(task) = self.handler_task.take() {
+            task.abort();
+        }
+    }
 }
 
 impl TabSession {
-    /// Connect to the default port and find a tab matching the optional filter.
-    pub fn connect_and_find(url_filter: Option<&str>) -> Result<Self> {
-        // Query the /json endpoint to get list of all targets (tabs)
-        let url = format!("http://127.0.0.1:{}/json", DEFAULT_DEBUG_PORT);
-        let targets: Vec<serde_json::Value> = reqwest::blocking::Client::new()
-            .get(&url)
-            .timeout(Duration::from_secs(5))
-            .send()
-            .and_then(|r| r.json())
-            .map_err(|e| AutomatorError::BrowserError(format!("Failed to connect to debug port: {}. Make sure Chrome is running with --remote-debugging-port={}", e, DEFAULT_DEBUG_PORT)))?;
+    /// Connect to the debug port and find a tab matching the optional filter.
+    pub async fn connect_and_find(url_filter: Option<&str>) -> Result<Self> {
+        let debug_url = format!("http://127.0.0.1:{DEFAULT_DEBUG_PORT}");
+        let (mut browser, mut handler) = Browser::connect(debug_url)
+            .await
+            .map_err(|e| {
+                AutomatorError::BrowserError(format!(
+                    "Failed to connect to debug port: {}. Make sure Chrome is running with --remote-debugging-port={}",
+                    e, DEFAULT_DEBUG_PORT
+                ))
+            })?;
 
-        // Find a matching "page" type target
-        let page_target = targets.iter()
-            .find(|t| {
-                let is_page = t["type"].as_str() == Some("page");
-                let has_ws = t["webSocketDebuggerUrl"].is_string();
-                let matches_filter = match url_filter {
-                    Some(filter) => {
-                        let url = t["url"].as_str().unwrap_or("");
-                        let title = t["title"].as_str().unwrap_or("");
-                        url.contains(filter) || title.contains(filter)
+        let (shutdown_tx, mut shutdown_rx) = oneshot::channel();
+        let mut shutdown_tx = Some(shutdown_tx);
+        let mut handler_task = Some(tauri::async_runtime::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = &mut shutdown_rx => {
+                        break;
                     }
-                    None => true
-                };
-                is_page && has_ws && matches_filter
-            })
-            .ok_or_else(|| AutomatorError::BrowserError("No matching page tab found. Please open a web page in the browser.".into()))?;
+                    event = handler.next() => {
+                        match event {
+                            Some(Ok(_)) => {}
+                            Some(Err(err)) => {
+                                eprintln!("[Automator] Browser handler stopped: {}", err);
+                                break;
+                            }
+                            None => break,
+                        }
+                    }
+                }
+            }
+        }));
 
-        let ws_url = page_target["webSocketDebuggerUrl"]
-            .as_str()
-            .ok_or_else(|| AutomatorError::BrowserError("No webSocketDebuggerUrl found in page target".into()))?
-            .to_string();
+        tokio::time::sleep(TARGET_SYNC_WAIT).await;
 
-        // Connect directly to the page's WebSocket
-        let browser = Browser::connect_with_timeout(ws_url, BROWSER_IDLE_TIMEOUT)
-            .map_err(|e| AutomatorError::BrowserError(format!("Failed to connect to page: {}", e)))?;
+        let target = match find_target_with_retry(&mut browser, url_filter).await {
+            Ok(target) => target,
+            Err(err) => {
+                cleanup_handler_task(&mut shutdown_tx, &mut handler_task);
+                return Err(err);
+            }
+        };
+        let page = match get_page_with_retry(&browser, target.target_id).await {
+            Ok(page) => page,
+            Err(err) => {
+                cleanup_handler_task(&mut shutdown_tx, &mut handler_task);
+                return Err(err);
+            }
+        };
+        let _ = page.bring_to_front().await;
 
-        // Wait a moment for the tab info to sync, then find the tab
-        std::thread::sleep(Duration::from_millis(500));
-
-        // Register any missing tabs
-        let _ = browser.register_missing_tabs();
-
-        let tab = {
-            let tabs = browser.get_tabs().lock()
-                .map_err(|e| AutomatorError::BrowserError(format!("Lock poisoned: {}", e)))?;
-            tabs.first().cloned()
-        }; // tabs lock is dropped here
-
-        let tab = tab.ok_or_else(|| AutomatorError::BrowserError(
-            "No tab available after connection. Please ensure the browser has an open page.".into()
-        ))?;
-
-        Ok(Self { tab, _browser: browser })
+        Ok(Self {
+            page,
+            _browser: browser,
+            handler_task,
+            shutdown_tx,
+        })
     }
 
     // -- Element interaction ------------------------------------------------
 
     /// Wait for an element matching `selector` to appear, then return its
     /// viewport center coordinates (x, y).
-    pub fn get_element_center(&self, selector: &str) -> Result<(i32, i32)> {
-        let element = self.tab
-            .wait_for_element_with_custom_timeout(selector, ELEMENT_WAIT_TIMEOUT)
-            .map_err(|e| AutomatorError::BrowserError(format!("Element not found '{}': {}", selector, e)))?;
+    pub async fn get_element_center(&self, selector: &str) -> Result<(i32, i32)> {
+        let element = wait_for_element(&self.page, selector, ELEMENT_WAIT_TIMEOUT).await?;
 
-        element.scroll_into_view()
+        element
+            .scroll_into_view()
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Scroll failed: {}", e)))?;
 
-        std::thread::sleep(Duration::from_millis(80));
+        tokio::time::sleep(Duration::from_millis(80)).await;
 
-        let midpoint = element.get_js_midpoint()
+        let point = element
+            .clickable_point()
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Midpoint failed: {}", e)))?;
 
-        Ok((midpoint.x as i32, midpoint.y as i32))
+        Ok((point.x.round() as i32, point.y.round() as i32))
     }
 
     /// Click an element by CSS selector using CDP mouse events.
-    pub fn click_element(&self, selector: &str) -> Result<()> {
-        let element = self.tab
-            .wait_for_element_with_custom_timeout(selector, ELEMENT_WAIT_TIMEOUT)
-            .map_err(|e| AutomatorError::BrowserError(format!("Element not found '{}': {}", selector, e)))?;
+    pub async fn click_element(&self, selector: &str) -> Result<()> {
+        let element = wait_for_element(&self.page, selector, ELEMENT_WAIT_TIMEOUT).await?;
 
-        element.scroll_into_view()
-            .map_err(|e| AutomatorError::BrowserError(format!("Scroll failed: {}", e)))?;
-
-        element.click()
+        element
+            .click()
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Click failed: {}", e)))?;
 
         Ok(())
     }
 
     /// Type text into an element by CSS selector.
-    pub fn type_into_element(&self, selector: &str, text: &str) -> Result<()> {
-        let element = self.tab
-            .wait_for_element_with_custom_timeout(selector, ELEMENT_WAIT_TIMEOUT)
-            .map_err(|e| AutomatorError::BrowserError(format!("Element not found '{}': {}", selector, e)))?;
+    pub async fn type_into_element(&self, selector: &str, text: &str) -> Result<()> {
+        let element = wait_for_element(&self.page, selector, ELEMENT_WAIT_TIMEOUT).await?;
 
-        element.click()
+        element
+            .click()
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Focus click failed: {}", e)))?;
 
-        self.tab.type_str(text)
+        element
+            .type_str(text)
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Type failed: {}", e)))?;
 
         Ok(())
     }
 
     /// Simulate a key press (e.g. "Enter", "Tab", "Escape").
-    pub fn press_key(&self, key: &str) -> Result<()> {
-        self.tab.press_key(key)
+    pub async fn press_key(&self, key: &str) -> Result<()> {
+        let normalized = normalize_key_name(key);
+        let key_def = resolve_key_definition(&normalized).ok_or_else(|| {
+            AutomatorError::BrowserError(format!("Unsupported key '{}'", key))
+        })?;
+        let key_down = build_key_event(key_def, 0, true)
+            .map_err(|e| AutomatorError::BrowserError(format!("Key press build failed: {}", e)))?;
+        let key_up = build_key_event(key_def, 0, false)
+            .map_err(|e| AutomatorError::BrowserError(format!("Key press build failed: {}", e)))?;
+
+        self.page
+            .execute(key_down)
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Key press '{}' failed: {}", key, e)))?;
+        self.page
+            .execute(key_up)
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Key press '{}' failed: {}", key, e)))?;
+
         Ok(())
     }
 
     /// Simulate a key combination like "Ctrl+A", "Ctrl+C".
-    pub fn press_key_combo(&self, combo: &str) -> Result<()> {
-        let parts: Vec<&str> = combo.split('+').map(|s| s.trim()).collect();
-        let mut modifiers = Vec::new();
+    pub async fn press_key_combo(&self, combo: &str) -> Result<()> {
+        let mut modifiers = 0i64;
         let mut main_key = None;
 
-        for part in &parts {
-            match part.to_lowercase().as_str() {
-                "ctrl" | "control" => modifiers.push(ModifierKey::Ctrl),
-                "alt" => modifiers.push(ModifierKey::Alt),
-                "shift" => modifiers.push(ModifierKey::Shift),
-                "meta" | "cmd" | "command" => modifiers.push(ModifierKey::Meta),
-                other => main_key = Some(other.to_string()),
+        for part in combo.split('+').map(str::trim).filter(|s| !s.is_empty()) {
+            if let Some(bit) = modifier_to_bit(part) {
+                modifiers |= bit;
+            } else {
+                main_key = Some(normalize_key_name(part));
             }
         }
 
-        if let Some(key) = main_key {
-            self.tab.press_key_with_modifiers(&key, Some(&modifiers))
-                .map_err(|e| AutomatorError::BrowserError(format!("Key combo failed: {}", e)))?;
-        }
+        let key = main_key.ok_or_else(|| {
+            AutomatorError::BrowserError(format!("Key combo '{}' has no main key", combo))
+        })?;
+
+        let key_def = resolve_key_definition(&key).ok_or_else(|| {
+            AutomatorError::BrowserError(format!("Unsupported key in combo '{}': {}", combo, key))
+        })?;
+
+        let key_down = build_key_event(key_def, modifiers, true)
+            .map_err(|e| AutomatorError::BrowserError(format!("Key combo build failed: {}", e)))?;
+        let key_up = build_key_event(key_def, modifiers, false)
+            .map_err(|e| AutomatorError::BrowserError(format!("Key combo build failed: {}", e)))?;
+
+        self.page
+            .execute(key_down)
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Key combo failed: {}", e)))?;
+        self.page
+            .execute(key_up)
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Key combo failed: {}", e)))?;
 
         Ok(())
     }
 
     /// Evaluate a JavaScript expression and return the result as a string.
-    pub fn evaluate_js(&self, expression: &str) -> Result<String> {
-        let result = self.tab.evaluate(expression, true)
+    pub async fn evaluate_js(&self, expression: &str) -> Result<String> {
+        let result = self
+            .page
+            .evaluate(expression)
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("JS eval failed: {}", e)))?;
 
-        match result.value {
+        match result.value() {
             Some(val) => Ok(val.to_string()),
             None => Ok(String::new()),
         }
     }
+
     /// Interactive element picker: injects a visual overlay into the page,
     /// lets the user click an element, and returns its CSS selector.
-    pub fn pick_element(&self) -> Result<String> {
+    pub async fn pick_element(&self) -> Result<String> {
         let picker_js = r#"
             (function() {
                 window.__ctxrun_picked_result = '';
@@ -232,28 +305,207 @@ impl TabSession {
             })()
         "#;
 
-        self.tab.evaluate(picker_js, false)
+        self.page
+            .evaluate(picker_js)
+            .await
             .map_err(|e| AutomatorError::BrowserError(format!("Picker injection failed: {}", e)))?;
 
         // Poll for result (user clicks an element in the browser)
-        for _ in 0..600 {
-            std::thread::sleep(Duration::from_millis(100));
+        for _ in 0..PICKER_MAX_POLLS {
+            tokio::time::sleep(PICKER_POLL_INTERVAL).await;
 
-            let result = self.tab.evaluate("window.__ctxrun_picked_result || ''", false)
+            let result = self
+                .page
+                .evaluate("window.__ctxrun_picked_result || ''")
+                .await
                 .map_err(|e| AutomatorError::BrowserError(format!("Poll failed: {}", e)))?;
 
-            if let Some(val) = result.value {
-                if let Some(s) = val.as_str() {
-                    if !s.is_empty() {
-                        let _ = self.tab.evaluate("delete window.__ctxrun_picked_result;", false);
-                        return Ok(s.to_string());
-                    }
-                }
+            let picked = result.into_value::<String>().unwrap_or_default();
+            if !picked.is_empty() {
+                let _ = self
+                    .page
+                    .evaluate("delete window.__ctxrun_picked_result;")
+                    .await;
+                return Ok(picked);
             }
         }
 
         Err(AutomatorError::BrowserError("Picker timeout (60s)".into()))
     }
+}
+
+fn modifier_to_bit(value: &str) -> Option<i64> {
+    match value.to_ascii_lowercase().as_str() {
+        "alt" => Some(1),
+        "ctrl" | "control" => Some(2),
+        "meta" | "cmd" | "command" => Some(4),
+        "shift" => Some(8),
+        _ => None,
+    }
+}
+
+fn normalize_key_name(raw: &str) -> String {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "return" => "Enter".to_string(),
+        "space" => " ".to_string(),
+        "esc" => "Escape".to_string(),
+        "del" => "Delete".to_string(),
+        "page up" => "PageUp".to_string(),
+        "page down" => "PageDown".to_string(),
+        "arrow up" | "up" => "ArrowUp".to_string(),
+        "arrow down" | "down" => "ArrowDown".to_string(),
+        "arrow left" | "left" => "ArrowLeft".to_string(),
+        "arrow right" | "right" => "ArrowRight".to_string(),
+        "cmd" | "command" => "Meta".to_string(),
+        "ctrl" => "Control".to_string(),
+        _ => raw.trim().to_string(),
+    }
+}
+
+fn resolve_key_definition(name: &str) -> Option<&'static KeyDefinition> {
+    let normalized = normalize_key_name(name);
+    keys::get_key_definition(&normalized).or_else(|| {
+        if normalized.len() == 1 {
+            keys::get_key_definition(normalized.to_ascii_lowercase())
+                .or_else(|| keys::get_key_definition(normalized.to_ascii_uppercase()))
+        } else {
+            None
+        }
+    })
+}
+
+fn build_key_event(
+    key_def: &'static KeyDefinition,
+    modifiers: i64,
+    is_key_down: bool,
+) -> std::result::Result<DispatchKeyEventParams, String> {
+    let mut builder = DispatchKeyEventParams::builder()
+        .modifiers(modifiers)
+        .key(key_def.key)
+        .code(key_def.code)
+        .windows_virtual_key_code(key_def.key_code)
+        .native_virtual_key_code(key_def.key_code)
+        .location(key_location(key_def.code));
+
+    let event_type = if is_key_down {
+        if let Some(text) = key_def.text {
+            builder = builder.text(text);
+            DispatchKeyEventType::KeyDown
+        } else if key_def.key.len() == 1 {
+            builder = builder.text(key_def.key);
+            DispatchKeyEventType::KeyDown
+        } else {
+            DispatchKeyEventType::RawKeyDown
+        }
+    } else {
+        DispatchKeyEventType::KeyUp
+    };
+
+    builder
+        .r#type(event_type)
+        .build()
+        .map_err(|e| e.to_string())
+}
+
+fn key_location(code: &str) -> i64 {
+    if code.ends_with("Left") {
+        1
+    } else if code.ends_with("Right") {
+        2
+    } else {
+        0
+    }
+}
+
+fn cleanup_handler_task(
+    shutdown_tx: &mut Option<oneshot::Sender<()>>,
+    handler_task: &mut Option<JoinHandle<()>>,
+) {
+    if let Some(tx) = shutdown_tx.take() {
+        let _ = tx.send(());
+    }
+    if let Some(task) = handler_task.take() {
+        task.abort();
+    }
+}
+
+async fn wait_for_element(page: &Page, selector: &str, timeout: Duration) -> Result<Element> {
+    let deadline = tokio::time::Instant::now() + timeout;
+
+    loop {
+        match page.find_element(selector).await {
+            Ok(element) => return Ok(element),
+            Err(err) => {
+                if tokio::time::Instant::now() >= deadline {
+                    return Err(AutomatorError::BrowserError(format!(
+                        "Element not found '{}': {}",
+                        selector, err
+                    )));
+                }
+
+                tokio::time::sleep(ELEMENT_WAIT_POLL_INTERVAL).await;
+            }
+        }
+    }
+}
+
+async fn find_target_with_retry(
+    browser: &mut Browser,
+    url_filter: Option<&str>,
+) -> Result<TargetInfo> {
+    for attempt in 0..TARGET_FETCH_RETRIES {
+        let targets = browser.fetch_targets().await.map_err(|e| {
+            AutomatorError::BrowserError(format!("Failed to fetch browser targets: {}", e))
+        })?;
+
+        if let Some(target) = targets.into_iter().find(|t| matches_target(t, url_filter)) {
+            return Ok(target);
+        }
+
+        if attempt + 1 < TARGET_FETCH_RETRIES {
+            tokio::time::sleep(TARGET_FETCH_RETRY_DELAY).await;
+        }
+    }
+
+    Err(AutomatorError::BrowserError(
+        "No matching page tab found. Please open a web page in the browser.".into(),
+    ))
+}
+
+fn matches_target(target: &TargetInfo, url_filter: Option<&str>) -> bool {
+    if target.r#type != "page" {
+        return false;
+    }
+
+    if target.url.starts_with("devtools://") {
+        return false;
+    }
+
+    match url_filter {
+        Some(filter) => target.url.contains(filter) || target.title.contains(filter),
+        None => true,
+    }
+}
+
+async fn get_page_with_retry(browser: &Browser, target_id: TargetId) -> Result<Page> {
+    let mut last_error = None;
+
+    for attempt in 0..PAGE_FETCH_RETRIES {
+        match browser.get_page(target_id.clone()).await {
+            Ok(page) => return Ok(page),
+            Err(err) => {
+                last_error = Some(err.to_string());
+                if attempt + 1 < PAGE_FETCH_RETRIES {
+                    tokio::time::sleep(PAGE_FETCH_RETRY_DELAY).await;
+                }
+            }
+        }
+    }
+
+    Err(AutomatorError::BrowserError(format!(
+        "Failed to attach to selected page: {}",
+        last_error.unwrap_or_else(|| "unknown error".into())
+    )))
 }
 
 // ---------------------------------------------------------------------------
@@ -272,9 +524,13 @@ pub fn launch_debug_browser(
         return Ok(());
     }
 
-    let target = if is_edge { UtilsBrowserType::Edge } else { UtilsBrowserType::Chrome };
-    let exe_path = locate_browser(target)
-        .ok_or_else(|| format!("Browser {:?} not found", target))?;
+    let target = if is_edge {
+        UtilsBrowserType::Edge
+    } else {
+        UtilsBrowserType::Chrome
+    };
+    let exe_path =
+        locate_browser(target).ok_or_else(|| format!("Browser {:?} not found", target))?;
 
     if is_browser_running(target) {
         kill_browser_processes(target)?;
@@ -287,9 +543,15 @@ pub fn launch_debug_browser(
 
     let base_dir = app_chrome_data_dir();
     if use_temp_profile {
-        cmd.arg(format!("--user-data-dir={}", base_dir.join("temp").to_string_lossy()));
+        cmd.arg(format!(
+            "--user-data-dir={}",
+            base_dir.join("temp").to_string_lossy()
+        ));
     } else {
-        cmd.arg(format!("--user-data-dir={}", base_dir.join("persistent").to_string_lossy()));
+        cmd.arg(format!(
+            "--user-data-dir={}",
+            base_dir.join("persistent").to_string_lossy()
+        ));
     }
 
     cmd.arg(url.unwrap_or_else(|| "about:blank".into()));
@@ -301,7 +563,8 @@ pub fn launch_debug_browser(
         cmd.creation_flags(DETACHED_PROCESS);
     }
 
-    cmd.spawn().map_err(|e| format!("Failed to launch browser: {}", e))?;
+    cmd.spawn()
+        .map_err(|e| format!("Failed to launch browser: {}", e))?;
 
     for i in 0..10 {
         std::thread::sleep(Duration::from_millis(500));
@@ -309,7 +572,9 @@ pub fn launch_debug_browser(
             return Ok(());
         }
         if i == 9 {
-            return Err("Browser started but debug port is not available after 5 seconds. This may be a Chrome profile lock issue.".into());
+            return Err(
+                "Browser started but debug port is not available after 5 seconds. This may be a Chrome profile lock issue.".into(),
+            );
         }
     }
 

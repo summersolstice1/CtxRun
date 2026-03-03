@@ -47,10 +47,7 @@ pub enum MinerEvent {
         output_dir: String,
     },
     /// 发生错误
-    Error {
-        url: String,
-        message: String,
-    },
+    Error { url: String, message: String },
 }
 
 /// 单个页面的处理结果

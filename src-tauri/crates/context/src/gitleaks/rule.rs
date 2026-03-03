@@ -1,11 +1,11 @@
-use once_cell::sync::Lazy;
 use super::Rule;
+use once_cell::sync::Lazy;
 
-use super::rules_cloud::cloud_rules;
 use super::rules_ai::ai_rules;
-use super::rules_payment::payment_rules;
+use super::rules_cloud::cloud_rules;
 use super::rules_communication::communication_rules;
 use super::rules_package::package_and_generic_rules;
+use super::rules_payment::payment_rules;
 use super::rules_remaining::remaining_rules;
 
 static ALL_RULES: Lazy<Vec<Rule>> = Lazy::new(|| {

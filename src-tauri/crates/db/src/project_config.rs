@@ -18,13 +18,15 @@ pub fn get_project_config(
 ) -> Result<Option<ProjectConfig>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-    let mut stmt = conn.prepare("SELECT config FROM project_configs WHERE path = ?").map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT config FROM project_configs WHERE path = ?")
+        .map_err(|e| e.to_string())?;
     let mut rows = stmt.query(params![path]).map_err(|e| e.to_string())?;
 
     if let Some(row) = rows.next().map_err(|e| e.to_string())? {
         let config_json: String = row.get(0).map_err(|e| e.to_string())?;
-        let config: ProjectConfig = serde_json::from_str(&config_json)
-            .map_err(|e| format!("Config parse error: {}", e))?;
+        let config: ProjectConfig =
+            serde_json::from_str(&config_json).map_err(|e| format!("Config parse error: {}", e))?;
         Ok(Some(config))
     } else {
         Ok(None)
@@ -44,7 +46,8 @@ pub fn save_project_config(
     conn.execute(
         "INSERT OR REPLACE INTO project_configs (path, config, updated_at) VALUES (?1, ?2, ?3)",
         params![path, config_json, now],
-    ).map_err(|e| e.to_string())?;
+    )
+    .map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -54,28 +57,33 @@ pub fn save_project_config(
 // ============================================================================
 
 #[tauri::command]
-pub fn export_project_configs(
-    state: State<DbState>,
-    save_path: String,
-) -> Result<usize, String> {
+pub fn export_project_configs(state: State<DbState>, save_path: String) -> Result<usize, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-    let mut stmt = conn.prepare("SELECT path, config, updated_at FROM project_configs").map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT path, config, updated_at FROM project_configs")
+        .map_err(|e| e.to_string())?;
 
-    let rows = stmt.query_map([], |row| {
-        let path: String = row.get(0)?;
-        let config_str: String = row.get(1)?;
-        let updated_at: i64 = row.get(2)?;
+    let rows = stmt
+        .query_map([], |row| {
+            let path: String = row.get(0)?;
+            let config_str: String = row.get(1)?;
+            let updated_at: i64 = row.get(2)?;
 
-        let config: ProjectConfig = serde_json::from_str(&config_str)
-            .unwrap_or(ProjectConfig { dirs: vec![], files: vec![], extensions: vec![] });
+            let config: ProjectConfig =
+                serde_json::from_str(&config_str).unwrap_or(ProjectConfig {
+                    dirs: vec![],
+                    files: vec![],
+                    extensions: vec![],
+                });
 
-        Ok(ProjectConfigExportItem {
-            path,
-            config,
-            updated_at,
+            Ok(ProjectConfigExportItem {
+                path,
+                config,
+                updated_at,
+            })
         })
-    }).map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     let mut export_list = Vec::new();
     for row in rows {
@@ -85,7 +93,8 @@ pub fn export_project_configs(
     let json_content = serde_json::to_string_pretty(&export_list).map_err(|e| e.to_string())?;
 
     let mut file = File::create(save_path).map_err(|e| e.to_string())?;
-    file.write_all(json_content.as_bytes()).map_err(|e| e.to_string())?;
+    file.write_all(json_content.as_bytes())
+        .map_err(|e| e.to_string())?;
 
     Ok(export_list.len())
 }
@@ -99,13 +108,14 @@ pub fn import_project_configs(
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let content = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;
-    let import_list: Vec<ProjectConfigExportItem> = serde_json::from_str(&content)
-        .map_err(|e| format!("JSON format error: {}", e))?;
+    let import_list: Vec<ProjectConfigExportItem> =
+        serde_json::from_str(&content).map_err(|e| format!("JSON format error: {}", e))?;
 
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
     if mode == "overwrite" {
-        tx.execute("DELETE FROM project_configs", []).map_err(|e| e.to_string())?;
+        tx.execute("DELETE FROM project_configs", [])
+            .map_err(|e| e.to_string())?;
     }
 
     let mut count = 0;
@@ -117,11 +127,8 @@ pub fn import_project_configs(
         for item in import_list {
             let config_json = serde_json::to_string(&item.config).unwrap_or("{}".to_string());
 
-            stmt.execute(params![
-                item.path,
-                config_json,
-                item.updated_at
-            ]).map_err(|e| e.to_string())?;
+            stmt.execute(params![item.path, config_json, item.updated_at])
+                .map_err(|e| e.to_string())?;
 
             count += 1;
         }

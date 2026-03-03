@@ -1,5 +1,5 @@
-use regex::Regex;
 use super::Rule;
+use regex::Regex;
 
 pub fn communication_rules() -> Vec<Rule> {
     vec![
@@ -7,7 +7,10 @@ pub fn communication_rules() -> Vec<Rule> {
         Rule {
             id: "slack-webhook",
             description: "Slack Webhook URL",
-            regex: Regex::new(r"https://hooks.slack.com/services/T[A-Z0-9]{8,10}/B[A-Z0-9]{8,10}/[A-Za-z0-9]{24}").unwrap(),
+            regex: Regex::new(
+                r"https://hooks.slack.com/services/T[A-Z0-9]{8,10}/B[A-Z0-9]{8,10}/[A-Za-z0-9]{24}",
+            )
+            .unwrap(),
             entropy: Some(3.0),
             keywords: &["hooks.slack.com/services"],
         },
@@ -27,12 +30,12 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &["xoxp-", "xoxr-", "xoxs-", "xoxe-"],
         },
-
         // Discord Bot Token
         Rule {
             id: "discord-bot-token",
             description: "Discord Bot Token",
-            regex: Regex::new(r"[MN][A-Za-z\\d]{23}\\.[XP][A-Za-z\\d]{5}\\.[A-Za-z\\d]{27}").unwrap(),
+            regex: Regex::new(r"[MN][A-Za-z\\d]{23}\\.[XP][A-Za-z\\d]{5}\\.[A-Za-z\\d]{27}")
+                .unwrap(),
             entropy: Some(3.5),
             keywords: &[],
         },
@@ -40,11 +43,13 @@ pub fn communication_rules() -> Vec<Rule> {
         Rule {
             id: "discord-webhook",
             description: "Discord Webhook URL",
-            regex: Regex::new(r"https://discord(app)?\\.com/api/webhooks/[0-9]{18,19}/[A-Za-z0-9_\\-]{68}").unwrap(),
+            regex: Regex::new(
+                r"https://discord(app)?\\.com/api/webhooks/[0-9]{18,19}/[A-Za-z0-9_\\-]{68}",
+            )
+            .unwrap(),
             entropy: Some(3.8),
             keywords: &["discord.com/api/webhooks", "discordapp.com/api/webhooks"],
         },
-
         // Twilio API Key
         Rule {
             id: "twilio-api-key",
@@ -53,7 +58,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["SK"],
         },
-
         // Telegram Bot Token
         Rule {
             id: "telegram-bot-token",
@@ -62,7 +66,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Mailgun API Key
         Rule {
             id: "mailgun-api-key",
@@ -71,7 +74,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["key-"],
         },
-
         // SendGrid API Key
         Rule {
             id: "sendgrid-api-key",
@@ -80,7 +82,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &["SG."],
         },
-
         // Sendinblue (Brevo) API Key
         Rule {
             id: "sendinblue-api-key",
@@ -89,7 +90,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &["xkeysib-"],
         },
-
         // Mailchimp API Key
         Rule {
             id: "mailchimp-api-key",
@@ -98,7 +98,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["-us"],
         },
-
         // MessageBird API Key
         Rule {
             id: "messagebird-api-key",
@@ -107,7 +106,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.2),
             keywords: &[],
         },
-
         // Mattermost Personal Access Token
         Rule {
             id: "mattermost-token",
@@ -116,7 +114,6 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.2),
             keywords: &[],
         },
-
         // Asana Personal Access Token
         Rule {
             id: "asana-token",
@@ -125,16 +122,15 @@ pub fn communication_rules() -> Vec<Rule> {
             entropy: Some(3.2),
             keywords: &[],
         },
-
         // HubSpot API Key
         Rule {
             id: "hubspot-api-key",
             description: "HubSpot API Key",
-            regex: Regex::new(r"[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}").unwrap(),
+            regex: Regex::new(r"[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}")
+                .unwrap(),
             entropy: Some(3.0),
             keywords: &[],
         },
-
         // Intercom Access Token
         Rule {
             id: "intercom-access-token",

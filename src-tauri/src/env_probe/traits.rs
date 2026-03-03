@@ -1,9 +1,9 @@
+use super::ToolInfo;
+use std::any::Any;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use std::any::Any;
-use super::ToolInfo;
 
 const MAX_READ_SIZE: u64 = 50 * 1024;
 
@@ -27,8 +27,12 @@ pub fn read_file_head(path: &Path) -> Option<String> {
         }
         let _ = file.seek(SeekFrom::Start(0));
         let mut fallback_buffer = Vec::new();
-        if file.take(MAX_READ_SIZE).read_to_end(&mut fallback_buffer).is_ok() {
-             return Some(String::from_utf8_lossy(&fallback_buffer).to_string());
+        if file
+            .take(MAX_READ_SIZE)
+            .read_to_end(&mut fallback_buffer)
+            .is_ok()
+        {
+            return Some(String::from_utf8_lossy(&fallback_buffer).to_string());
         }
     }
     None

@@ -2,9 +2,9 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Runtime, State};
 
-use crate::models::MinerConfig;
-use crate::error::{MinerError, Result};
 use crate::core::queue::run_crawl_task;
+use crate::error::{MinerError, Result};
+use crate::models::MinerConfig;
 
 // 维护爬虫的运行状态，以便我们可以通过命令停止它
 pub struct MinerState {
@@ -23,11 +23,13 @@ impl MinerState {
 pub async fn start_mining<R: Runtime>(
     app: AppHandle<R>,
     state: State<'_, MinerState>,
-    config: MinerConfig
+    config: MinerConfig,
 ) -> Result<String> {
     // 防止重复启动
     if state.is_running.load(Ordering::SeqCst) {
-        return Err(MinerError::SystemError("Mining is already in progress.".into()));
+        return Err(MinerError::SystemError(
+            "Mining is already in progress.".into(),
+        ));
     }
 
     state.is_running.store(true, Ordering::SeqCst);

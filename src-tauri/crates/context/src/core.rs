@@ -1,8 +1,8 @@
-use std::fs;
-use std::path::Path;
+use super::{processing, tokenizer};
 use rayon::prelude::*;
 use serde::Serialize;
-use super::{tokenizer, processing};
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, Serialize)]
 pub struct ContextStats {
@@ -19,7 +19,11 @@ fn read_and_process_file(path: &str, remove_comments: bool) -> String {
 
     if let Ok(meta) = fs::metadata(p) {
         if meta.len() > MAX_FILE_SIZE {
-            return format!("<file path=\"{}\">\n[File too large: {} bytes]\n</file>", path, meta.len());
+            return format!(
+                "<file path=\"{}\">\n[File too large: {} bytes]\n</file>",
+                path,
+                meta.len()
+            );
         }
     } else {
         return format!("<file path=\"{}\">\n[Error: File not found]\n</file>", path);
@@ -34,20 +38,28 @@ fn read_and_process_file(path: &str, remove_comments: bool) -> String {
             let content = String::from_utf8_lossy(&bytes);
 
             let final_content = if remove_comments {
-                let ext = p.extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
+                let ext = p
+                    .extension()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("")
+                    .to_lowercase();
                 processing::strip_comments(&content, &ext)
             } else {
                 content.to_string()
             };
 
             format!("<file path=\"{}\">\n{}\n</file>", path, final_content)
-        },
-        Err(e) => format!("<file path=\"{}\">\n[Error reading file: {}]\n</file>", path, e)
+        }
+        Err(e) => format!(
+            "<file path=\"{}\">\n[Error reading file: {}]\n</file>",
+            path, e
+        ),
     }
 }
 
 pub fn calculate_stats_parallel(paths: Vec<String>, remove_comments: bool) -> ContextStats {
-    let (total_size, total_tokens) = paths.par_iter()
+    let (total_size, total_tokens) = paths
+        .par_iter()
         .map(|path| {
             let xml_block = read_and_process_file(path, remove_comments);
             let size = xml_block.len();
@@ -63,12 +75,19 @@ pub fn calculate_stats_parallel(paths: Vec<String>, remove_comments: bool) -> Co
     }
 }
 
-pub fn assemble_context_parallel(paths: Vec<String>, header: String, remove_comments: bool) -> String {
-    let file_blocks: Vec<String> = paths.par_iter()
+pub fn assemble_context_parallel(
+    paths: Vec<String>,
+    header: String,
+    remove_comments: bool,
+) -> String {
+    let file_blocks: Vec<String> = paths
+        .par_iter()
         .map(|path| read_and_process_file(path, remove_comments))
         .collect();
 
-    let mut full_text = String::with_capacity(header.len() + file_blocks.iter().map(|s| s.len()).sum::<usize>() + 100);
+    let mut full_text = String::with_capacity(
+        header.len() + file_blocks.iter().map(|s| s.len()).sum::<usize>() + 100,
+    );
 
     full_text.push_str(&header);
     full_text.push_str("\n<source_files>\n");

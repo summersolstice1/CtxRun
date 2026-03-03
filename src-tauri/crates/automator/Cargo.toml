@@ -10,15 +10,15 @@ tauri = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
+futures = { workspace = true }
 enigo = { workspace = true }
 xcap = "0.8"
 image = { workspace = true }
 thiserror = { workspace = true }
 which = { workspace = true }
 
-headless_chrome = { version = "1.0" }
+chromiumoxide = "0.9.1"
 ctxrun-browser-utils = { workspace = true }
-reqwest = { workspace = true }
 
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.61", features = [

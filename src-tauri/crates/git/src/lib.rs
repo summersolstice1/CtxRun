@@ -1,12 +1,12 @@
 use tauri::{
-    plugin::{Builder, TauriPlugin},
     Runtime,
+    plugin::{Builder, TauriPlugin},
 };
 
-pub mod models;
 pub mod commands;
-pub mod export;
 pub mod error;
+pub mod export;
+pub mod models;
 
 pub use error::{GitError, Result};
 

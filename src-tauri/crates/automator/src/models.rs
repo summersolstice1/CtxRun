@@ -21,7 +21,7 @@ pub struct UIElementNode {
 pub enum ActionTarget {
     Coordinate {
         x: i32,
-        y: i32
+        y: i32,
     },
     Semantic {
         name: String,
@@ -45,25 +45,49 @@ pub enum ActionTarget {
         fallback_x: i32,
         #[serde(rename = "fallbackY")]
         fallback_y: i32,
-    }
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum AutomatorAction {
-    MoveTo { target: ActionTarget },
-    Click { button: MouseButton, target: Option<ActionTarget> },
-    DoubleClick { button: MouseButton, target: Option<ActionTarget> },
-    Type { text: String, target: Option<ActionTarget> },
+    MoveTo {
+        target: ActionTarget,
+    },
+    Click {
+        button: MouseButton,
+        target: Option<ActionTarget>,
+    },
+    DoubleClick {
+        button: MouseButton,
+        target: Option<ActionTarget>,
+    },
+    Type {
+        text: String,
+        target: Option<ActionTarget>,
+    },
     KeyPress {
         key: String,
         #[serde(default)]
-        target: Option<ActionTarget>
+        target: Option<ActionTarget>,
     },
-    Scroll { delta: i32 },
-    Wait { ms: u64 },
-    CheckColor { x: i32, y: i32, #[serde(rename = "expectedHex")] expected_hex: String, tolerance: u32 },
-    Iterate { #[serde(rename = "targetCount")] target_count: u32 },
+    Scroll {
+        delta: i32,
+    },
+    Wait {
+        ms: u64,
+    },
+    CheckColor {
+        x: i32,
+        y: i32,
+        #[serde(rename = "expectedHex")]
+        expected_hex: String,
+        tolerance: u32,
+    },
+    Iterate {
+        #[serde(rename = "targetCount")]
+        target_count: u32,
+    },
     LaunchBrowser {
         browser: String,
         #[serde(default)]

@@ -1,4 +1,4 @@
-use crate::env_probe::{common, ToolInfo};
+use crate::env_probe::{ToolInfo, common};
 use rayon::prelude::*;
 #[cfg(target_os = "windows")]
 use std::path::Path;
@@ -11,14 +11,46 @@ struct IdeConfig {
 }
 
 const IDES: &[IdeConfig] = &[
-    IdeConfig { name: "VSCode", bin: "code", mac_id: "com.microsoft.VSCode" },
-    IdeConfig { name: "Cursor", bin: "cursor", mac_id: "com.todesktop.230313mzl4w4u92" },
-    IdeConfig { name: "Sublime Text", bin: "subl", mac_id: "com.sublimetext.4" },
-    IdeConfig { name: "Xcode", bin: "xcodebuild", mac_id: "com.apple.dt.Xcode" },
-    IdeConfig { name: "IntelliJ", bin: "idea", mac_id: "com.jetbrains.intellij" },
-    IdeConfig { name: "Android Studio", bin: "studio", mac_id: "com.google.android.studio" },
-    IdeConfig { name: "Vim", bin: "vim", mac_id: "" },
-    IdeConfig { name: "NeoVim", bin: "nvim", mac_id: "" },
+    IdeConfig {
+        name: "VSCode",
+        bin: "code",
+        mac_id: "com.microsoft.VSCode",
+    },
+    IdeConfig {
+        name: "Cursor",
+        bin: "cursor",
+        mac_id: "com.todesktop.230313mzl4w4u92",
+    },
+    IdeConfig {
+        name: "Sublime Text",
+        bin: "subl",
+        mac_id: "com.sublimetext.4",
+    },
+    IdeConfig {
+        name: "Xcode",
+        bin: "xcodebuild",
+        mac_id: "com.apple.dt.Xcode",
+    },
+    IdeConfig {
+        name: "IntelliJ",
+        bin: "idea",
+        mac_id: "com.jetbrains.intellij",
+    },
+    IdeConfig {
+        name: "Android Studio",
+        bin: "studio",
+        mac_id: "com.google.android.studio",
+    },
+    IdeConfig {
+        name: "Vim",
+        bin: "vim",
+        mac_id: "",
+    },
+    IdeConfig {
+        name: "NeoVim",
+        bin: "nvim",
+        mac_id: "",
+    },
 ];
 
 pub fn probe_ides() -> Vec<ToolInfo> {
@@ -40,14 +72,20 @@ fn check_ide(cfg: &IdeConfig) -> ToolInfo {
 
     #[cfg(target_os = "macos")]
     if info.version == "Not Found" && !cfg.mac_id.is_empty() {
-        if let Ok(app_path) = common::run_command("mdfind", &[&format!("kMDItemCFBundleIdentifier == '{}'", cfg.mac_id)]) {
+        if let Ok(app_path) = common::run_command(
+            "mdfind",
+            &[&format!("kMDItemCFBundleIdentifier == '{}'", cfg.mac_id)],
+        ) {
             let first_path = app_path.lines().next().unwrap_or("").trim();
             if !first_path.is_empty() {
                 info.path = Some(first_path.to_string());
-                if let Ok(ver) = common::run_command("mdls", &["-name", "kMDItemShortVersionString", "-raw", first_path]) {
-                     if !ver.is_empty() && ver != "(null)" {
+                if let Ok(ver) = common::run_command(
+                    "mdls",
+                    &["-name", "kMDItemShortVersionString", "-raw", first_path],
+                ) {
+                    if !ver.is_empty() && ver != "(null)" {
                         info.version = ver;
-                     }
+                    }
                 }
             }
         }
@@ -57,8 +95,14 @@ fn check_ide(cfg: &IdeConfig) -> ToolInfo {
     if info.version == "Not Found" {
         let search_paths = vec![
             format!(r"C:\Program Files\Microsoft VS Code\bin\{}.cmd", cfg.bin),
-            format!(r"C:\Program Files\JetBrains\IntelliJ IDEA*\bin\{}64.exe", cfg.bin),
-            format!(r"C:\Program Files\Android\Android Studio\bin\{}64.exe", cfg.bin),
+            format!(
+                r"C:\Program Files\JetBrains\IntelliJ IDEA*\bin\{}64.exe",
+                cfg.bin
+            ),
+            format!(
+                r"C:\Program Files\Android\Android Studio\bin\{}64.exe",
+                cfg.bin
+            ),
             format!(r"C:\Program Files\Git\usr\bin\{}.exe", cfg.bin),
         ];
 
@@ -69,7 +113,8 @@ fn check_ide(cfg: &IdeConfig) -> ToolInfo {
                     if let Ok(unflattened_entries) = read_result {
                         let entries = unflattened_entries.flatten();
                         for entry in entries {
-                            let bin_path = entry.path().join("bin").join(format!("{}64.exe", cfg.bin));
+                            let bin_path =
+                                entry.path().join("bin").join(format!("{}64.exe", cfg.bin));
                             if bin_path.exists() {
                                 info.path = Some(bin_path.to_string_lossy().to_string());
                                 info.version = "Installed (Version unknown)".to_string();

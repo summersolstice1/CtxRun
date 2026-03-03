@@ -1,9 +1,14 @@
 //! Inspector module for UI element detection and resolution
 
-use serde::{Deserialize, Serialize};
 use crate::error::{AutomatorError, Result};
 use crate::models::{ActionTarget, UIElementNode};
 use enigo::{Enigo, Mouse, Settings};
+use serde::{Deserialize, Serialize};
+
+// Keep tree traversal bounded to avoid pathological UIA scans hanging automation.
+const PATH_ASCEND_LIMIT: usize = 50;
+const WINDOW_RESOLVE_RETRIES: u32 = 4;
+const BFS_NODE_SCAN_LIMIT: usize = 2500;
 
 #[cfg(target_os = "windows")]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,17 +24,23 @@ pub struct PickedElement {
 
 #[cfg(target_os = "windows")]
 pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
-    use uiautomation::UIAutomation;
-    use uiautomation::types::{Point, ControlType};
     use std::thread;
     use std::time::Duration;
+    use uiautomation::UIAutomation;
+    use uiautomation::types::{ControlType, Point};
 
-    let enigo = Enigo::new(&Settings::default()).map_err(|e| AutomatorError::InputError(e.to_string()))?;
-    let (x, y) = enigo.location().map_err(|e| AutomatorError::InputError(e.to_string()))?;
+    let enigo =
+        Enigo::new(&Settings::default()).map_err(|e| AutomatorError::InputError(e.to_string()))?;
+    let (x, y) = enigo
+        .location()
+        .map_err(|e| AutomatorError::InputError(e.to_string()))?;
 
     // 初始化多线程 COM 模型
     unsafe {
-        let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_MULTITHREADED);
+        let _ = windows::Win32::System::Com::CoInitializeEx(
+            None,
+            windows::Win32::System::Com::COINIT_MULTITHREADED,
+        );
     }
 
     if let Ok(automation) = UIAutomation::new() {
@@ -50,9 +61,12 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
 
                     if let Ok(walker) = automation.get_control_view_walker() {
                         if let Ok(root) = automation.get_root_element() {
-                            for _ in 0..50 {
+                            for _ in 0..PATH_ASCEND_LIMIT {
                                 let c_name = current.get_name().unwrap_or_default();
-                                let c_role = format!("{:?}", current.get_control_type().unwrap_or(ControlType::Custom));
+                                let c_role = format!(
+                                    "{:?}",
+                                    current.get_control_type().unwrap_or(ControlType::Custom)
+                                );
                                 let c_class = current.get_classname().unwrap_or_default();
 
                                 path.push(UIElementNode {
@@ -61,12 +75,16 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
                                     class_name: c_class,
                                 });
 
-                                if c_role == "Window" && window_title.is_none() && !c_name.is_empty() {
+                                if c_role == "Window"
+                                    && window_title.is_none()
+                                    && !c_name.is_empty()
+                                {
                                     window_title = Some(c_name);
                                 }
 
                                 if let Ok(parent) = walker.get_parent(&current) {
-                                    if automation.compare_elements(&parent, &root).unwrap_or(false) {
+                                    if automation.compare_elements(&parent, &root).unwrap_or(false)
+                                    {
                                         break;
                                     }
                                     current = parent;
@@ -86,7 +104,7 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
                         process_name: None,
                         path,
                         x,
-                        y
+                        y,
                     });
                 }
             }
@@ -96,7 +114,15 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
         }
     }
 
-    Ok(PickedElement { name: String::new(), role: String::new(), window_title: None, process_name: None, path: vec![], x, y })
+    Ok(PickedElement {
+        name: String::new(),
+        role: String::new(),
+        window_title: None,
+        process_name: None,
+        path: vec![],
+        x,
+        y,
+    })
 }
 
 #[cfg(not(target_os = "windows"))]
@@ -113,29 +139,53 @@ pub struct PickedElement {
 
 #[cfg(not(target_os = "windows"))]
 pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
-    let enigo = Enigo::new(&Settings::default()).map_err(|e| AutomatorError::InputError(e.to_string()))?;
-    let (x, y) = enigo.location().map_err(|e| AutomatorError::InputError(e.to_string()))?;
-    Ok(PickedElement { name: String::new(), role: String::new(), window_title: None, process_name: None, path: vec![], x, y })
+    let enigo =
+        Enigo::new(&Settings::default()).map_err(|e| AutomatorError::InputError(e.to_string()))?;
+    let (x, y) = enigo
+        .location()
+        .map_err(|e| AutomatorError::InputError(e.to_string()))?;
+    Ok(PickedElement {
+        name: String::new(),
+        role: String::new(),
+        window_title: None,
+        process_name: None,
+        path: vec![],
+        x,
+        y,
+    })
 }
 
 pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
     match target {
         ActionTarget::Coordinate { x, y } => Ok((*x, *y)),
 
-        ActionTarget::WebSelector { fallback_x, fallback_y, .. } => {
-            Ok((*fallback_x, *fallback_y))
-        }
+        ActionTarget::WebSelector {
+            fallback_x,
+            fallback_y,
+            ..
+        } => Ok((*fallback_x, *fallback_y)),
 
-        ActionTarget::Semantic { name, role: _, window_title, process_name: _, path, fallback_x, fallback_y } => {
+        ActionTarget::Semantic {
+            name,
+            role: _,
+            window_title,
+            process_name: _,
+            path,
+            fallback_x,
+            fallback_y,
+        } => {
             #[cfg(target_os = "windows")]
             {
-                use uiautomation::UIAutomation;
-                use uiautomation::types::Point;
                 use std::thread;
                 use std::time::Duration;
+                use uiautomation::UIAutomation;
+                use uiautomation::types::Point;
 
                 unsafe {
-                    let _ = windows::Win32::System::Com::CoInitializeEx(None, windows::Win32::System::Com::COINIT_MULTITHREADED);
+                    let _ = windows::Win32::System::Com::CoInitializeEx(
+                        None,
+                        windows::Win32::System::Com::COINIT_MULTITHREADED,
+                    );
                 }
 
                 let automation = match UIAutomation::new() {
@@ -146,7 +196,9 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                 };
 
                 thread::sleep(Duration::from_millis(50));
-                if let Ok(element) = automation.element_from_point(Point::new(*fallback_x, *fallback_y)) {
+                if let Ok(element) =
+                    automation.element_from_point(Point::new(*fallback_x, *fallback_y))
+                {
                     if let Ok(current_name) = element.get_name() {
                         if current_name == *name {
                             return Ok((*fallback_x, *fallback_y));
@@ -154,17 +206,19 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                     }
                 }
 
-
                 let expected_win_name = window_title.clone().unwrap_or_else(|| {
-                    if !path.is_empty() { path[0].name.clone() } else { String::new() }
+                    if !path.is_empty() {
+                        path[0].name.clone()
+                    } else {
+                        String::new()
+                    }
                 });
 
                 let mut found_element = None;
-                let max_attempts = 4;
+                let max_attempts = WINDOW_RESOLVE_RETRIES;
 
                 if let Ok(root) = automation.get_root_element() {
                     if let Ok(walker) = automation.get_control_view_walker() {
-
                         for attempt in 1..=max_attempts {
                             let mut target_window = None;
 
@@ -172,7 +226,10 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                                 if let Ok(mut child) = walker.get_first_child(&root) {
                                     loop {
                                         let w_name = child.get_name().unwrap_or_default();
-                                        if !w_name.is_empty() && (w_name.contains(&expected_win_name) || expected_win_name.contains(&w_name)) {
+                                        if !w_name.is_empty()
+                                            && (w_name.contains(&expected_win_name)
+                                                || expected_win_name.contains(&w_name))
+                                        {
                                             target_window = Some(child.clone());
                                             break;
                                         }
@@ -186,11 +243,16 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                             }
 
                             if target_window.is_none() {
-                                if let Ok(element_at_point) = automation.element_from_point(Point::new(*fallback_x, *fallback_y)) {
+                                if let Ok(element_at_point) = automation
+                                    .element_from_point(Point::new(*fallback_x, *fallback_y))
+                                {
                                     let mut curr = element_at_point;
-                                    for _ in 0..50 {
+                                    for _ in 0..PATH_ASCEND_LIMIT {
                                         if let Ok(parent) = walker.get_parent(&curr) {
-                                            if automation.compare_elements(&parent, &root).unwrap_or(false) {
+                                            if automation
+                                                .compare_elements(&parent, &root)
+                                                .unwrap_or(false)
+                                            {
                                                 target_window = Some(curr.clone());
                                                 break;
                                             }
@@ -203,7 +265,11 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                             }
 
                             if let Some(win) = target_window {
-                                let matcher = automation.create_matcher().from(win.clone()).name(name).timeout(500);
+                                let matcher = automation
+                                    .create_matcher()
+                                    .from(win.clone())
+                                    .name(name)
+                                    .timeout(500);
                                 if let Ok(elem) = matcher.find_first() {
                                     found_element = Some(elem);
                                 } else {
@@ -213,7 +279,9 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
 
                                     while let Some(node) = queue.pop_front() {
                                         count += 1;
-                                        if count > 2500 { break; }
+                                        if count > BFS_NODE_SCAN_LIMIT {
+                                            break;
+                                        }
 
                                         let c_name = node.get_name().unwrap_or_default();
 

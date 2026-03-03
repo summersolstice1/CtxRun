@@ -1,16 +1,16 @@
-use tauri::{
-    plugin::{Builder, TauriPlugin},
-    Manager, Runtime,
-};
 use std::sync::Arc;
+use tauri::{
+    Manager, Runtime,
+    plugin::{Builder, TauriPlugin},
+};
 use tokio::sync::Mutex as TokioMutex;
 
+pub mod cleanup_worker;
+pub mod commands;
+pub mod error;
 pub mod models;
 pub mod storage;
 pub mod worker;
-pub mod commands;
-pub mod cleanup_worker;
-pub mod error;
 
 pub use error::{RefineryError, Result};
 
@@ -33,13 +33,14 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         ])
         .setup(|app, _api| {
             let cleanup_config = Arc::new(TokioMutex::new(
-                cleanup_worker::RefineryCleanupConfig::default()
+                cleanup_worker::RefineryCleanupConfig::default(),
             ));
-            
+
             app.manage(commands::CleanupConfigState(cleanup_config.clone()));
-            
-            let (cleanup_worker, cleanup_sender) = cleanup_worker::CleanupWorker::new(cleanup_config);
-            
+
+            let (cleanup_worker, cleanup_sender) =
+                cleanup_worker::CleanupWorker::new(cleanup_config);
+
             // 修复点：直接克隆 AppHandle
             tauri::async_runtime::spawn(cleanup_worker.run(app.clone()));
             worker::init_listener(app.clone(), Some(cleanup_sender));

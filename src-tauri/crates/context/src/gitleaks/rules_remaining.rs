@@ -1,5 +1,5 @@
-use regex::Regex;
 use super::Rule;
+use regex::Regex;
 
 pub fn remaining_rules() -> Vec<Rule> {
     vec![
@@ -11,7 +11,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // GitLab Personal Access Token
         Rule {
             id: "gitlab-pat",
@@ -20,7 +19,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["glpat-"],
         },
-
         // Artifactory API Key
         Rule {
             id: "artifactory-api-key",
@@ -29,16 +27,15 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["AKC"],
         },
-
         // Snyk API Token
         Rule {
             id: "snyk-api-token",
             description: "Snyk API Token",
-            regex: Regex::new(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").unwrap(),
+            regex: Regex::new(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+                .unwrap(),
             entropy: Some(3.0),
             keywords: &[],
         },
-
         // Postman API Key
         Rule {
             id: "postman-api-key",
@@ -47,7 +44,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["PMAK-"],
         },
-
         // Notion Integration Token
         Rule {
             id: "notion-token",
@@ -56,7 +52,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["secret_"],
         },
-
         // Linear API Key
         Rule {
             id: "linear-api-key",
@@ -65,7 +60,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["lin_api_"],
         },
-
         // LaunchDarkly Access Token
         Rule {
             id: "launchdarkly-token",
@@ -74,7 +68,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Okta Access Token
         Rule {
             id: "okta-access-token",
@@ -83,7 +76,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["00"],
         },
-
         // 1Password Service Account Token
         Rule {
             id: "1password-service-account-token",
@@ -92,7 +84,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(4.0),
             keywords: &["ops_eyj"],
         },
-
         // PlanetScale Password / Database Password
         Rule {
             id: "planetscale-password",
@@ -101,7 +92,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &["pscale_pw_"],
         },
-
         // Prefect API Key
         Rule {
             id: "prefect-api-key",
@@ -110,7 +100,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["pnu_"],
         },
-
         // RapidAPI Key
         Rule {
             id: "rapidapi-key",
@@ -119,7 +108,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Readme.io API Key
         Rule {
             id: "readme-api-key",
@@ -128,7 +116,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["rdme_"],
         },
-
         // Scalingo API Token
         Rule {
             id: "scalingo-api-token",
@@ -137,7 +124,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["tk-us-"],
         },
-
         // Sendbird Access Token
         Rule {
             id: "sendbird-access-token",
@@ -146,7 +132,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Sentry Access Token
         Rule {
             id: "sentry-access-token",
@@ -155,7 +140,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &[],
         },
-
         // Shopify Shared Secret / Private App Password
         Rule {
             id: "shopify-shared-secret",
@@ -172,7 +156,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["shpat_"],
         },
-
         // SonarQube Token
         Rule {
             id: "sonarqube-token",
@@ -181,7 +164,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // SquareSpace API Key
         Rule {
             id: "squarespace-api-key",
@@ -190,7 +172,6 @@ pub fn remaining_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Typeform Access Token
         Rule {
             id: "typeform-access-token",

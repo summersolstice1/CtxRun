@@ -31,7 +31,7 @@ pub enum ExportFormat {
 
 #[derive(Deserialize, Clone, Copy, PartialEq, Debug)]
 pub enum ExportLayout {
-    Split,    
-    Unified,  
-    GitPatch, 
+    Split,
+    Unified,
+    GitPatch,
 }

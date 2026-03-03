@@ -1,15 +1,17 @@
+use regex::Regex;
 use std::process::{Command, Stdio};
 use std::time::Duration;
-use regex::Regex;
-use which::which;
 use wait_timeout::ChildExt;
+use which::which;
 
 const TIMEOUT_SECS: u64 = 8;
 
 pub fn run_command(bin: &str, args: &[&str]) -> Result<String, String> {
     #[cfg(target_os = "windows")]
     let (bin, final_args) = {
-        let script_tools = ["npm", "pnpm", "yarn", "cnpm", "code", "mvn", "gradle", "pod"];
+        let script_tools = [
+            "npm", "pnpm", "yarn", "cnpm", "code", "mvn", "gradle", "pod",
+        ];
 
         if script_tools.contains(&bin) {
             let mut new_args = vec!["/C", bin];
@@ -39,7 +41,10 @@ pub fn run_command(bin: &str, args: &[&str]) -> Result<String, String> {
         .spawn()
         .map_err(|e| format!("Failed to spawn {}: {}", bin, e))?;
 
-    let status_code = match child.wait_timeout(Duration::from_secs(TIMEOUT_SECS)).map_err(|e| e.to_string())? {
+    let status_code = match child
+        .wait_timeout(Duration::from_secs(TIMEOUT_SECS))
+        .map_err(|e| e.to_string())?
+    {
         Some(status) => status,
         None => {
             let _ = child.kill();
@@ -84,11 +89,16 @@ pub fn find_version(text: &str, regex: Option<&Regex>) -> String {
 pub fn locate_binary(bin: &str) -> Option<String> {
     match which(bin) {
         Ok(path) => Some(path.to_string_lossy().to_string()),
-        Err(_) => None
+        Err(_) => None,
     }
 }
 
-pub fn generic_probe(name: &str, bin: &str, args: &[&str], version_regex: Option<&Regex>) -> crate::env_probe::ToolInfo {
+pub fn generic_probe(
+    name: &str,
+    bin: &str,
+    args: &[&str],
+    version_regex: Option<&Regex>,
+) -> crate::env_probe::ToolInfo {
     let path = locate_binary(bin);
 
     let version = if let Some(_) = path {
@@ -100,7 +110,7 @@ pub fn generic_probe(name: &str, bin: &str, args: &[&str], version_regex: Option
                 } else {
                     "Installed (Check Failed)".to_string()
                 }
-            },
+            }
         }
     } else {
         "Not Found".to_string()

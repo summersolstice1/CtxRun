@@ -1,5 +1,5 @@
-use regex::Regex;
 use super::Rule;
+use regex::Regex;
 
 pub fn cloud_rules() -> Vec<Rule> {
     vec![
@@ -31,11 +31,13 @@ pub fn cloud_rules() -> Vec<Rule> {
         Rule {
             id: "aws-mws-key",
             description: "Amazon Marketplace Web Service Key",
-            regex: Regex::new(r"amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").unwrap(),
+            regex: Regex::new(
+                r"amzn\.mws\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+            )
+            .unwrap(),
             entropy: Some(3.0),
             keywords: &["amzn.mws."],
         },
-
         // Azure Client ID / Application ID
         Rule {
             id: "azure-client-id",
@@ -60,7 +62,6 @@ pub fn cloud_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Google Cloud API Key
         Rule {
             id: "gcp-api-key",
@@ -85,7 +86,6 @@ pub fn cloud_rules() -> Vec<Rule> {
             entropy: None,
             keywords: &["service_account"],
         },
-
         // DigitalOcean Personal Access Token
         Rule {
             id: "digitalocean-token",
@@ -94,16 +94,15 @@ pub fn cloud_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["dov0"],
         },
-
         // Heroku API Key
         Rule {
             id: "heroku-api-key",
             description: "Heroku API Key",
-            regex: Regex::new(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}").unwrap(),
+            regex: Regex::new(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+                .unwrap(),
             entropy: Some(3.0),
             keywords: &[],
         },
-
         // Cloudflare API Key / Global API Key
         Rule {
             id: "cloudflare-api-key",
@@ -120,7 +119,6 @@ pub fn cloud_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Alibaba Cloud Access Key ID
         Rule {
             id: "alibaba-access-key-id",
@@ -137,7 +135,6 @@ pub fn cloud_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // HashiCorp Terraform Cloud Token
         Rule {
             id: "hashicorp-terraform-token",
@@ -146,7 +143,6 @@ pub fn cloud_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &["atlasv1"],
         },
-
         // HashiCorp Vault Token
         Rule {
             id: "hashicorp-vault-token",

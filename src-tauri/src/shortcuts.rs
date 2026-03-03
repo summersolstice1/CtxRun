@@ -1,9 +1,9 @@
+use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs;
 use std::sync::Mutex;
-use std::collections::HashMap;
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
-use serde::Deserialize;
 
 use ctxrun_plugin_automator;
 #[derive(Deserialize, Debug)]
@@ -77,11 +77,13 @@ impl ShortcutManager {
         let shortcut = new_key.parse::<Shortcut>().map_err(|e| e.to_string())?;
 
         let action_clone = action.clone();
-        app.global_shortcut().on_shortcut(shortcut, move |app_handle, _shortcut, event| {
-            if event.state == ShortcutState::Pressed {
-                handle_trigger(app_handle, &action_clone);
-            }
-        }).map_err(|e| e.to_string())?;
+        app.global_shortcut()
+            .on_shortcut(shortcut, move |app_handle, _shortcut, event| {
+                if event.state == ShortcutState::Pressed {
+                    handle_trigger(app_handle, &action_clone);
+                }
+            })
+            .map_err(|e| e.to_string())?;
 
         registered.insert(action, new_key);
         Ok(())

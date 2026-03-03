@@ -1,5 +1,5 @@
-use regex::Regex;
 use super::Rule;
+use regex::Regex;
 
 pub fn payment_rules() -> Vec<Rule> {
     vec![
@@ -27,7 +27,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["rk_live_", "rk_test_"],
         },
-
         // Square Access Token
         Rule {
             id: "square-access-token",
@@ -44,7 +43,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["sq0csp-"],
         },
-
         // PayPal Braintree Access Token
         Rule {
             id: "paypal-braintree-access-token",
@@ -53,7 +51,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.8),
             keywords: &["access_token$production"],
         },
-
         // Plaid Client ID / Secret
         Rule {
             id: "plaid-client-id",
@@ -69,7 +66,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Coinbase API Key
         Rule {
             id: "coinbase-api-key",
@@ -78,7 +74,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Finicity API Key
         Rule {
             id: "finicity-api-key",
@@ -95,7 +90,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Flutterwave Secret Key
         Rule {
             id: "flutterwave-secret-key",
@@ -112,7 +106,6 @@ pub fn payment_rules() -> Vec<Rule> {
             entropy: Some(3.0),
             keywords: &["FLWPUBK-"],
         },
-
         // GoCardless Access Token
         Rule {
             id: "gocardless-access-token",

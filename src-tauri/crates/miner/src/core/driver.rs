@@ -1,9 +1,9 @@
-use std::time::Duration;
-use chromiumoxide::{Browser, BrowserConfig, Page};
-use futures::StreamExt;
-use tauri::async_runtime::JoinHandle;
-use ctxrun_browser_utils::{locate_browser, BrowserType};
 use crate::error::{MinerError, Result};
+use chromiumoxide::{Browser, BrowserConfig, Page};
+use ctxrun_browser_utils::{BrowserType, locate_browser};
+use futures::StreamExt;
+use std::time::Duration;
+use tauri::async_runtime::JoinHandle;
 
 const BROWSER_LAUNCH_RETRIES: usize = 3;
 const BROWSER_LAUNCH_RETRY_DELAY_MS: u64 = 400;
@@ -42,7 +42,9 @@ impl MinerDriver {
             .arg("disable-web-security")
             .arg(("disable-features", "IsolateOrigins,site-per-process"))
             .build()
-            .map_err(|e| MinerError::BrowserError(format!("Failed to build browser config: {}", e)))?;
+            .map_err(|e| {
+                MinerError::BrowserError(format!("Failed to build browser config: {}", e))
+            })?;
 
         let mut launch_result = None;
         let mut last_error = String::new();
@@ -55,7 +57,8 @@ impl MinerDriver {
                 Err(e) => {
                     last_error = e.to_string();
                     if attempt < BROWSER_LAUNCH_RETRIES {
-                        tokio::time::sleep(Duration::from_millis(BROWSER_LAUNCH_RETRY_DELAY_MS)).await;
+                        tokio::time::sleep(Duration::from_millis(BROWSER_LAUNCH_RETRY_DELAY_MS))
+                            .await;
                     }
                 }
             }
@@ -101,9 +104,12 @@ impl MinerDriver {
         }
 
         if let Some(mut task) = self.handler_task.take() {
-            if tokio::time::timeout(Duration::from_secs(HANDLER_SHUTDOWN_TIMEOUT_SECS), &mut task)
-                .await
-                .is_err()
+            if tokio::time::timeout(
+                Duration::from_secs(HANDLER_SHUTDOWN_TIMEOUT_SECS),
+                &mut task,
+            )
+            .await
+            .is_err()
             {
                 task.abort();
                 let _ = task.await;

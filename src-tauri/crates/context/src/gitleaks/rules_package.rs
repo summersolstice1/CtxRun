@@ -1,5 +1,5 @@
-use regex::Regex;
 use super::Rule;
+use regex::Regex;
 
 pub fn package_and_generic_rules() -> Vec<Rule> {
     vec![

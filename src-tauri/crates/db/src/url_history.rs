@@ -1,6 +1,6 @@
-use rusqlite::{params, Connection};
-use tauri::{AppHandle, Manager, State};
 use regex::Regex;
+use rusqlite::{Connection, params};
+use tauri::{AppHandle, Manager, State};
 
 use super::init::DbState;
 use super::models::UrlHistoryItem;
@@ -13,7 +13,7 @@ use super::models::UrlHistoryItem;
 pub async fn record_url_visit(
     app_handle: AppHandle,
     state: State<'_, DbState>,
-    url: String
+    url: String,
 ) -> Result<(), String> {
     let now = chrono::Utc::now().timestamp();
 
@@ -26,7 +26,8 @@ pub async fn record_url_visit(
                 visit_count = visit_count + 1,
                 last_visit = ?2",
             params![url, now],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
     }
 
     let url_clone = url.clone();
@@ -37,22 +38,30 @@ pub async fn record_url_visit(
             .build();
 
         if let Ok(c) = client {
-            if let Ok(resp) = c.get(&url_clone)
+            if let Ok(resp) = c
+                .get(&url_clone)
                 .header("Range", "bytes=0-16384") // Only request the first 16KB
                 .send()
                 .await
             {
                 // A successful range request returns 206 Partial Content
-                if resp.status().is_success() || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT {
+                if resp.status().is_success()
+                    || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT
+                {
                     if let Ok(text) = resp.text().await {
                         if let Ok(re) = Regex::new(r"(?is)<title>(.*?)</title>") {
                             if let Some(caps) = re.captures(&text) {
                                 if let Some(title_match) = caps.get(1) {
                                     let raw_title = title_match.as_str().trim();
-                                    let clean_title = raw_title.replace('\n', " ").replace('\r', "").trim().to_string();
+                                    let clean_title = raw_title
+                                        .replace('\n', " ")
+                                        .replace('\r', "")
+                                        .trim()
+                                        .to_string();
 
                                     if !clean_title.is_empty() {
-                                        if let Ok(app_dir) = app_handle.path().app_local_data_dir() {
+                                        if let Ok(app_dir) = app_handle.path().app_local_data_dir()
+                                        {
                                             let db_path = app_dir.join("prompts.db");
                                             if let Ok(conn) = Connection::open(db_path) {
                                                 let _ = conn.execute(
@@ -77,7 +86,7 @@ pub async fn record_url_visit(
 #[tauri::command]
 pub fn search_url_history(
     state: State<DbState>,
-    query: String
+    query: String,
 ) -> Result<Vec<UrlHistoryItem>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
@@ -85,19 +94,23 @@ pub fn search_url_history(
     let char_count = clean_query.chars().count();
 
     if clean_query.trim().is_empty() {
-        let mut stmt = conn.prepare(
-            "SELECT url, title, visit_count, last_visit FROM url_history
-             ORDER BY last_visit DESC LIMIT 10"
-        ).map_err(|e| e.to_string())?;
+        let mut stmt = conn
+            .prepare(
+                "SELECT url, title, visit_count, last_visit FROM url_history
+             ORDER BY last_visit DESC LIMIT 10",
+            )
+            .map_err(|e| e.to_string())?;
 
-        let rows = stmt.query_map([], |row| {
-            Ok(UrlHistoryItem {
-                url: row.get("url")?,
-                title: row.get("title")?,
-                visit_count: row.get("visit_count")?,
-                last_visit: row.get("last_visit")?,
+        let rows = stmt
+            .query_map([], |row| {
+                Ok(UrlHistoryItem {
+                    url: row.get("url")?,
+                    title: row.get("title")?,
+                    visit_count: row.get("visit_count")?,
+                    last_visit: row.get("last_visit")?,
+                })
             })
-        }).map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())?;
 
         let mut results = Vec::new();
         for r in rows {
@@ -118,7 +131,7 @@ pub fn search_url_history(
              FROM url_history
              WHERE (url LIKE ?1 OR title LIKE ?1)
              ORDER BY visit_count DESC, last_visit DESC
-             LIMIT 5"
+             LIMIT 5",
         );
     } else {
         let fts_query = format!("\"{}\"", clean_query);
@@ -130,21 +143,23 @@ pub fn search_url_history(
              JOIN url_history_fts f ON h.url = f.url
              WHERE url_history_fts MATCH ?1
              ORDER BY h.visit_count DESC, h.last_visit DESC
-             LIMIT 5"
+             LIMIT 5",
         );
     }
 
     let mut stmt = conn.prepare(&sql).map_err(|e| e.to_string())?;
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-    let rows = stmt.query_map(param_refs.as_slice(), |row| {
-        Ok(UrlHistoryItem {
-            url: row.get("url")?,
-            title: row.get("title")?,
-            visit_count: row.get("visit_count")?,
-            last_visit: row.get("last_visit")?,
+    let rows = stmt
+        .query_map(param_refs.as_slice(), |row| {
+            Ok(UrlHistoryItem {
+                url: row.get("url")?,
+                title: row.get("title")?,
+                visit_count: row.get("visit_count")?,
+                last_visit: row.get("last_visit")?,
+            })
         })
-    }).map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
 
     let mut results = Vec::new();
     for r in rows {

@@ -11,11 +11,10 @@ pub fn is_url_allowed(target_url: &str, allowed_prefix: &str) -> bool {
     // 2. 排除非 HTML 资源
     let lower = target_url.to_lowercase();
     let blacklist = [
-        ".png", ".jpg", ".jpeg", ".gif", ".svg",
-        ".pdf", ".zip", ".tar", ".gz", ".exe", ".dmg", ".iso",
-        ".css", ".js", ".json", ".xml", ".ico",
+        ".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf", ".zip", ".tar", ".gz", ".exe", ".dmg",
+        ".iso", ".css", ".js", ".json", ".xml", ".ico",
         "/source/", // docs.rs 特有：如果不想要源代码页面，可以过滤这个
-        "src/"      // 同上
+        "src/",     // 同上
     ];
 
     for ext in blacklist.iter() {
@@ -46,7 +45,7 @@ pub fn normalize_url(raw_url: &str) -> String {
             }
 
             parsed.to_string()
-        },
-        Err(_) => raw_url.to_string()
+        }
+        Err(_) => raw_url.to_string(),
     }
 }

@@ -1,6 +1,6 @@
 use ctxrun_db::{AppEntry, DbState};
-use tauri::State;
 use std::path::Path;
+use tauri::State;
 
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
@@ -13,7 +13,7 @@ use std::os::windows::process::CommandExt;
 pub async fn launch_browser(
     browser: String,
     url: Option<String>,
-    use_temp_profile: bool
+    use_temp_profile: bool,
 ) -> Result<(), String> {
     let is_edge = browser.to_lowercase() == "edge";
     ctxrun_plugin_automator::browser::launch_debug_browser(is_edge, url, use_temp_profile)
@@ -21,9 +21,9 @@ pub async fn launch_browser(
 
 #[tauri::command]
 pub async fn refresh_apps(state: State<'_, DbState>) -> Result<String, String> {
-    let items = tauri::async_runtime::spawn_blocking(move || -> Vec<AppEntry> {
-        scan_system()
-    }).await.map_err(|e| e.to_string())?;
+    let items = tauri::async_runtime::spawn_blocking(move || -> Vec<AppEntry> { scan_system() })
+        .await
+        .map_err(|e| e.to_string())?;
 
     let count = items.len();
 
@@ -72,7 +72,10 @@ fn scan_system() -> Vec<AppEntry> {
     {
         let start_menu_common = r"C:\ProgramData\Microsoft\Windows\Start Menu\Programs";
         let user_profile = std::env::var("USERPROFILE").unwrap_or_default();
-        let start_menu_user = format!(r"{}\AppData\Roaming\Microsoft\Windows\Start Menu\Programs", user_profile);
+        let start_menu_user = format!(
+            r"{}\AppData\Roaming\Microsoft\Windows\Start Menu\Programs",
+            user_profile
+        );
 
         let dirs = vec![start_menu_common, &start_menu_user];
 
@@ -89,14 +92,45 @@ fn scan_system() -> Vec<AppEntry> {
         ];
 
         let ignored_keywords = vec![
-            "uninstall", "卸载", "remove",
-            "help", "帮助", "documentation", "manual", "guide", "faq", "说明", "readme", "notes",
-            "config", "配置", "setting", "设置", "setup", "install",
-            "update", "updater", "升级",
-            "url", "website", "homepage", "link", "网站", "主页",
-            "license", "agreement", "协议",
-            "console", "command prompt", "powershell",
-            "debug", "diagnostic", "feedback", "report", "recovery", "safe mode"
+            "uninstall",
+            "卸载",
+            "remove",
+            "help",
+            "帮助",
+            "documentation",
+            "manual",
+            "guide",
+            "faq",
+            "说明",
+            "readme",
+            "notes",
+            "config",
+            "配置",
+            "setting",
+            "设置",
+            "setup",
+            "install",
+            "update",
+            "updater",
+            "升级",
+            "url",
+            "website",
+            "homepage",
+            "link",
+            "网站",
+            "主页",
+            "license",
+            "agreement",
+            "协议",
+            "console",
+            "command prompt",
+            "powershell",
+            "debug",
+            "diagnostic",
+            "feedback",
+            "report",
+            "recovery",
+            "safe mode",
         ];
 
         for dir in dirs {
@@ -106,7 +140,6 @@ fn scan_system() -> Vec<AppEntry> {
                     let path_str = path.to_string_lossy().to_lowercase();
 
                     if path.extension().map_or(false, |ext| ext == "lnk") {
-
                         let in_ignored_dir = ignored_dir_names.iter().any(|&d| {
                             let pattern = format!("\\{}", d.to_lowercase());
                             path_str.contains(&pattern)
@@ -119,7 +152,8 @@ fn scan_system() -> Vec<AppEntry> {
                         let name = path.file_stem().unwrap().to_string_lossy().to_string();
                         let lower_name = name.to_lowercase();
 
-                        let has_ignored_keyword = ignored_keywords.iter().any(|&k| lower_name.contains(k));
+                        let has_ignored_keyword =
+                            ignored_keywords.iter().any(|&k| lower_name.contains(k));
                         if has_ignored_keyword {
                             continue;
                         }
@@ -128,7 +162,7 @@ fn scan_system() -> Vec<AppEntry> {
                             name,
                             path: path.to_string_lossy().to_string(),
                             icon: None,
-                            usage_count: 0
+                            usage_count: 0,
                         });
                     }
                 }
@@ -138,8 +172,14 @@ fn scan_system() -> Vec<AppEntry> {
 
     #[cfg(target_os = "macos")]
     {
-        let dirs = vec!["/Applications", "/System/Applications", "/System/Applications/Utilities"];
-        let user_app = std::env::var("HOME").ok().map(|h| format!("{}/Applications", h));
+        let dirs = vec![
+            "/Applications",
+            "/System/Applications",
+            "/System/Applications/Utilities",
+        ];
+        let user_app = std::env::var("HOME")
+            .ok()
+            .map(|h| format!("{}/Applications", h));
 
         let mut search_dirs = dirs.clone();
         if let Some(ref ua) = user_app {
@@ -154,13 +194,15 @@ fn scan_system() -> Vec<AppEntry> {
                         let name = path.file_stem().unwrap().to_string_lossy().to_string();
 
                         let lower = name.to_lowercase();
-                        if lower.contains("uninstall") { continue; }
+                        if lower.contains("uninstall") {
+                            continue;
+                        }
 
                         apps.push(AppEntry {
                             name,
                             path: path.to_string_lossy().to_string(),
                             icon: None,
-                            usage_count: 0
+                            usage_count: 0,
                         });
                     }
                 }
@@ -171,7 +213,9 @@ fn scan_system() -> Vec<AppEntry> {
     #[cfg(target_os = "linux")]
     {
         let dirs = vec!["/usr/share/applications", "/usr/local/share/applications"];
-        let home_desktop = std::env::var("HOME").ok().map(|h| format!("{}/.local/share/applications", h));
+        let home_desktop = std::env::var("HOME")
+            .ok()
+            .map(|h| format!("{}/.local/share/applications", h));
 
         let mut all_dirs = dirs.clone();
         if let Some(ref hd) = home_desktop {
@@ -189,7 +233,7 @@ fn scan_system() -> Vec<AppEntry> {
                                 name,
                                 path: path.to_string_lossy().to_string(),
                                 icon: None,
-                                usage_count: 0
+                                usage_count: 0,
                             });
                         }
                     }

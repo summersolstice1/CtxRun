@@ -1,17 +1,17 @@
+use futures::future::join_all;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, AtomicUsize, Ordering};
 use std::time::Duration;
-use futures::future::join_all;
 use tauri::{AppHandle, Emitter, Runtime};
 use tokio::sync::{Mutex, mpsc};
 
-use crate::models::{MinerConfig, MinerEvent};
-use crate::error::Result;
 use super::driver::MinerDriver;
+use super::extractor::extract_page;
 use super::scope::{is_url_allowed, normalize_url};
 use super::storage::save_markdown;
-use super::extractor::extract_page;
+use crate::error::Result;
+use crate::models::{MinerConfig, MinerEvent};
 
 /// 最大并发数限制
 const MAX_CONCURRENCY: usize = 10;
@@ -113,25 +113,33 @@ pub async fn run_crawl_task<R: Runtime>(
 
                         let discovered = visited_clone.lock().await.len() as u32;
 
-                        let _ = app_clone.emit("miner:progress", MinerEvent::Progress {
-                            current: task_number,
-                            total_discovered: discovered,
-                            current_url: current_url.clone(),
-                            status: "Fetching".to_string(),
-                        });
+                        let _ = app_clone.emit(
+                            "miner:progress",
+                            MinerEvent::Progress {
+                                current: task_number,
+                                total_discovered: discovered,
+                                current_url: current_url.clone(),
+                                status: "Fetching".to_string(),
+                            },
+                        );
 
                         match extract_page(&page, &current_url).await {
                             Ok(page_result) => {
-                                if let Err(e) = save_markdown(&config_clone.output_dir, &page_result) {
+                                if let Err(e) =
+                                    save_markdown(&config_clone.output_dir, &page_result)
+                                {
                                     eprintln!("[Miner] Failed to save {}: {}", current_url, e);
                                 }
 
-                                let _ = app_clone.emit("miner:progress", MinerEvent::Progress {
-                                    current: task_number,
-                                    total_discovered: discovered,
-                                    current_url: current_url.clone(),
-                                    status: "Saved".to_string(),
-                                });
+                                let _ = app_clone.emit(
+                                    "miner:progress",
+                                    MinerEvent::Progress {
+                                        current: task_number,
+                                        total_discovered: discovered,
+                                        current_url: current_url.clone(),
+                                        status: "Saved".to_string(),
+                                    },
+                                );
 
                                 if current_depth < config_clone.max_depth {
                                     let mut normalized_links = HashSet::new();
@@ -153,27 +161,34 @@ pub async fn run_crawl_task<R: Runtime>(
                                     }
 
                                     for norm_link in pending_enqueue {
-                                        match tx_clone.send((norm_link.clone(), current_depth + 1)) {
+                                        match tx_clone.send((norm_link.clone(), current_depth + 1))
+                                        {
                                             Ok(_) => {
                                                 queued_tasks_clone.fetch_add(1, Ordering::SeqCst);
                                             }
                                             Err(_) => {
-                                                eprintln!("[Miner] Failed to enqueue discovered URL: {}", norm_link);
+                                                eprintln!(
+                                                    "[Miner] Failed to enqueue discovered URL: {}",
+                                                    norm_link
+                                                );
                                             }
                                         }
                                     }
                                 }
-                            },
+                            }
                             Err(e) => {
-                                let _ = app_clone.emit("miner:error", MinerEvent::Error {
-                                    url: current_url.clone(),
-                                    message: e.to_string(),
-                                });
+                                let _ = app_clone.emit(
+                                    "miner:error",
+                                    MinerEvent::Error {
+                                        url: current_url.clone(),
+                                        message: e.to_string(),
+                                    },
+                                );
                             }
                         }
 
                         active_tasks_clone.fetch_sub(1, Ordering::SeqCst);
-                    },
+                    }
                     Ok(None) => break,
                     Err(_) => {
                         let is_stop = !is_running_clone.load(Ordering::SeqCst);
@@ -200,10 +215,13 @@ pub async fn run_crawl_task<R: Runtime>(
     let final_count = crawled_count.load(Ordering::SeqCst);
     is_running.store(false, Ordering::SeqCst);
 
-    let _ = app.emit("miner:finished", MinerEvent::Finished {
-        total_pages: final_count,
-        output_dir: config.output_dir,
-    });
+    let _ = app.emit(
+        "miner:finished",
+        MinerEvent::Finished {
+            total_pages: final_count,
+            output_dir: config.output_dir,
+        },
+    );
 
     Ok(())
 }

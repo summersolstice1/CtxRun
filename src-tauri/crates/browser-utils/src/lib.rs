@@ -1,6 +1,6 @@
+use std::net::TcpStream;
 use std::path::PathBuf;
 use std::time::Duration;
-use std::net::TcpStream;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BrowserType {
@@ -24,54 +24,87 @@ pub fn locate_browser(browser_type: BrowserType) -> Option<PathBuf> {
 
     #[cfg(target_os = "windows")]
     {
-        let program_files = std::env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".to_string());
-        let program_files_x86 = std::env::var("ProgramFiles(x86)").unwrap_or_else(|_| r"C:\Program Files (x86)".to_string());
+        let program_files =
+            std::env::var("ProgramFiles").unwrap_or_else(|_| r"C:\Program Files".to_string());
+        let program_files_x86 = std::env::var("ProgramFiles(x86)")
+            .unwrap_or_else(|_| r"C:\Program Files (x86)".to_string());
         let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
 
         if browser_type == BrowserType::Chrome {
             // 优先检查标准安装路径
             paths.push(PathBuf::from(&program_files).join(r"Google\Chrome\Application\chrome.exe"));
-            paths.push(PathBuf::from(&program_files_x86).join(r"Google\Chrome\Application\chrome.exe"));
+            paths.push(
+                PathBuf::from(&program_files_x86).join(r"Google\Chrome\Application\chrome.exe"),
+            );
             if !local_app_data.is_empty() {
-                paths.push(PathBuf::from(&local_app_data).join(r"Google\Chrome\Application\chrome.exe"));
+                paths.push(
+                    PathBuf::from(&local_app_data).join(r"Google\Chrome\Application\chrome.exe"),
+                );
             }
             // 兜底：尝试 PATH 中的 chrome（用户可能手动添加）
-            if let Ok(p) = which::which("chrome") { paths.push(p); }
+            if let Ok(p) = which::which("chrome") {
+                paths.push(p);
+            }
         }
 
         if browser_type == BrowserType::Edge {
-            paths.push(PathBuf::from(&program_files).join(r"Microsoft\Edge\Application\msedge.exe"));
-            paths.push(PathBuf::from(&program_files_x86).join(r"Microsoft\Edge\Application\msedge.exe"));
+            paths
+                .push(PathBuf::from(&program_files).join(r"Microsoft\Edge\Application\msedge.exe"));
+            paths.push(
+                PathBuf::from(&program_files_x86).join(r"Microsoft\Edge\Application\msedge.exe"),
+            );
             // 兜底：尝试 PATH 中的 msedge
-            if let Ok(p) = which::which("msedge") { paths.push(p); }
+            if let Ok(p) = which::which("msedge") {
+                paths.push(p);
+            }
         }
     }
 
     #[cfg(target_os = "macos")]
     {
         if browser_type == BrowserType::Chrome {
-            paths.push(PathBuf::from("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"));
+            paths.push(PathBuf::from(
+                "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+            ));
             // 兜底：尝试 PATH 中的
-            if let Ok(p) = which::which("Google Chrome") { paths.push(p); }
+            if let Ok(p) = which::which("Google Chrome") {
+                paths.push(p);
+            }
         }
         if browser_type == BrowserType::Edge {
-            paths.push(PathBuf::from("/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"));
+            paths.push(PathBuf::from(
+                "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+            ));
             // 兜底：尝试 PATH 中的
-            if let Ok(p) = which::which("Microsoft Edge") { paths.push(p); }
+            if let Ok(p) = which::which("Microsoft Edge") {
+                paths.push(p);
+            }
         }
     }
 
     #[cfg(target_os = "linux")]
     {
         if browser_type == BrowserType::Chrome {
-            if let Ok(p) = which::which("google-chrome") { paths.push(p); }
-            if let Ok(p) = which::which("google-chrome-stable") { paths.push(p); }
-            if let Ok(p) = which::which("chromium") { paths.push(p); }
-            if let Ok(p) = which::which("chromium-browser") { paths.push(p); }
+            if let Ok(p) = which::which("google-chrome") {
+                paths.push(p);
+            }
+            if let Ok(p) = which::which("google-chrome-stable") {
+                paths.push(p);
+            }
+            if let Ok(p) = which::which("chromium") {
+                paths.push(p);
+            }
+            if let Ok(p) = which::which("chromium-browser") {
+                paths.push(p);
+            }
         }
         if browser_type == BrowserType::Edge {
-            if let Ok(p) = which::which("microsoft-edge") { paths.push(p); }
-            if let Ok(p) = which::which("microsoft-edge-stable") { paths.push(p); }
+            if let Ok(p) = which::which("microsoft-edge") {
+                paths.push(p);
+            }
+            if let Ok(p) = which::which("microsoft-edge-stable") {
+                paths.push(p);
+            }
         }
     }
 
@@ -108,17 +141,23 @@ pub fn app_chrome_data_dir() -> PathBuf {
     #[cfg(target_os = "windows")]
     {
         let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_default();
-        PathBuf::from(local_app_data).join(APP_ID).join("chrome_user_data")
+        PathBuf::from(local_app_data)
+            .join(APP_ID)
+            .join("chrome_user_data")
     }
     #[cfg(target_os = "macos")]
     {
         let home = std::env::var("HOME").unwrap_or_default();
-        PathBuf::from(home).join("Library/Application Support").join(APP_ID).join("chrome_user_data")
+        PathBuf::from(home)
+            .join("Library/Application Support")
+            .join(APP_ID)
+            .join("chrome_user_data")
     }
     #[cfg(target_os = "linux")]
     {
-        let config = std::env::var("XDG_DATA_HOME")
-            .unwrap_or_else(|_| format!("{}/.local/share", std::env::var("HOME").unwrap_or_default()));
+        let config = std::env::var("XDG_DATA_HOME").unwrap_or_else(|_| {
+            format!("{}/.local/share", std::env::var("HOME").unwrap_or_default())
+        });
         PathBuf::from(config).join(APP_ID).join("chrome_user_data")
     }
 }
@@ -128,7 +167,8 @@ pub fn is_debug_port_available(port: u16) -> bool {
     TcpStream::connect_timeout(
         &format!("127.0.0.1:{}", port).parse().unwrap(),
         Duration::from_secs(1),
-    ).is_ok()
+    )
+    .is_ok()
 }
 
 /// Check if a browser process is running.

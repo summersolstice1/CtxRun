@@ -1,8 +1,8 @@
-use chromiumoxide::Page;
-use std::time::Duration;
+use super::postprocess::post_process_markdown;
 use crate::error::{MinerError, Result};
 use crate::models::PageResult;
-use super::postprocess::post_process_markdown;
+use chromiumoxide::Page;
+use std::time::Duration;
 
 const READABILITY_JS: &str = include_str!("../../assets/Readability.js");
 const TURNDOWN_JS: &str = include_str!("../../assets/turndown.js");
@@ -18,7 +18,9 @@ pub async fn extract_page(page: &Page, url: &str) -> Result<PageResult> {
             .await
             .map_err(|e| MinerError::BrowserError(format!("Navigation failed: {}", e)))?;
 
-        let _ = page.evaluate("window.scrollTo(0, document.body.scrollHeight);").await;
+        let _ = page
+            .evaluate("window.scrollTo(0, document.body.scrollHeight);")
+            .await;
         wait_for_render_settle(page).await;
 
         let full_script = format!(
@@ -40,13 +42,14 @@ pub async fn extract_page(page: &Page, url: &str) -> Result<PageResult> {
             READABILITY_JS, TURNDOWN_JS, TURNDOWN_GFM_JS, EXTRACT_JS
         );
 
-        let evaluation_result = page.evaluate(full_script)
+        let evaluation_result = page
+            .evaluate(full_script)
             .await
             .map_err(|e| MinerError::BrowserError(format!("Execution failed: {}", e)))?;
 
-        let val_str: String = evaluation_result
-            .into_value()
-            .map_err(|e| MinerError::ExtractionError(format!("Expected string from evaluation: {}", e)))?;
+        let val_str: String = evaluation_result.into_value().map_err(|e| {
+            MinerError::ExtractionError(format!("Expected string from evaluation: {}", e))
+        })?;
 
         let parsed: serde_json::Value = serde_json::from_str(&val_str)
             .map_err(|e| MinerError::SystemError(format!("Failed to parse JSON result: {}", e)))?;
@@ -64,19 +67,22 @@ pub async fn extract_page(page: &Page, url: &str) -> Result<PageResult> {
             return Err(MinerError::ExtractionError(detail));
         }
 
-        let mut result: PageResult = serde_json::from_value(parsed)
-            .map_err(|e| MinerError::SystemError(format!("Failed to deserialize into PageResult: {}", e)))?;
+        let mut result: PageResult = serde_json::from_value(parsed).map_err(|e| {
+            MinerError::SystemError(format!("Failed to deserialize into PageResult: {}", e))
+        })?;
 
         result.markdown = post_process_markdown(&result.markdown);
 
         Ok(result)
     })
     .await
-    .map_err(|_| MinerError::BrowserError(format!(
-        "Extraction timed out after {}s: {}",
-        EXTRACT_TIMEOUT.as_secs(),
-        url
-    )))?
+    .map_err(|_| {
+        MinerError::BrowserError(format!(
+            "Extraction timed out after {}s: {}",
+            EXTRACT_TIMEOUT.as_secs(),
+            url
+        ))
+    })?
 }
 
 async fn wait_for_render_settle(page: &Page) {

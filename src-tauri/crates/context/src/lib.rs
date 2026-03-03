@@ -1,19 +1,19 @@
 use tauri::{
-    plugin::{Builder, TauriPlugin},
     Runtime,
+    plugin::{Builder, TauriPlugin},
 };
 
+pub mod commands;
 pub mod core;
+pub mod error;
+pub mod gitleaks;
 pub mod processing;
 pub mod tokenizer;
-pub mod commands;
-pub mod gitleaks;
-pub mod error;
 
 pub use error::{ContextError, Result};
 
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
-    Builder::<R>::new("ctxrun-plugin-context") 
+    Builder::<R>::new("ctxrun-plugin-context")
         .invoke_handler(tauri::generate_handler![
             commands::calculate_context_stats,
             commands::get_context_content,

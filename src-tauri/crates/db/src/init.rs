@@ -1,7 +1,7 @@
+use refinery::embed_migrations;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
-use refinery::embed_migrations;
 embed_migrations!("migrations");
 
 pub struct DbState {
@@ -14,22 +14,26 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
         Err(_) => return false,
     };
 
-    let exists = stmt.query_map([], |row| {
-        let name: String = row.get(1)?;
-        Ok(name)
-    }).map(|iter| {
-        iter.flatten().any(|name| name == column)
-    }).unwrap_or(false);
+    let exists = stmt
+        .query_map([], |row| {
+            let name: String = row.get(1)?;
+            Ok(name)
+        })
+        .map(|iter| iter.flatten().any(|name| name == column))
+        .unwrap_or(false);
 
     exists
 }
 
 fn migrate_legacy_columns(conn: &Connection) -> rusqlite::Result<()> {
-    let has_prompts = conn.query_row(
-        "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='prompts'",
-        [],
-        |r| r.get::<_, i32>(0)
-    ).unwrap_or(0) > 0;
+    let has_prompts = conn
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='prompts'",
+            [],
+            |r| r.get::<_, i32>(0),
+        )
+        .unwrap_or(0)
+        > 0;
 
     let has_refinery = conn.query_row(
         "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='refinery_schema_history'",
@@ -41,13 +45,19 @@ fn migrate_legacy_columns(conn: &Connection) -> rusqlite::Result<()> {
         return Ok(());
     }
     if !column_exists(conn, "prompts", "is_executable") {
-        conn.execute("ALTER TABLE prompts ADD COLUMN is_executable INTEGER DEFAULT 0", [])?;
+        conn.execute(
+            "ALTER TABLE prompts ADD COLUMN is_executable INTEGER DEFAULT 0",
+            [],
+        )?;
     }
     if !column_exists(conn, "prompts", "shell_type") {
         conn.execute("ALTER TABLE prompts ADD COLUMN shell_type TEXT", [])?;
     }
     if !column_exists(conn, "prompts", "use_as_chat_template") {
-        conn.execute("ALTER TABLE prompts ADD COLUMN use_as_chat_template INTEGER DEFAULT 0", [])?;
+        conn.execute(
+            "ALTER TABLE prompts ADD COLUMN use_as_chat_template INTEGER DEFAULT 0",
+            [],
+        )?;
     }
 
     Ok(())
@@ -61,10 +71,12 @@ pub fn init_db(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error:
     let db_path = app_dir.join("prompts.db");
 
     let mut conn = Connection::open(db_path)?;
-    conn.execute_batch("
+    conn.execute_batch(
+        "
         PRAGMA journal_mode = WAL;
         PRAGMA synchronous = NORMAL;
-    ")?;
+    ",
+    )?;
 
     if let Err(e) = migrate_legacy_columns(&conn) {
         eprintln!("[Database] Failed to migrate legacy columns: {}", e);
@@ -79,7 +91,7 @@ pub fn init_db(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error:
                     println!("[Database] - {}", m.name());
                 }
             }
-        },
+        }
         Err(e) => return Err(Box::new(e)),
     }
 

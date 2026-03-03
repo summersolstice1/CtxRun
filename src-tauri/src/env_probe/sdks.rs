@@ -45,18 +45,22 @@ pub fn probe_sdks() -> HashMap<String, Vec<String>> {
 
         let platforms = std::path::Path::new(&root).join("platforms");
         if platforms.exists() {
-             if let Ok(entries) = std::fs::read_dir(platforms) {
+            if let Ok(entries) = std::fs::read_dir(platforms) {
                 let mut levels: Vec<String> = entries
                     .filter_map(|e| e.ok())
                     .map(|e| e.file_name().to_string_lossy().to_string())
                     .filter(|n| n.starts_with("android-"))
                     .map(|n| n.replace("android-", ""))
                     .collect();
-                levels.sort_by(|a, b| a.parse::<u32>().unwrap_or(0).cmp(&b.parse::<u32>().unwrap_or(0)));
+                levels.sort_by(|a, b| {
+                    a.parse::<u32>()
+                        .unwrap_or(0)
+                        .cmp(&b.parse::<u32>().unwrap_or(0))
+                });
                 if !levels.is_empty() {
                     android_info.push(format!("API Levels: {}", levels.join(", ")));
                 }
-             }
+            }
         }
 
         if !android_info.is_empty() {

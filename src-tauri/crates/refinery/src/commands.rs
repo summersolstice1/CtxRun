@@ -1,21 +1,21 @@
-use tauri::{State, Emitter, Manager, AppHandle, Runtime};
-use rusqlite::{params, OptionalExtension};
+use clipboard_rs::Clipboard;
+use rusqlite::{OptionalExtension, params};
 use serde::Serialize;
 use serde_json;
-use clipboard_rs::Clipboard;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use std::thread;
 use std::time::Duration;
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
+use tokio::sync::Mutex;
 
-use enigo::{Enigo, Key, Keyboard, Settings, Direction};
+use enigo::{Direction, Enigo, Key, Keyboard, Settings};
 
-use ctxrun_db::DbState;
+use super::cleanup_worker::RefineryCleanupConfig;
 use super::models::RefineryItem;
 use super::storage::{create_manual_note_db, update_note_db};
-use super::cleanup_worker::RefineryCleanupConfig;
 use super::worker::PASTING_FLAG;
 use crate::error::Result;
+use ctxrun_db::DbState;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -31,7 +31,7 @@ pub fn get_refinery_history(
     page: u32,
     page_size: u32,
     search_query: Option<String>,
-    kind_filter: Option<String>, 
+    kind_filter: Option<String>,
     pinned_only: bool,
     manual_only: bool,
     start_date: Option<i64>,
@@ -46,15 +46,21 @@ pub fn get_refinery_history(
                 content_hash, preview, source_app, url, size_info,
                 is_pinned, metadata, created_at, updated_at,
                 title, tags, is_manual, is_edited
-         FROM refinery_history WHERE 1=1"
+         FROM refinery_history WHERE 1=1",
     );
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
     if let Some(q) = search_query {
         let q_str = q.trim();
         if !q_str.is_empty() {
-            let escaped_query = q_str.replace('\\', "\\\\").replace('"', "\"\"").replace(' ', " AND ");
-            sql.push_str(&format!(" AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH \"{}\")", escaped_query));
+            let escaped_query = q_str
+                .replace('\\', "\\\\")
+                .replace('"', "\"\"")
+                .replace(' ', " AND ");
+            sql.push_str(&format!(
+                " AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH \"{}\")",
+                escaped_query
+            ));
         }
     }
 
@@ -65,8 +71,12 @@ pub fn get_refinery_history(
         }
     }
 
-    if pinned_only { sql.push_str(" AND is_pinned = 1"); }
-    if manual_only { sql.push_str(" AND is_manual = 1"); }
+    if pinned_only {
+        sql.push_str(" AND is_pinned = 1");
+    }
+    if manual_only {
+        sql.push_str(" AND is_manual = 1");
+    }
 
     if let Some(start) = start_date {
         sql.push_str(" AND created_at >= ?");
@@ -88,7 +98,11 @@ pub fn get_refinery_history(
         let tags_str: Option<String> = row.get("tags")?;
         let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
         let kind: String = row.get("kind")?;
-        let content: Option<String> = if kind == "image" { row.get("content")? } else { None };
+        let content: Option<String> = if kind == "image" {
+            row.get("content")?
+        } else {
+            None
+        };
 
         Ok(RefineryItem {
             id: row.get("id")?,
@@ -120,32 +134,35 @@ pub fn get_refinery_history(
 #[tauri::command]
 pub fn get_refinery_item_detail(state: State<DbState>, id: String) -> Result<Option<RefineryItem>> {
     let conn = state.conn.lock()?;
-    let item = conn.query_row(
-        "SELECT * FROM refinery_history WHERE id = ?",
-        params![id],
-        |row: &rusqlite::Row| {
-            let tags_str: Option<String> = row.get("tags")?;
-            let tags: Option<Vec<String>> = tags_str.and_then(|s| serde_json::from_str(&s).ok());
-            Ok(RefineryItem {
-                id: row.get("id")?,
-                kind: row.get("kind")?,
-                content: row.get("content")?,
-                content_hash: row.get("content_hash")?,
-                preview: row.get("preview")?,
-                source_app: row.get("source_app")?,
-                url: row.get("url")?,
-                size_info: row.get("size_info")?,
-                is_pinned: row.get("is_pinned")?,
-                metadata: row.get("metadata")?,
-                created_at: row.get("created_at")?,
-                updated_at: row.get("updated_at")?,
-                title: row.get("title")?,
-                tags,
-                is_manual: row.get("is_manual").unwrap_or(false),
-                is_edited: row.get("is_edited").unwrap_or(false),
-            })
-        }
-    ).optional()?;
+    let item = conn
+        .query_row(
+            "SELECT * FROM refinery_history WHERE id = ?",
+            params![id],
+            |row: &rusqlite::Row| {
+                let tags_str: Option<String> = row.get("tags")?;
+                let tags: Option<Vec<String>> =
+                    tags_str.and_then(|s| serde_json::from_str(&s).ok());
+                Ok(RefineryItem {
+                    id: row.get("id")?,
+                    kind: row.get("kind")?,
+                    content: row.get("content")?,
+                    content_hash: row.get("content_hash")?,
+                    preview: row.get("preview")?,
+                    source_app: row.get("source_app")?,
+                    url: row.get("url")?,
+                    size_info: row.get("size_info")?,
+                    is_pinned: row.get("is_pinned")?,
+                    metadata: row.get("metadata")?,
+                    created_at: row.get("created_at")?,
+                    updated_at: row.get("updated_at")?,
+                    title: row.get("title")?,
+                    tags,
+                    is_manual: row.get("is_manual").unwrap_or(false),
+                    is_edited: row.get("is_edited").unwrap_or(false),
+                })
+            },
+        )
+        .optional()?;
     Ok(item)
 }
 
@@ -155,35 +172,43 @@ pub fn get_refinery_statistics(state: State<DbState>) -> Result<RefineryStatisti
     let total_entries: u32 = conn.query_row(
         "SELECT COUNT(*) FROM refinery_history",
         [],
-        |row: &rusqlite::Row| row.get(0)
+        |row: &rusqlite::Row| row.get(0),
     )?;
 
     let favorites: u32 = conn.query_row(
         "SELECT COUNT(*) FROM refinery_history WHERE is_pinned = 1",
         [],
-        |row: &rusqlite::Row| row.get(0)
+        |row: &rusqlite::Row| row.get(0),
     )?;
 
     let week_ago = chrono::Utc::now().timestamp_millis() - (7 * 24 * 60 * 60 * 1000);
     let this_week: u32 = conn.query_row(
         "SELECT COUNT(*) FROM refinery_history WHERE created_at > ?",
         params![week_ago],
-        |row: &rusqlite::Row| row.get(0)
+        |row: &rusqlite::Row| row.get(0),
     )?;
 
-    Ok(RefineryStatistics { total_entries, this_week, favorites })
+    Ok(RefineryStatistics {
+        total_entries,
+        this_week,
+        favorites,
+    })
 }
 
 #[tauri::command]
 pub fn toggle_refinery_pin(state: State<DbState>, id: String) -> Result<()> {
     let conn = state.conn.lock()?;
-    conn.execute("UPDATE refinery_history SET is_pinned = NOT is_pinned WHERE id = ?", params![id])
-        ?;
+    conn.execute(
+        "UPDATE refinery_history SET is_pinned = NOT is_pinned WHERE id = ?",
+        params![id],
+    )?;
     Ok(())
 }
 
 fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<usize> {
-    if ids.is_empty() { return Ok(0); }
+    if ids.is_empty() {
+        return Ok(0);
+    }
     let mut files_to_delete: Vec<String> = Vec::new();
     {
         let mut stmt = conn.prepare("SELECT kind, content FROM refinery_history WHERE id = ?")?;
@@ -195,7 +220,9 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
             })?;
             for r in rows {
                 if let Ok((kind, content)) = r {
-                    if kind == "image" { files_to_delete.push(content); }
+                    if kind == "image" {
+                        files_to_delete.push(content);
+                    }
                 }
             }
         }
@@ -225,7 +252,11 @@ pub fn delete_refinery_items(state: State<DbState>, ids: Vec<String>) -> Result<
 }
 
 #[tauri::command]
-pub fn clear_refinery_history(state: State<DbState>, before_timestamp: Option<i64>, include_pinned: bool) -> Result<usize> {
+pub fn clear_refinery_history(
+    state: State<DbState>,
+    before_timestamp: Option<i64>,
+    include_pinned: bool,
+) -> Result<usize> {
     let conn = state.conn.lock()?;
     let mut sql = String::from("SELECT id FROM refinery_history WHERE 1=1");
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
@@ -233,33 +264,43 @@ pub fn clear_refinery_history(state: State<DbState>, before_timestamp: Option<i6
         sql.push_str(" AND created_at < ?");
         params.push(Box::new(ts));
     }
-    if !include_pinned { sql.push_str(" AND is_pinned = 0"); }
+    if !include_pinned {
+        sql.push_str(" AND is_pinned = 0");
+    }
     let mut stmt = conn.prepare(&sql)?;
     let param_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-    let ids: Vec<String> = stmt.query_map(param_refs.as_slice(), |row: &rusqlite::Row| row.get(0))
-        ?
+    let ids: Vec<String> = stmt
+        .query_map(param_refs.as_slice(), |row: &rusqlite::Row| row.get(0))?
         .filter_map(|r| r.ok())
         .collect();
-    if ids.is_empty() { return Ok(0); }
+    if ids.is_empty() {
+        return Ok(0);
+    }
     delete_items_internal(&conn, &ids)
 }
 
 #[tauri::command]
 pub async fn copy_refinery_text(text: String) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
-        let clipboard = clipboard_rs::ClipboardContext::new().map_err(|e| format!("Failed to init clipboard: {}", e))?;
-        clipboard.set_text(text).map_err(|e| format!("Failed to copy text: {}", e))?;
+        let clipboard = clipboard_rs::ClipboardContext::new()
+            .map_err(|e| format!("Failed to init clipboard: {}", e))?;
+        clipboard
+            .set_text(text)
+            .map_err(|e| format!("Failed to copy text: {}", e))?;
         Ok(())
-    }).await?
+    })
+    .await?
 }
 
 #[tauri::command]
 pub async fn copy_refinery_image(image_path: String) -> Result<()> {
-    use clipboard_rs::common::{RustImageData, RustImage};
+    use clipboard_rs::common::{RustImage, RustImageData};
     use std::path::Path;
     tauri::async_runtime::spawn_blocking(move || {
         let path = Path::new(&image_path);
-        if !path.exists() { return Err(format!("Image file not found: {}", image_path).into()); }
+        if !path.exists() {
+            return Err(format!("Image file not found: {}", image_path).into());
+        }
         let img = image::open(path)?;
         let final_img = if img.width() > 4096 || img.height() > 4096 {
             let (max_w, max_h) = if img.width() > img.height() {
@@ -268,14 +309,18 @@ pub async fn copy_refinery_image(image_path: String) -> Result<()> {
                 ((4096 * img.width() / img.height()).max(1), 4096)
             };
             img.resize(max_w, max_h, image::imageops::FilterType::Triangle)
-        } else { img };
+        } else {
+            img
+        };
         let rust_image = RustImageData::from_dynamic_image(final_img);
         let clipboard = clipboard_rs::ClipboardContext::new()
             .map_err(|e| format!("Failed to init clipboard: {}", e))?;
-        clipboard.set_image(rust_image)
+        clipboard
+            .set_image(rust_image)
             .map_err(|e| format!("Failed to copy image: {}", e))?;
         Ok(())
-    }).await?
+    })
+    .await?
 }
 
 #[tauri::command]
@@ -283,7 +328,7 @@ pub fn create_note<R: Runtime>(
     app: AppHandle<R>,
     state: State<DbState>,
     content: String,
-    title: Option<String>
+    title: Option<String>,
 ) -> Result<String> {
     let conn = state.conn.lock()?;
     let new_id = create_manual_note_db(&conn, content, title)?;
@@ -297,7 +342,7 @@ pub fn update_note<R: Runtime>(
     state: State<DbState>,
     id: String,
     content: Option<String>,
-    title: Option<String>
+    title: Option<String>,
 ) -> Result<()> {
     let conn = state.conn.lock()?;
     update_note_db(&conn, &id, content, title)?;
@@ -331,13 +376,39 @@ pub async fn manual_cleanup<R: Runtime>(
     config_state: State<'_, CleanupConfigState>,
 ) -> Result<usize> {
     let config = config_state.0.lock().await.clone();
-    if !config.enabled { return Ok(0); }
+    if !config.enabled {
+        return Ok(0);
+    }
     match config.strategy.as_str() {
-        "count" => { if let Some(max) = config.max_count { execute_count_cleanup(&app, max, config.keep_pinned) } else { Ok(0) } }
-        "time" => { if let Some(days) = config.days { execute_time_cleanup(&app, days, config.keep_pinned) } else { Ok(0) } }
+        "count" => {
+            if let Some(max) = config.max_count {
+                execute_count_cleanup(&app, max, config.keep_pinned)
+            } else {
+                Ok(0)
+            }
+        }
+        "time" => {
+            if let Some(days) = config.days {
+                execute_time_cleanup(&app, days, config.keep_pinned)
+            } else {
+                Ok(0)
+            }
+        }
         "both" => {
-            let c = if let Some(max) = config.max_count { execute_count_cleanup(&app, max, config.keep_pinned).unwrap_or(0) } else { 0 };
-            if c == 0 { if let Some(days) = config.days { execute_time_cleanup(&app, days, config.keep_pinned) } else { Ok(0) } } else { Ok(c) }
+            let c = if let Some(max) = config.max_count {
+                execute_count_cleanup(&app, max, config.keep_pinned).unwrap_or(0)
+            } else {
+                0
+            };
+            if c == 0 {
+                if let Some(days) = config.days {
+                    execute_time_cleanup(&app, days, config.keep_pinned)
+                } else {
+                    Ok(0)
+                }
+            } else {
+                Ok(c)
+            }
         }
         _ => Ok(0),
     }
@@ -345,38 +416,61 @@ pub async fn manual_cleanup<R: Runtime>(
 
 const CLEANUP_BUFFER_RATIO: f64 = 0.10;
 
-pub fn execute_count_cleanup<R: Runtime>(app: &AppHandle<R>, max_count: u32, keep_pinned: bool) -> Result<usize> {
+pub fn execute_count_cleanup<R: Runtime>(
+    app: &AppHandle<R>,
+    max_count: u32,
+    keep_pinned: bool,
+) -> Result<usize> {
     let state = app.state::<DbState>();
     let conn = state.conn.lock()?;
     let buffer = (max_count as f64 * CLEANUP_BUFFER_RATIO).ceil() as u32;
     let threshold = max_count + buffer;
-    let total: u32 = conn.query_row("SELECT COUNT(*) FROM refinery_history WHERE is_manual = 0", [], |row: &rusqlite::Row| row.get(0))?;
-    if total <= threshold { return Ok(0); }
+    let total: u32 = conn.query_row(
+        "SELECT COUNT(*) FROM refinery_history WHERE is_manual = 0",
+        [],
+        |row: &rusqlite::Row| row.get(0),
+    )?;
+    if total <= threshold {
+        return Ok(0);
+    }
     let to_delete = total - max_count;
     let mut sql = String::from("SELECT id FROM refinery_history WHERE is_manual = 0");
-    if keep_pinned { sql.push_str(" AND is_pinned = 0"); }
+    if keep_pinned {
+        sql.push_str(" AND is_pinned = 0");
+    }
     sql.push_str(&format!(" ORDER BY updated_at ASC LIMIT {}", to_delete));
-    let ids: Vec<String> = conn.prepare(&sql)?
-        .query_map([], |row: &rusqlite::Row| row.get(0))
-        ?
+    let ids: Vec<String> = conn
+        .prepare(&sql)?
+        .query_map([], |row: &rusqlite::Row| row.get(0))?
         .filter_map(|r| r.ok())
         .collect();
-    if ids.is_empty() { return Ok(0); }
+    if ids.is_empty() {
+        return Ok(0);
+    }
     delete_items_internal(&conn, &ids)
 }
 
-pub fn execute_time_cleanup<R: Runtime>(app: &AppHandle<R>, days: u32, keep_pinned: bool) -> Result<usize> {
+pub fn execute_time_cleanup<R: Runtime>(
+    app: &AppHandle<R>,
+    days: u32,
+    keep_pinned: bool,
+) -> Result<usize> {
     let state = app.state::<DbState>();
     let conn = state.conn.lock()?;
     let cutoff = chrono::Utc::now().timestamp_millis() - (days as i64 * 24 * 60 * 60 * 1000);
-    let mut sql = String::from("SELECT id FROM refinery_history WHERE is_manual = 0 AND created_at < ?");
-    if keep_pinned { sql.push_str(" AND is_pinned = 0"); }
-    let ids: Vec<String> = conn.prepare(&sql)?
-        .query_map(params![cutoff], |row: &rusqlite::Row| row.get(0))
-        ?
+    let mut sql =
+        String::from("SELECT id FROM refinery_history WHERE is_manual = 0 AND created_at < ?");
+    if keep_pinned {
+        sql.push_str(" AND is_pinned = 0");
+    }
+    let ids: Vec<String> = conn
+        .prepare(&sql)?
+        .query_map(params![cutoff], |row: &rusqlite::Row| row.get(0))?
         .filter_map(|r| r.ok())
         .collect();
-    if ids.is_empty() { return Ok(0); }
+    if ids.is_empty() {
+        return Ok(0);
+    }
     delete_items_internal(&conn, &ids)
 }
 
@@ -392,7 +486,7 @@ pub async fn spotlight_paste<R: Runtime>(
         conn.query_row(
             "SELECT kind, content FROM refinery_history WHERE id = ?",
             params![item_id],
-            |row: &rusqlite::Row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?))
+            |row: &rusqlite::Row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?)),
         )?
     };
 
@@ -401,32 +495,43 @@ pub async fn spotlight_paste<R: Runtime>(
     }
 
     if kind == "image" {
-        if let Some(path) = content { copy_refinery_image(path).await?; }
+        if let Some(path) = content {
+            copy_refinery_image(path).await?;
+        }
     } else {
-        if let Some(text) = content { copy_refinery_text(text).await?; }
+        if let Some(text) = content {
+            copy_refinery_text(text).await?;
+        }
     }
 
     tauri::async_runtime::spawn(async move {
-        thread::sleep(Duration::from_millis(150)); 
+        thread::sleep(Duration::from_millis(150));
         let mut enigo = match Enigo::new(&Settings::default()) {
             Ok(e) => e,
-            Err(e) => { eprintln!("[CtxRun] Failed to init Enigo: {:?}", e); return; }
+            Err(e) => {
+                eprintln!("[CtxRun] Failed to init Enigo: {:?}", e);
+                return;
+            }
         };
         let mut perform_paste = || -> std::result::Result<(), enigo::InputError> {
-            #[cfg(target_os = "macos")] {
+            #[cfg(target_os = "macos")]
+            {
                 enigo.key(Key::Meta, Direction::Press)?;
                 enigo.key(Key::Unicode('v'), Direction::Click)?;
                 enigo.key(Key::Meta, Direction::Release)?;
             }
-            #[cfg(not(target_os = "macos"))] {
+            #[cfg(not(target_os = "macos"))]
+            {
                 enigo.key(Key::Control, Direction::Press)?;
                 enigo.key(Key::Unicode('v'), Direction::Click)?;
                 enigo.key(Key::Control, Direction::Release)?;
             }
             Ok(())
         };
-        if let Err(e) = perform_paste() { eprintln!("[CtxRun] Enigo paste failed: {:?}", e); }
-        thread::sleep(Duration::from_millis(500)); 
+        if let Err(e) = perform_paste() {
+            eprintln!("[CtxRun] Enigo paste failed: {:?}", e);
+        }
+        thread::sleep(Duration::from_millis(500));
         PASTING_FLAG.store(false, std::sync::atomic::Ordering::SeqCst);
     });
     Ok(())

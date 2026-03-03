@@ -1,22 +1,23 @@
+use super::core::{self, ContextStats};
+use super::gitleaks::{self, SecretMatch};
+use crate::error::{ContextError, Result};
+use arboard::Clipboard;
+use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-use super::core::{self, ContextStats};
-use super::gitleaks::{self, SecretMatch};
-use arboard::Clipboard;
-use ignore::gitignore::{Gitignore, GitignoreBuilder};
-use tauri::{State};
-use crate::error::{ContextError, Result};
+use tauri::State;
 
 #[tauri::command]
 pub async fn calculate_context_stats<R: tauri::Runtime>(
     _app: tauri::AppHandle<R>,
     paths: Vec<String>,
-    remove_comments: bool
+    remove_comments: bool,
 ) -> Result<ContextStats> {
     let stats = tauri::async_runtime::spawn_blocking(move || {
         core::calculate_stats_parallel(paths, remove_comments)
-    }).await
+    })
+    .await
     .map_err(|e| ContextError::JoinError(e.to_string()))?;
 
     Ok(stats)
@@ -27,11 +28,12 @@ pub async fn get_context_content<R: tauri::Runtime>(
     _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     header: String,
-    remove_comments: bool
+    remove_comments: bool,
 ) -> Result<String> {
     let content = tauri::async_runtime::spawn_blocking(move || {
         core::assemble_context_parallel(paths, header, remove_comments)
-    }).await
+    })
+    .await
     .map_err(|e| ContextError::JoinError(e.to_string()))?;
 
     Ok(content)
@@ -42,17 +44,19 @@ pub async fn copy_context_to_clipboard<R: tauri::Runtime>(
     _app: tauri::AppHandle<R>,
     paths: Vec<String>,
     header: String,
-    remove_comments: bool
+    remove_comments: bool,
 ) -> Result<String> {
     tauri::async_runtime::spawn_blocking(move || {
         let content = core::assemble_context_parallel(paths, header, remove_comments);
-        let mut clipboard = Clipboard::new()
-            .map_err(|e| ContextError::ClipboardError(e.to_string()))?;
+        let mut clipboard =
+            Clipboard::new().map_err(|e| ContextError::ClipboardError(e.to_string()))?;
 
-        clipboard.set_text(content)
+        clipboard
+            .set_text(content)
             .map_err(|e| ContextError::ClipboardError(e.to_string()))?;
         Ok("Success".to_string())
-    }).await
+    })
+    .await
     .map_err(|e| ContextError::JoinError(e.to_string()))?
 }
 
@@ -62,14 +66,15 @@ pub async fn save_context_to_file<R: tauri::Runtime>(
     paths: Vec<String>,
     header: String,
     remove_comments: bool,
-    save_path: String
+    save_path: String,
 ) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
         let content = core::assemble_context_parallel(paths, header, remove_comments);
         let mut file = File::create(&save_path)?;
         file.write_all(content.as_bytes())?;
         Ok(())
-    }).await
+    })
+    .await
     .map_err(|e| ContextError::JoinError(e.to_string()))?
 }
 #[tauri::command]
@@ -93,7 +98,8 @@ pub fn get_ignored_by_protocol(project_root: String, paths: Vec<String>) -> Vec<
 
     let gitignore = builder.build().unwrap_or(Gitignore::empty());
 
-    paths.into_iter()
+    paths
+        .into_iter()
         .filter(|p| {
             let path = Path::new(p);
             gitignore.matched(path, path.is_dir()).is_ignore()
@@ -103,11 +109,12 @@ pub fn get_ignored_by_protocol(project_root: String, paths: Vec<String>) -> Vec<
 #[tauri::command]
 pub async fn scan_for_secrets(
     state: State<'_, ctxrun_db::DbState>,
-    content: String
+    content: String,
 ) -> Result<Vec<SecretMatch>> {
-
     let ignored_set = {
-        let conn = state.conn.lock()
+        let conn = state
+            .conn
+            .lock()
             .map_err(|e| ContextError::DbError(e.to_string()))?;
         ctxrun_db::secrets::get_all_ignored_values_internal(&conn)
             .map_err(|e| ContextError::DbError(e.to_string()))?
@@ -119,11 +126,13 @@ pub async fn scan_for_secrets(
         if ignored_set.is_empty() {
             raw_matches
         } else {
-            raw_matches.into_iter()
+            raw_matches
+                .into_iter()
                 .filter(|m| !ignored_set.contains(&m.value))
                 .collect()
         }
-    }).await
+    })
+    .await
     .map_err(|e| ContextError::JoinError(e.to_string()))?;
 
     Ok(matches)

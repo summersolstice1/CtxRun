@@ -1,3 +1,5 @@
+use listeners::{Protocol, get_all};
+use rayon::prelude::*;
 use serde::Serialize;
 use std::collections::HashSet;
 use std::net::SocketAddr;
@@ -5,28 +7,28 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::{Arc, Mutex};
 use sysinfo::{
-    Pid, ProcessesToUpdate, ProcessRefreshKind, RefreshKind, CpuRefreshKind, MemoryRefreshKind,
-    System, UpdateKind
+    CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind,
+    System, UpdateKind,
 };
 use tauri::State;
-use listeners::{get_all, Protocol};
-use rayon::prelude::*;
 
+use crate::env_probe::{self, AiContextReport, EnvReport};
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
-use crate::env_probe::{self, EnvReport, AiContextReport};
 
 #[cfg(target_os = "windows")]
 use windows::Win32::Foundation::{ERROR_MORE_DATA, ERROR_SUCCESS, WIN32_ERROR};
 #[cfg(target_os = "windows")]
-use windows::Win32::System::Threading::{OpenProcess, IsProcessCritical, PROCESS_QUERY_LIMITED_INFORMATION};
-#[cfg(target_os = "windows")]
 use windows::Win32::System::RestartManager::{
-    RmStartSession, RmRegisterResources, RmGetList, RmEndSession, 
-    RM_PROCESS_INFO, CCH_RM_SESSION_KEY
+    CCH_RM_SESSION_KEY, RM_PROCESS_INFO, RmEndSession, RmGetList, RmRegisterResources,
+    RmStartSession,
 };
 #[cfg(target_os = "windows")]
-use windows::core::{PWSTR, PCWSTR, BOOL};
+use windows::Win32::System::Threading::{
+    IsProcessCritical, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+};
+#[cfg(target_os = "windows")]
+use windows::core::{BOOL, PCWSTR, PWSTR};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct SystemMetrics {
@@ -77,31 +79,48 @@ pub struct LockedFileProcess {
 fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool {
     let pid = process.pid().as_u32();
 
-    if pid <= 4 { return true; }
+    if pid <= 4 {
+        return true;
+    }
 
     #[cfg(target_os = "windows")]
     {
         // Windows API check
         unsafe {
-            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) { Ok(handle) => {
-                if !handle.is_invalid() {
-                    let mut is_critical = BOOL(0);
-                    if IsProcessCritical(handle, &mut is_critical).is_ok() && bool::from(is_critical) {
+            match OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) {
+                Ok(handle) => {
+                    if !handle.is_invalid() {
+                        let mut is_critical = BOOL(0);
+                        if IsProcessCritical(handle, &mut is_critical).is_ok()
+                            && bool::from(is_critical)
+                        {
+                            let _ = windows::Win32::Foundation::CloseHandle(handle);
+                            return true;
+                        }
                         let _ = windows::Win32::Foundation::CloseHandle(handle);
+                    } else {
                         return true;
                     }
-                    let _ = windows::Win32::Foundation::CloseHandle(handle);
-                } else {
+                }
+                _ => {
                     return true;
                 }
-            } _ => {
-                return true;
-            }}
+            }
         }
 
         // Additional list
         let name = process.name().to_string_lossy().to_lowercase();
-        if ["csrss.exe", "smss.exe", "wininit.exe", "services.exe", "lsass.exe", "memory compression", "spoolsv.exe"].contains(&name.as_str()) {
+        if [
+            "csrss.exe",
+            "smss.exe",
+            "wininit.exe",
+            "services.exe",
+            "lsass.exe",
+            "memory compression",
+            "spoolsv.exe",
+        ]
+        .contains(&name.as_str())
+        {
             return true;
         }
     }
@@ -137,7 +156,9 @@ pub fn get_system_metrics(system: State<'_, Arc<Mutex<System>>>) -> Result<Syste
 }
 
 #[tauri::command]
-pub fn get_top_processes(system: State<'_, Arc<Mutex<System>>>) -> Result<Vec<ProcessInfo>, String> {
+pub fn get_top_processes(
+    system: State<'_, Arc<Mutex<System>>>,
+) -> Result<Vec<ProcessInfo>, String> {
     let mut sys = system.lock().map_err(|e| e.to_string())?;
 
     sys.refresh_processes_specifics(
@@ -154,12 +175,17 @@ pub fn get_top_processes(system: State<'_, Arc<Mutex<System>>>) -> Result<Vec<Pr
         .iter()
         .filter_map(|(pid, process)| {
             let pid_u32 = pid.as_u32();
-            if pid_u32 == 0 { return None; }
+            if pid_u32 == 0 {
+                return None;
+            }
 
             let name = process.name().to_string_lossy().to_string();
-            if name.is_empty() { return None; }
+            if name.is_empty() {
+                return None;
+            }
 
-            let user = process.user_id()
+            let user = process
+                .user_id()
                 .map(|uid| uid.to_string().replace("Uid(", "").replace(")", ""))
                 .unwrap_or_else(|| "Unknown".to_string());
 
@@ -174,13 +200,19 @@ pub fn get_top_processes(system: State<'_, Arc<Mutex<System>>>) -> Result<Vec<Pr
         })
         .collect();
 
-    processes.par_sort_unstable_by(|a, b| b.memory.partial_cmp(&a.memory).unwrap_or(std::cmp::Ordering::Equal));
+    processes.par_sort_unstable_by(|a, b| {
+        b.memory
+            .partial_cmp(&a.memory)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     Ok(processes.into_iter().take(30).collect())
 }
 
 #[tauri::command]
-pub async fn get_active_ports(system: State<'_, Arc<Mutex<System>>>) -> Result<Vec<PortInfo>, String> {
+pub async fn get_active_ports(
+    system: State<'_, Arc<Mutex<System>>>,
+) -> Result<Vec<PortInfo>, String> {
     let sys_state = system.inner().clone();
 
     tauri::async_runtime::spawn_blocking(move || {
@@ -200,7 +232,10 @@ pub async fn get_active_ports(system: State<'_, Arc<Mutex<System>>>) -> Result<V
             let pid = Pid::from(pid_u32 as usize);
 
             let (process_name, is_system) = if let Some(process) = sys.process(pid) {
-                (process.name().to_string_lossy().to_string(), is_critical_system_process(&sys, process))
+                (
+                    process.name().to_string_lossy().to_string(),
+                    is_critical_system_process(&sys, process),
+                )
             } else {
                 (format!("Unknown ({})", pid_u32), false)
             };
@@ -252,10 +287,14 @@ pub fn kill_process(pid: u32, system: State<'_, Arc<Mutex<System>>>) -> Result<S
     }
 
     #[cfg(target_os = "windows")]
-    let output = Command::new("taskkill").args(&["/F", "/PID", &pid.to_string()]).output();
-    
+    let output = Command::new("taskkill")
+        .args(&["/F", "/PID", &pid.to_string()])
+        .output();
+
     #[cfg(not(target_os = "windows"))]
-    let output = Command::new("kill").args(&["-9", &pid.to_string()]).output();
+    let output = Command::new("kill")
+        .args(&["-9", &pid.to_string()])
+        .output();
 
     match output {
         Ok(o) if o.status.success() => Ok("Success".to_string()),
@@ -265,7 +304,10 @@ pub fn kill_process(pid: u32, system: State<'_, Arc<Mutex<System>>>) -> Result<S
 }
 
 #[tauri::command]
-pub fn check_file_locks(path: String, system: State<'_, Arc<Mutex<System>>>) -> Result<Vec<LockedFileProcess>, String> {
+pub fn check_file_locks(
+    path: String,
+    system: State<'_, Arc<Mutex<System>>>,
+) -> Result<Vec<LockedFileProcess>, String> {
     let path_obj = Path::new(&path);
     if !path_obj.exists() {
         return Err("Path does not exist".to_string());
@@ -279,7 +321,11 @@ pub fn check_file_locks(path: String, system: State<'_, Arc<Mutex<System>>>) -> 
         let mut paths_to_check = Vec::new();
 
         if is_dir {
-            for entry in WalkDir::new(&path).min_depth(1).into_iter().filter_map(|e| e.ok()) {
+            for entry in WalkDir::new(&path)
+                .min_depth(1)
+                .into_iter()
+                .filter_map(|e| e.ok())
+            {
                 if entry.file_type().is_file() {
                     paths_to_check.push(entry.path().to_string_lossy().to_string());
                 }
@@ -309,7 +355,9 @@ pub fn check_file_locks(path: String, system: State<'_, Arc<Mutex<System>>>) -> 
 
         cmd.arg(&path);
 
-        let output = cmd.output().map_err(|e| format!("Failed to run lsof: {}", e))?;
+        let output = cmd
+            .output()
+            .map_err(|e| format!("Failed to run lsof: {}", e))?;
 
         if output.status.success() {
             let out_str = String::from_utf8_lossy(&output.stdout);
@@ -323,7 +371,10 @@ pub fn check_file_locks(path: String, system: State<'_, Arc<Mutex<System>>>) -> 
 
     let mut sys = system.lock().map_err(|e| e.to_string())?;
 
-    let pids_to_refresh: Vec<Pid> = locking_pids.iter().map(|&p| Pid::from(p as usize)).collect();
+    let pids_to_refresh: Vec<Pid> = locking_pids
+        .iter()
+        .map(|&p| Pid::from(p as usize))
+        .collect();
 
     if pids_to_refresh.is_empty() {
         return Ok(Vec::new());
@@ -339,7 +390,8 @@ pub fn check_file_locks(path: String, system: State<'_, Arc<Mutex<System>>>) -> 
     for pid_u32 in locking_pids {
         let sys_pid = Pid::from(pid_u32 as usize);
         if let Some(proc) = sys.process(sys_pid) {
-            let user = proc.user_id()
+            let user = proc
+                .user_id()
                 .map(|uid| uid.to_string().replace("Uid(", "").replace(")", ""))
                 .unwrap_or_else(|| "Unknown".to_string());
 
@@ -365,7 +417,11 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
         let mut session_handle: u32 = 0;
         let mut session_key = [0u16; (CCH_RM_SESSION_KEY + 1) as usize];
 
-        let res = RmStartSession(&mut session_handle, Some(0u32), PWSTR(session_key.as_mut_ptr()));
+        let res = RmStartSession(
+            &mut session_handle,
+            Some(0u32),
+            PWSTR(session_key.as_mut_ptr()),
+        );
         if res != ERROR_SUCCESS {
             return Err(format!("RmStartSession failed: {:?}", res));
         }
@@ -373,27 +429,26 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
         struct SessionGuard(u32);
         impl Drop for SessionGuard {
             fn drop(&mut self) {
-                unsafe { let _ = RmEndSession(self.0); }
+                unsafe {
+                    let _ = RmEndSession(self.0);
+                }
             }
         }
         let _guard = SessionGuard(session_handle);
 
         // Prepare path array
-        let wide_paths_storage: Vec<Vec<u16>> = path_strs.iter()
+        let wide_paths_storage: Vec<Vec<u16>> = path_strs
+            .iter()
             .map(|s| OsStr::new(s).encode_wide().chain(Some(0)).collect())
             .collect();
 
-        let paths_ptrs: Vec<PCWSTR> = wide_paths_storage.iter()
+        let paths_ptrs: Vec<PCWSTR> = wide_paths_storage
+            .iter()
             .map(|w| PCWSTR(w.as_ptr()))
             .collect();
 
         // Register resources
-        let res = RmRegisterResources(
-            session_handle,
-            Some(&paths_ptrs),
-            None,
-            None
-        );
+        let res = RmRegisterResources(session_handle, Some(&paths_ptrs), None, None);
 
         if res != ERROR_SUCCESS {
             return Err(format!("RmRegisterResources failed: {:?}", res));
@@ -409,36 +464,46 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
             &mut proc_info_needed,
             &mut proc_info_needed,
             Some(proc_info.as_mut_ptr()),
-            &mut reboot_reasons
+            &mut reboot_reasons,
         );
 
         if res == ERROR_MORE_DATA {
-            let mut vec_info = vec![std::mem::zeroed::<RM_PROCESS_INFO>(); proc_info_needed as usize];
+            let mut vec_info =
+                vec![std::mem::zeroed::<RM_PROCESS_INFO>(); proc_info_needed as usize];
             let mut count = proc_info_needed;
             let res2 = RmGetList(
                 session_handle,
                 &mut proc_info_needed,
                 &mut count,
                 Some(vec_info.as_mut_ptr()),
-                &mut reboot_reasons
+                &mut reboot_reasons,
             );
             if res2 != ERROR_SUCCESS {
                 return Err(format!("RmGetList retry failed: {:?}", res2));
             }
-            return Ok(vec_info.into_iter().map(|p| p.Process.dwProcessId).collect());
+            return Ok(vec_info
+                .into_iter()
+                .map(|p| p.Process.dwProcessId)
+                .collect());
         }
 
         if res != ERROR_SUCCESS {
             if res == WIN32_ERROR(0) {
                 // No processes locking the file
                 let count = proc_info_needed as usize;
-                return Ok(proc_info[..count].iter().map(|p| p.Process.dwProcessId).collect());
+                return Ok(proc_info[..count]
+                    .iter()
+                    .map(|p| p.Process.dwProcessId)
+                    .collect());
             }
             return Err(format!("RmGetList failed: {:?}", res));
         }
 
         let count = proc_info_needed as usize;
-        Ok(proc_info[..count].iter().map(|p| p.Process.dwProcessId).collect())
+        Ok(proc_info[..count]
+            .iter()
+            .map(|p| p.Process.dwProcessId)
+            .collect())
     }
 }
 
@@ -448,38 +513,87 @@ pub async fn get_env_info(
     project_path: Option<String>,
 ) -> Result<EnvReport, String> {
     let (
-        system_info, 
-        (binaries, (browsers, (ides, (languages, (virtualization, (utilities, (managers, (npm_packages, (databases, sdks)))))))))
+        system_info,
+        (
+            binaries,
+            (
+                browsers,
+                (
+                    ides,
+                    (
+                        languages,
+                        (
+                            virtualization,
+                            (utilities, (managers, (npm_packages, (databases, sdks)))),
+                        ),
+                    ),
+                ),
+            ),
+        ),
     ) = rayon::join(
         || env_probe::system::probe_system(system.clone()),
-        || rayon::join(
-            || env_probe::binaries::probe_by_category("Binaries"),
-            || rayon::join(
-                || env_probe::browsers::probe_browsers(),
-                || rayon::join(
-                    || env_probe::ides::probe_ides(),
-                    || rayon::join(
-                        || env_probe::binaries::probe_by_category("Languages"),
-                        || rayon::join(
-                            || env_probe::binaries::probe_by_category("Virtualization"),
-                            || rayon::join(
-                                || env_probe::binaries::probe_by_category("Utilities"),
-                                || rayon::join(
-                                    || env_probe::binaries::probe_by_category("Managers"),
-                                    || rayon::join(
-                                        || env_probe::npm::probe_npm_packages(project_path.clone()),
-                                        || rayon::join(
-                                            || env_probe::binaries::probe_by_category("Databases"),
-                                            || env_probe::sdks::probe_sdks() 
-                                        )
+        || {
+            rayon::join(
+                || env_probe::binaries::probe_by_category("Binaries"),
+                || {
+                    rayon::join(
+                        || env_probe::browsers::probe_browsers(),
+                        || {
+                            rayon::join(
+                                || env_probe::ides::probe_ides(),
+                                || {
+                                    rayon::join(
+                                        || env_probe::binaries::probe_by_category("Languages"),
+                                        || {
+                                            rayon::join(
+                                                || {
+                                                    env_probe::binaries::probe_by_category(
+                                                        "Virtualization",
+                                                    )
+                                                },
+                                                || {
+                                                    rayon::join(
+                                                        || {
+                                                            env_probe::binaries::probe_by_category(
+                                                                "Utilities",
+                                                            )
+                                                        },
+                                                        || {
+                                                            rayon::join(
+                                                                || {
+                                                                    env_probe::binaries::probe_by_category("Managers")
+                                                                },
+                                                                || {
+                                                                    rayon::join(
+                                                                        || {
+                                                                            env_probe::npm::probe_npm_packages(project_path.clone())
+                                                                        },
+                                                                        || {
+                                                                            rayon::join(
+                                                                                || {
+                                                                                    env_probe::binaries::probe_by_category("Databases")
+                                                                                },
+                                                                                || {
+                                                                                    env_probe::sdks::probe_sdks()
+                                                                                },
+                                                                            )
+                                                                        },
+                                                                    )
+                                                                },
+                                                            )
+                                                        },
+                                                    )
+                                                },
+                                            )
+                                        },
                                     )
-                                )
+                                },
                             )
-                        )
+                        },
                     )
-                )
+                },
             )
-        )
+        },
     );
 
     Ok(EnvReport {
@@ -498,12 +612,12 @@ pub async fn get_env_info(
 }
 
 #[tauri::command]
-pub async fn get_ai_context(
-    project_path: String,
-) -> Result<AiContextReport, String> {
+pub async fn get_ai_context(project_path: String) -> Result<AiContextReport, String> {
     let report = tauri::async_runtime::spawn_blocking(move || {
         env_probe::scan_logic::scan_ai_context(&project_path)
-    }).await.map_err(|e| e.to_string())?;
+    })
+    .await
+    .map_err(|e| e.to_string())?;
 
     Ok(report)
 }
@@ -539,7 +653,7 @@ pub async fn diagnose_network() -> Vec<NetDiagResult> {
 
         handles.push(tauri::async_runtime::spawn(async move {
             let start = std::time::Instant::now();
-            
+
             let resp = c.head(&url).send().await;
             let duration = start.elapsed().as_millis();
 
@@ -553,7 +667,14 @@ pub async fn diagnose_network() -> Vec<NetDiagResult> {
                     } else {
                         "Fail"
                     };
-                    NetDiagResult { id, name, url, status: status.to_string(), latency: duration, status_code }
+                    NetDiagResult {
+                        id,
+                        name,
+                        url,
+                        status: status.to_string(),
+                        latency: duration,
+                        status_code,
+                    }
                 }
                 Err(_) => {
                     let start_retry = std::time::Instant::now();
@@ -562,13 +683,31 @@ pub async fn diagnose_network() -> Vec<NetDiagResult> {
                             let duration_retry = start_retry.elapsed().as_millis();
                             let status_code = r.status().as_u16();
                             let status = if status_code >= 200 && status_code < 400 {
-                                if duration_retry < 800 { "Success" } else { "Slow" }
+                                if duration_retry < 800 {
+                                    "Success"
+                                } else {
+                                    "Slow"
+                                }
                             } else {
                                 "Fail"
                             };
-                            NetDiagResult { id, name, url, status: status.to_string(), latency: duration_retry, status_code }
+                            NetDiagResult {
+                                id,
+                                name,
+                                url,
+                                status: status.to_string(),
+                                latency: duration_retry,
+                                status_code,
+                            }
                         }
-                        Err(_) => NetDiagResult { id, name, url, status: "Fail".to_string(), latency: 0, status_code: 0 },
+                        Err(_) => NetDiagResult {
+                            id,
+                            name,
+                            url,
+                            status: "Fail".to_string(),
+                            latency: 0,
+                            status_code: 0,
+                        },
                     }
                 }
             }

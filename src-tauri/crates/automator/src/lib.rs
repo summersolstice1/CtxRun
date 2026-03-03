@@ -1,23 +1,23 @@
-use tauri::{
-    plugin::{Builder, TauriPlugin},
-    Manager, Runtime, AppHandle, Emitter
-};
-use std::sync::atomic::Ordering;
-use std::fs;
 use std::collections::HashMap;
+use std::fs;
+use std::sync::atomic::Ordering;
+use tauri::{
+    AppHandle, Emitter, Manager, Runtime,
+    plugin::{Builder, TauriPlugin},
+};
 
-pub mod models;
-pub mod engine;
+pub mod browser;
 pub mod commands;
-pub mod screen;
+pub mod engine;
 pub mod error;
 pub mod inspector;
-pub mod browser;
+pub mod models;
+pub mod screen;
 
 pub use error::{AutomatorError, Result};
 
 use engine::AutomatorState;
-use models::{AutomatorStoreRoot, AutomatorAction, Workflow, WorkflowGraph, WorkflowNode};
+use models::{AutomatorAction, AutomatorStoreRoot, Workflow, WorkflowGraph, WorkflowNode};
 
 fn workflow_to_graph(workflow: &Workflow) -> Option<WorkflowGraph> {
     if workflow.flow_nodes.is_empty() || workflow.flow_edges.is_empty() {
@@ -68,12 +68,12 @@ fn workflow_to_graph(workflow: &Workflow) -> Option<WorkflowGraph> {
             false_id: None,
         };
 
-        let outgoing_edges = workflow
-            .flow_edges
-            .iter()
-            .filter(|e| e.source == node.id);
+        let outgoing_edges = workflow.flow_edges.iter().filter(|e| e.source == node.id);
 
-        let is_branch = matches!(action, AutomatorAction::CheckColor { .. } | AutomatorAction::Iterate { .. });
+        let is_branch = matches!(
+            action,
+            AutomatorAction::CheckColor { .. } | AutomatorAction::Iterate { .. }
+        );
         for edge in outgoing_edges {
             if is_branch {
                 match edge.source_handle.as_deref() {
@@ -136,7 +136,9 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
         if let Ok(content) = fs::read_to_string(config_path) {
             if let Ok(store_data) = serde_json::from_str::<AutomatorStoreRoot>(&content) {
                 let mut persisted = store_data.state;
-                let selected_workflow = persisted.active_workflow.take()
+                let selected_workflow = persisted
+                    .active_workflow
+                    .take()
                     .or_else(|| {
                         persisted
                             .active_workflow_id

@@ -1,22 +1,22 @@
+use clipboard_rs::common::RustImage;
+use clipboard_rs::{
+    Clipboard, ClipboardContext, ClipboardHandler, ClipboardWatcher, ClipboardWatcherContext,
+    ContentFormat,
+};
+use crossbeam_channel::{Sender, bounded};
+use image::DynamicImage;
+use std::sync::Arc;
+use std::sync::LazyLock;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::LazyLock;
 use tauri::{AppHandle, Emitter, Manager, Runtime};
-use clipboard_rs::{
-    Clipboard, ClipboardContext, ClipboardHandler,
-    ClipboardWatcher, ClipboardWatcherContext, ContentFormat,
-};
-use clipboard_rs::common::RustImage;
-use image::DynamicImage;
 use tokio::sync::mpsc;
-use crossbeam_channel::{bounded, Sender};
 use x_win::{get_active_window, get_browser_url};
 
-use ctxrun_db::DbState;
 use super::models::{RefineryKind, RefineryMetadata};
-use super::storage::{hash_content, save_image_to_disk, capture_clipboard_item};
+use super::storage::{capture_clipboard_item, hash_content, save_image_to_disk};
+use ctxrun_db::DbState;
 
 pub static PASTING_FLAG: LazyLock<Arc<AtomicBool>> =
     LazyLock::new(|| Arc::new(AtomicBool::new(false)));
@@ -41,7 +41,7 @@ enum ClipboardPayload {
     Files {
         paths: Vec<String>,
         source_app: Option<String>,
-    }
+    },
 }
 
 struct RefineryListener {
@@ -57,9 +57,7 @@ impl RefineryListener {
             .and_then(|p| p.file_stem().map(|s| s.to_string_lossy().to_lowercase()))
             .unwrap_or_else(|| "ctxrun".to_string());
 
-        current == self_exe ||
-        current == format!("{}.exe", self_exe) ||
-        current.contains("ctxrun")
+        current == self_exe || current == format!("{}.exe", self_exe) || current.contains("ctxrun")
     }
 }
 
@@ -93,7 +91,7 @@ impl ClipboardHandler for RefineryListener {
                 if !paths.is_empty() {
                     let _ = self.tx.try_send(ClipboardPayload::Files {
                         paths,
-                        source_app: app_name
+                        source_app: app_name,
                     });
                     return;
                 }
@@ -107,21 +105,46 @@ impl ClipboardHandler for RefineryListener {
             let text = ctx.get_text().unwrap_or_default();
             if let Ok(rust_image) = ctx.get_image() {
                 if let Ok(dyn_image) = rust_image.get_dynamic_image() {
-                    Some(ClipboardPayload::Mixed { text, image: dyn_image, source_app: app_name, url })
-                } else { None }
-            } else { None }
+                    Some(ClipboardPayload::Mixed {
+                        text,
+                        image: dyn_image,
+                        source_app: app_name,
+                        url,
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else if has_image {
             if let Ok(rust_image) = ctx.get_image() {
                 if let Ok(dyn_image) = rust_image.get_dynamic_image() {
-                    Some(ClipboardPayload::Image { image: dyn_image, source_app: app_name, url })
-                } else { None }
-            } else { None }
+                    Some(ClipboardPayload::Image {
+                        image: dyn_image,
+                        source_app: app_name,
+                        url,
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else if has_text {
             if let Ok(text) = ctx.get_text() {
                 if !text.trim().is_empty() {
-                    Some(ClipboardPayload::Text { content: text, source_app: app_name, url })
-                } else { None }
-            } else { None }
+                    Some(ClipboardPayload::Text {
+                        content: text,
+                        source_app: app_name,
+                        url,
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
         } else {
             None
         };
@@ -153,15 +176,28 @@ impl<R: Runtime> RefineryProcessor<R> {
 
     fn process(&mut self, payload: ClipboardPayload) {
         match payload {
-            ClipboardPayload::Text { content, source_app, url } => {
+            ClipboardPayload::Text {
+                content,
+                source_app,
+                url,
+            } => {
                 self.handle_text(content, source_app, url);
-            },
-            ClipboardPayload::Image { image, source_app, url } => {
+            }
+            ClipboardPayload::Image {
+                image,
+                source_app,
+                url,
+            } => {
                 self.handle_image(image, source_app, url);
-            },
-            ClipboardPayload::Mixed { text, image, source_app, url } => {
+            }
+            ClipboardPayload::Mixed {
+                text,
+                image,
+                source_app,
+                url,
+            } => {
                 self.handle_mixed(text, image, source_app, url);
-            },
+            }
             ClipboardPayload::Files { paths, source_app } => {
                 self.handle_files(paths, source_app);
             }
@@ -171,7 +207,9 @@ impl<R: Runtime> RefineryProcessor<R> {
     fn handle_text(&mut self, content: String, source_app: Option<String>, url: Option<String>) {
         let hash = hash_content(content.as_bytes());
 
-        if hash == self.last_text_hash { return; }
+        if hash == self.last_text_hash {
+            return;
+        }
         self.last_text_hash = hash.clone();
 
         let char_count = content.chars().count();
@@ -179,46 +217,87 @@ impl<R: Runtime> RefineryProcessor<R> {
         let preview: String = content.chars().take(300).collect();
 
         let metadata = RefineryMetadata {
-            width: None, height: None, format: Some("text".into()),
+            width: None,
+            height: None,
+            format: Some("text".into()),
             tokens: Some(char_count / 4),
-            image_path: None
+            image_path: None,
         };
 
-        self.write_to_db(RefineryKind::Text, Some(content), hash, Some(preview), source_app, url, Some(size_info), metadata);
+        self.write_to_db(
+            RefineryKind::Text,
+            Some(content),
+            hash,
+            Some(preview),
+            source_app,
+            url,
+            Some(size_info),
+            metadata,
+        );
     }
 
     fn handle_files(&mut self, paths: Vec<String>, source_app: Option<String>) {
         let content = paths.join("\n");
         let hash = hash_content(content.as_bytes());
 
-        if hash == self.last_text_hash { return; }
+        if hash == self.last_text_hash {
+            return;
+        }
         self.last_text_hash = hash.clone();
 
         let file_count = paths.len();
         let size_info = format!("{} files", file_count);
 
-        let preview = paths.iter()
+        let preview = paths
+            .iter()
             .take(5)
-            .map(|p| std::path::Path::new(p).file_name().unwrap_or_default().to_string_lossy())
+            .map(|p| {
+                std::path::Path::new(p)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+            })
             .collect::<Vec<_>>()
-            .join("\n") + if file_count > 5 { "\n..." } else { "" };
+            .join("\n")
+            + if file_count > 5 { "\n..." } else { "" };
 
         let metadata = RefineryMetadata {
-            width: None, height: None, format: Some("file-list".into()),
-            tokens: None, image_path: None
+            width: None,
+            height: None,
+            format: Some("file-list".into()),
+            tokens: None,
+            image_path: None,
         };
 
-        self.write_to_db(RefineryKind::Text, Some(content), hash, Some(preview), source_app, None, Some(size_info), metadata);
+        self.write_to_db(
+            RefineryKind::Text,
+            Some(content),
+            hash,
+            Some(preview),
+            source_app,
+            None,
+            Some(size_info),
+            metadata,
+        );
     }
 
-    fn handle_image(&mut self, image: DynamicImage, source_app: Option<String>, url: Option<String>) {
-        if image.width() > 8000 || image.height() > 8000 { return; }
+    fn handle_image(
+        &mut self,
+        image: DynamicImage,
+        source_app: Option<String>,
+        url: Option<String>,
+    ) {
+        if image.width() > 8000 || image.height() > 8000 {
+            return;
+        }
 
         let save_result = save_image_to_disk(&self.app, &image);
 
         match save_result {
             Ok((file_path, hash)) => {
-                if hash == self.last_image_hash { return; }
+                if hash == self.last_image_hash {
+                    return;
+                }
                 self.last_image_hash = hash.clone();
 
                 let size_info = format!("{}x{}", image.width(), image.height());
@@ -230,13 +309,28 @@ impl<R: Runtime> RefineryProcessor<R> {
                     image_path: None,
                 };
 
-                self.write_to_db(RefineryKind::Image, Some(file_path), hash, Some("[Image]".into()), source_app, url, Some(size_info), metadata);
-            },
+                self.write_to_db(
+                    RefineryKind::Image,
+                    Some(file_path),
+                    hash,
+                    Some("[Image]".into()),
+                    source_app,
+                    url,
+                    Some(size_info),
+                    metadata,
+                );
+            }
             Err(e) => eprintln!("[Refinery] Image save failed: {}", e),
         }
     }
 
-    fn handle_mixed(&mut self, text: String, image: DynamicImage, source_app: Option<String>, url: Option<String>) {
+    fn handle_mixed(
+        &mut self,
+        text: String,
+        image: DynamicImage,
+        source_app: Option<String>,
+        url: Option<String>,
+    ) {
         if image.width() > 8000 || image.height() > 8000 {
             self.handle_text(text, source_app, url);
             return;
@@ -248,11 +342,18 @@ impl<R: Runtime> RefineryProcessor<R> {
                 let text_hash = hash_content(text.as_bytes());
                 let combined_hash = hash_content(format!("{}{}", text_hash, img_hash).as_bytes());
 
-                if combined_hash == self.last_text_hash { return; }
+                if combined_hash == self.last_text_hash {
+                    return;
+                }
                 self.last_text_hash = combined_hash.clone();
 
                 let char_count = text.chars().count();
-                let size_info = format!("{} chars + {}x{}", char_count, image.width(), image.height());
+                let size_info = format!(
+                    "{} chars + {}x{}",
+                    char_count,
+                    image.width(),
+                    image.height()
+                );
                 let preview = Some(text.chars().take(300).collect());
 
                 let metadata = RefineryMetadata {
@@ -263,8 +364,17 @@ impl<R: Runtime> RefineryProcessor<R> {
                     image_path: Some(file_path),
                 };
 
-                self.write_to_db(RefineryKind::Mixed, Some(text), combined_hash, preview, source_app, url, Some(size_info), metadata);
-            },
+                self.write_to_db(
+                    RefineryKind::Mixed,
+                    Some(text),
+                    combined_hash,
+                    preview,
+                    source_app,
+                    url,
+                    Some(size_info),
+                    metadata,
+                );
+            }
             Err(_) => self.handle_text(text, source_app, url),
         }
     }
@@ -278,14 +388,18 @@ impl<R: Runtime> RefineryProcessor<R> {
         source_app: Option<String>,
         url: Option<String>,
         size_info: Option<String>,
-        metadata: RefineryMetadata
+        metadata: RefineryMetadata,
     ) {
         let state = self.app.state::<DbState>();
         if let Ok(conn) = state.conn.lock() {
             if let Ok((is_new, id)) = capture_clipboard_item(
-                &conn, kind, content, hash, preview, source_app, url, size_info, metadata
+                &conn, kind, content, hash, preview, source_app, url, size_info, metadata,
             ) {
-                let event_name = if is_new { "refinery:create" } else { "refinery:update" };
+                let event_name = if is_new {
+                    "refinery:create"
+                } else {
+                    "refinery:update"
+                };
                 let _ = self.app.emit(event_name, &id);
 
                 if let Some(ref sender) = self.cleanup_sender {

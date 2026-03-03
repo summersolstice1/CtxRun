@@ -35,7 +35,7 @@ pub fn probe_npm_packages(project_root: Option<String>) -> Vec<ToolInfo> {
     }
 
     let mut results = Vec::new();
-    
+
     let node_modules = path.join("node_modules");
     if !node_modules.exists() {
         for dep in deps {
@@ -52,7 +52,7 @@ pub fn probe_npm_packages(project_root: Option<String>) -> Vec<ToolInfo> {
     for dep in deps {
         let dep_pkg_path = node_modules.join(&dep).join("package.json");
         let mut installed_version = "Not Found".to_string();
-        
+
         if dep_pkg_path.exists() {
             if let Ok(dep_content) = fs::read_to_string(&dep_pkg_path) {
                 if let Ok(dep_json) = serde_json::from_str::<Value>(&dep_content) {

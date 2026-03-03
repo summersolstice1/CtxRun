@@ -1,5 +1,5 @@
-use regex::Regex;
 use super::Rule;
+use regex::Regex;
 
 pub fn ai_rules() -> Vec<Rule> {
     vec![
@@ -19,7 +19,6 @@ pub fn ai_rules() -> Vec<Rule> {
             entropy: Some(3.0),
             keywords: &["org-"],
         },
-
         // Anthropic API Key
         Rule {
             id: "anthropic-api-key",
@@ -28,7 +27,6 @@ pub fn ai_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["sk-ant-"],
         },
-
         // Cohere API Key
         Rule {
             id: "cohere-api-key",
@@ -37,7 +35,6 @@ pub fn ai_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &[],
         },
-
         // Hugging Face Access Token
         Rule {
             id: "huggingface-token",
@@ -46,7 +43,6 @@ pub fn ai_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["hf_"],
         },
-
         // Perplexity API Key
         Rule {
             id: "perplexity-api-key",
@@ -55,7 +51,6 @@ pub fn ai_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["pplx-"],
         },
-
         // PrivateAI API Key (private.ai)
         Rule {
             id: "privateai-api-key",
@@ -64,7 +59,6 @@ pub fn ai_rules() -> Vec<Rule> {
             entropy: Some(3.5),
             keywords: &["pk_live_"],
         },
-
         // DeepSeek API Key
         Rule {
             id: "deepseek-api-key",

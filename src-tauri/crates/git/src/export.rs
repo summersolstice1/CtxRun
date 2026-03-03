@@ -1,8 +1,7 @@
-use crate::models::{GitDiffFile, ExportFormat, ExportLayout};
+use crate::models::{ExportFormat, ExportLayout, GitDiffFile};
 use serde_json;
 use similar::{ChangeTag, TextDiff};
 use std::fmt::Write;
-
 
 /// Export files in various formats
 pub fn generate_export_content(
@@ -18,7 +17,12 @@ pub fn generate_export_content(
     }
 }
 
-fn generate_diff_string(original: &str, modified: &str, path: &str, layout: ExportLayout) -> String {
+fn generate_diff_string(
+    original: &str,
+    modified: &str,
+    path: &str,
+    layout: ExportLayout,
+) -> String {
     let diff = TextDiff::from_lines(original, modified);
     let mut output = String::new();
 
@@ -74,10 +78,14 @@ fn to_markdown(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
                 &file.original_content,
                 &file.modified_content,
                 &file.path,
-                layout
+                layout,
             );
-            
-            let title = if layout == ExportLayout::Unified { "### Full Context Diff" } else { "### Git Patch" };
+
+            let title = if layout == ExportLayout::Unified {
+                "### Full Context Diff"
+            } else {
+                "### Git Patch"
+            };
             let _ = writeln!(output, "{}", title);
             let _ = writeln!(output, "```diff");
             let _ = writeln!(output, "{}", diff_content);
@@ -120,7 +128,12 @@ fn to_xml(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
     output.push_str("<git_diff_export>\n");
 
     for file in files {
-        let _ = writeln!(output, "  <file path=\"{}\" status=\"{}\">", escape_xml_attr(&file.path), file.status);
+        let _ = writeln!(
+            output,
+            "  <file path=\"{}\" status=\"{}\">",
+            escape_xml_attr(&file.path),
+            file.status
+        );
 
         if layout == ExportLayout::Split {
             if !file.original_content.is_empty() {
@@ -134,7 +147,12 @@ fn to_xml(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
                 output.push_str("\n]]></modified>\n");
             }
         } else {
-            let diff = generate_diff_string(&file.original_content, &file.modified_content, &file.path, layout);
+            let diff = generate_diff_string(
+                &file.original_content,
+                &file.modified_content,
+                &file.path,
+                layout,
+            );
             output.push_str("    <diff><![CDATA[\n");
             output.push_str(&diff);
             output.push_str("\n]]></diff>\n");
@@ -150,9 +168,15 @@ fn to_custom_text(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
     let mut output = String::new();
 
     for file in files {
-        let _ = writeln!(output, "==================================================================");
+        let _ = writeln!(
+            output,
+            "=================================================================="
+        );
         let _ = writeln!(output, "FILE: {}  STATUS: {}", file.path, file.status);
-        let _ = writeln!(output, "==================================================================");
+        let _ = writeln!(
+            output,
+            "=================================================================="
+        );
 
         if layout == ExportLayout::Split {
             if !file.original_content.is_empty() {
@@ -168,7 +192,12 @@ fn to_custom_text(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
                 let _ = writeln!(output, "");
             }
         } else {
-            let diff = generate_diff_string(&file.original_content, &file.modified_content, &file.path, layout);
+            let diff = generate_diff_string(
+                &file.original_content,
+                &file.modified_content,
+                &file.path,
+                layout,
+            );
             let _ = writeln!(output, "{}", diff);
         }
         let _ = writeln!(output, "\n");
@@ -177,5 +206,9 @@ fn to_custom_text(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
 }
 
 fn escape_xml_attr(s: &str) -> String {
-    s.replace("&", "&amp;").replace("\"", "&quot;").replace("'", "&apos;").replace("<", "&lt;").replace(">", "&gt;")
+    s.replace("&", "&amp;")
+        .replace("\"", "&quot;")
+        .replace("'", "&apos;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
 }

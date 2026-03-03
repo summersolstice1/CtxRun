@@ -1,10 +1,10 @@
+use crate::error::{GitError, Result};
+use crate::export::generate_export_content;
+use crate::models::{ExportFormat, ExportLayout, GitCommit, GitDiffFile};
 use chrono::{DateTime, Local};
 use git2::{Delta, DiffFormat, DiffOptions, Oid, Repository};
 use rayon::prelude::*;
 use std::path::Path;
-use crate::error::{GitError, Result};
-use crate::models::{GitCommit, GitDiffFile, ExportFormat, ExportLayout};
-use crate::export::generate_export_content;
 
 struct DiffItem {
     path: String,

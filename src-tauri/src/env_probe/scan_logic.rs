@@ -63,7 +63,10 @@ fn determine_project_type(types: &[ProjectType], deps: &HashMap<String, String>)
         return ProjectType::Mixed;
     }
 
-    if deps.keys().any(|k: &String| k.contains("tauri") || k.starts_with("@tauri-apps")) {
+    if deps
+        .keys()
+        .any(|k: &String| k.contains("tauri") || k.starts_with("@tauri-apps"))
+    {
         return ProjectType::Tauri;
     }
 
@@ -81,28 +84,36 @@ fn determine_project_type(types: &[ProjectType], deps: &HashMap<String, String>)
 fn get_system_brief() -> String {
     let os = sysinfo::System::name().unwrap_or("Unknown OS".to_string());
     let ver = sysinfo::System::os_version().unwrap_or_default();
-    
+
     #[cfg(windows)]
     let shell = "PowerShell";
     #[cfg(not(windows))]
     let shell = std::env::var("SHELL").unwrap_or("Bash/Zsh".to_string());
-    
+
     format!("{} {} ({})", os, ver, shell)
 }
 
-fn build_markdown(pt: &ProjectType, sys: &str, tools: &[ToolInfo], deps: &HashMap<String, String>) -> String {
+fn build_markdown(
+    pt: &ProjectType,
+    sys: &str,
+    tools: &[ToolInfo],
+    deps: &HashMap<String, String>,
+) -> String {
     let mut md = String::new();
-    
+
     md.push_str(&format!("## Context: {:?}\n", pt));
     md.push_str(&format!("- **System**: {}\n", sys));
-    
+
     if !tools.is_empty() {
         md.push_str("- **Runtimes**: ");
-        let tool_strs: Vec<String> = tools.iter()
-            .map(|t| if t.version == "Not Found" { 
-                format!("{}", t.name) 
-            } else { 
-                format!("{} {}", t.name, t.version) 
+        let tool_strs: Vec<String> = tools
+            .iter()
+            .map(|t| {
+                if t.version == "Not Found" {
+                    format!("{}", t.name)
+                } else {
+                    format!("{} {}", t.name, t.version)
+                }
             })
             .collect();
         md.push_str(&tool_strs.join(", "));
@@ -113,7 +124,7 @@ fn build_markdown(pt: &ProjectType, sys: &str, tools: &[ToolInfo], deps: &HashMa
         md.push_str("\n## Key Dependencies\n");
         let mut sorted_deps: Vec<_> = deps.iter().collect();
         sorted_deps.sort_by(|a, b| a.0.cmp(b.0));
-        
+
         for (name, ver) in sorted_deps {
             let clean_ver = ver.trim_start_matches('^').trim_start_matches('~');
             md.push_str(&format!("- {}: {}\n", name, clean_ver));

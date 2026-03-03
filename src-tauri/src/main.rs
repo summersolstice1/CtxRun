@@ -4,64 +4,71 @@
 )]
 
 use std::fs;
-use std::process::Command;
-use std::sync::{Arc, Mutex};
 #[cfg(target_os = "windows")]
 use std::os::windows::process::CommandExt;
+use std::process::Command;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use sysinfo::{System, RefreshKind, CpuRefreshKind, MemoryRefreshKind};
-#[cfg(target_os = "windows")]
-use windows::Win32::System::Threading::CREATE_NO_WINDOW;
+use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
+use tauri::window::Color;
 use tauri::{
-    AppHandle, Manager, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Manager, RunEvent, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    WindowEvent,
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
-    RunEvent, WindowEvent,
 };
-use tauri::window::Color;
 use tokio::time::sleep;
+#[cfg(target_os = "windows")]
+use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 
 use ctxrun_db as db;
-mod monitor;
-mod env_probe;
 mod apps;
+mod env_probe;
 mod hyperview;
+mod monitor;
 mod scheduler;
 mod shortcuts;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 
 fn ensure_main_window(app: &AppHandle) {
-    match app.get_webview_window(MAIN_WINDOW_LABEL) { Some(window) => {
-        let _ = window.unminimize();
-        let _ = window.show();
-        let _ = window.set_focus();
-    } _ => {
-        let window_builder = WebviewWindowBuilder::new(
-            app,
-            MAIN_WINDOW_LABEL,
-            WebviewUrl::App("index.html".into())
-        )
-        .title("CtxRun")
-        .inner_size(800.0, 600.0)
-        .background_color(Color(0, 0, 0, 0))
-        .center()
-        .decorations(false)
-        .resizable(true)
-        .visible(true);
-
-        match window_builder.build() {
-            Ok(w) => {
-                let _ = w.set_focus();
-            }
-            Err(_) => {}
+    match app.get_webview_window(MAIN_WINDOW_LABEL) {
+        Some(window) => {
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
         }
-    }}
+        _ => {
+            let window_builder = WebviewWindowBuilder::new(
+                app,
+                MAIN_WINDOW_LABEL,
+                WebviewUrl::App("index.html".into()),
+            )
+            .title("CtxRun")
+            .inner_size(800.0, 600.0)
+            .background_color(Color(0, 0, 0, 0))
+            .center()
+            .decorations(false)
+            .resizable(true)
+            .visible(true);
+
+            match window_builder.build() {
+                Ok(w) => {
+                    let _ = w.set_focus();
+                }
+                Err(_) => {}
+            }
+        }
+    }
 }
 
 #[tauri::command]
-async fn hide_main_window(app: AppHandle, window: WebviewWindow, delay_secs: u64) -> Result<(), String> {
+async fn hide_main_window(
+    app: AppHandle,
+    window: WebviewWindow,
+    delay_secs: u64,
+) -> Result<(), String> {
     window.hide().map_err(|e| e.to_string())?;
 
     if delay_secs == 0 {
@@ -104,24 +111,22 @@ fn get_file_size(path: String) -> u64 {
 }
 
 #[tauri::command]
-fn get_system_info(
-    system: State<'_, Arc<Mutex<System>>>,
-) -> SystemInfo {
+fn get_system_info(system: State<'_, Arc<Mutex<System>>>) -> SystemInfo {
     let mut sys = system.lock().unwrap();
-    
+
     sys.refresh_specifics(
         RefreshKind::nothing()
             .with_cpu(CpuRefreshKind::nothing().with_cpu_usage())
-            .with_memory(MemoryRefreshKind::nothing())
+            .with_memory(MemoryRefreshKind::nothing()),
     );
-    
+
     let cpu_usage = sys.global_cpu_usage() as f64;
-    
+
     let memory_total = sys.total_memory();
     let memory_used = sys.used_memory();
     let memory_available = sys.available_memory();
     let uptime = System::uptime();
-    
+
     SystemInfo {
         cpu_usage,
         memory_usage: memory_used,
@@ -188,7 +193,6 @@ fn main() {
         .plugin(ctxrun_plugin_git::init())
         .plugin(ctxrun_plugin_refinery::init())
         .plugin(ctxrun_plugin_miner::init())
-
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
@@ -238,9 +242,11 @@ fn main() {
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
-            app.manage(scheduler::ReminderState(std::sync::Mutex::new(scheduler::ReminderConfig::default())));
+            app.manage(scheduler::ReminderState(std::sync::Mutex::new(
+                scheduler::ReminderConfig::default(),
+            )));
             scheduler::start_background_task(app.handle().clone());
-            
+
             match db::init_db(app.handle()) {
                 Ok(conn) => {
                     app.manage(db::DbState {
@@ -248,7 +254,10 @@ fn main() {
                     });
                 }
                 Err(e) => {
-                    panic!("[Database] Critical Error: Failed to initialize database: {}", e);
+                    panic!(
+                        "[Database] Critical Error: Failed to initialize database: {}",
+                        e
+                    );
                 }
             }
 
@@ -264,19 +273,23 @@ fn main() {
                 .icon(if let Some(icon) = app.default_window_icon() {
                     icon.clone()
                 } else {
-                    return Err(Box::new(std::io::Error::new(std::io::ErrorKind::NotFound, "No default icon found")));
+                    return Err(Box::new(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "No default icon found",
+                    )));
                 })
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|_app, event| match event.id().as_ref() {
                     "quit" => {
                         std::process::exit(0);
-                    },
+                    }
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| match event {
                     TrayIconEvent::Click {
-                        button: MouseButton::Left, ..
+                        button: MouseButton::Left,
+                        ..
                     } => {
                         ensure_main_window(tray.app_handle());
                     }
@@ -303,12 +316,10 @@ fn main() {
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_app_handle, event| {
-            match event {
-                RunEvent::ExitRequested { api, .. } => {
-                    api.prevent_exit();
-                }
-                _ => {}
+        .run(|_app_handle, event| match event {
+            RunEvent::ExitRequested { api, .. } => {
+                api.prevent_exit();
             }
+            _ => {}
         });
 }
