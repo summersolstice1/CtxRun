@@ -21,4 +21,4 @@ chrono = { workspace = true }
 ctxrun-browser-utils = { workspace = true }
 
 [build-dependencies]
-tauri-plugin = { workspace = true, features = ["build"] }
+tauri-plugin = { workspace = true }
