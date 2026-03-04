@@ -32,3 +32,21 @@ export interface MinerLog {
   message: string;
   url?: string;
 }
+
+export interface SinglePageExtractRequest {
+  url: string;
+  timeoutMs?: number;
+  includeLinks?: boolean;
+  saveToDisk?: boolean;
+  outputDir?: string;
+}
+
+export interface SinglePageExtractResult {
+  url: string;
+  title: string;
+  markdown: string;
+  links: string[];
+  crawledAt: string;
+  savedPath?: string | null;
+  warnings: string[];
+}

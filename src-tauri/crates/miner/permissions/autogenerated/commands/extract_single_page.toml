@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-extract-single-page"
+description = "Enables the extract_single_page command without any pre-configured scope."
+commands.allow = ["extract_single_page"]
+
+[[permission]]
+identifier = "deny-extract-single-page"
+description = "Denies the extract_single_page command without any pre-configured scope."
+commands.deny = ["extract_single_page"]

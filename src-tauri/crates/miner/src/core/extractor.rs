@@ -15,7 +15,15 @@ const PRIMING_SCROLL_POLL_MS: u64 = 220;
 const PRIMING_SCROLL_MAX_ROUNDS: u32 = 10;
 
 pub async fn extract_page(page: &Page, url: &str) -> Result<PageResult> {
-    tokio::time::timeout(EXTRACT_TIMEOUT, async {
+    extract_page_with_timeout(page, url, EXTRACT_TIMEOUT).await
+}
+
+pub async fn extract_page_with_timeout(
+    page: &Page,
+    url: &str,
+    timeout: Duration,
+) -> Result<PageResult> {
+    tokio::time::timeout(timeout, async {
         page.goto(url)
             .await
             .map_err(|e| MinerError::BrowserError(format!("Navigation failed: {}", e)))?;
@@ -79,7 +87,7 @@ pub async fn extract_page(page: &Page, url: &str) -> Result<PageResult> {
     .map_err(|_| {
         MinerError::BrowserError(format!(
             "Extraction timed out after {}s: {}",
-            EXTRACT_TIMEOUT.as_secs(),
+            timeout.as_secs(),
             url
         ))
     })?

@@ -58,3 +58,32 @@ pub struct PageResult {
     pub markdown: String,
     pub links: Vec<String>, // 页面中发现的所有链接
 }
+
+/// 单页抓取请求参数（公共接口）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SinglePageRequest {
+    /// 目标 URL（http/https）
+    pub url: String,
+    /// 单页抓取超时（毫秒，可选）
+    pub timeout_ms: Option<u64>,
+    /// 是否返回链接列表（默认 true）
+    pub include_links: Option<bool>,
+    /// 是否保存到磁盘（默认 false）
+    pub save_to_disk: Option<bool>,
+    /// 输出目录（当 save_to_disk=true 时必填）
+    pub output_dir: Option<String>,
+}
+
+/// 单页抓取结果（可直接供 AI 消费）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SinglePageResult {
+    pub url: String,
+    pub title: String,
+    pub markdown: String,
+    pub links: Vec<String>,
+    pub crawled_at: String,
+    pub saved_path: Option<String>,
+    pub warnings: Vec<String>,
+}

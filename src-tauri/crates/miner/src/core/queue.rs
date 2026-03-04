@@ -7,14 +7,21 @@ use tauri::{AppHandle, Emitter, Runtime};
 use tokio::sync::{Mutex, mpsc};
 
 use super::driver::MinerDriver;
-use super::extractor::extract_page;
 use super::scope::{is_url_allowed, normalize_url};
-use super::storage::save_markdown;
+use super::single_page::extract_single_page_with_page;
 use crate::error::Result;
-use crate::models::{MinerConfig, MinerEvent};
+use crate::models::{MinerConfig, MinerEvent, SinglePageRequest};
 
 /// 最大并发数限制
 const MAX_CONCURRENCY: usize = 10;
+
+pub type CrawlEventSink = Arc<dyn Fn(MinerEvent) + Send + Sync + 'static>;
+
+fn emit_event(event_sink: &Option<CrawlEventSink>, event: MinerEvent) {
+    if let Some(sink) = event_sink {
+        sink(event);
+    }
+}
 
 fn decrement_counter(counter: &AtomicUsize) {
     let _ = counter.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |current| {
@@ -43,6 +50,24 @@ pub async fn run_crawl_task<R: Runtime>(
     app: AppHandle<R>,
     config: MinerConfig,
     is_running: Arc<AtomicBool>,
+) -> Result<()> {
+    let app_handle = app.clone();
+    let event_sink: CrawlEventSink = Arc::new(move |event: MinerEvent| {
+        let channel = match &event {
+            MinerEvent::Progress { .. } => "miner:progress",
+            MinerEvent::Finished { .. } => "miner:finished",
+            MinerEvent::Error { .. } => "miner:error",
+        };
+        let _ = app_handle.emit(channel, event);
+    });
+
+    run_crawl_task_with_sink(config, is_running, Some(event_sink)).await
+}
+
+pub async fn run_crawl_task_with_sink(
+    config: MinerConfig,
+    is_running: Arc<AtomicBool>,
+    event_sink: Option<CrawlEventSink>,
 ) -> Result<()> {
     // 从配置获取并发数，限制在 1-10 之间
     let concurrency = config.concurrency.clamp(1, MAX_CONCURRENCY as u32) as usize;
@@ -73,7 +98,6 @@ pub async fn run_crawl_task<R: Runtime>(
             }
         };
 
-        let app_clone = app.clone();
         let config_clone = config.clone();
         let is_running_clone = is_running.clone();
         let visited_clone = visited.clone();
@@ -82,6 +106,7 @@ pub async fn run_crawl_task<R: Runtime>(
         let crawled_count_clone = crawled_count.clone();
         let active_tasks_clone = active_tasks.clone();
         let queued_tasks_clone = queued_tasks.clone();
+        let event_sink_clone = event_sink.clone();
 
         worker_futures.push(async move {
             loop {
@@ -113,8 +138,8 @@ pub async fn run_crawl_task<R: Runtime>(
 
                         let discovered = visited_clone.lock().await.len() as u32;
 
-                        let _ = app_clone.emit(
-                            "miner:progress",
+                        emit_event(
+                            &event_sink_clone,
                             MinerEvent::Progress {
                                 current: task_number,
                                 total_discovered: discovered,
@@ -123,16 +148,18 @@ pub async fn run_crawl_task<R: Runtime>(
                             },
                         );
 
-                        match extract_page(&page, &current_url).await {
-                            Ok(page_result) => {
-                                if let Err(e) =
-                                    save_markdown(&config_clone.output_dir, &page_result)
-                                {
-                                    eprintln!("[Miner] Failed to save {}: {}", current_url, e);
-                                }
+                        let page_request = SinglePageRequest {
+                            url: current_url.clone(),
+                            timeout_ms: None,
+                            include_links: Some(true),
+                            save_to_disk: Some(true),
+                            output_dir: Some(config_clone.output_dir.clone()),
+                        };
 
-                                let _ = app_clone.emit(
-                                    "miner:progress",
+                        match extract_single_page_with_page(&page, &page_request).await {
+                            Ok(page_result) => {
+                                emit_event(
+                                    &event_sink_clone,
                                     MinerEvent::Progress {
                                         current: task_number,
                                         total_discovered: discovered,
@@ -177,8 +204,8 @@ pub async fn run_crawl_task<R: Runtime>(
                                 }
                             }
                             Err(e) => {
-                                let _ = app_clone.emit(
-                                    "miner:error",
+                                emit_event(
+                                    &event_sink_clone,
                                     MinerEvent::Error {
                                         url: current_url.clone(),
                                         message: e.to_string(),
@@ -215,8 +242,8 @@ pub async fn run_crawl_task<R: Runtime>(
     let final_count = crawled_count.load(Ordering::SeqCst);
     is_running.store(false, Ordering::SeqCst);
 
-    let _ = app.emit(
-        "miner:finished",
+    emit_event(
+        &event_sink,
         MinerEvent::Finished {
             total_pages: final_count,
             output_dir: config.output_dir,

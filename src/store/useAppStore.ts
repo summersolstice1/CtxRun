@@ -68,12 +68,28 @@ export interface RefinerySettings {
   keepPinned: boolean;
 }
 
+export interface McpHttpSettings {
+  enabled: boolean;
+  autoStart: boolean;
+  host: string;
+  port: number;
+  token: string;
+}
+
 export const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
   enabled: false,
   strategy: 'count',
   days: 30,
   maxCount: 1000,
   keepPinned: true,
+};
+
+export const DEFAULT_MCP_HTTP_SETTINGS: McpHttpSettings = {
+  enabled: false,
+  autoStart: false,
+  host: '127.0.0.1',
+  port: 39180,
+  token: '',
 };
 
 export type WindowDestroyDelay = number;
@@ -110,6 +126,7 @@ interface AppState {
   };
 
   refinerySettings: RefinerySettings;
+  mcpHttpSettings: McpHttpSettings;
 
   setView: (view: AppView) => void;
   setProjectRoot: (path: string | null) => void;
@@ -129,6 +146,7 @@ interface AppState {
   setWindowDestroyDelay: (seconds: number) => void;
   setSearchSettings: (config: Partial<AppState['searchSettings']>) => void;
   setRefinerySettings: (config: Partial<RefinerySettings>) => void;
+  setMcpHttpSettings: (config: Partial<McpHttpSettings>) => void;
   syncModels: () => Promise<void>;
   resetModels: () => void;
   setSpotlightAppearance: (config: Partial<SpotlightAppearance>) => void;
@@ -168,6 +186,7 @@ export const useAppStore = create<AppState>()(
         customUrl: 'https://search.bilibili.com/all?keyword=%s'
       },
       refinerySettings: DEFAULT_REFINERY_SETTINGS,
+      mcpHttpSettings: DEFAULT_MCP_HTTP_SETTINGS,
       setSpotlightAppearance: (config) => set((state) => ({
         spotlightAppearance: { ...state.spotlightAppearance, ...config }
       })),
@@ -251,6 +270,9 @@ export const useAppStore = create<AppState>()(
       })),
       setRefinerySettings: (config) => set((state) => ({
         refinerySettings: { ...state.refinerySettings, ...config }
+      })),
+      setMcpHttpSettings: (config) => set((state) => ({
+        mcpHttpSettings: { ...state.mcpHttpSettings, ...config }
       })),
       setLanguage: (language) => {
         set({ language });
@@ -341,7 +363,8 @@ export const useAppStore = create<AppState>()(
         restReminder: state.restReminder,
         windowDestroyDelay: state.windowDestroyDelay,
         searchSettings: state.searchSettings,
-        refinerySettings: state.refinerySettings
+        refinerySettings: state.refinerySettings,
+        mcpHttpSettings: state.mcpHttpSettings
       }),
     }
   )

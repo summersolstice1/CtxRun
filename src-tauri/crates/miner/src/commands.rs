@@ -3,8 +3,9 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use tauri::{AppHandle, Runtime, State};
 
 use crate::core::queue::run_crawl_task;
+use crate::core::single_page::extract_single_page as run_single_page_extraction;
 use crate::error::{MinerError, Result};
-use crate::models::MinerConfig;
+use crate::models::{MinerConfig, SinglePageRequest, SinglePageResult};
 
 // 维护爬虫的运行状态，以便我们可以通过命令停止它
 pub struct MinerState {
@@ -50,4 +51,9 @@ pub async fn stop_mining(state: State<'_, MinerState>) -> Result<()> {
     // 将状态设为 false，queue.rs 中的 while 循环检测到后会优雅中断
     state.is_running.store(false, Ordering::SeqCst);
     Ok(())
+}
+
+#[tauri::command]
+pub async fn extract_single_page(request: SinglePageRequest) -> Result<SinglePageResult> {
+    run_single_page_extraction(request).await
 }

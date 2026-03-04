@@ -28,6 +28,15 @@ import { ShortcutInput } from '@/components/ui/ShortcutInput';
 import { AboutSection } from './AboutSection';
 import { SearchEngineIcon } from '@/components/ui/SearchEngineIcon';
 
+interface McpHttpStatus {
+  running: boolean;
+  host: string;
+  port: number;
+  endpoint: string;
+  authEnabled: boolean;
+  allowStart: boolean;
+}
+
 export function SettingsModal() {
   const {
     isSettingsOpen, setSettingsOpen,
@@ -43,7 +52,8 @@ export function SettingsModal() {
     windowDestroyDelay, setWindowDestroyDelay,
     spotlightAppearance, setSpotlightAppearance,
     searchSettings, setSearchSettings,
-    refinerySettings, setRefinerySettings
+    refinerySettings, setRefinerySettings,
+    mcpHttpSettings, setMcpHttpSettings
   } = useAppStore();
   const { t } = useTranslation();
 
@@ -52,6 +62,12 @@ export function SettingsModal() {
   const [activeSection, setActiveSection] = useState<'appearance' | 'language' | 'filters' | 'library' | 'ai' | 'data' | 'security' | 'about' | 'search'>('appearance');
   const [importStatus, setImportStatus] = useState<string>('');
   const [isScanningApps, setIsScanningApps] = useState(false);
+  const [mcpStatus, setMcpStatus] = useState<McpHttpStatus | null>(null);
+  const [mcpLoading, setMcpLoading] = useState(false);
+  const [mcpActionPending, setMcpActionPending] = useState(false);
+  const [mcpHostInput, setMcpHostInput] = useState(mcpHttpSettings.host);
+  const [mcpPortInput, setMcpPortInput] = useState(String(mcpHttpSettings.port));
+  const [mcpTokenInput, setMcpTokenInput] = useState(mcpHttpSettings.token);
 
   const formatDuration = (seconds: number) => {
     if (seconds === 0) return t('settings.never');
@@ -67,6 +83,102 @@ export function SettingsModal() {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+
+  const refreshMcpStatus = async () => {
+    setMcpLoading(true);
+    try {
+      const status = await invoke<McpHttpStatus>('mcp_http_status');
+      setMcpStatus(status);
+    } catch (e) {
+      console.error('Failed to get MCP HTTP status:', e);
+      setImportStatus(t('settings.mcpActionFailed').replace('{error}', String(e)));
+    } finally {
+      setMcpLoading(false);
+    }
+  };
+
+  const applyMcpConnectionSettings = async () => {
+    const host = mcpHostInput.trim();
+    const parsedPort = Number(mcpPortInput);
+    const port = Number.isInteger(parsedPort) ? parsedPort : NaN;
+
+    if (!host) {
+      setImportStatus(t('settings.mcpInvalidHost'));
+      return;
+    }
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      setImportStatus(t('settings.mcpInvalidPort'));
+      return;
+    }
+
+    setMcpActionPending(true);
+    try {
+      await invoke<McpHttpStatus>('mcp_http_configure', {
+        config: {
+          host,
+          port,
+          token: mcpTokenInput,
+          restartIfRunning: true
+        }
+      });
+
+      setMcpHttpSettings({
+        host,
+        port,
+        token: mcpTokenInput
+      });
+      setImportStatus(t('settings.mcpConfigSaved'));
+      await refreshMcpStatus();
+    } catch (e) {
+      console.error('Failed to update MCP HTTP configuration:', e);
+      setImportStatus(t('settings.mcpActionFailed').replace('{error}', String(e)));
+    } finally {
+      setMcpActionPending(false);
+    }
+  };
+
+  const applyMcpEnabled = async (enabled: boolean) => {
+    setMcpActionPending(true);
+    try {
+      await invoke<McpHttpStatus>('mcp_http_configure', {
+        config: {
+          allowStart: enabled,
+          restartIfRunning: false
+        }
+      });
+
+      if (enabled) {
+        await invoke<McpHttpStatus>('mcp_http_start');
+      } else {
+        await invoke<McpHttpStatus>('mcp_http_stop');
+      }
+      setMcpHttpSettings({ enabled });
+      await refreshMcpStatus();
+    } catch (e) {
+      console.error('Failed to switch MCP HTTP service:', e);
+      setImportStatus(t('settings.mcpActionFailed').replace('{error}', String(e)));
+    } finally {
+      setMcpActionPending(false);
+    }
+  };
+
+  const toggleMcpRuntime = async () => {
+    const running = Boolean(mcpStatus?.running);
+    setMcpActionPending(true);
+    try {
+      if (running) {
+        await invoke<McpHttpStatus>('mcp_http_stop');
+      } else {
+        await invoke<McpHttpStatus>('mcp_http_start');
+      }
+      await refreshMcpStatus();
+    } catch (e) {
+      console.error('Failed to toggle MCP HTTP runtime:', e);
+      setImportStatus(t('settings.mcpActionFailed').replace('{error}', String(e)));
+    } finally {
+      setMcpActionPending(false);
+    }
+  };
 
   useEffect(() => {
     if (isRenaming && renameInputRef.current) {
@@ -93,6 +205,14 @@ export function SettingsModal() {
 
     updateBackendConfig();
   }, [refinerySettings]);
+
+  useEffect(() => {
+    if (!isSettingsOpen || activeSection !== 'security') return;
+    setMcpHostInput(mcpHttpSettings.host);
+    setMcpPortInput(String(mcpHttpSettings.port));
+    setMcpTokenInput(mcpHttpSettings.token || '');
+    refreshMcpStatus();
+  }, [isSettingsOpen, activeSection]);
 
   const handleRenameSubmit = () => {
       if (renameValue.trim()) {
@@ -1010,7 +1130,136 @@ export function SettingsModal() {
 
                 {/* Security & Whitelist Section */}
                 {activeSection === 'security' && (
-                    <IgnoredSecretsManager />
+                    <div className="h-full flex flex-col gap-4">
+                        <div className="bg-secondary/20 border border-border rounded-lg p-4 space-y-4">
+                            <div>
+                                <h3 className="text-sm font-medium text-foreground">{t('settings.mcpTitle')}</h3>
+                                <p className="text-xs text-muted-foreground mt-1">{t('settings.mcpDesc')}</p>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <div className="text-sm text-foreground">{t('settings.mcpEnabled')}</div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.mcpEnabledDesc')}</div>
+                                </div>
+                                <button
+                                    onClick={() => applyMcpEnabled(!mcpHttpSettings.enabled)}
+                                    disabled={mcpActionPending}
+                                    className={cn(
+                                        "relative w-11 h-6 rounded-full transition-colors disabled:opacity-50",
+                                        mcpHttpSettings.enabled ? "bg-primary" : "bg-secondary"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform",
+                                        mcpHttpSettings.enabled ? "translate-x-5" : "translate-x-0"
+                                    )} />
+                                </button>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3 rounded-lg border border-border bg-background/50">
+                                <div>
+                                    <div className="text-sm text-foreground">{t('settings.mcpAutoStart')}</div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">{t('settings.mcpAutoStartDesc')}</div>
+                                </div>
+                                <button
+                                    onClick={() => setMcpHttpSettings({ autoStart: !mcpHttpSettings.autoStart })}
+                                    className={cn(
+                                        "relative w-11 h-6 rounded-full transition-colors",
+                                        mcpHttpSettings.autoStart ? "bg-primary" : "bg-secondary"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform",
+                                        mcpHttpSettings.autoStart ? "translate-x-5" : "translate-x-0"
+                                    )} />
+                                </button>
+                            </div>
+
+                            <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] text-muted-foreground">{t('settings.mcpHost')}</label>
+                                        <input
+                                            type="text"
+                                            value={mcpHostInput}
+                                            onChange={(e) => setMcpHostInput(e.target.value)}
+                                            className="w-full h-8 px-2 rounded-md border border-border bg-background text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                                            placeholder="127.0.0.1"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[11px] text-muted-foreground">{t('settings.mcpPort')}</label>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            max={65535}
+                                            value={mcpPortInput}
+                                            onChange={(e) => setMcpPortInput(e.target.value)}
+                                            className="w-full h-8 px-2 rounded-md border border-border bg-background text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                                            placeholder="39180"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[11px] text-muted-foreground">{t('settings.mcpToken')}</label>
+                                    <input
+                                        type="password"
+                                        value={mcpTokenInput}
+                                        onChange={(e) => setMcpTokenInput(e.target.value)}
+                                        className="w-full h-8 px-2 rounded-md border border-border bg-background text-xs outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50"
+                                        placeholder="Bearer token (optional)"
+                                    />
+                                    <p className="text-[10px] text-muted-foreground">{t('settings.mcpTokenTip')}</p>
+                                </div>
+                                <button
+                                    onClick={applyMcpConnectionSettings}
+                                    disabled={mcpActionPending}
+                                    className="w-full py-1.5 text-xs rounded-md border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                                >
+                                    {t('settings.mcpSaveConfig')}
+                                </button>
+                            </div>
+
+                            <div className="rounded-lg border border-border bg-background/50 p-3 space-y-2">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">{t('settings.mcpStatus')}</span>
+                                    <span className={cn(
+                                        "font-medium",
+                                        mcpStatus?.running ? "text-emerald-500" : "text-muted-foreground"
+                                    )}>
+                                        {mcpStatus?.running ? t('settings.mcpStatusRunning') : t('settings.mcpStatusStopped')}
+                                    </span>
+                                </div>
+                                <div className="text-[11px] text-muted-foreground break-all">
+                                    {t('settings.mcpEndpoint')}: {mcpStatus?.endpoint || '-'}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground">
+                                    {mcpStatus?.authEnabled ? t('settings.mcpAuthEnabled') : t('settings.mcpAuthDisabled')}
+                                </div>
+                                <div className="flex gap-2 pt-1">
+                                    <button
+                                        onClick={toggleMcpRuntime}
+                                        disabled={mcpActionPending || mcpLoading || !mcpStatus?.allowStart}
+                                        className="flex-1 py-1.5 text-xs rounded-md border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                                    >
+                                        {mcpStatus?.running ? t('settings.mcpStopNow') : t('settings.mcpStartNow')}
+                                    </button>
+                                    <button
+                                        onClick={refreshMcpStatus}
+                                        disabled={mcpLoading}
+                                        className="px-3 py-1.5 text-xs rounded-md border border-border bg-secondary/30 hover:bg-secondary/50 transition-colors disabled:opacity-50"
+                                    >
+                                        {t('settings.mcpRefreshStatus')}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 min-h-0">
+                            <IgnoredSecretsManager />
+                        </div>
+                    </div>
                 )}
                     </motion.div>
             </AnimatePresence>

@@ -10,6 +10,32 @@
 <tr>
 <td>
 
+`ctxrun-plugin-miner:allow-extract-single-page`
+
+</td>
+<td>
+
+Enables the extract_single_page command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-miner:deny-extract-single-page`
+
+</td>
+<td>
+
+Denies the extract_single_page command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-miner:allow-start-mining`
 
 </td>

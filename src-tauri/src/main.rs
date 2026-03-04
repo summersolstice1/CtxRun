@@ -27,6 +27,7 @@ mod apps;
 mod env_probe;
 mod error;
 mod hyperview;
+mod mcp_http;
 mod monitor;
 mod scheduler;
 mod shortcuts;
@@ -201,6 +202,10 @@ fn main() {
             get_system_info,
             check_python_env,
             refresh_shortcuts,
+            mcp_http::mcp_http_status,
+            mcp_http::mcp_http_start,
+            mcp_http::mcp_http_stop,
+            mcp_http::mcp_http_configure,
             db::prompts::get_prompts,
             db::prompts::search_prompts,
             db::prompts::import_prompt_pack,
@@ -265,6 +270,7 @@ fn main() {
             let shortcut_manager = shortcuts::ShortcutManager::new();
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
+            app.manage(mcp_http::McpHttpControl::new_from_env());
 
             let quit_i = MenuItem::with_id(app, "quit", "退出/Quit", true, None::<&str>)?;
 

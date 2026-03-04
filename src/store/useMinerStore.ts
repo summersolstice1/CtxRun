@@ -5,7 +5,15 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { fileStorage } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { MinerConfig, MinerProgressEvent, MinerFinishedEvent, MinerErrorEvent, MinerLog } from '@/types/miner';
+import {
+  MinerConfig,
+  MinerProgressEvent,
+  MinerFinishedEvent,
+  MinerErrorEvent,
+  MinerLog,
+  SinglePageExtractRequest,
+  SinglePageExtractResult
+} from '@/types/miner';
 import { useAppStore } from './useAppStore';
 
 const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-miner|';
@@ -32,6 +40,10 @@ interface MinerState {
   setConfig: (updates: Partial<MinerConfig>) => void;
   startMining: () => Promise<void>;
   stopMining: () => Promise<void>;
+  extractSinglePage: (
+    url: string,
+    options?: Partial<SinglePageExtractRequest>
+  ) => Promise<SinglePageExtractResult>;
   clearLogs: () => void;
   addLog: (type: MinerLog['type'], message: string, url?: string) => void;
 
@@ -95,6 +107,22 @@ export const useMinerStore = create<MinerState>()(
         } catch (e: any) {
           addLog('error', `Failed to stop: ${e}`);
         }
+      },
+
+      extractSinglePage: async (url, options = {}) => {
+        const trimmedUrl = url.trim();
+        if (!trimmedUrl) {
+          throw new Error('URL is required.');
+        }
+
+        const request: SinglePageExtractRequest = {
+          url: trimmedUrl,
+          includeLinks: true,
+          saveToDisk: false,
+          ...options
+        };
+
+        return invoke<SinglePageExtractResult>(`${PLUGIN_PREFIX}extract_single_page`, { request });
       },
 
       initListeners: async () => {
