@@ -63,7 +63,7 @@ impl ShortcutManager {
         app: &AppHandle<R>,
         action: ShortcutAction,
         new_key: String,
-    ) -> Result<(), String> {
+    ) -> crate::error::Result<()> {
         let mut registered = self.registered.lock().unwrap();
 
         if let Some(old_key) = registered.get(&action) {

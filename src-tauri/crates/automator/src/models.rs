@@ -17,6 +17,16 @@ pub struct UIElementNode {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PickedWebTarget {
+    pub primary_selector: String,
+    #[serde(default)]
+    pub selector_candidates: Vec<String>,
+    #[serde(default)]
+    pub strategy: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum ActionTarget {
     Coordinate {
@@ -39,6 +49,8 @@ pub enum ActionTarget {
     },
     WebSelector {
         selector: String,
+        #[serde(default)]
+        selector_candidates: Vec<String>,
         #[serde(default)]
         url_contain: Option<String>,
         #[serde(rename = "fallbackX")]
@@ -70,6 +82,70 @@ pub enum AutomatorAction {
         key: String,
         #[serde(default)]
         target: Option<ActionTarget>,
+    },
+    Navigate {
+        url: String,
+        #[serde(default)]
+        wait_until: Option<String>,
+        #[serde(rename = "timeoutMs", default)]
+        timeout_ms: Option<u64>,
+        #[serde(default)]
+        url_contain: Option<String>,
+    },
+    NewTab {
+        #[serde(default)]
+        url: Option<String>,
+    },
+    SwitchTab {
+        #[serde(default)]
+        strategy: Option<String>,
+        #[serde(default)]
+        value: Option<String>,
+        #[serde(default)]
+        index: Option<u32>,
+    },
+    WaitForSelector {
+        selector: String,
+        #[serde(default)]
+        selector_candidates: Vec<String>,
+        #[serde(default)]
+        state: Option<String>,
+        #[serde(rename = "timeoutMs", default)]
+        timeout_ms: Option<u64>,
+        #[serde(default)]
+        url_contain: Option<String>,
+    },
+    WaitForURL {
+        value: String,
+        #[serde(default)]
+        mode: Option<String>,
+        #[serde(rename = "timeoutMs", default)]
+        timeout_ms: Option<u64>,
+        #[serde(default)]
+        url_contain: Option<String>,
+    },
+    Fill {
+        selector: String,
+        #[serde(default)]
+        selector_candidates: Vec<String>,
+        text: String,
+        #[serde(default)]
+        clear: Option<bool>,
+        #[serde(default)]
+        url_contain: Option<String>,
+    },
+    Assert {
+        kind: String,
+        #[serde(default)]
+        selector: Option<String>,
+        #[serde(default)]
+        selector_candidates: Vec<String>,
+        #[serde(default)]
+        value: Option<String>,
+        #[serde(rename = "timeoutMs", default)]
+        timeout_ms: Option<u64>,
+        #[serde(default)]
+        url_contain: Option<String>,
     },
     Scroll {
         delta: i32,

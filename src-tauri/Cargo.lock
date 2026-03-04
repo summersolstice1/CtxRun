@@ -1195,6 +1195,7 @@ dependencies = [
  "tauri-plugin-os",
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
+ "thiserror 2.0.17",
  "tiktoken-rs",
  "tokio",
  "url",
@@ -1209,6 +1210,7 @@ dependencies = [
 name = "ctxrun-browser-utils"
 version = "2.0.0"
 dependencies = [
+ "thiserror 2.0.17",
  "which",
 ]
 
@@ -1226,6 +1228,7 @@ dependencies = [
  "serde_json",
  "serde_rusqlite",
  "tauri",
+ "thiserror 2.0.17",
  "uuid",
 ]
 
@@ -1238,6 +1241,7 @@ dependencies = [
  "enigo",
  "futures",
  "image",
+ "regex",
  "serde",
  "serde_json",
  "tauri",

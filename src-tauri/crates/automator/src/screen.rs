@@ -1,13 +1,14 @@
 use crate::error::{AutomatorError, Result};
+use thiserror::Error;
 use xcap::Monitor;
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ColorPickError {
-    NoScreenFound {
-        x: i32,
-        y: i32,
-    },
+    #[error("No monitor found containing coordinates ({x}, {y})")]
+    NoScreenFound { x: i32, y: i32 },
+    #[error("Failed to capture screen: {0}")]
     CaptureFailed(String),
+    #[error("Coordinates ({x}, {y}) out of bounds ({width}x{height})")]
     OutOfBounds {
         x: i32,
         y: i32,
@@ -15,33 +16,6 @@ pub enum ColorPickError {
         height: u32,
     },
 }
-
-impl std::fmt::Display for ColorPickError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ColorPickError::NoScreenFound { x, y } => {
-                write!(f, "No monitor found containing coordinates ({}, {})", x, y)
-            }
-            ColorPickError::CaptureFailed(msg) => {
-                write!(f, "Failed to capture screen: {}", msg)
-            }
-            ColorPickError::OutOfBounds {
-                x,
-                y,
-                width,
-                height,
-            } => {
-                write!(
-                    f,
-                    "Coordinates ({}, {}) out of bounds ({}x{})",
-                    x, y, width, height
-                )
-            }
-        }
-    }
-}
-
-impl std::error::Error for ColorPickError {}
 
 impl From<ColorPickError> for AutomatorError {
     fn from(err: ColorPickError) -> Self {

@@ -16,6 +16,7 @@ xcap = "0.8"
 image = { workspace = true }
 thiserror = { workspace = true }
 which = { workspace = true }
+regex = { workspace = true }
 
 chromiumoxide = "0.9.1"
 ctxrun-browser-utils = { workspace = true }

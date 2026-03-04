@@ -6,6 +6,7 @@ const COMMANDS: &[&str] = &[
     "get_pixel_color",
     "get_element_under_cursor",
     "pick_web_selector",
+    "pick_web_target",
 ];
 
 fn main() {

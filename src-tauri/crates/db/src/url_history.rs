@@ -14,7 +14,7 @@ pub async fn record_url_visit(
     app_handle: AppHandle,
     state: State<'_, DbState>,
     url: String,
-) -> Result<(), String> {
+) -> crate::error::Result<()> {
     let now = chrono::Utc::now().timestamp();
 
     {
@@ -87,7 +87,7 @@ pub async fn record_url_visit(
 pub fn search_url_history(
     state: State<DbState>,
     query: String,
-) -> Result<Vec<UrlHistoryItem>, String> {
+) -> crate::error::Result<Vec<UrlHistoryItem>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let clean_query = query.replace("\"", "");

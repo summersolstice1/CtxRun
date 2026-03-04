@@ -16,7 +16,7 @@ pub fn get_prompts(
     page_size: u32,
     group: String,
     category: Option<String>,
-) -> Result<Vec<Prompt>, String> {
+) -> crate::error::Result<Vec<Prompt>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let offset = (page - 1) * page_size;
 
@@ -85,7 +85,7 @@ pub fn search_prompts(
     page: u32,
     page_size: u32,
     category: Option<String>,
-) -> Result<Vec<Prompt>, String> {
+) -> crate::error::Result<Vec<Prompt>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let offset = (page - 1) * page_size;
     let trimmed_query = query.trim();
@@ -186,7 +186,7 @@ pub fn search_prompts(
 }
 
 #[tauri::command]
-pub fn save_prompt(state: State<DbState>, prompt: Prompt) -> Result<(), String> {
+pub fn save_prompt(state: State<DbState>, prompt: Prompt) -> crate::error::Result<()> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let tags_json = serde_json::to_string(&prompt.tags).unwrap_or("[]".to_string());
 
@@ -221,7 +221,7 @@ pub fn save_prompt(state: State<DbState>, prompt: Prompt) -> Result<(), String> 
 }
 
 #[tauri::command]
-pub fn delete_prompt(state: State<DbState>, id: String) -> Result<(), String> {
+pub fn delete_prompt(state: State<DbState>, id: String) -> crate::error::Result<()> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM prompts WHERE id = ?", params![id])
         .map_err(|e| e.to_string())?;
@@ -229,7 +229,7 @@ pub fn delete_prompt(state: State<DbState>, id: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn toggle_prompt_favorite(state: State<DbState>, id: String) -> Result<(), String> {
+pub fn toggle_prompt_favorite(state: State<DbState>, id: String) -> crate::error::Result<()> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     conn.execute(
         "UPDATE prompts SET is_favorite = NOT is_favorite WHERE id = ?",
@@ -244,7 +244,7 @@ pub fn import_prompt_pack(
     state: State<DbState>,
     pack_id: String,
     prompts: Vec<Prompt>,
-) -> Result<(), String> {
+) -> crate::error::Result<()> {
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
@@ -294,7 +294,7 @@ pub fn import_prompt_pack(
 pub fn batch_import_local_prompts(
     state: State<DbState>,
     prompts: Vec<Prompt>,
-) -> Result<usize, String> {
+) -> crate::error::Result<usize> {
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
     let mut count = 0;
@@ -340,7 +340,7 @@ pub fn batch_import_local_prompts(
 }
 
 #[tauri::command]
-pub fn get_prompt_groups(state: State<DbState>) -> Result<Vec<String>, String> {
+pub fn get_prompt_groups(state: State<DbState>) -> crate::error::Result<Vec<String>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare("SELECT DISTINCT group_name FROM prompts ORDER BY group_name")
@@ -354,7 +354,7 @@ pub fn get_prompt_groups(state: State<DbState>) -> Result<Vec<String>, String> {
 }
 
 #[tauri::command]
-pub fn get_prompt_counts(state: State<DbState>) -> Result<PromptCounts, String> {
+pub fn get_prompt_counts(state: State<DbState>) -> crate::error::Result<PromptCounts> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     // SQLite uses idx_prompts_type index for efficient scan
@@ -376,7 +376,7 @@ pub fn get_prompt_counts(state: State<DbState>) -> Result<PromptCounts, String> 
 }
 
 #[tauri::command]
-pub fn get_chat_templates(state: State<DbState>) -> Result<Vec<Prompt>, String> {
+pub fn get_chat_templates(state: State<DbState>) -> crate::error::Result<Vec<Prompt>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let mut stmt = conn
@@ -428,7 +428,10 @@ use std::io::Write;
 
 #[tauri::command]
 #[allow(dead_code)]
-pub fn export_prompts_to_csv(state: State<DbState>, save_path: String) -> Result<usize, String> {
+pub fn export_prompts_to_csv(
+    state: State<DbState>,
+    save_path: String,
+) -> crate::error::Result<usize> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     // 1. Create file and write BOM (for Excel compatibility)
@@ -490,7 +493,7 @@ pub fn import_prompts_from_csv(
     state: State<DbState>,
     file_path: String,
     mode: String,
-) -> Result<usize, String> {
+) -> crate::error::Result<usize> {
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     // 1. Read CSV

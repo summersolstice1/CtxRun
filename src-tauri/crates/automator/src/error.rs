@@ -22,6 +22,9 @@ pub enum AutomatorError {
     #[error("Browser automation failed: {0}")]
     BrowserError(String),
 
+    #[error("Browser utility failed: {0}")]
+    BrowserUtilsError(#[from] ctxrun_browser_utils::BrowserUtilsError),
+
     #[error("JSON parsing error: {0}")]
     JsonError(#[from] serde_json::Error),
 }

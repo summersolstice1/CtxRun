@@ -37,11 +37,11 @@ fn get_magic_type(path: &Path) -> Option<infer::Type> {
     infer::get(&buffer)
 }
 
-pub fn detect_file_type(path_str: &str) -> Result<FileMeta, String> {
+pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
     let path = Path::new(path_str);
 
     if !path.exists() {
-        return Err("File not found".to_string());
+        return Err("File not found".to_string().into());
     }
 
     let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;

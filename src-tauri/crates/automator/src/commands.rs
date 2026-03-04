@@ -2,7 +2,7 @@ use crate::browser::TabSession;
 use crate::engine::{AutomatorState, run_graph_task, run_workflow_task};
 use crate::error::{AutomatorError, Result};
 use crate::inspector::PickedElement;
-use crate::models::{Workflow, WorkflowGraph};
+use crate::models::{PickedWebTarget, Workflow, WorkflowGraph};
 use crate::screen;
 use std::sync::atomic::Ordering;
 use tauri::{AppHandle, Emitter, Runtime, State};
@@ -84,4 +84,10 @@ pub async fn get_element_under_cursor() -> Result<PickedElement> {
 pub async fn pick_web_selector(url_filter: Option<String>) -> Result<String> {
     let session = TabSession::connect_and_find(url_filter.as_deref()).await?;
     session.pick_element().await
+}
+
+#[tauri::command]
+pub async fn pick_web_target(url_filter: Option<String>) -> Result<PickedWebTarget> {
+    let session = TabSession::connect_and_find(url_filter.as_deref()).await?;
+    session.pick_element_profile().await
 }

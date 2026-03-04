@@ -25,6 +25,7 @@ use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 use ctxrun_db as db;
 mod apps;
 mod env_probe;
+mod error;
 mod hyperview;
 mod monitor;
 mod scheduler;
@@ -68,7 +69,7 @@ async fn hide_main_window(
     app: AppHandle,
     window: WebviewWindow,
     delay_secs: u64,
-) -> Result<(), String> {
+) -> crate::error::Result<()> {
     window.hide().map_err(|e| e.to_string())?;
 
     if delay_secs == 0 {
@@ -137,8 +138,8 @@ fn get_system_info(system: State<'_, Arc<Mutex<System>>>) -> SystemInfo {
 }
 
 #[tauri::command]
-async fn check_python_env() -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(move || {
+async fn check_python_env() -> crate::error::Result<String> {
+    tauri::async_runtime::spawn_blocking(move || -> crate::error::Result<String> {
         #[cfg(target_os = "windows")]
         let bin = "python";
         #[cfg(not(target_os = "windows"))]
@@ -158,7 +159,7 @@ async fn check_python_env() -> Result<String, String> {
                 Ok(version)
             }
         } else {
-            Err("Not Installed".to_string())
+            Err("Not Installed".into())
         }
     })
     .await

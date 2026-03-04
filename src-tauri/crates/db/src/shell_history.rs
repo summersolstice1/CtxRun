@@ -9,7 +9,10 @@ use super::models::ShellHistoryEntry;
 // ============================================================================
 
 #[tauri::command]
-pub fn record_shell_command(state: State<'_, DbState>, command: String) -> Result<(), String> {
+pub fn record_shell_command(
+    state: State<'_, DbState>,
+    command: String,
+) -> crate::error::Result<()> {
     let trimmed = command.trim();
     if trimmed.is_empty() {
         return Ok(());
@@ -35,7 +38,7 @@ pub fn record_shell_command(state: State<'_, DbState>, command: String) -> Resul
 pub fn get_recent_shell_history(
     state: State<'_, DbState>,
     limit: u32,
-) -> Result<Vec<ShellHistoryEntry>, String> {
+) -> crate::error::Result<Vec<ShellHistoryEntry>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let mut stmt = conn
@@ -71,7 +74,7 @@ pub fn search_shell_history(
     state: State<'_, DbState>,
     query: String,
     limit: u32,
-) -> Result<Vec<ShellHistoryEntry>, String> {
+) -> crate::error::Result<Vec<ShellHistoryEntry>> {
     let trimmed_query = query.trim();
     if trimmed_query.is_empty() {
         return get_recent_shell_history(state, limit);

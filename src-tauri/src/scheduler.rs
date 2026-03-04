@@ -88,7 +88,7 @@ pub fn update_reminder_config(
     state: tauri::State<ReminderState>,
     enabled: bool,
     interval_minutes: u64,
-) -> Result<(), String> {
+) -> crate::error::Result<()> {
     let mut config = state.0.lock().map_err(|e| e.to_string())?;
 
     if !config.enabled && enabled {

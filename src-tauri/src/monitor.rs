@@ -139,7 +139,9 @@ fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool
 }
 
 #[tauri::command]
-pub fn get_system_metrics(system: State<'_, Arc<Mutex<System>>>) -> Result<SystemMetrics, String> {
+pub fn get_system_metrics(
+    system: State<'_, Arc<Mutex<System>>>,
+) -> crate::error::Result<SystemMetrics> {
     let mut sys = system.lock().map_err(|e| e.to_string())?;
 
     sys.refresh_specifics(
@@ -158,7 +160,7 @@ pub fn get_system_metrics(system: State<'_, Arc<Mutex<System>>>) -> Result<Syste
 #[tauri::command]
 pub fn get_top_processes(
     system: State<'_, Arc<Mutex<System>>>,
-) -> Result<Vec<ProcessInfo>, String> {
+) -> crate::error::Result<Vec<ProcessInfo>> {
     let mut sys = system.lock().map_err(|e| e.to_string())?;
 
     sys.refresh_processes_specifics(
@@ -212,7 +214,7 @@ pub fn get_top_processes(
 #[tauri::command]
 pub async fn get_active_ports(
     system: State<'_, Arc<Mutex<System>>>,
-) -> Result<Vec<PortInfo>, String> {
+) -> crate::error::Result<Vec<PortInfo>> {
     let sys_state = system.inner().clone();
 
     tauri::async_runtime::spawn_blocking(move || {
@@ -268,7 +270,10 @@ pub async fn get_active_ports(
 }
 
 #[tauri::command]
-pub fn kill_process(pid: u32, system: State<'_, Arc<Mutex<System>>>) -> Result<String, String> {
+pub fn kill_process(
+    pid: u32,
+    system: State<'_, Arc<Mutex<System>>>,
+) -> crate::error::Result<String> {
     let mut sys = system.lock().map_err(|e| e.to_string())?;
     let sys_pid = Pid::from(pid as usize);
 
@@ -280,10 +285,12 @@ pub fn kill_process(pid: u32, system: State<'_, Arc<Mutex<System>>>) -> Result<S
 
     if let Some(process) = sys.process(sys_pid) {
         if is_critical_system_process(&sys, process) {
-            return Err("Action Denied: Cannot kill a critical system process.".to_string());
+            return Err("Action Denied: Cannot kill a critical system process."
+                .to_string()
+                .into());
         }
     } else {
-        return Err("Process not found".to_string());
+        return Err("Process not found".to_string().into());
     }
 
     #[cfg(target_os = "windows")]
@@ -298,8 +305,8 @@ pub fn kill_process(pid: u32, system: State<'_, Arc<Mutex<System>>>) -> Result<S
 
     match output {
         Ok(o) if o.status.success() => Ok("Success".to_string()),
-        Ok(o) => Err(String::from_utf8_lossy(&o.stderr).to_string()),
-        Err(e) => Err(e.to_string()),
+        Ok(o) => Err(String::from_utf8_lossy(&o.stderr).to_string().into()),
+        Err(e) => Err(e.to_string().into()),
     }
 }
 
@@ -307,10 +314,10 @@ pub fn kill_process(pid: u32, system: State<'_, Arc<Mutex<System>>>) -> Result<S
 pub fn check_file_locks(
     path: String,
     system: State<'_, Arc<Mutex<System>>>,
-) -> Result<Vec<LockedFileProcess>, String> {
+) -> crate::error::Result<Vec<LockedFileProcess>> {
     let path_obj = Path::new(&path);
     if !path_obj.exists() {
-        return Err("Path does not exist".to_string());
+        return Err("Path does not exist".to_string().into());
     }
 
     let is_dir = path_obj.is_dir();
@@ -409,7 +416,7 @@ pub fn check_file_locks(
 }
 
 #[cfg(target_os = "windows")]
-fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
+fn get_locking_pids_windows(path_strs: &[&str]) -> crate::error::Result<Vec<u32>> {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
 
@@ -423,7 +430,7 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
             PWSTR(session_key.as_mut_ptr()),
         );
         if res != ERROR_SUCCESS {
-            return Err(format!("RmStartSession failed: {:?}", res));
+            return Err(format!("RmStartSession failed: {:?}", res).into());
         }
 
         struct SessionGuard(u32);
@@ -451,7 +458,7 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
         let res = RmRegisterResources(session_handle, Some(&paths_ptrs), None, None);
 
         if res != ERROR_SUCCESS {
-            return Err(format!("RmRegisterResources failed: {:?}", res));
+            return Err(format!("RmRegisterResources failed: {:?}", res).into());
         }
 
         // Get list of locking processes
@@ -479,7 +486,7 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
                 &mut reboot_reasons,
             );
             if res2 != ERROR_SUCCESS {
-                return Err(format!("RmGetList retry failed: {:?}", res2));
+                return Err(format!("RmGetList retry failed: {:?}", res2).into());
             }
             return Ok(vec_info
                 .into_iter()
@@ -496,7 +503,7 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
                     .map(|p| p.Process.dwProcessId)
                     .collect());
             }
-            return Err(format!("RmGetList failed: {:?}", res));
+            return Err(format!("RmGetList failed: {:?}", res).into());
         }
 
         let count = proc_info_needed as usize;
@@ -511,7 +518,7 @@ fn get_locking_pids_windows(path_strs: &[&str]) -> Result<Vec<u32>, String> {
 pub async fn get_env_info(
     system: State<'_, Arc<Mutex<System>>>,
     project_path: Option<String>,
-) -> Result<EnvReport, String> {
+) -> crate::error::Result<EnvReport> {
     let (
         system_info,
         (
@@ -612,7 +619,7 @@ pub async fn get_env_info(
 }
 
 #[tauri::command]
-pub async fn get_ai_context(project_path: String) -> Result<AiContextReport, String> {
+pub async fn get_ai_context(project_path: String) -> crate::error::Result<AiContextReport> {
     let report = tauri::async_runtime::spawn_blocking(move || {
         env_probe::scan_logic::scan_ai_context(&project_path)
     })

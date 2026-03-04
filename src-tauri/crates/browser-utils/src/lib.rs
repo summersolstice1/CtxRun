@@ -2,6 +2,9 @@ use std::net::TcpStream;
 use std::path::PathBuf;
 use std::time::Duration;
 
+pub mod error;
+pub use error::{BrowserUtilsError, Result};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BrowserType {
     Chrome,
@@ -194,14 +197,14 @@ pub fn is_browser_running(browser_type: BrowserType) -> bool {
 }
 
 /// Kill all running browser processes of the given type.
-pub fn kill_browser_processes(browser_type: BrowserType) -> Result<(), String> {
+pub fn kill_browser_processes(browser_type: BrowserType) -> Result<()> {
     let name = browser_process_name(browser_type);
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("taskkill")
             .args(["/F", "/IM", name])
             .output()
-            .map_err(|e| format!("Failed to kill browser: {}", e))?;
+            .map_err(|e| BrowserUtilsError::Message(format!("Failed to kill browser: {}", e)))?;
         std::thread::sleep(Duration::from_millis(1000));
     }
     #[cfg(not(target_os = "windows"))]
@@ -209,7 +212,7 @@ pub fn kill_browser_processes(browser_type: BrowserType) -> Result<(), String> {
         std::process::Command::new("pkill")
             .arg(name)
             .output()
-            .map_err(|e| format!("Failed to kill browser: {}", e))?;
+            .map_err(|e| BrowserUtilsError::Message(format!("Failed to kill browser: {}", e)))?;
         std::thread::sleep(Duration::from_millis(1000));
     }
     Ok(())

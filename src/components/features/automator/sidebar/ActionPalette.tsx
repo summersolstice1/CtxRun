@@ -1,4 +1,22 @@
-import { MousePointerClick, Move, Type, Clock, Keyboard, PlayCircle, StopCircle, Eye, Repeat, Globe } from 'lucide-react';
+import {
+  MousePointerClick,
+  Move,
+  Type,
+  Clock,
+  Keyboard,
+  PlayCircle,
+  StopCircle,
+  Eye,
+  Repeat,
+  Globe,
+  Navigation,
+  Plus,
+  ArrowLeftRight,
+  Search,
+  Link,
+  CheckCheck,
+  FormInput
+} from 'lucide-react';
 import { DragEvent } from 'react';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -59,12 +77,54 @@ export function ActionPalette() {
         <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">{t('automator.condition')}</div>
         <DraggableItem type="conditionNode" label={t('automator.checkColorAction')} icon={Eye} payload={{ x: 0, y: 0, expectedHex: '#00FF00', tolerance: 10 }} />
 
-        <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">WEB 自动化</div>
+        <div className="text-[10px] text-muted-foreground font-semibold mb-2 mt-4">{t('automator.webAutomation')}</div>
         <DraggableItem
             type="launchBrowserNode"
-            label="启动浏览器"
+            label={t('automator.launchBrowser')}
             icon={Globe}
             payload={{ browser: 'Chrome', url: 'https://www.bing.com', useTempProfile: true }}
+        />
+        <DraggableItem
+            type="Navigate"
+            label={t('automator.navigate')}
+            icon={Navigation}
+            payload={{ url: 'https://www.bing.com', wait_until: 'load', timeoutMs: 15000, url_contain: '' }}
+        />
+        <DraggableItem
+            type="NewTab"
+            label={t('automator.newTab')}
+            icon={Plus}
+            payload={{ url: '' }}
+        />
+        <DraggableItem
+            type="SwitchTab"
+            label={t('automator.switchTab')}
+            icon={ArrowLeftRight}
+            payload={{ strategy: 'lastOpened', value: '', index: 1 }}
+        />
+        <DraggableItem
+            type="WaitForSelector"
+            label={t('automator.waitForSelector')}
+            icon={Search}
+            payload={{ selector: '', selector_candidates: [], state: 'visible', timeoutMs: 10000, url_contain: '' }}
+        />
+        <DraggableItem
+            type="WaitForURL"
+            label={t('automator.waitForURL')}
+            icon={Link}
+            payload={{ value: '', mode: 'contains', timeoutMs: 10000, url_contain: '' }}
+        />
+        <DraggableItem
+            type="Fill"
+            label={t('automator.fill')}
+            icon={FormInput}
+            payload={{ selector: '', selector_candidates: [], text: '', clear: true, url_contain: '' }}
+        />
+        <DraggableItem
+            type="Assert"
+            label={t('automator.assert')}
+            icon={CheckCheck}
+            payload={{ kind: 'SelectorExists', selector: '', selector_candidates: [], value: '', timeoutMs: 5000, url_contain: '' }}
         />
       </div>
     </div>

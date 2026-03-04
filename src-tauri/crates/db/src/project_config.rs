@@ -15,7 +15,7 @@ use std::io::Write;
 pub fn get_project_config(
     state: State<DbState>,
     path: String,
-) -> Result<Option<ProjectConfig>, String> {
+) -> crate::error::Result<Option<ProjectConfig>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let mut stmt = conn
@@ -38,7 +38,7 @@ pub fn save_project_config(
     state: State<DbState>,
     path: String,
     config: ProjectConfig,
-) -> Result<(), String> {
+) -> crate::error::Result<()> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let now = chrono::Utc::now().timestamp_millis();
     let config_json = serde_json::to_string(&config).map_err(|e| e.to_string())?;
@@ -57,7 +57,10 @@ pub fn save_project_config(
 // ============================================================================
 
 #[tauri::command]
-pub fn export_project_configs(state: State<DbState>, save_path: String) -> Result<usize, String> {
+pub fn export_project_configs(
+    state: State<DbState>,
+    save_path: String,
+) -> crate::error::Result<usize> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let mut stmt = conn
@@ -104,7 +107,7 @@ pub fn import_project_configs(
     state: State<DbState>,
     file_path: String,
     mode: String,
-) -> Result<usize, String> {
+) -> crate::error::Result<usize> {
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
 
     let content = std::fs::read_to_string(file_path).map_err(|e| e.to_string())?;

@@ -9,7 +9,7 @@ use chromiumoxide::{
     Browser, Element, Page,
     cdp::browser_protocol::{
         input::{DispatchKeyEventParams, DispatchKeyEventType},
-        target::{TargetId, TargetInfo},
+        target::{ActivateTargetParams, TargetId, TargetInfo},
     },
     keys::{self, KeyDefinition},
 };
@@ -18,10 +18,14 @@ use ctxrun_browser_utils::{
     is_debug_port_available, kill_browser_processes, locate_browser,
 };
 use futures::StreamExt;
+use regex::Regex;
 use tauri::async_runtime::JoinHandle;
 use tokio::sync::oneshot;
 
-use crate::error::{AutomatorError, Result};
+use crate::{
+    error::{AutomatorError, Result},
+    models::PickedWebTarget,
+};
 
 const DEFAULT_DEBUG_PORT: u16 = 9222;
 const ELEMENT_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -35,6 +39,9 @@ const TARGET_FETCH_RETRY_DELAY: Duration = Duration::from_millis(200);
 const PAGE_FETCH_RETRIES: usize = 12;
 const PAGE_FETCH_RETRY_DELAY: Duration = Duration::from_millis(120);
 const MAX_FOCUS_CHECK_TABS: usize = 6;
+const DEFAULT_NAVIGATION_TIMEOUT: Duration = Duration::from_secs(15);
+const WAIT_POLL_INTERVAL: Duration = Duration::from_millis(120);
+const NAVIGATION_STABLE_ROUNDS_REQUIRED: u32 = 2;
 // Interactive picker waits up to 60s for a human click.
 const PICKER_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const PICKER_MAX_POLLS: usize = 600;
@@ -51,6 +58,35 @@ const ACTIVE_PAGE_CHECK_JS: &str = r#"
         }
     })()
 "#;
+
+#[derive(Debug, Clone, Copy)]
+pub enum NavigationWaitUntil {
+    DomContentLoaded,
+    Load,
+    NetworkIdle,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum SelectorWaitState {
+    Attached,
+    Visible,
+    Hidden,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum UrlMatchMode {
+    Contains,
+    Equals,
+    Regex,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum TabSwitchStrategy {
+    LastOpened,
+    Index,
+    UrlContains,
+    TitleContains,
+}
 
 // ---------------------------------------------------------------------------
 // TabSession — operations on a single tab
@@ -75,31 +111,24 @@ impl Drop for TabSession {
     }
 }
 
-impl TabSession {
-    /// Connect to the debug port and find a tab matching the optional filter.
-    pub async fn connect_and_find(url_filter: Option<&str>) -> Result<Self> {
-        let normalized_filter = url_filter.and_then(|raw| {
-            let trimmed = raw.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(trimmed)
-            }
-        });
+struct BrowserConnection {
+    browser: Option<Browser>,
+    handler_task: Option<JoinHandle<()>>,
+    shutdown_tx: Option<oneshot::Sender<()>>,
+}
 
+impl BrowserConnection {
+    async fn connect() -> Result<Self> {
         let debug_url = format!("http://127.0.0.1:{DEFAULT_DEBUG_PORT}");
-        let (mut browser, mut handler) = Browser::connect(debug_url)
-            .await
-            .map_err(|e| {
-                AutomatorError::BrowserError(format!(
-                    "Failed to connect to debug port: {}. Make sure Chrome is running with --remote-debugging-port={}",
-                    e, DEFAULT_DEBUG_PORT
-                ))
-            })?;
+        let (browser, mut handler) = Browser::connect(debug_url).await.map_err(|e| {
+            AutomatorError::BrowserError(format!(
+                "Failed to connect to debug port: {}. Make sure Chrome is running with --remote-debugging-port={}",
+                e, DEFAULT_DEBUG_PORT
+            ))
+        })?;
 
         let (shutdown_tx, mut shutdown_rx) = oneshot::channel();
-        let mut shutdown_tx = Some(shutdown_tx);
-        let mut handler_task = Some(tauri::async_runtime::spawn(async move {
+        let handler_task = tauri::async_runtime::spawn(async move {
             loop {
                 tokio::select! {
                     _ = &mut shutdown_rx => {
@@ -117,32 +146,131 @@ impl TabSession {
                     }
                 }
             }
-        }));
+        });
+
+        Ok(Self {
+            browser: Some(browser),
+            handler_task: Some(handler_task),
+            shutdown_tx: Some(shutdown_tx),
+        })
+    }
+
+    fn into_tab_session(mut self, page: Page) -> TabSession {
+        let browser = self
+            .browser
+            .take()
+            .expect("BrowserConnection missing browser in into_tab_session");
+        TabSession {
+            page,
+            _browser: browser,
+            handler_task: self.handler_task.take(),
+            shutdown_tx: self.shutdown_tx.take(),
+        }
+    }
+}
+
+impl Drop for BrowserConnection {
+    fn drop(&mut self) {
+        cleanup_handler_task(&mut self.shutdown_tx, &mut self.handler_task);
+    }
+}
+
+impl TabSession {
+    /// Connect to the debug port and find a tab matching the optional filter.
+    pub async fn connect_and_find(url_filter: Option<&str>) -> Result<Self> {
+        let normalized_filter = url_filter.and_then(|raw| {
+            let trimmed = raw.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed)
+            }
+        });
+
+        let mut connection = BrowserConnection::connect().await?;
 
         tokio::time::sleep(TARGET_SYNC_WAIT).await;
 
-        let target = match find_target_with_retry(&mut browser, normalized_filter).await {
+        let browser = connection
+            .browser
+            .as_mut()
+            .expect("BrowserConnection missing browser while finding target");
+        let target = match find_target_with_retry(browser, normalized_filter).await {
             Ok(target) => target,
             Err(err) => {
-                cleanup_handler_task(&mut shutdown_tx, &mut handler_task);
+                cleanup_handler_task(&mut connection.shutdown_tx, &mut connection.handler_task);
                 return Err(err);
             }
         };
-        let page = match get_page_with_retry(&browser, target.target_id).await {
+        let browser = connection
+            .browser
+            .as_ref()
+            .expect("BrowserConnection missing browser while attaching page");
+        let page = match get_page_with_retry(browser, target.target_id).await {
             Ok(page) => page,
             Err(err) => {
-                cleanup_handler_task(&mut shutdown_tx, &mut handler_task);
+                cleanup_handler_task(&mut connection.shutdown_tx, &mut connection.handler_task);
                 return Err(err);
             }
         };
         let _ = page.bring_to_front().await;
 
-        Ok(Self {
-            page,
-            _browser: browser,
-            handler_task,
-            shutdown_tx,
-        })
+        Ok(connection.into_tab_session(page))
+    }
+
+    // -- Tab/session management ---------------------------------------------
+
+    /// Open a new tab in the debug browser and bring it to front.
+    pub async fn open_new_tab(url: Option<&str>) -> Result<()> {
+        let connection = BrowserConnection::connect().await?;
+        tokio::time::sleep(TARGET_SYNC_WAIT).await;
+
+        let target_url = sanitize_optional_string(url).unwrap_or_else(|| "about:blank".to_string());
+        let browser = connection
+            .browser
+            .as_ref()
+            .expect("BrowserConnection missing browser while opening new tab");
+        let page = browser
+            .new_page(target_url.as_str())
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Failed to open new tab: {}", e)))?;
+
+        let _ = page.bring_to_front().await;
+        Ok(())
+    }
+
+    /// Switch to another existing tab and bring it to front.
+    pub async fn switch_tab(
+        strategy: Option<&str>,
+        index: Option<u32>,
+        value: Option<&str>,
+    ) -> Result<()> {
+        let mut connection = BrowserConnection::connect().await?;
+        tokio::time::sleep(TARGET_SYNC_WAIT).await;
+
+        let browser = connection
+            .browser
+            .as_mut()
+            .expect("BrowserConnection missing browser while switching tab");
+        let candidates = fetch_page_targets_with_retry(browser, None).await?;
+        let selected = select_tab_for_switch(&candidates, strategy, index, value)?;
+        let browser = connection
+            .browser
+            .as_ref()
+            .expect("BrowserConnection missing browser while attaching switched tab");
+        focus_target_with_retry(browser, selected).await?;
+        tokio::time::sleep(Duration::from_millis(120)).await;
+
+        Ok(())
+    }
+
+    /// Bring the current active tab to front to ensure browser window focus.
+    pub async fn focus_current_tab(url_filter: Option<&str>) -> Result<()> {
+        let session = Self::connect_and_find(url_filter).await?;
+        session.page.bring_to_front().await.map_err(|e| {
+            AutomatorError::BrowserError(format!("Failed to focus current tab: {}", e))
+        })?;
+        Ok(())
     }
 
     // -- Element interaction ------------------------------------------------
@@ -196,6 +324,323 @@ impl TabSession {
             .map_err(|e| AutomatorError::BrowserError(format!("Type failed: {}", e)))?;
 
         Ok(())
+    }
+
+    /// Fill an input-like element by selector. Clears existing value by default.
+    pub async fn fill_element(&self, selector: &str, text: &str, clear_first: bool) -> Result<()> {
+        let selector_literal = serde_json::to_string(selector).map_err(|e| {
+            AutomatorError::BrowserError(format!("Failed to encode selector for fill: {}", e))
+        })?;
+        let text_literal = serde_json::to_string(text).map_err(|e| {
+            AutomatorError::BrowserError(format!("Failed to encode text for fill: {}", e))
+        })?;
+        let clear_literal = if clear_first { "true" } else { "false" };
+
+        let script = format!(
+            r#"(() => {{
+                try {{
+                    const el = document.querySelector({selector});
+                    if (!el) return false;
+                    const supportsValue = ('value' in el);
+                    if (typeof el.focus === 'function') {{
+                        el.focus();
+                    }}
+                    if (supportsValue && {clear}) {{
+                        el.value = '';
+                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                    }}
+                    if (supportsValue) {{
+                        el.value = {text};
+                        el.dispatchEvent(new Event('input', {{ bubbles: true }}));
+                        el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                        return true;
+                    }}
+                    return false;
+                }} catch (_) {{
+                    return false;
+                }}
+            }})()"#,
+            selector = selector_literal,
+            text = text_literal,
+            clear = clear_literal
+        );
+
+        let js_applied = self
+            .page
+            .evaluate(script)
+            .await
+            .ok()
+            .and_then(|result| result.into_value::<bool>().ok())
+            .unwrap_or(false);
+
+        if js_applied {
+            return Ok(());
+        }
+
+        let element = wait_for_element(&self.page, selector, ELEMENT_WAIT_TIMEOUT).await?;
+        element
+            .click()
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Fill focus click failed: {}", e)))?;
+
+        if clear_first {
+            let _ = self.press_key_combo("Ctrl+A").await;
+            let _ = self.press_key("Backspace").await;
+        }
+
+        element
+            .type_str(text)
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Fill type failed: {}", e)))?;
+
+        Ok(())
+    }
+
+    /// Navigate current tab to URL and wait for requested readiness state.
+    pub async fn navigate_to(
+        &self,
+        url: &str,
+        wait_until: Option<&str>,
+        timeout: Option<Duration>,
+    ) -> Result<()> {
+        self.page
+            .goto(url)
+            .await
+            .map_err(|e| AutomatorError::BrowserError(format!("Navigation failed: {}", e)))?;
+        self.wait_for_navigation_ready(wait_until, timeout).await
+    }
+
+    /// Wait until selector reaches a target state.
+    pub async fn wait_for_selector_state(
+        &self,
+        selector: &str,
+        state: Option<&str>,
+        timeout: Option<Duration>,
+    ) -> Result<()> {
+        let desired_state = parse_selector_wait_state(state);
+        let timeout = timeout.unwrap_or(DEFAULT_NAVIGATION_TIMEOUT);
+
+        if matches!(desired_state, SelectorWaitState::Attached) {
+            let _ = wait_for_element(&self.page, selector, timeout).await?;
+            return Ok(());
+        }
+
+        let selector_literal = serde_json::to_string(selector).map_err(|e| {
+            AutomatorError::BrowserError(format!("Failed to encode selector for wait: {}", e))
+        })?;
+        let script = format!(
+            r#"(() => {{
+                try {{
+                    const el = document.querySelector({selector});
+                    if (!el) return 'missing';
+                    const style = window.getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    const visible = !!style &&
+                        style.display !== 'none' &&
+                        style.visibility !== 'hidden' &&
+                        rect.width > 0 &&
+                        rect.height > 0;
+                    return visible ? 'visible' : 'hidden';
+                }} catch (_) {{
+                    return 'missing';
+                }}
+            }})()"#,
+            selector = selector_literal
+        );
+
+        let deadline = tokio::time::Instant::now() + timeout;
+        loop {
+            let current_state = self
+                .page
+                .evaluate(script.clone())
+                .await
+                .ok()
+                .and_then(|result| result.into_value::<String>().ok())
+                .unwrap_or_else(|| "missing".to_string());
+
+            if selector_wait_state_matches(desired_state, &current_state) {
+                return Ok(());
+            }
+
+            if tokio::time::Instant::now() >= deadline {
+                return Err(AutomatorError::BrowserError(format!(
+                    "Timeout waiting selector '{}' to become {:?} (last state: {})",
+                    selector, desired_state, current_state
+                )));
+            }
+
+            tokio::time::sleep(WAIT_POLL_INTERVAL).await;
+        }
+    }
+
+    /// Wait until current URL matches condition.
+    pub async fn wait_for_url_match(
+        &self,
+        value: &str,
+        mode: Option<&str>,
+        timeout: Option<Duration>,
+    ) -> Result<()> {
+        let mode = parse_url_match_mode(mode);
+        let timeout = timeout.unwrap_or(DEFAULT_NAVIGATION_TIMEOUT);
+        let deadline = tokio::time::Instant::now() + timeout;
+
+        loop {
+            let current = self.current_url().await?;
+            if url_matches(&current, value, mode) {
+                return Ok(());
+            }
+
+            if tokio::time::Instant::now() >= deadline {
+                return Err(AutomatorError::BrowserError(format!(
+                    "Timeout waiting URL {:?} '{}'. Last URL: {}",
+                    mode, value, current
+                )));
+            }
+
+            tokio::time::sleep(WAIT_POLL_INTERVAL).await;
+        }
+    }
+
+    /// Return current page URL.
+    pub async fn current_url(&self) -> Result<String> {
+        let value = self
+            .page
+            .evaluate("window.location.href")
+            .await
+            .map_err(|e| {
+                AutomatorError::BrowserError(format!("Failed to read current URL: {}", e))
+            })?;
+        Ok(value.into_value::<String>().unwrap_or_default())
+    }
+
+    /// Assert that selector exists within timeout.
+    pub async fn assert_selector_exists(
+        &self,
+        selector: &str,
+        timeout: Option<Duration>,
+    ) -> Result<bool> {
+        Ok(self
+            .wait_for_selector_state(selector, Some("attached"), timeout)
+            .await
+            .is_ok())
+    }
+
+    /// Assert that URL matches expected value with mode.
+    pub async fn assert_url_matches(&self, value: &str, mode: Option<&str>) -> Result<bool> {
+        let current = self.current_url().await?;
+        Ok(url_matches(&current, value, parse_url_match_mode(mode)))
+    }
+
+    /// Assert that element text (or full body text) contains substring.
+    pub async fn assert_text_contains(
+        &self,
+        selector: Option<&str>,
+        expected: &str,
+    ) -> Result<bool> {
+        let selector_literal =
+            serde_json::to_string(&sanitize_optional_string(selector)).map_err(|e| {
+                AutomatorError::BrowserError(format!(
+                    "Failed to encode selector for text assert: {}",
+                    e
+                ))
+            })?;
+        let expected_literal = serde_json::to_string(expected).map_err(|e| {
+            AutomatorError::BrowserError(format!(
+                "Failed to encode expected text for assert: {}",
+                e
+            ))
+        })?;
+
+        let script = format!(
+            r#"(() => {{
+                try {{
+                    const selector = {selector};
+                    const needle = ({expected} || '').toLowerCase();
+                    let content = '';
+                    if (selector) {{
+                        const el = document.querySelector(selector);
+                        if (!el) return false;
+                        content = (el.innerText || el.textContent || '').toLowerCase();
+                    }} else {{
+                        content = ((document.body && (document.body.innerText || document.body.textContent)) || '').toLowerCase();
+                    }}
+                    return content.includes(needle);
+                }} catch (_) {{
+                    return false;
+                }}
+            }})()"#,
+            selector = selector_literal,
+            expected = expected_literal
+        );
+
+        let result = self.page.evaluate(script).await.map_err(|e| {
+            AutomatorError::BrowserError(format!("Text assert evaluation failed: {}", e))
+        })?;
+
+        Ok(result.into_value::<bool>().unwrap_or(false))
+    }
+
+    async fn wait_for_navigation_ready(
+        &self,
+        wait_until: Option<&str>,
+        timeout: Option<Duration>,
+    ) -> Result<()> {
+        let mode = parse_navigation_wait_until(wait_until);
+        let timeout = timeout.unwrap_or(DEFAULT_NAVIGATION_TIMEOUT);
+        let deadline = tokio::time::Instant::now() + timeout;
+        let mut stable_rounds = 0u32;
+        let mut last_height: Option<f64> = None;
+
+        loop {
+            let ready_state = self
+                .page
+                .evaluate("document.readyState")
+                .await
+                .ok()
+                .and_then(|v| v.into_value::<String>().ok())
+                .unwrap_or_default();
+
+            let current_height = self
+                .page
+                .evaluate("document.body ? document.body.scrollHeight : 0")
+                .await
+                .ok()
+                .and_then(|v| v.into_value::<f64>().ok())
+                .unwrap_or(0.0);
+
+            let dom_ready = ready_state == "interactive" || ready_state == "complete";
+            let load_ready = ready_state == "complete";
+            let height_stable = last_height
+                .map(|prev| (prev - current_height).abs() < 1.0)
+                .unwrap_or(false);
+
+            let ready = match mode {
+                NavigationWaitUntil::DomContentLoaded => dom_ready,
+                NavigationWaitUntil::Load => load_ready,
+                NavigationWaitUntil::NetworkIdle => {
+                    if load_ready && height_stable {
+                        stable_rounds += 1;
+                    } else {
+                        stable_rounds = 0;
+                    }
+                    stable_rounds >= NAVIGATION_STABLE_ROUNDS_REQUIRED
+                }
+            };
+
+            if ready {
+                return Ok(());
+            }
+
+            if tokio::time::Instant::now() >= deadline {
+                return Err(AutomatorError::BrowserError(format!(
+                    "Timeout waiting for navigation readiness {:?}",
+                    mode
+                )));
+            }
+
+            last_height = Some(current_height);
+            tokio::time::sleep(WAIT_POLL_INTERVAL).await;
+        }
     }
 
     /// Simulate a key press (e.g. "Enter", "Tab", "Escape").
@@ -271,8 +716,8 @@ impl TabSession {
     }
 
     /// Interactive element picker: injects a visual overlay into the page,
-    /// lets the user click an element, and returns its CSS selector.
-    pub async fn pick_element(&self) -> Result<String> {
+    /// lets the user click an element, and returns robust selector candidates.
+    pub async fn pick_element_profile(&self) -> Result<PickedWebTarget> {
         let picker_js = r#"
             (function() {
                 window.__ctxrun_picked_result = '';
@@ -284,8 +729,36 @@ impl TabSession {
                 style.textContent = '.__ctxrun_hover { outline: 2px solid red !important; outline-offset: -2px; }';
                 document.head.appendChild(style);
 
-                function buildSelector(el) {
-                    if (el.id) return '#' + CSS.escape(el.id);
+                function cssEscapeSafe(value) {
+                    try {
+                        if (window.CSS && typeof window.CSS.escape === 'function') {
+                            return window.CSS.escape(String(value));
+                        }
+                    } catch (_) {}
+                    return String(value).replace(/[^a-zA-Z0-9_\-]/g, '\\$&');
+                }
+
+                function quoteAttr(value) {
+                    return JSON.stringify(String(value));
+                }
+
+                function countMatches(selector) {
+                    try {
+                        return document.querySelectorAll(selector).length;
+                    } catch (_) {
+                        return 0;
+                    }
+                }
+
+                function uniquePush(list, selector) {
+                    if (!selector || typeof selector !== 'string') return;
+                    const s = selector.trim();
+                    if (!s || list.includes(s)) return;
+                    list.push(s);
+                }
+
+                function buildCssPath(el) {
+                    if (el.id) return '#' + cssEscapeSafe(el.id);
                     let path = [];
                     let cur = el;
                     while (cur && cur !== document.body && cur !== document.documentElement) {
@@ -293,7 +766,7 @@ impl TabSession {
                         if (cur.className && typeof cur.className === 'string') {
                             const cls = cur.className.trim().split(/\s+/)
                                 .filter(c => !c.startsWith('__ctxrun')).slice(0, 2)
-                                .map(c => '.' + CSS.escape(c)).join('');
+                                .map(c => '.' + cssEscapeSafe(c)).join('');
                             if (cls) seg += cls;
                         }
                         if (!cur.id && cur.parentElement) {
@@ -306,17 +779,119 @@ impl TabSession {
                     return path.join(' > ');
                 }
 
+                function buildCandidates(el) {
+                    const candidates = [];
+                    const tag = (el.tagName || '').toLowerCase();
+
+                    if (el.id) {
+                        uniquePush(candidates, '#' + cssEscapeSafe(el.id));
+                    }
+
+                    const dataAttrs = ['data-testid', 'data-test-id', 'data-test', 'data-qa', 'data-cy'];
+                    for (const attr of dataAttrs) {
+                        const value = el.getAttribute ? el.getAttribute(attr) : null;
+                        if (!value) continue;
+                        uniquePush(candidates, '[' + attr + '=' + quoteAttr(value) + ']');
+                        if (tag) {
+                            uniquePush(candidates, tag + '[' + attr + '=' + quoteAttr(value) + ']');
+                        }
+                    }
+
+                    const role = el.getAttribute ? el.getAttribute('role') : null;
+                    const ariaLabel = el.getAttribute ? el.getAttribute('aria-label') : null;
+                    if (ariaLabel) {
+                        uniquePush(candidates, '[aria-label=' + quoteAttr(ariaLabel) + ']');
+                        if (role) {
+                            uniquePush(candidates, '[role=' + quoteAttr(role) + '][aria-label=' + quoteAttr(ariaLabel) + ']');
+                        }
+                        if (tag) {
+                            uniquePush(candidates, tag + '[aria-label=' + quoteAttr(ariaLabel) + ']');
+                        }
+                    }
+
+                    const name = el.getAttribute ? el.getAttribute('name') : null;
+                    if (name) {
+                        uniquePush(candidates, '[name=' + quoteAttr(name) + ']');
+                        if (tag) {
+                            uniquePush(candidates, tag + '[name=' + quoteAttr(name) + ']');
+                        }
+                    }
+
+                    const placeholder = el.getAttribute ? el.getAttribute('placeholder') : null;
+                    if (placeholder && (tag === 'input' || tag === 'textarea')) {
+                        uniquePush(candidates, tag + '[placeholder=' + quoteAttr(placeholder) + ']');
+                    }
+
+                    if (tag === 'a') {
+                        const href = el.getAttribute ? el.getAttribute('href') : null;
+                        if (href && href.length <= 200) {
+                            uniquePush(candidates, 'a[href=' + quoteAttr(href) + ']');
+                        }
+                    }
+
+                    if (tag === 'button') {
+                        const btnType = el.getAttribute ? el.getAttribute('type') : null;
+                        if (btnType) {
+                            uniquePush(candidates, 'button[type=' + quoteAttr(btnType) + ']');
+                        }
+                    }
+
+                    if (tag && el.className && typeof el.className === 'string') {
+                        const cls = el.className.trim().split(/\s+/)
+                            .filter(c => c && !c.startsWith('__ctxrun'))
+                            .slice(0, 2)
+                            .map(c => '.' + cssEscapeSafe(c))
+                            .join('');
+                        if (cls) {
+                            uniquePush(candidates, tag + cls);
+                        }
+                    }
+
+                    const cssPath = buildCssPath(el);
+                    if (cssPath) {
+                        uniquePush(candidates, cssPath);
+                    }
+
+                    const uniqueCandidates = [];
+                    const nonUniqueCandidates = [];
+                    for (const selector of candidates) {
+                        const count = countMatches(selector);
+                        if (count === 1) uniqueCandidates.push(selector);
+                        else if (count > 1) nonUniqueCandidates.push(selector);
+                    }
+
+                    const ordered = uniqueCandidates.concat(nonUniqueCandidates).slice(0, 12);
+                    const primary = ordered[0] || '';
+                    let strategy = 'css';
+                    if (primary.startsWith('#')) strategy = 'id';
+                    else if (primary.includes('data-testid') || primary.includes('data-test-id') || primary.includes('data-test') || primary.includes('data-qa') || primary.includes('data-cy')) strategy = 'testid';
+                    else if (primary.includes('[aria-label=')) strategy = 'ariaLabel';
+                    else if (primary.includes('[name=')) strategy = 'name';
+
+                    return {
+                        primarySelector: primary,
+                        selectorCandidates: ordered,
+                        strategy: strategy
+                    };
+                }
+
                 let lastEl = null;
                 function onMove(e) {
-                    if (lastEl) lastEl.classList.remove('__ctxrun_hover');
-                    e.target.classList.add('__ctxrun_hover');
-                    lastEl = e.target;
+                    const current = e.target instanceof Element ? e.target : null;
+                    if (!current) return;
+                    if (lastEl && lastEl.classList) lastEl.classList.remove('__ctxrun_hover');
+                    current.classList.add('__ctxrun_hover');
+                    lastEl = current;
                     e.stopPropagation(); e.preventDefault();
                 }
                 function onClick(e) {
                     e.stopPropagation(); e.preventDefault();
-                    if (lastEl) lastEl.classList.remove('__ctxrun_hover');
-                    window.__ctxrun_picked_result = buildSelector(e.target);
+                    if (lastEl && lastEl.classList) lastEl.classList.remove('__ctxrun_hover');
+                    const target = e.target instanceof Element ? e.target : null;
+                    if (!target) return;
+                    const picked = buildCandidates(target);
+                    if (!picked || !picked.primarySelector) return;
+                    window.__ctxrun_picked_result = JSON.stringify(picked);
                     document.removeEventListener('mousemove', onMove, true);
                     document.removeEventListener('mousedown', onClick, true);
                     const s = document.getElementById(styleId);
@@ -342,8 +917,27 @@ impl TabSession {
                 .await
                 .map_err(|e| AutomatorError::BrowserError(format!("Poll failed: {}", e)))?;
 
-            let picked = result.into_value::<String>().unwrap_or_default();
-            if !picked.is_empty() {
+            let picked_json = result.into_value::<String>().unwrap_or_default();
+            if !picked_json.is_empty() {
+                let mut picked = match serde_json::from_str::<PickedWebTarget>(&picked_json) {
+                    Ok(value) => value,
+                    Err(_) => continue,
+                };
+                let primary = picked.primary_selector.trim().to_string();
+                if primary.is_empty() {
+                    continue;
+                }
+                let mut normalized = Vec::new();
+                normalized.push(primary.clone());
+                for candidate in picked.selector_candidates {
+                    let trimmed = candidate.trim();
+                    if trimmed.is_empty() || normalized.iter().any(|item| item == trimmed) {
+                        continue;
+                    }
+                    normalized.push(trimmed.to_string());
+                }
+                picked.primary_selector = primary;
+                picked.selector_candidates = normalized;
                 let _ = self
                     .page
                     .evaluate("delete window.__ctxrun_picked_result;")
@@ -353,6 +947,12 @@ impl TabSession {
         }
 
         Err(AutomatorError::BrowserError("Picker timeout (60s)".into()))
+    }
+
+    /// Compatibility wrapper: returns the primary selector only.
+    pub async fn pick_element(&self) -> Result<String> {
+        let picked = self.pick_element_profile().await?;
+        Ok(picked.primary_selector)
     }
 }
 
@@ -400,7 +1000,7 @@ fn build_key_event(
     key_def: &'static KeyDefinition,
     modifiers: i64,
     is_key_down: bool,
-) -> std::result::Result<DispatchKeyEventParams, String> {
+) -> Result<DispatchKeyEventParams> {
     let mut builder = DispatchKeyEventParams::builder()
         .modifiers(modifiers)
         .key(key_def.key)
@@ -426,7 +1026,7 @@ fn build_key_event(
     builder
         .r#type(event_type)
         .build()
-        .map_err(|e| e.to_string())
+        .map_err(|e| AutomatorError::BrowserError(e.to_string()))
 }
 
 fn key_location(code: &str) -> i64 {
@@ -471,10 +1071,10 @@ async fn wait_for_element(page: &Page, selector: &str, timeout: Duration) -> Res
     }
 }
 
-async fn find_target_with_retry(
+async fn fetch_page_targets_with_retry(
     browser: &mut Browser,
     url_filter: Option<&str>,
-) -> Result<TargetInfo> {
+) -> Result<Vec<TargetInfo>> {
     for attempt in 0..TARGET_FETCH_RETRIES {
         let targets = browser.fetch_targets().await.map_err(|e| {
             AutomatorError::BrowserError(format!("Failed to fetch browser targets: {}", e))
@@ -485,8 +1085,8 @@ async fn find_target_with_retry(
             .filter(|t| matches_target(t, url_filter))
             .collect();
 
-        if let Some(target) = choose_best_target(browser, &candidates, url_filter).await {
-            return Ok(target);
+        if !candidates.is_empty() {
+            return Ok(candidates);
         }
 
         if attempt + 1 < TARGET_FETCH_RETRIES {
@@ -499,12 +1099,33 @@ async fn find_target_with_retry(
     ))
 }
 
+async fn find_target_with_retry(
+    browser: &mut Browser,
+    url_filter: Option<&str>,
+) -> Result<TargetInfo> {
+    let candidates = fetch_page_targets_with_retry(browser, url_filter).await?;
+    choose_best_target(browser, &candidates, url_filter)
+        .await
+        .ok_or_else(|| {
+            AutomatorError::BrowserError(
+                "No matching page tab found. Please open a web page in the browser.".into(),
+            )
+        })
+}
+
 fn matches_target(target: &TargetInfo, url_filter: Option<&str>) -> bool {
     if target.r#type != "page" {
         return false;
     }
 
     if target.url.starts_with("devtools://") {
+        return false;
+    }
+
+    // Extension/internal background pages can appear in target lists but are not
+    // user-facing tabs for workflow switching or element operations.
+    if target.url.starts_with("chrome-extension://") || target.url.starts_with("edge-extension://")
+    {
         return false;
     }
 
@@ -600,6 +1221,133 @@ fn score_target(target: &TargetInfo, index: usize, url_filter: Option<&str>) -> 
     score
 }
 
+fn select_tab_for_switch<'a>(
+    candidates: &'a [TargetInfo],
+    strategy: Option<&str>,
+    index: Option<u32>,
+    value: Option<&str>,
+) -> Result<&'a TargetInfo> {
+    let strategy = parse_tab_switch_strategy(strategy);
+    let normalized_value = sanitize_optional_string(value).unwrap_or_default();
+    let value_query = normalized_value.to_ascii_lowercase();
+
+    let found = match strategy {
+        TabSwitchStrategy::LastOpened => candidates.last(),
+        TabSwitchStrategy::Index => {
+            let idx = index.unwrap_or(0) as usize;
+            candidates.get(idx)
+        }
+        TabSwitchStrategy::UrlContains => {
+            if value_query.is_empty() {
+                None
+            } else {
+                candidates
+                    .iter()
+                    .rev()
+                    .find(|target| target.url.to_ascii_lowercase().contains(&value_query))
+            }
+        }
+        TabSwitchStrategy::TitleContains => {
+            if value_query.is_empty() {
+                None
+            } else {
+                candidates
+                    .iter()
+                    .rev()
+                    .find(|target| target.title.to_ascii_lowercase().contains(&value_query))
+            }
+        }
+    };
+
+    found.ok_or_else(|| {
+        AutomatorError::BrowserError(format!(
+            "Unable to switch tab with strategy {:?} (value='{}', index={:?})",
+            strategy, normalized_value, index
+        ))
+    })
+}
+
+fn parse_navigation_wait_until(value: Option<&str>) -> NavigationWaitUntil {
+    match value.unwrap_or("load").trim().to_ascii_lowercase().as_str() {
+        "domcontentloaded" | "dom-content-loaded" | "dom_content_loaded" => {
+            NavigationWaitUntil::DomContentLoaded
+        }
+        "networkidle" | "network-idle" | "network_idle" => NavigationWaitUntil::NetworkIdle,
+        _ => NavigationWaitUntil::Load,
+    }
+}
+
+fn parse_selector_wait_state(value: Option<&str>) -> SelectorWaitState {
+    match value
+        .unwrap_or("visible")
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "attached" => SelectorWaitState::Attached,
+        "hidden" => SelectorWaitState::Hidden,
+        _ => SelectorWaitState::Visible,
+    }
+}
+
+fn selector_wait_state_matches(expected: SelectorWaitState, current: &str) -> bool {
+    match expected {
+        SelectorWaitState::Attached => current != "missing",
+        SelectorWaitState::Visible => current == "visible",
+        SelectorWaitState::Hidden => current == "hidden" || current == "missing",
+    }
+}
+
+fn parse_url_match_mode(value: Option<&str>) -> UrlMatchMode {
+    match value
+        .unwrap_or("contains")
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "equals" | "equal" => UrlMatchMode::Equals,
+        "regex" | "regexp" => UrlMatchMode::Regex,
+        _ => UrlMatchMode::Contains,
+    }
+}
+
+fn url_matches(current: &str, expected: &str, mode: UrlMatchMode) -> bool {
+    match mode {
+        UrlMatchMode::Contains => current
+            .to_ascii_lowercase()
+            .contains(&expected.to_ascii_lowercase()),
+        UrlMatchMode::Equals => current == expected,
+        UrlMatchMode::Regex => Regex::new(expected)
+            .map(|regex| regex.is_match(current))
+            .unwrap_or(false),
+    }
+}
+
+fn parse_tab_switch_strategy(value: Option<&str>) -> TabSwitchStrategy {
+    match value
+        .unwrap_or("lastOpened")
+        .trim()
+        .to_ascii_lowercase()
+        .as_str()
+    {
+        "index" => TabSwitchStrategy::Index,
+        "urlcontains" | "url_contains" | "url-contains" => TabSwitchStrategy::UrlContains,
+        "titlecontains" | "title_contains" | "title-contains" => TabSwitchStrategy::TitleContains,
+        _ => TabSwitchStrategy::LastOpened,
+    }
+}
+
+fn sanitize_optional_string(value: Option<&str>) -> Option<String> {
+    value.and_then(|raw| {
+        let trimmed = raw.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed.to_string())
+        }
+    })
+}
+
 async fn enforce_same_tab_click_navigation(page: &Page, selector: &str) {
     let selector_literal = match serde_json::to_string(selector) {
         Ok(value) => value,
@@ -662,6 +1410,47 @@ async fn get_page_with_retry(browser: &Browser, target_id: TargetId) -> Result<P
     )))
 }
 
+async fn focus_target_with_retry(browser: &Browser, target: &TargetInfo) -> Result<()> {
+    let mut last_error = None;
+
+    for attempt in 0..PAGE_FETCH_RETRIES {
+        // Preferred path: ask CDP to activate/focus the target directly.
+        match browser
+            .execute(ActivateTargetParams::new(target.target_id.clone()))
+            .await
+        {
+            Ok(_) => return Ok(()),
+            Err(err) => {
+                last_error = Some(err.to_string());
+            }
+        }
+
+        // Compatibility fallback for targets that can still be attached as pages.
+        match browser.get_page(target.target_id.clone()).await {
+            Ok(page) => match page.bring_to_front().await {
+                Ok(_) => return Ok(()),
+                Err(err) => {
+                    last_error = Some(err.to_string());
+                }
+            },
+            Err(err) => {
+                if last_error.is_none() {
+                    last_error = Some(err.to_string());
+                }
+            }
+        }
+
+        if attempt + 1 < PAGE_FETCH_RETRIES {
+            tokio::time::sleep(PAGE_FETCH_RETRY_DELAY).await;
+        }
+    }
+
+    Err(AutomatorError::BrowserError(format!(
+        "Failed to focus selected tab: {}",
+        last_error.unwrap_or_else(|| "unknown error".into())
+    )))
+}
+
 // ---------------------------------------------------------------------------
 // Browser launcher — start a new browser with debugging enabled
 // ---------------------------------------------------------------------------
@@ -671,7 +1460,7 @@ pub fn launch_debug_browser(
     is_edge: bool,
     url: Option<String>,
     use_temp_profile: bool,
-) -> std::result::Result<(), String> {
+) -> Result<()> {
     use std::process::Command;
 
     if is_debug_port_available(DEFAULT_DEBUG_PORT) {
@@ -683,8 +1472,8 @@ pub fn launch_debug_browser(
     } else {
         UtilsBrowserType::Chrome
     };
-    let exe_path =
-        locate_browser(target).ok_or_else(|| format!("Browser {:?} not found", target))?;
+    let exe_path = locate_browser(target)
+        .ok_or_else(|| AutomatorError::BrowserError(format!("Browser {:?} not found", target)))?;
 
     if is_browser_running(target) {
         kill_browser_processes(target)?;
@@ -718,7 +1507,7 @@ pub fn launch_debug_browser(
     }
 
     cmd.spawn()
-        .map_err(|e| format!("Failed to launch browser: {}", e))?;
+        .map_err(|e| AutomatorError::BrowserError(format!("Failed to launch browser: {}", e)))?;
 
     for i in 0..10 {
         std::thread::sleep(Duration::from_millis(500));
@@ -726,9 +1515,9 @@ pub fn launch_debug_browser(
             return Ok(());
         }
         if i == 9 {
-            return Err(
+            return Err(AutomatorError::BrowserError(
                 "Browser started but debug port is not available after 5 seconds. This may be a Chrome profile lock issue.".into(),
-            );
+            ));
         }
     }
 

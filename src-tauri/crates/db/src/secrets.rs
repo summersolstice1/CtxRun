@@ -13,7 +13,7 @@ use super::models::IgnoredSecret;
 pub fn add_ignored_secrets(
     state: State<DbState>,
     secrets: Vec<IgnoredSecret>,
-) -> Result<usize, String> {
+) -> crate::error::Result<usize> {
     let mut conn = state.conn.lock().map_err(|e| e.to_string())?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
     let mut count = 0;
@@ -41,7 +41,7 @@ pub fn add_ignored_secrets(
 }
 
 #[tauri::command]
-pub fn get_ignored_secrets(state: State<DbState>) -> Result<Vec<IgnoredSecret>, String> {
+pub fn get_ignored_secrets(state: State<DbState>) -> crate::error::Result<Vec<IgnoredSecret>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let mut stmt = conn
         .prepare(
@@ -68,7 +68,7 @@ pub fn get_ignored_secrets(state: State<DbState>) -> Result<Vec<IgnoredSecret>, 
 }
 
 #[tauri::command]
-pub fn delete_ignored_secret(state: State<DbState>, id: String) -> Result<(), String> {
+pub fn delete_ignored_secret(state: State<DbState>, id: String) -> crate::error::Result<()> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     conn.execute("DELETE FROM ignored_secrets WHERE id = ?", params![id])
         .map_err(|e| e.to_string())?;
@@ -77,7 +77,7 @@ pub fn delete_ignored_secret(state: State<DbState>, id: String) -> Result<(), St
 
 pub fn get_all_ignored_values_internal(
     conn: &Connection,
-) -> Result<std::collections::HashSet<String>, rusqlite::Error> {
+) -> crate::error::Result<std::collections::HashSet<String>> {
     let mut stmt = conn.prepare("SELECT value FROM ignored_secrets")?;
     let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 

@@ -123,6 +123,7 @@ walkdir = "2"
 genai = "0.5.1"
 tokio = { workspace = true }
 futures = { workspace = true }
+thiserror = { workspace = true }
 infer = "0.19"
 mime_guess = "2.0"
 url = "2.5"

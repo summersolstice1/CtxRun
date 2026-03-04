@@ -1,8 +1,36 @@
 import { memo, useState, useEffect, useRef } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { MousePointer2, Keyboard, Clock, Move, MousePointerClick, Type, Repeat, Crosshair, X, Globe } from 'lucide-react';
+import {
+  MousePointer2,
+  Keyboard,
+  Clock,
+  Move,
+  MousePointerClick,
+  Type,
+  Repeat,
+  Crosshair,
+  X,
+  Globe,
+  Navigation,
+  Plus,
+  ArrowLeftRight,
+  Search,
+  FormInput,
+  CheckCheck,
+  Link
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { AutomatorAction, MouseButton, ActionTarget } from '@/types/automator';
+import {
+  AutomatorAction,
+  MouseButton,
+  ActionTarget,
+  AssertKind,
+  NavigationWaitUntil,
+  PickedWebTarget,
+  SelectorWaitState,
+  TabSwitchStrategy,
+  UrlMatchMode
+} from '@/types/automator';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { NumberInput } from '@/components/ui/NumberInput';
@@ -14,6 +42,13 @@ const ICONS: Record<AutomatorAction['type'], any> = {
   'DoubleClick': MousePointer2,
   'Type': Type,
   'KeyPress': Keyboard,
+  'Navigate': Navigation,
+  'NewTab': Plus,
+  'SwitchTab': ArrowLeftRight,
+  'WaitForSelector': Search,
+  'WaitForURL': Link,
+  'Fill': FormInput,
+  'Assert': CheckCheck,
   'Wait': Clock,
   'Scroll': Move,
   'CheckColor': MousePointer2,
@@ -27,6 +62,13 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'DoubleClick': 'doubleClickLabel',
   'Type': 'type',
   'KeyPress': 'keyPress',
+  'Navigate': 'navigate',
+  'NewTab': 'newTab',
+  'SwitchTab': 'switchTab',
+  'WaitForSelector': 'waitForSelector',
+  'WaitForURL': 'waitForURL',
+  'Fill': 'fill',
+  'Assert': 'assert',
   'Wait': 'wait',
   'Scroll': 'scroll',
   'CheckColor': 'checkColorLabel',
@@ -76,6 +118,11 @@ export const ActionNode = memo((props: NodeProps) => {
 
   const target = (payload as { target?: ActionTarget }).target;
   const isWebMode = target?.type === 'WebSelector';
+  const supportsHybridMode = actionType === 'MoveTo'
+    || actionType === 'Click'
+    || actionType === 'DoubleClick'
+    || actionType === 'Type'
+    || actionType === 'KeyPress';
 
   const toggleWebMode = () => {
     if (isWebMode) {
@@ -84,6 +131,7 @@ export const ActionNode = memo((props: NodeProps) => {
       handleChange('target', {
         type: 'WebSelector',
         selector: '',
+        selector_candidates: [],
         url_contain: '',
         fallbackX: 0,
         fallbackY: 0
@@ -91,41 +139,150 @@ export const ActionNode = memo((props: NodeProps) => {
     }
   };
 
-  const updateWebSelector = (key: 'selector' | 'url_contain', val: string) => {
+  const updateWebTarget = (patch: Partial<Extract<ActionTarget, { type: 'WebSelector' }>>) => {
     if (target?.type !== 'WebSelector') return;
-    handleChange('target', { ...target, [key]: val });
+    handleChange('target', { ...target, ...patch });
   };
 
-  const handleSmartPick = async () => {
-    setIsPickingCoords(true);
+  const updateWebSelector = (key: 'selector' | 'url_contain', val: string) => {
+    if (key === 'selector') {
+      const trimmed = val.trim();
+      updateWebTarget({
+        selector: val,
+        selector_candidates: trimmed ? [trimmed] : [],
+      });
+      return;
+    }
+    updateWebTarget({ url_contain: val });
+  };
 
+  const normalizePickedWebTarget = (picked: PickedWebTarget): PickedWebTarget | null => {
+    const normalizedCandidates = (picked.selectorCandidates || [])
+      .map((candidate) => candidate.trim())
+      .filter((candidate) => candidate.length > 0)
+      .filter((candidate, index, array) => array.indexOf(candidate) === index);
+    let primary = (picked.primarySelector || '').trim();
+    if (!primary && normalizedCandidates.length > 0) {
+      primary = normalizedCandidates[0];
+    }
+    if (!primary) {
+      return null;
+    }
+    const selectorCandidates = [primary, ...normalizedCandidates.filter((candidate) => candidate !== primary)];
+    return {
+      ...picked,
+      primarySelector: primary,
+      selectorCandidates,
+    };
+  };
+
+  const updatePayloadSelector = (
+    sourcePayload: AutomatorAction['payload'],
+    selector: string
+  ) => {
+    const trimmed = selector.trim();
+    onChange({
+      ...sourcePayload,
+      selector,
+      selector_candidates: trimmed ? [trimmed] : [],
+    });
+  };
+
+  const updatePayloadFromPickedTarget = (
+    sourcePayload: AutomatorAction['payload'],
+    picked: PickedWebTarget
+  ) => {
+    onChange({
+      ...sourcePayload,
+      selector: picked.primarySelector,
+      selector_candidates: picked.selectorCandidates,
+    });
+  };
+
+  const pickWebTarget = async (urlContain?: string | null): Promise<PickedWebTarget | null> => {
+    setIsPickingCoords(true);
+    try {
+      const urlFilter = urlContain?.trim() || null;
+      const picked = await invoke<PickedWebTarget>(
+        'plugin:ctxrun-plugin-automator|pick_web_target',
+        { urlFilter }
+      );
+      return normalizePickedWebTarget(picked);
+    } catch (error) {
+      console.error('Web selector pick failed:', error);
+      alert(t('automator.pickWebSelectorFailed'));
+      return null;
+    } finally {
+      setIsPickingCoords(false);
+    }
+  };
+
+  const pickWebSelectorForPayload = async (sourcePayload: AutomatorAction['payload']) => {
+    const normalized = await pickWebTarget((sourcePayload as { url_contain?: string }).url_contain);
+    if (normalized) {
+      updatePayloadFromPickedTarget(sourcePayload, normalized);
+    }
+  };
+
+  const renderWebPickButton = (onPick: () => void | Promise<void>) => (
+    <button
+      type="button"
+      onClick={() => {
+        void onPick();
+      }}
+      disabled={isPickingCoords}
+      className={cn(
+        "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all",
+        isPickingCoords
+          ? "bg-green-500/20 text-green-600 animate-pulse"
+          : "bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:shadow-sm"
+      )}
+    >
+      <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
+      {isPickingCoords ? t('automator.pickingWebElement') : t('automator.pickWebElement')}
+    </button>
+  );
+
+  const renderUrlFilterInput = (
+    value: string | undefined,
+    onValueChange: (value: string) => void
+  ) => (
+    <input
+      type="text"
+      className="w-full bg-background border border-border rounded px-2 py-1 text-[11px]"
+      placeholder={t('automator.urlFilter')}
+      value={value || ''}
+      onChange={(e) => onValueChange(e.target.value)}
+    />
+  );
+
+  const renderPayloadSelectorInput = (sourcePayload: AutomatorAction['payload']) => (
+    <input
+      type="text"
+      className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] font-mono"
+      placeholder={t('automator.cssSelector')}
+      value={(sourcePayload as { selector?: string }).selector || ''}
+      onChange={(e) => updatePayloadSelector(sourcePayload, e.target.value)}
+    />
+  );
+
+  const handleSmartPick = async () => {
     // 🚀 分支逻辑：Web 模式走 CDP，桌面模式走 UIA
     if (isWebMode) {
-      try {
-        const urlFilter = target?.type === 'WebSelector'
-          ? (target.url_contain?.trim() || null)
-          : null;
-
-        // 调用我们刚才写的 Rust 命令
-        // 注意：这个 Promise 会一直 pending 直到你在 Chrome 里点击了元素
-        const selector = await invoke<string>(
-          'plugin:ctxrun-plugin-automator|pick_web_selector',
-          { urlFilter }
-        );
-
-        if (selector) {
-          updateWebSelector('selector', selector);
-        }
-      } catch (error) {
-        console.error('Web 拾取失败:', error);
-        alert(t('automator.pickColorFailed') + ": 请确保 Chrome 已开启 --remote-debugging-port=9222");
-      } finally {
-        setIsPickingCoords(false);
+      const normalized = await pickWebTarget(
+        target?.type === 'WebSelector' ? target.url_contain : undefined
+      );
+      if (normalized) {
+        updateWebTarget({
+          selector: normalized.primarySelector,
+          selector_candidates: normalized.selectorCandidates,
+        });
       }
       return; // Web 模式结束
     }
 
     // =========== 下面是原有的桌面 UIA 拾取逻辑 (保持不变) ===========
+    setIsPickingCoords(true);
     await new Promise(resolve => setTimeout(resolve, 3000));
 
     try {
@@ -234,6 +391,11 @@ export const ActionNode = memo((props: NodeProps) => {
             <div className="truncate opacity-80 font-mono" title={target.selector}>
               "{target.selector}"
             </div>
+            {target.selector_candidates && target.selector_candidates.length > 1 && (
+              <div className="text-[9px] text-muted-foreground mt-1">
+                {t('automator.selectorCandidateCount', { count: target.selector_candidates.length })}
+              </div>
+            )}
             {target.url_contain && (
               <div className="text-[9px] text-muted-foreground mt-1">URL: {target.url_contain}</div>
             )}
@@ -262,7 +424,7 @@ export const ActionNode = memo((props: NodeProps) => {
       )}>
         <Icon size={12} />
         <span className="font-bold text-[10px] uppercase">{title}</span>
-        {(actionType === 'MoveTo' || actionType === 'Click' || actionType === 'DoubleClick' || actionType === 'Type' || actionType === 'KeyPress') && (
+        {supportsHybridMode && (
           <button
             onClick={toggleWebMode}
             className={cn(
@@ -295,27 +457,12 @@ export const ActionNode = memo((props: NodeProps) => {
                     value={target?.type === 'WebSelector' ? target.selector : ''}
                     onChange={(e) => updateWebSelector('selector', e.target.value)}
                   />
-                  <input
-                    type="text"
-                    className="w-full bg-background border border-border rounded px-2 py-1 text-[11px]"
-                    placeholder={t('automator.urlFilter')}
-                    value={target?.type === 'WebSelector' ? (target.url_contain || '') : ''}
-                    onChange={(e) => updateWebSelector('url_contain', e.target.value)}
-                  />
-                </div>
-                <button
-                  onClick={handleSmartPick}
-                  disabled={isPickingCoords}
-                  className={cn(
-                    "w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all",
-                    isPickingCoords
-                      ? "bg-green-500/20 text-green-600 animate-pulse"
-                      : "bg-green-500/10 text-green-600 hover:bg-green-500/20 hover:shadow-sm"
+                  {renderUrlFilterInput(
+                    target?.type === 'WebSelector' ? target.url_contain : '',
+                    (value) => updateWebSelector('url_contain', value)
                   )}
-                >
-                  <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
-                  {isPickingCoords ? "请在 Chrome 点击目标..." : "拾取 Web 元素"}
-                </button>
+                </div>
+                {renderWebPickButton(handleSmartPick)}
               </>
             ) : (
               <button
@@ -379,17 +526,232 @@ export const ActionNode = memo((props: NodeProps) => {
                    "flex-1 px-2 py-1.5 rounded border border-border bg-background text-center cursor-pointer transition-all select-none",
                    isRecording ? "border-primary bg-primary/10 ring-2 ring-primary/20" : "hover:border-primary/50"
                  )}
-               >
-                 <span className={cn("font-mono text-[11px]", isRecording ? "text-primary" : "text-foreground")}>
-                   {isRecording ? (currentKeys.size > 0 ? Array.from(currentKeys).join(' + ') : "Press keys...") : ((payload as { key: string }).key || "Click to record")}
-                 </span>
-               </div>
+                >
+                  <span className={cn("font-mono text-[11px]", isRecording ? "text-primary" : "text-foreground")}>
+                    {isRecording
+                      ? (currentKeys.size > 0
+                        ? Array.from(currentKeys).join(' + ')
+                        : t('automator.keyRecordPressHint'))
+                      : ((payload as { key: string }).key || t('automator.keyRecordClickHint'))}
+                  </span>
+                </div>
                {((payload as { key: string }).key) && !isRecording && (
                  <button onClick={() => handleChange('key', '')} className="px-2 rounded border border-border bg-secondary/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors">
                    <X size={12} />
                  </button>
                )}
              </div>
+           </div>
+        )}
+
+        {actionType === 'Navigate' && (
+          <div className="space-y-2">
+            <input
+              type="text"
+              className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] font-mono"
+              placeholder="https://example.com"
+              value={(payload as { url: string }).url || ''}
+              onChange={(e) => handleChange('url', e.target.value)}
+            />
+            {renderUrlFilterInput(
+              (payload as { url_contain?: string }).url_contain,
+              (value) => handleChange('url_contain', value)
+            )}
+            <Select
+              value={(payload as { wait_until?: NavigationWaitUntil }).wait_until || 'load'}
+              onChange={(value) => handleChange('wait_until', value as NavigationWaitUntil)}
+              options={[
+                { value: 'load', label: t('automator.navWaitLoad') },
+                { value: 'domcontentloaded', label: t('automator.navWaitDomContentLoaded') },
+                { value: 'networkidle', label: t('automator.navWaitNetworkIdle') },
+              ]}
+              size="sm"
+            />
+            <NumberInput
+              value={(payload as { timeoutMs?: number }).timeoutMs ?? 15000}
+              min={100}
+              step={100}
+              onChange={(val) => handleChange('timeoutMs', val)}
+            />
+          </div>
+        )}
+
+        {actionType === 'NewTab' && (
+          <div className="space-y-2">
+            <div className="text-[10px] text-muted-foreground">
+              {t('automator.newTabUrlHint')}
+            </div>
+            <input
+              type="text"
+              className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] font-mono"
+              placeholder={t('automator.newTabUrlPlaceholder')}
+              value={(payload as { url?: string }).url || ''}
+              onChange={(e) => handleChange('url', e.target.value)}
+            />
+          </div>
+        )}
+
+        {actionType === 'SwitchTab' && (
+          <div className="space-y-2">
+            <Select
+              value={(payload as { strategy?: TabSwitchStrategy }).strategy || 'lastOpened'}
+              onChange={(value) => handleChange('strategy', value as TabSwitchStrategy)}
+              options={[
+                { value: 'lastOpened', label: t('automator.tabStrategyLastOpened') },
+                { value: 'index', label: t('automator.tabStrategyIndex') },
+                { value: 'urlContains', label: t('automator.tabStrategyUrlContains') },
+                { value: 'titleContains', label: t('automator.tabStrategyTitleContains') },
+              ]}
+              size="sm"
+            />
+            {(payload as { strategy?: TabSwitchStrategy }).strategy === 'index' ? (
+              <div className="space-y-1">
+                <NumberInput
+                  value={(payload as { index?: number }).index ?? 1}
+                  min={1}
+                  onChange={(val) => handleChange('index', val)}
+                />
+                <div className="text-[10px] text-muted-foreground">
+                  {t('automator.tabIndexHint')}
+                </div>
+              </div>
+            ) : (
+              <input
+                type="text"
+                className="w-full bg-background border border-border rounded px-2 py-1 text-[11px]"
+                placeholder={t('automator.tabMatchPlaceholder')}
+                value={(payload as { value?: string }).value || ''}
+                onChange={(e) => handleChange('value', e.target.value)}
+              />
+            )}
+          </div>
+        )}
+
+        {actionType === 'WaitForSelector' && (
+          <div className="space-y-2">
+            {renderPayloadSelectorInput(payload)}
+            {renderWebPickButton(() => pickWebSelectorForPayload(payload))}
+            {renderUrlFilterInput(
+              (payload as { url_contain?: string }).url_contain,
+              (value) => handleChange('url_contain', value)
+            )}
+            <Select
+              value={(payload as { state?: SelectorWaitState }).state || 'visible'}
+              onChange={(value) => handleChange('state', value as SelectorWaitState)}
+              options={[
+                { value: 'attached', label: t('automator.waitStateAttached') },
+                { value: 'visible', label: t('automator.waitStateVisible') },
+                { value: 'hidden', label: t('automator.waitStateHidden') },
+              ]}
+              size="sm"
+            />
+            <NumberInput
+              value={(payload as { timeoutMs?: number }).timeoutMs ?? 10000}
+              min={100}
+              step={100}
+              onChange={(val) => handleChange('timeoutMs', val)}
+            />
+          </div>
+        )}
+
+        {actionType === 'WaitForURL' && (
+          <div className="space-y-2">
+            <input
+              type="text"
+              className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] font-mono"
+              placeholder={t('automator.urlMatchValuePlaceholder')}
+              value={(payload as { value: string }).value || ''}
+              onChange={(e) => handleChange('value', e.target.value)}
+            />
+            {renderUrlFilterInput(
+              (payload as { url_contain?: string }).url_contain,
+              (value) => handleChange('url_contain', value)
+            )}
+            <Select
+              value={(payload as { mode?: UrlMatchMode }).mode || 'contains'}
+              onChange={(value) => handleChange('mode', value as UrlMatchMode)}
+              options={[
+                { value: 'contains', label: t('automator.urlModeContains') },
+                { value: 'equals', label: t('automator.urlModeEquals') },
+                { value: 'regex', label: t('automator.urlModeRegex') },
+              ]}
+              size="sm"
+            />
+            <NumberInput
+              value={(payload as { timeoutMs?: number }).timeoutMs ?? 10000}
+              min={100}
+              step={100}
+              onChange={(val) => handleChange('timeoutMs', val)}
+            />
+          </div>
+        )}
+
+        {actionType === 'Fill' && (
+          <div className="space-y-2">
+            {renderPayloadSelectorInput(payload)}
+            {renderWebPickButton(() => pickWebSelectorForPayload(payload))}
+            <input
+              type="text"
+              className="w-full bg-background border border-border rounded px-2 py-1 text-[11px]"
+              placeholder={t('automator.textToType')}
+              value={(payload as { text: string }).text || ''}
+              onChange={(e) => handleChange('text', e.target.value)}
+            />
+            {renderUrlFilterInput(
+              (payload as { url_contain?: string }).url_contain,
+              (value) => handleChange('url_contain', value)
+            )}
+            <label className="flex items-center gap-2 text-[10px] text-muted-foreground">
+              <input
+                type="checkbox"
+                checked={(payload as { clear?: boolean }).clear ?? true}
+                onChange={(e) => handleChange('clear', e.target.checked)}
+              />
+              {t('automator.fillClearBefore')}
+            </label>
+          </div>
+        )}
+
+        {actionType === 'Assert' && (
+          <div className="space-y-2">
+            <Select
+              value={(payload as { kind: AssertKind }).kind || 'SelectorExists'}
+              onChange={(value) => handleChange('kind', value as AssertKind)}
+              options={[
+                { value: 'SelectorExists', label: t('automator.assertKindSelectorExists') },
+                { value: 'TextContains', label: t('automator.assertKindTextContains') },
+                { value: 'UrlContains', label: t('automator.assertKindUrlContains') },
+                { value: 'UrlEquals', label: t('automator.assertKindUrlEquals') },
+                { value: 'UrlRegex', label: t('automator.assertKindUrlRegex') },
+              ]}
+              size="sm"
+            />
+            {renderUrlFilterInput(
+              (payload as { url_contain?: string }).url_contain,
+              (value) => handleChange('url_contain', value)
+            )}
+            {((payload as { kind: AssertKind }).kind === 'SelectorExists'
+              || (payload as { kind: AssertKind }).kind === 'TextContains') && (
+              <>
+                {renderPayloadSelectorInput(payload)}
+                {renderWebPickButton(() => pickWebSelectorForPayload(payload))}
+              </>
+            )}
+            {((payload as { kind: AssertKind }).kind !== 'SelectorExists') && (
+              <input
+                type="text"
+                className="w-full bg-background border border-border rounded px-2 py-1 text-[11px] font-mono"
+                placeholder={t('automator.expectedValuePlaceholder')}
+                value={(payload as { value?: string }).value || ''}
+                onChange={(e) => handleChange('value', e.target.value)}
+              />
+            )}
+            <NumberInput
+              value={(payload as { timeoutMs?: number }).timeoutMs ?? 5000}
+              min={100}
+              step={100}
+              onChange={(val) => handleChange('timeoutMs', val)}
+            />
           </div>
         )}
 

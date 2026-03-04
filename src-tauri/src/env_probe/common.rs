@@ -6,7 +6,7 @@ use which::which;
 
 const TIMEOUT_SECS: u64 = 8;
 
-pub fn run_command(bin: &str, args: &[&str]) -> Result<String, String> {
+pub fn run_command(bin: &str, args: &[&str]) -> crate::error::Result<String> {
     #[cfg(target_os = "windows")]
     let (bin, final_args) = {
         let script_tools = [
@@ -49,7 +49,7 @@ pub fn run_command(bin: &str, args: &[&str]) -> Result<String, String> {
         None => {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(format!("Time Out"));
+            return Err(format!("Time Out").into());
         }
     };
 
@@ -63,7 +63,10 @@ pub fn run_command(bin: &str, args: &[&str]) -> Result<String, String> {
             Ok(stdout)
         }
     } else {
-        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
+        Err(String::from_utf8_lossy(&output.stderr)
+            .trim()
+            .to_string()
+            .into())
     }
 }
 
@@ -105,7 +108,7 @@ pub fn generic_probe(
         match run_command(bin, args) {
             Ok(out) => find_version(&out, version_regex),
             Err(e) => {
-                if e.contains("Time Out") {
+                if e.to_string().contains("Time Out") {
                     "Time Out".to_string()
                 } else {
                     "Installed (Check Failed)".to_string()

@@ -2,6 +2,9 @@ use refinery::embed_migrations;
 use rusqlite::Connection;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager};
+
+use super::error::DbError;
+
 embed_migrations!("migrations");
 
 pub struct DbState {
@@ -25,7 +28,7 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
     exists
 }
 
-fn migrate_legacy_columns(conn: &Connection) -> rusqlite::Result<()> {
+fn migrate_legacy_columns(conn: &Connection) -> crate::error::Result<()> {
     let has_prompts = conn
         .query_row(
             "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='prompts'",
@@ -63,10 +66,13 @@ fn migrate_legacy_columns(conn: &Connection) -> rusqlite::Result<()> {
     Ok(())
 }
 
-pub fn init_db(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error::Error>> {
-    let app_dir = app_handle.path().app_local_data_dir().unwrap();
+pub fn init_db(app_handle: &AppHandle) -> crate::error::Result<Connection> {
+    let app_dir = app_handle
+        .path()
+        .app_local_data_dir()
+        .map_err(|e| DbError::Message(e.to_string()))?;
     if !app_dir.exists() {
-        std::fs::create_dir_all(&app_dir).unwrap();
+        std::fs::create_dir_all(&app_dir)?;
     }
     let db_path = app_dir.join("prompts.db");
 
@@ -82,17 +88,16 @@ pub fn init_db(app_handle: &AppHandle) -> Result<Connection, Box<dyn std::error:
         eprintln!("[Database] Failed to migrate legacy columns: {}", e);
     }
 
-    match migrations::runner().run(&mut conn) {
-        Ok(report) => {
-            let applied = report.applied_migrations();
-            if !applied.is_empty() {
-                println!("[Database] Applied {} migrations.", applied.len());
-                for m in applied {
-                    println!("[Database] - {}", m.name());
-                }
-            }
+    let report = migrations::runner()
+        .run(&mut conn)
+        .map_err(|e| DbError::Migration(e.to_string()))?;
+
+    let applied = report.applied_migrations();
+    if !applied.is_empty() {
+        println!("[Database] Applied {} migrations.", applied.len());
+        for m in applied {
+            println!("[Database] - {}", m.name());
         }
-        Err(e) => return Err(Box::new(e)),
     }
 
     Ok(conn)

@@ -112,7 +112,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::get_mouse_position,
             commands::get_pixel_color,
             commands::get_element_under_cursor,
-            commands::pick_web_selector
+            commands::pick_web_selector,
+            commands::pick_web_target
         ])
         .setup(|app, _api| {
             app.manage(AutomatorState::new());

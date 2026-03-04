@@ -367,6 +367,18 @@
           "markdownDescription": "Denies the pick_web_selector command without any pre-configured scope."
         },
         {
+          "description": "Enables the pick_web_target command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-pick-web-target",
+          "markdownDescription": "Enables the pick_web_target command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the pick_web_target command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-pick-web-target",
+          "markdownDescription": "Denies the pick_web_target command without any pre-configured scope."
+        },
+        {
           "description": "Enables the start_clicker command without any pre-configured scope.",
           "type": "string",
           "const": "allow-start-clicker",

@@ -9,7 +9,10 @@ use super::models::AppEntry;
 // ============================================================================
 
 #[tauri::command]
-pub fn search_apps_in_db(state: State<DbState>, query: String) -> Result<Vec<AppEntry>, String> {
+pub fn search_apps_in_db(
+    state: State<DbState>,
+    query: String,
+) -> crate::error::Result<Vec<AppEntry>> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let clean_query = format!("%{}%", query.trim());
 
@@ -42,7 +45,7 @@ pub fn search_apps_in_db(state: State<DbState>, query: String) -> Result<Vec<App
 }
 
 #[tauri::command]
-pub fn record_app_usage(state: State<DbState>, path: String) -> Result<(), String> {
+pub fn record_app_usage(state: State<DbState>, path: String) -> crate::error::Result<()> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     let now = chrono::Utc::now().timestamp_millis();
     conn.execute(
@@ -58,7 +61,7 @@ pub fn record_app_usage(state: State<DbState>, path: String) -> Result<(), Strin
 pub fn sync_scanned_apps(
     conn: &Connection,
     scanned_apps: Vec<AppEntry>,
-) -> Result<usize, rusqlite::Error> {
+) -> crate::error::Result<usize> {
     let tx = conn.unchecked_transaction()?;
 
     // 1. 获取数据库中已有的所有路径

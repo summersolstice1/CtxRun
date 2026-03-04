@@ -166,6 +166,32 @@ Denies the pick_web_selector command without any pre-configured scope.
 <tr>
 <td>
 
+`ctxrun-plugin-automator:allow-pick-web-target`
+
+</td>
+<td>
+
+Enables the pick_web_target command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-automator:deny-pick-web-target`
+
+</td>
+<td>
+
+Denies the pick_web_target command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-automator:allow-start-clicker`
 
 </td>

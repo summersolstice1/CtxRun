@@ -57,24 +57,99 @@ fn extract_fallback(target: &ActionTarget) -> (i32, i32) {
 // Browser-assisted action helpers
 // ---------------------------------------------------------------------------
 
+fn push_selector_candidate(candidates: &mut Vec<String>, raw: &str) {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() || candidates.iter().any(|existing| existing == trimmed) {
+        return;
+    }
+    candidates.push(trimmed.to_string());
+}
+
+fn collect_selector_candidates(primary: Option<&str>, extras: Option<&[String]>) -> Vec<String> {
+    let mut candidates = Vec::new();
+    if let Some(value) = primary {
+        push_selector_candidate(&mut candidates, value);
+    }
+    if let Some(values) = extras {
+        for value in values {
+            push_selector_candidate(&mut candidates, value);
+        }
+    }
+    candidates
+}
+
+fn timeout_per_candidate(timeout_ms: Option<u64>, candidate_count: usize) -> Option<u64> {
+    let Some(total_ms) = timeout_ms else {
+        return None;
+    };
+    if total_ms == 0 {
+        return None;
+    }
+    if candidate_count <= 1 {
+        return Some(total_ms);
+    }
+    Some((total_ms / candidate_count as u64).max(300))
+}
+
 /// Try to click an element via CDP. Returns true if successful.
-async fn try_browser_click(selector: &str, url_filter: Option<&str>) -> bool {
+async fn try_browser_click(
+    selector: &str,
+    selector_candidates: Option<&[String]>,
+    url_filter: Option<&str>,
+) -> bool {
+    let candidates = collect_selector_candidates(Some(selector), selector_candidates);
+    if candidates.is_empty() {
+        return false;
+    }
+
     match TabSession::connect_and_find(url_filter).await {
-        Ok(session) => session.click_element(selector).await.is_ok(),
+        Ok(session) => {
+            for candidate in candidates {
+                if session.click_element(&candidate).await.is_ok() {
+                    return true;
+                }
+            }
+            false
+        }
         Err(_) => false,
     }
 }
 
 /// Try to type into an element via CDP. Returns true if successful.
-async fn try_browser_type(selector: &str, text: &str, url_filter: Option<&str>) -> bool {
+async fn try_browser_type(
+    selector: &str,
+    selector_candidates: Option<&[String]>,
+    text: &str,
+    url_filter: Option<&str>,
+) -> bool {
+    let candidates = collect_selector_candidates(Some(selector), selector_candidates);
+    if candidates.is_empty() {
+        return false;
+    }
+
     match TabSession::connect_and_find(url_filter).await {
-        Ok(session) => session.type_into_element(selector, text).await.is_ok(),
+        Ok(session) => {
+            for candidate in candidates {
+                if session.type_into_element(&candidate, text).await.is_ok() {
+                    return true;
+                }
+            }
+            false
+        }
         Err(_) => false,
     }
 }
 
 /// Try to press a key via CDP. Returns true if successful.
 async fn try_browser_key(key: &str, url_filter: Option<&str>) -> bool {
+    // Browser-chrome shortcuts (e.g. Ctrl+T) are not handled by page-level CDP key dispatch.
+    // Force physical fallback for those combos.
+    if should_fallback_to_physical_key_in_web_mode(key) {
+        // Best effort: focus target browser tab before physical fallback sends OS-level shortcuts.
+        let _ = TabSession::connect_and_find(url_filter).await;
+        return false;
+    }
+
     let session = match TabSession::connect_and_find(url_filter).await {
         Ok(s) => s,
         Err(_) => return false,
@@ -87,15 +162,322 @@ async fn try_browser_key(key: &str, url_filter: Option<&str>) -> bool {
     }
 }
 
+fn duration_from_timeout_ms(timeout_ms: Option<u64>) -> Option<Duration> {
+    timeout_ms
+        .and_then(|ms| if ms == 0 { None } else { Some(ms) })
+        .map(Duration::from_millis)
+}
+
+fn sanitized_optional_str(raw: Option<&str>) -> Option<&str> {
+    raw.and_then(|value| {
+        let trimmed = value.trim();
+        if trimmed.is_empty() {
+            None
+        } else {
+            Some(trimmed)
+        }
+    })
+}
+
+async fn try_browser_navigate(
+    url: &str,
+    wait_until: Option<&str>,
+    timeout_ms: Option<u64>,
+    url_filter: Option<&str>,
+) -> bool {
+    let timeout = duration_from_timeout_ms(timeout_ms);
+    match TabSession::connect_and_find(url_filter).await {
+        Ok(session) => session.navigate_to(url, wait_until, timeout).await.is_ok(),
+        Err(_) => false,
+    }
+}
+
+async fn try_browser_new_tab(url: Option<&str>) -> bool {
+    TabSession::open_new_tab(url).await.is_ok()
+}
+
+async fn try_browser_switch_tab(
+    strategy: Option<&str>,
+    index: Option<u32>,
+    value: Option<&str>,
+) -> bool {
+    TabSession::switch_tab(strategy, index, value).await.is_ok()
+}
+
+fn is_index_tab_switch_strategy(strategy: Option<&str>) -> bool {
+    matches!(
+        strategy
+            .unwrap_or("lastOpened")
+            .trim()
+            .to_ascii_lowercase()
+            .as_str(),
+        "index"
+    )
+}
+
+fn tab_switch_shortcut_for_index(index: u32) -> String {
+    // One-based index: 1..8 jump to tab 1..8, 9+ jumps to last tab.
+    // Keep compatibility: legacy 0 is treated as 1.
+    let normalized = if index <= 1 { 1 } else { index };
+    let digit = if normalized >= 9 { 9 } else { normalized };
+    let modifier = if cfg!(target_os = "macos") {
+        "Cmd"
+    } else {
+        "Ctrl"
+    };
+    format!("{}+{}", modifier, digit)
+}
+
+async fn try_shortcut_switch_tab_by_index(enigo: &mut Enigo, index: u32) -> bool {
+    // Best effort: bring a browser tab to front before sending OS-level shortcut.
+    let _ = TabSession::focus_current_tab(None).await;
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let shortcut = tab_switch_shortcut_for_index(index);
+    execute_key_combination(enigo, &shortcut);
+    tokio::time::sleep(Duration::from_millis(120)).await;
+
+    true
+}
+
+async fn try_browser_wait_for_selector(
+    selector: &str,
+    selector_candidates: Option<&[String]>,
+    state: Option<&str>,
+    timeout_ms: Option<u64>,
+    url_filter: Option<&str>,
+) -> bool {
+    let candidates = collect_selector_candidates(Some(selector), selector_candidates);
+    if candidates.is_empty() {
+        return false;
+    }
+    let per_candidate_timeout = timeout_per_candidate(timeout_ms, candidates.len());
+    match TabSession::connect_and_find(url_filter).await {
+        Ok(session) => {
+            for candidate in candidates {
+                let timeout = duration_from_timeout_ms(per_candidate_timeout);
+                if session
+                    .wait_for_selector_state(&candidate, state, timeout)
+                    .await
+                    .is_ok()
+                {
+                    return true;
+                }
+            }
+            false
+        }
+        Err(_) => false,
+    }
+}
+
+async fn try_browser_wait_for_url(
+    value: &str,
+    mode: Option<&str>,
+    timeout_ms: Option<u64>,
+    url_filter: Option<&str>,
+) -> bool {
+    let timeout = duration_from_timeout_ms(timeout_ms);
+    match TabSession::connect_and_find(url_filter).await {
+        Ok(session) => session
+            .wait_for_url_match(value, mode, timeout)
+            .await
+            .is_ok(),
+        Err(_) => false,
+    }
+}
+
+async fn try_browser_fill(
+    selector: &str,
+    selector_candidates: Option<&[String]>,
+    text: &str,
+    clear: bool,
+    url_filter: Option<&str>,
+) -> bool {
+    let candidates = collect_selector_candidates(Some(selector), selector_candidates);
+    if candidates.is_empty() {
+        return false;
+    }
+
+    match TabSession::connect_and_find(url_filter).await {
+        Ok(session) => {
+            for candidate in candidates {
+                if session.fill_element(&candidate, text, clear).await.is_ok() {
+                    return true;
+                }
+            }
+            false
+        }
+        Err(_) => false,
+    }
+}
+
+async fn try_browser_assert(
+    kind: &str,
+    selector: Option<&str>,
+    selector_candidates: Option<&[String]>,
+    value: Option<&str>,
+    timeout_ms: Option<u64>,
+    url_filter: Option<&str>,
+) -> bool {
+    let session = match TabSession::connect_and_find(url_filter).await {
+        Ok(s) => s,
+        Err(_) => return false,
+    };
+
+    match kind.trim().to_ascii_lowercase().as_str() {
+        "selectorexists" | "selector_exists" | "selector-exists" => {
+            let selectors =
+                collect_selector_candidates(sanitized_optional_str(selector), selector_candidates);
+            if selectors.is_empty() {
+                return false;
+            }
+            let per_candidate_timeout =
+                duration_from_timeout_ms(timeout_per_candidate(timeout_ms, selectors.len()));
+            for selector in selectors {
+                if session
+                    .assert_selector_exists(&selector, per_candidate_timeout)
+                    .await
+                    .unwrap_or(false)
+                {
+                    return true;
+                }
+            }
+            false
+        }
+        "textcontains" | "text_contains" | "text-contains" => {
+            let Some(expected) = sanitized_optional_str(value) else {
+                return false;
+            };
+            let selectors =
+                collect_selector_candidates(sanitized_optional_str(selector), selector_candidates);
+            if selectors.is_empty() {
+                return session
+                    .assert_text_contains(None, expected)
+                    .await
+                    .unwrap_or(false);
+            }
+            for selector in selectors {
+                if session
+                    .assert_text_contains(Some(&selector), expected)
+                    .await
+                    .unwrap_or(false)
+                {
+                    return true;
+                }
+            }
+            false
+        }
+        "urlcontains" | "url_contains" | "url-contains" => {
+            let Some(expected) = sanitized_optional_str(value) else {
+                return false;
+            };
+            session
+                .assert_url_matches(expected, Some("contains"))
+                .await
+                .unwrap_or(false)
+        }
+        "urlequals" | "url_equals" | "url-equals" => {
+            let Some(expected) = sanitized_optional_str(value) else {
+                return false;
+            };
+            session
+                .assert_url_matches(expected, Some("equals"))
+                .await
+                .unwrap_or(false)
+        }
+        "urlregex" | "url_regex" | "url-regex" => {
+            let Some(expected) = sanitized_optional_str(value) else {
+                return false;
+            };
+            session
+                .assert_url_matches(expected, Some("regex"))
+                .await
+                .unwrap_or(false)
+        }
+        _ => false,
+    }
+}
+
+fn should_fallback_to_physical_key_in_web_mode(key: &str) -> bool {
+    let normalized_parts: Vec<String> = key
+        .split('+')
+        .map(|part| normalize_shortcut_part(part))
+        .filter(|part| !part.is_empty())
+        .collect();
+
+    if normalized_parts.is_empty() {
+        return false;
+    }
+
+    let has_part = |name: &str| normalized_parts.iter().any(|part| part == name);
+    let has_ctrl_or_cmd = has_part("ctrl") || has_part("cmd") || has_part("meta");
+    let has_alt = has_part("alt");
+    let main_key = normalized_parts.iter().find(|part| !is_modifier_key(part));
+
+    if matches!(main_key.map(String::as_str), Some("f5")) {
+        return true;
+    }
+
+    if has_alt && matches!(main_key.map(String::as_str), Some("left" | "right")) {
+        return true;
+    }
+
+    if has_ctrl_or_cmd
+        && matches!(
+            main_key.map(String::as_str),
+            Some(
+                "t" | "n"
+                    | "w"
+                    | "l"
+                    | "r"
+                    | "tab"
+                    | "1"
+                    | "2"
+                    | "3"
+                    | "4"
+                    | "5"
+                    | "6"
+                    | "7"
+                    | "8"
+                    | "9"
+            )
+        )
+    {
+        return true;
+    }
+
+    false
+}
+
+fn normalize_shortcut_part(raw: &str) -> String {
+    match raw.trim().to_ascii_lowercase().as_str() {
+        "control" => "ctrl".to_string(),
+        "command" => "cmd".to_string(),
+        "option" => "alt".to_string(),
+        "return" => "enter".to_string(),
+        "escape" => "esc".to_string(),
+        "arrowup" => "up".to_string(),
+        "arrowdown" => "down".to_string(),
+        "arrowleft" => "left".to_string(),
+        "arrowright" => "right".to_string(),
+        other => other.to_string(),
+    }
+}
+
+fn is_modifier_key(part: &str) -> bool {
+    matches!(part, "ctrl" | "alt" | "shift" | "meta" | "cmd")
+}
+
 // ---------------------------------------------------------------------------
 // Smart action executor — browser-first with physical input fallback
 // ---------------------------------------------------------------------------
 
-async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
+async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) -> bool {
     match action {
         AutomatorAction::MoveTo { target } => {
             let (x, y) = resolve_coords_with_timeout(target).await;
             let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+            true
         }
 
         AutomatorAction::Click { button, target } => {
@@ -103,26 +485,35 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
 
             if let Some(ActionTarget::WebSelector {
                 selector,
+                selector_candidates,
                 url_contain,
                 ..
             }) = target
             {
                 let sel = selector.clone();
+                let selector_candidates = selector_candidates.clone();
                 let filter = url_contain.clone();
-                handled = try_browser_click(&sel, filter.as_deref()).await;
+                handled = try_browser_click(
+                    &sel,
+                    Some(selector_candidates.as_slice()),
+                    filter.as_deref(),
+                )
+                .await;
             }
 
             if !handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
                     if x == 0 && y == 0 {
-                        return;
+                        return false;
                     }
                     let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                     tokio::time::sleep(Duration::from_millis(100)).await;
                     let _ = enigo.button(map_button(button), Direction::Click);
                 }
             }
+
+            true
         }
 
         AutomatorAction::DoubleClick { button, target } => {
@@ -135,6 +526,7 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             let _ = enigo.button(btn, Direction::Click);
             tokio::time::sleep(Duration::from_millis(50)).await;
             let _ = enigo.button(btn, Direction::Click);
+            true
         }
 
         AutomatorAction::Type { text, target } => {
@@ -142,21 +534,29 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
 
             if let Some(ActionTarget::WebSelector {
                 selector,
+                selector_candidates,
                 url_contain,
                 ..
             }) = target
             {
                 let sel = selector.clone();
+                let selector_candidates = selector_candidates.clone();
                 let txt = text.clone();
                 let filter = url_contain.clone();
-                handled = try_browser_type(&sel, &txt, filter.as_deref()).await;
+                handled = try_browser_type(
+                    &sel,
+                    Some(selector_candidates.as_slice()),
+                    &txt,
+                    filter.as_deref(),
+                )
+                .await;
             }
 
             if !handled {
                 if let Some(t) = target {
                     let (x, y) = resolve_coords_with_timeout(t).await;
                     if x == 0 && y == 0 {
-                        return;
+                        return false;
                     }
                     let _ = enigo.move_mouse(x, y, Coordinate::Abs);
                     tokio::time::sleep(Duration::from_millis(50)).await;
@@ -165,6 +565,8 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
                 }
                 let _ = enigo.text(text);
             }
+
+            true
         }
 
         AutomatorAction::KeyPress { key, target } => {
@@ -179,18 +581,142 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             if !handled {
                 execute_key_combination(enigo, key);
             }
+
+            true
+        }
+
+        AutomatorAction::Navigate {
+            url,
+            wait_until,
+            timeout_ms,
+            url_contain,
+        } => {
+            let u = url.trim();
+            if u.is_empty() {
+                return false;
+            }
+            try_browser_navigate(
+                u,
+                wait_until.as_deref(),
+                *timeout_ms,
+                sanitized_optional_str(url_contain.as_deref()),
+            )
+            .await
+        }
+
+        AutomatorAction::NewTab { url } => {
+            try_browser_new_tab(sanitized_optional_str(url.as_deref())).await
+        }
+
+        AutomatorAction::SwitchTab {
+            strategy,
+            value,
+            index,
+        } => {
+            if is_index_tab_switch_strategy(strategy.as_deref()) {
+                return try_shortcut_switch_tab_by_index(enigo, index.unwrap_or(1)).await;
+            }
+
+            try_browser_switch_tab(
+                strategy.as_deref(),
+                *index,
+                sanitized_optional_str(value.as_deref()),
+            )
+            .await
+        }
+
+        AutomatorAction::WaitForSelector {
+            selector,
+            selector_candidates,
+            state,
+            timeout_ms,
+            url_contain,
+        } => {
+            let sel = selector.trim();
+            if sel.is_empty() {
+                return false;
+            }
+            try_browser_wait_for_selector(
+                sel,
+                Some(selector_candidates.as_slice()),
+                state.as_deref(),
+                *timeout_ms,
+                sanitized_optional_str(url_contain.as_deref()),
+            )
+            .await
+        }
+
+        AutomatorAction::WaitForURL {
+            value,
+            mode,
+            timeout_ms,
+            url_contain,
+        } => {
+            let target = value.trim();
+            if target.is_empty() {
+                return false;
+            }
+            try_browser_wait_for_url(
+                target,
+                mode.as_deref(),
+                *timeout_ms,
+                sanitized_optional_str(url_contain.as_deref()),
+            )
+            .await
+        }
+
+        AutomatorAction::Fill {
+            selector,
+            selector_candidates,
+            text,
+            clear,
+            url_contain,
+        } => {
+            let sel = selector.trim();
+            if sel.is_empty() {
+                return false;
+            }
+            try_browser_fill(
+                sel,
+                Some(selector_candidates.as_slice()),
+                text,
+                clear.unwrap_or(true),
+                sanitized_optional_str(url_contain.as_deref()),
+            )
+            .await
+        }
+
+        AutomatorAction::Assert {
+            kind,
+            selector,
+            selector_candidates,
+            value,
+            timeout_ms,
+            url_contain,
+        } => {
+            try_browser_assert(
+                kind,
+                sanitized_optional_str(selector.as_deref()),
+                Some(selector_candidates.as_slice()),
+                sanitized_optional_str(value.as_deref()),
+                *timeout_ms,
+                sanitized_optional_str(url_contain.as_deref()),
+            )
+            .await
         }
 
         AutomatorAction::Scroll { delta } => {
             let _ = enigo.scroll(*delta, Axis::Vertical);
+            true
         }
 
         AutomatorAction::Wait { ms } => {
             tokio::time::sleep(Duration::from_millis(*ms)).await;
+            true
         }
 
-        AutomatorAction::CheckColor { .. } => {}
-        AutomatorAction::Iterate { .. } => {}
+        AutomatorAction::CheckColor { .. } => true,
+        AutomatorAction::Iterate { .. } => true,
 
         AutomatorAction::LaunchBrowser {
             browser,
@@ -208,6 +734,7 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) {
             if res.is_ok() {
                 tokio::time::sleep(Duration::from_secs(2)).await;
             }
+            res.is_ok()
         }
     }
 }
@@ -241,7 +768,10 @@ pub fn run_workflow_task<R: Runtime>(
 
                 let _ = app.emit("automator:step", index);
 
-                execute_smart_action(&mut enigo, action).await;
+                let action_ok = execute_smart_action(&mut enigo, action).await;
+                if !action_ok {
+                    break 'outer;
+                }
 
                 tokio::time::sleep(Duration::from_millis(100)).await;
             }
@@ -488,7 +1018,10 @@ pub fn run_graph_task<R: Runtime>(
                 }
 
                 _ => {
-                    execute_smart_action(&mut enigo, &node.action).await;
+                    let action_ok = execute_smart_action(&mut enigo, &node.action).await;
+                    if !action_ok {
+                        break;
+                    }
                     current_id = node.next_id.clone();
                 }
             }

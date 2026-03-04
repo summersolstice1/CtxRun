@@ -71,6 +71,7 @@
     "ctxrun-plugin-automator:allow-get-pixel-color",
     "ctxrun-plugin-automator:allow-get-element-under-cursor",
     "ctxrun-plugin-automator:allow-pick-web-selector",
+    "ctxrun-plugin-automator:allow-pick-web-target",
     "ctxrun-plugin-context:allow-calculate-context-stats",
     "ctxrun-plugin-context:allow-scan-for-secrets",
     "ctxrun-plugin-context:allow-get-context-content",

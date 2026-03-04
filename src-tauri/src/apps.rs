@@ -14,13 +14,14 @@ pub async fn launch_browser(
     browser: String,
     url: Option<String>,
     use_temp_profile: bool,
-) -> Result<(), String> {
+) -> crate::error::Result<()> {
     let is_edge = browser.to_lowercase() == "edge";
-    ctxrun_plugin_automator::browser::launch_debug_browser(is_edge, url, use_temp_profile)
+    ctxrun_plugin_automator::browser::launch_debug_browser(is_edge, url, use_temp_profile)?;
+    Ok(())
 }
 
 #[tauri::command]
-pub async fn refresh_apps(state: State<'_, DbState>) -> Result<String, String> {
+pub async fn refresh_apps(state: State<'_, DbState>) -> crate::error::Result<String> {
     let items = tauri::async_runtime::spawn_blocking(move || -> Vec<AppEntry> { scan_system() })
         .await
         .map_err(|e| e.to_string())?;
@@ -34,7 +35,7 @@ pub async fn refresh_apps(state: State<'_, DbState>) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub async fn open_app(path: String, state: State<'_, DbState>) -> Result<(), String> {
+pub async fn open_app(path: String, state: State<'_, DbState>) -> crate::error::Result<()> {
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("cmd")
