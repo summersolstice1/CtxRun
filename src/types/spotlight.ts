@@ -1,6 +1,18 @@
 import { ReactNode } from 'react';
 import { Prompt } from './prompt';
 
+export type ChatAttachmentKind = 'image' | 'file_text';
+
+export interface ChatAttachment {
+  id: string;
+  kind: ChatAttachmentKind;
+  name: string;
+  mime: string;
+  size: number;
+  content: string;
+  truncated?: boolean;
+}
+
 // 1. 修改模式定义，增加 'clipboard'
 export type SpotlightMode = 'search' | 'chat' | 'clipboard';
 

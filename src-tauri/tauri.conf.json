@@ -76,7 +76,8 @@
         "visible": false,
         "skipTaskbar": true,
         "focus": true,
-        "useHttpsScheme": true
+        "useHttpsScheme": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {

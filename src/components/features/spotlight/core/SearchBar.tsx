@@ -1,31 +1,95 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList } from 'lucide-react';
+import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList, Paperclip, FileText, FolderOpen, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from './SpotlightContext';
-import { useSmartContextMenu } from '@/lib/hooks';
+import { useCollapsedItems, useSmartContextMenu } from '@/lib/hooks';
 import { ChatCommandMenu } from './ChatCommandMenu';
 import { Prompt } from '@/types/prompt';
 import { usePromptStore } from '@/store/usePromptStore';
 import { SearchScope } from '@/types/spotlight';
 import { SearchEngineIcon } from '@/components/ui/SearchEngineIcon';
+import type { ChatAttachmentError } from '@/lib/chat_attachment';
+import { CHAT_ATTACHMENT_ACCEPT, CHAT_ATTACHMENT_COLLAPSE_THRESHOLD } from '@/lib/chat_attachment';
 
 interface SearchBarProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
+}
+
+const FOLDER_IMPORT_EXCLUDE_DIRS = new Set([
+  'node_modules',
+  '.git',
+  'dist',
+  'build',
+  '.next',
+  '.nuxt',
+  '.cache',
+  'coverage',
+  'target',
+  'bin',
+  'obj',
+  '.venv',
+  'venv',
+  '__pycache__'
+]);
+
+const FOLDER_IMPORT_MAX_DEPTH = 5;
+const FOLDER_IMPORT_SCAN_CAP = 3000;
+
+type FolderImportSkipReason = 'excluded_dir' | 'too_deep';
+
+interface FolderImportStats {
+  accepted: number;
+  excluded: number;
+  tooDeep: number;
+  capped: number;
+}
+
+function getFolderImportSkipReason(file: File): FolderImportSkipReason | null {
+  const rel = (file.webkitRelativePath || '').replace(/\\/g, '/');
+  if (!rel) return null;
+  const dirs = rel.split('/').slice(0, -1).map(segment => segment.toLowerCase());
+  if (dirs.some(dir => FOLDER_IMPORT_EXCLUDE_DIRS.has(dir))) return 'excluded_dir';
+  const nestedDepth = Math.max(0, dirs.length - 1);
+  if (nestedDepth > FOLDER_IMPORT_MAX_DEPTH) return 'too_deep';
+  return null;
 }
 
 export function SearchBar({ onKeyDown }: SearchBarProps) {
   const { t } = useTranslation();
   const {
     mode, query, chatInput, searchScope, activeTemplate,
-    setQuery, setChatInput, inputRef, setSearchScope, setActiveTemplate, toggleMode
+    setQuery, setChatInput, inputRef, setSearchScope, setActiveTemplate, toggleMode,
+    attachments, attachmentErrors, addAttachments, removeAttachment, clearAttachmentError
   } = useSpotlight();
 
   const { aiConfig, setAIConfig, savedProviderSettings, searchSettings } = useAppStore();
   const { chatTemplates } = usePromptStore();
 
   const [menuSelectedIndex, setMenuSelectedIndex] = useState(0);
+  const [folderImportStats, setFolderImportStats] = useState<FolderImportStats | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const getAttachmentErrorText = (error: ChatAttachmentError) => {
+    switch (error.type) {
+      case 'too_many':
+        return t('spotlight.attachmentTooMany', { max: error.max });
+      case 'total_size_exceeded':
+        return t('spotlight.attachmentTotalSizeExceeded');
+      case 'image_too_large':
+        return t('spotlight.attachmentImageTooLarge', { name: error.fileName });
+      case 'file_too_large':
+        return t('spotlight.attachmentFileTooLarge', { name: error.fileName });
+      case 'unsupported_type':
+        return t('spotlight.attachmentUnsupportedType', { name: error.fileName });
+      case 'parse_failed':
+        return t('spotlight.attachmentParseFailed', { name: error.fileName });
+      default:
+        return '';
+    }
+  };
 
   const showCommandMenu = mode === 'chat' && !activeTemplate && chatInput.startsWith('/');
   const commandKeyword = showCommandMenu ? chatInput.slice(1) : '';
@@ -36,6 +100,20 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
           p.title.toLowerCase().includes(commandKeyword.toLowerCase())
         ).slice(0, 5)
       : [];
+  const {
+    expanded: showAllAttachments,
+    setExpanded: setShowAllAttachments,
+    shouldCollapse: shouldCollapseAttachmentTray,
+    visibleItems: visibleAttachments,
+    hiddenCount: hiddenAttachmentCount,
+    hiddenPreview: hiddenAttachmentPreview
+  } = useCollapsedItems({
+    items: attachments,
+    threshold: CHAT_ATTACHMENT_COLLAPSE_THRESHOLD,
+    getPreviewText: item => item.name
+  });
+  const visibleAttachmentErrors = attachmentErrors.slice(0, 3);
+  const hiddenAttachmentErrorCount = Math.max(0, attachmentErrors.length - visibleAttachmentErrors.length);
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
@@ -109,6 +187,77 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
       setActiveTemplate(prompt);
       setChatInput('');
       setMenuSelectedIndex(0);
+  };
+
+  const handleAttachClick = () => {
+    clearAttachmentError();
+    setFolderImportStats(null);
+    fileInputRef.current?.click();
+  };
+
+  const handleAttachFolderClick = () => {
+    clearAttachmentError();
+    setFolderImportStats(null);
+    const input = folderInputRef.current;
+    if (!input) return;
+    input.setAttribute('webkitdirectory', '');
+    input.setAttribute('directory', '');
+    input.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setFolderImportStats(null);
+    await addAttachments(files);
+    e.target.value = '';
+  };
+
+  const handleFolderChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const selectedFiles = Array.from(files);
+    const filteredFiles: File[] = [];
+    let excludedCount = 0;
+    let tooDeepCount = 0;
+
+    for (const file of selectedFiles) {
+      const skipReason = getFolderImportSkipReason(file);
+      if (skipReason === 'excluded_dir') {
+        excludedCount += 1;
+        continue;
+      }
+      if (skipReason === 'too_deep') {
+        tooDeepCount += 1;
+        continue;
+      }
+      if (filteredFiles.length >= FOLDER_IMPORT_SCAN_CAP) {
+        continue;
+      }
+      filteredFiles.push(file);
+    }
+
+    const cappedCount = Math.max(
+      0,
+      selectedFiles.length - excludedCount - tooDeepCount - filteredFiles.length
+    );
+    if (excludedCount > 0 || tooDeepCount > 0 || cappedCount > 0) {
+      setFolderImportStats({
+        accepted: filteredFiles.length,
+        excluded: excludedCount,
+        tooDeep: tooDeepCount,
+        capped: cappedCount
+      });
+    } else {
+      setFolderImportStats(null);
+    }
+
+    if (filteredFiles.length > 0) {
+      await addAttachments(filteredFiles);
+    }
+    e.target.value = '';
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -216,11 +365,12 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
 
   return (
     <div data-tauri-drag-region className={cn(
-        "h-16 shrink-0 flex items-center px-6 gap-4 border-b transition-all duration-500 cursor-move",
+        "min-h-16 shrink-0 flex flex-col justify-center px-6 py-2 gap-2 border-b transition-all duration-500 cursor-move",
         mode === 'chat' ? "bg-purple-500/5" :
         mode === 'clipboard' ? "bg-blue-500/5" : // 剪贴板模式背景色
         "bg-background/50"
     )}>
+      <div className="w-full flex items-center gap-4">
 
       {/* 模式切换按钮 - 单按钮循环切换，支持 Alt+1/2/3 快捷键 */}
       <button
@@ -298,6 +448,29 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
 
       <div className="flex items-center gap-2 relative z-10">
          {mode === 'chat' && (
+            <button
+              onClick={handleAttachClick}
+              className="relative flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground group"
+              title={t('spotlight.attachFiles')}
+            >
+                <Paperclip strokeWidth={2} size={14} />
+                {attachments.length > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] leading-none inline-flex items-center justify-center font-semibold">
+                    {attachments.length}
+                  </span>
+                )}
+            </button>
+         )}
+         {mode === 'chat' && (
+            <button
+              onClick={handleAttachFolderClick}
+              className="flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground group"
+              title={t('spotlight.attachFolder')}
+            >
+                <FolderOpen strokeWidth={2} size={14} />
+            </button>
+         )}
+         {mode === 'chat' && (
             <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/50 hover:bg-secondary text-[10px] font-mono font-medium transition-colors border border-border/50 group" title={t('spotlight.currentProvider', { provider: aiConfig.providerId })}>
                 <Zap strokeWidth={2} size={10} className={cn(
                     aiConfig.providerId.toLowerCase().includes('deepseek') ? "text-blue-500" :
@@ -311,10 +484,89 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
             </button>
          )}
          <div className="flex items-center gap-2 pointer-events-none opacity-50">
-              <span className={cn("px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground transition-colors duration-300", mode === 'chat' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : "")}>TAB</span>
               {mode === 'search' && query && <span className="px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground">ESC {t('spotlight.clear')}</span>}
          </div>
       </div>
+      </div>
+
+      {mode === 'chat' && attachments.length > 0 && (
+        <div className="w-full pl-14 pr-2 flex flex-wrap gap-1.5">
+          {visibleAttachments.map(item => (
+            <div
+              key={item.id}
+              className="group/attachment max-w-[240px] flex items-center gap-1.5 px-2 py-1 rounded-md border border-border/60 bg-background/70 text-[10px] text-muted-foreground"
+              title={item.name}
+            >
+              {item.kind === 'image' ? <ImageIcon size={11} className="shrink-0" /> : <FileText size={11} className="shrink-0" />}
+              <span className="truncate">{item.name}</span>
+              <button
+                className="p-0.5 rounded hover:bg-destructive/10 hover:text-destructive transition-colors"
+                onClick={() => removeAttachment(item.id)}
+                title={t('spotlight.removeAttachment')}
+              >
+                <X size={10} />
+              </button>
+            </div>
+          ))}
+          {!showAllAttachments && hiddenAttachmentCount > 0 && (
+            <button
+              onClick={() => setShowAllAttachments(true)}
+              className="px-2 py-1 rounded-md border border-border/60 bg-background/70 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+              title={hiddenAttachmentPreview || `+${hiddenAttachmentCount}`}
+            >
+              +{hiddenAttachmentCount}
+            </button>
+          )}
+          {showAllAttachments && shouldCollapseAttachmentTray && (
+            <button
+              onClick={() => setShowAllAttachments(false)}
+              className="px-2 py-1 rounded-md border border-border/60 bg-background/70 text-[10px] text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+            >
+              {t('actions.collapse')}
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'chat' && attachmentErrors.length > 0 && (
+        <div className="w-full pl-14 pr-2 text-[10px] text-destructive/90 leading-snug">
+          {visibleAttachmentErrors.map((error, index) => (
+            <div key={`${error.type}-${index}`}>{getAttachmentErrorText(error)}</div>
+          ))}
+          {hiddenAttachmentErrorCount > 0 && (
+            <div>{t('spotlight.attachmentMoreErrors', { count: hiddenAttachmentErrorCount })}</div>
+          )}
+        </div>
+      )}
+
+      {mode === 'chat' && folderImportStats && (
+        <div className="w-full pl-14 pr-2 text-[10px] text-muted-foreground/80 leading-snug">
+          {t('spotlight.folderImportSummary', {
+            accepted: folderImportStats.accepted,
+            excluded: folderImportStats.excluded,
+            tooDeep: folderImportStats.tooDeep,
+            capped: folderImportStats.capped,
+            maxDepth: FOLDER_IMPORT_MAX_DEPTH,
+            scanCap: FOLDER_IMPORT_SCAN_CAP
+          })}
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        multiple
+        accept={CHAT_ATTACHMENT_ACCEPT}
+        onChange={handleFileChange}
+      />
+      <input
+        ref={folderInputRef}
+        type="file"
+        className="hidden"
+        multiple
+        onChange={handleFolderChange}
+      />
     </div>
   );
 }

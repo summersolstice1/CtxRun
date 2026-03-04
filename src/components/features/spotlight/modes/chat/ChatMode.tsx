@@ -2,8 +2,10 @@ import { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Sparkles, ChevronDown, Brain, Check, Copy } from 'lucide-react';
+import { Sparkles, ChevronDown, Brain, Check, Copy, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCollapsedItems } from '@/lib/hooks';
+import { CHAT_ATTACHMENT_COLLAPSE_THRESHOLD } from '@/lib/chat_attachment';
 import { useAppStore } from '@/store/useAppStore';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { ChatMessage } from '@/lib/llm';
@@ -69,39 +71,116 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   const { t } = useTranslation();
   const isLastMessage = idx === messagesLength - 1;
   const isStreamingLast = isStreaming && isLastMessage;
+  const hasUserText = msg.role === 'user' && Boolean(msg.content.trim());
+  const userAttachments = msg.role === 'user' ? (msg.attachments ?? []) : [];
+  const hasUserAttachments = userAttachments.length > 0;
+  const {
+    expanded: showAllUserAttachments,
+    setExpanded: setShowAllUserAttachments,
+    shouldCollapse: shouldCollapseUserAttachments,
+    visibleItems: visibleUserAttachments,
+    hiddenCount: hiddenUserAttachmentCount,
+    hiddenPreview: hiddenUserAttachmentPreview
+  } = useCollapsedItems({
+    items: userAttachments,
+    threshold: CHAT_ATTACHMENT_COLLAPSE_THRESHOLD,
+    getPreviewText: item => item.name
+  });
+
+  if (msg.role === 'user') {
+    return (
+      <div className="flex animate-in fade-in slide-in-from-bottom-2 duration-300 group justify-end">
+        <div className="max-w-full flex flex-col items-end gap-2">
+          {hasUserText && (
+            <div className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm border relative max-w-full bg-primary text-primary-foreground border-primary/50 rounded-tr-sm select-text cursor-text whitespace-pre-wrap">
+              {msg.content}
+            </div>
+          )}
+
+          {hasUserAttachments && (
+            <div className="flex flex-wrap justify-end gap-2 max-w-full">
+              {visibleUserAttachments.map(item => (
+                item.kind === 'image' && item.previewUrl ? (
+                  <div
+                    key={item.id}
+                    className="rounded-2xl border border-border/60 bg-background/60 p-1.5 shadow-sm"
+                    title={item.name}
+                  >
+                    <img
+                      src={item.previewUrl}
+                      alt={item.name}
+                      loading="lazy"
+                      className="w-20 h-20 rounded-xl object-cover border border-border/40"
+                    />
+                    <div className="mt-1 px-1 text-[10px] text-muted-foreground max-w-20 truncate">
+                      {item.name}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    key={item.id}
+                    className="max-w-[220px] flex items-center gap-2 rounded-2xl border border-border/60 bg-background/60 px-2.5 py-2 text-xs text-foreground/90"
+                    title={item.name}
+                  >
+                    <FileText size={14} className="shrink-0 text-muted-foreground" />
+                    <span className="truncate">{item.name}</span>
+                  </div>
+                )
+              ))}
+              {!showAllUserAttachments && hiddenUserAttachmentCount > 0 && (
+                <button
+                  onClick={() => setShowAllUserAttachments(true)}
+                  className="max-w-[220px] rounded-2xl border border-border/60 bg-background/60 px-2.5 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                  title={hiddenUserAttachmentPreview || `+${hiddenUserAttachmentCount}`}
+                >
+                  +{hiddenUserAttachmentCount}
+                </button>
+              )}
+              {showAllUserAttachments && shouldCollapseUserAttachments && (
+                <button
+                  onClick={() => setShowAllUserAttachments(false)}
+                  className="max-w-[220px] rounded-2xl border border-border/60 bg-background/60 px-2.5 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
+                >
+                  {t('actions.collapse')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn("flex animate-in fade-in slide-in-from-bottom-2 duration-300 group", msg.role === 'user' ? "justify-end" : "justify-start")}>
-      <div className={cn("rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm border relative max-w-full", msg.role === 'user' ? "bg-primary text-primary-foreground border-primary/50 rounded-tr-sm" : "bg-secondary/50 border-border/50 text-foreground rounded-tl-sm markdown-body", "select-text cursor-text")}>
-        {msg.role === 'assistant' && !isStreaming && <MessageCopyMenu content={msg.content} />}
-        {msg.role === 'user' ? <div className="whitespace-pre-wrap">{msg.content}</div> : (
-          <>
-            {msg.reasoning && (
-              <details className="mb-2 group/reasoning" open={isStreamingLast}>
-                <summary className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60 cursor-pointer hover:text-purple-400 transition-colors select-none list-none outline-none">
-                  <Brain size={12} />
-                  <span>{t('spotlight.thinking')}</span>
-                  <ChevronDown size={12} className="group-open/reasoning:rotate-180 transition-transform duration-200" />
-                </summary>
-                <div className="mt-2 pl-2 border-l-2 border-purple-500/20 text-xs text-muted-foreground/80 leading-relaxed opacity-80 reasoning-body">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={reasoningComponents}
-                  >
-                    {msg.reasoning}
-                  </ReactMarkdown>
-                  {isStreamingLast && !msg.content && <span className="inline-block w-1.5 h-3 ml-1 bg-purple-500/50 align-middle animate-pulse" />}
-                </div>
-              </details>
-            )}
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={markdownComponents}
-            >
-              {msg.content || (isStreamingLast && !msg.reasoning ? "..." : "")}
-            </ReactMarkdown>
-          </>
-        )}
+    <div className="flex animate-in fade-in slide-in-from-bottom-2 duration-300 group justify-start">
+      <div className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm border relative max-w-full bg-secondary/50 border-border/50 text-foreground rounded-tl-sm markdown-body select-text cursor-text">
+        {!isStreaming && <MessageCopyMenu content={msg.content} />}
+        <>
+          {msg.reasoning && (
+            <details className="mb-2 group/reasoning" open={isStreamingLast}>
+              <summary className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60 cursor-pointer hover:text-purple-400 transition-colors select-none list-none outline-none">
+                <Brain size={12} />
+                <span>{t('spotlight.thinking')}</span>
+                <ChevronDown size={12} className="group-open/reasoning:rotate-180 transition-transform duration-200" />
+              </summary>
+              <div className="mt-2 pl-2 border-l-2 border-purple-500/20 text-xs text-muted-foreground/80 leading-relaxed opacity-80 reasoning-body">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={reasoningComponents}
+                >
+                  {msg.reasoning}
+                </ReactMarkdown>
+                {isStreamingLast && !msg.content && <span className="inline-block w-1.5 h-3 ml-1 bg-purple-500/50 align-middle animate-pulse" />}
+              </div>
+            </details>
+          )}
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={markdownComponents}
+          >
+            {msg.content || (isStreamingLast && !msg.reasoning ? "..." : "")}
+          </ReactMarkdown>
+        </>
       </div>
     </div>
   );
@@ -109,6 +188,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   // 自定义比较逻辑：只有当消息内容、推理内容或流式状态发生变化时才重新渲染
   return prevProps.msg.content === nextProps.msg.content &&
     prevProps.msg.reasoning === nextProps.msg.reasoning &&
+    prevProps.msg.attachments === nextProps.msg.attachments &&
     prevProps.isStreaming === nextProps.isStreaming;
 });
 

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { DragEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { useSpotlight } from './SpotlightContext';
@@ -11,8 +11,67 @@ interface SpotlightLayoutProps {
 }
 
 export function SpotlightLayout({ children, header, resultCount = 0, isStreaming = false }: SpotlightLayoutProps) {
-  const { mode } = useSpotlight();
+  const { mode, addAttachments, clearAttachmentError } = useSpotlight();
   const { t } = useTranslation();
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragDepthRef = useRef(0);
+
+  const hasDraggedFiles = (e: DragEvent<HTMLDivElement>) =>
+    Array.from(e.dataTransfer?.types ?? []).includes('Files');
+
+  useEffect(() => {
+    if (mode !== 'chat') {
+      dragDepthRef.current = 0;
+      setIsDragOver(false);
+    }
+  }, [mode]);
+
+  const handleDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (mode !== 'chat') return;
+    dragDepthRef.current += 1;
+    clearAttachmentError();
+    setIsDragOver(true);
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (mode !== 'chat') return;
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'copy';
+    }
+    if (!isDragOver) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    if (mode !== 'chat') return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragOver(false);
+    }
+  };
+
+  const handleDrop = async (e: DragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(e)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (mode !== 'chat') return;
+    dragDepthRef.current = 0;
+    setIsDragOver(false);
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await addAttachments(files);
+    }
+  };
 
   // 辅助函数：获取左侧状态文字
   const getStatusText = () => {
@@ -29,7 +88,13 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
 
   return (
     // 外层透明包裹：p-[1px] 给 border/ring 留出渲染空间，防止圆角边缘被系统窗口裁切产生锯齿
-    <div className="w-screen h-screen flex flex-col items-center bg-transparent font-sans overflow-hidden p-[1px]">
+    <div
+      className="w-screen h-screen flex flex-col items-center bg-transparent font-sans overflow-hidden p-[1px]"
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <div className="w-full h-full flex flex-col bg-background/95 backdrop-blur-xl border border-border/50 rounded-lg shadow-2xl ring-1 ring-black/5 dark:ring-white/10 transition-all duration-300 relative overflow-hidden">
         
         {/* 背景特效 */}
@@ -45,6 +110,14 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
         <div className="relative z-10 flex-1 min-h-0 flex flex-col">
             {children}
         </div>
+
+        {mode === 'chat' && isDragOver && (
+          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/40">
+            <div className="px-4 py-2 rounded-lg bg-background/85 text-foreground text-sm border border-border/60 shadow-sm">
+              {t('spotlight.dropToUpload')}
+            </div>
+          </div>
+        )}
         
         {/* 底部 Footer */}
         <div data-tauri-drag-region className="h-8 shrink-0 bg-secondary/30 border-t border-border/40 flex items-center justify-between px-4 text-[10px] text-muted-foreground/60 select-none backdrop-blur-sm cursor-move relative z-10">

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 
 type InputLikeElement = HTMLInputElement | HTMLTextAreaElement;
@@ -27,4 +27,50 @@ export function useSmartContextMenu<T extends InputLikeElement>({ onPaste }: Sma
   }, [onPaste]);
 
   return { onContextMenu: handleContextMenu };
+}
+
+interface UseCollapsedItemsOptions<T> {
+  items: T[];
+  threshold: number;
+  previewCount?: number;
+  getPreviewText?: (item: T) => string;
+}
+
+export function useCollapsedItems<T>({
+  items,
+  threshold,
+  previewCount = 12,
+  getPreviewText,
+}: UseCollapsedItemsOptions<T>) {
+  const [expanded, setExpanded] = useState(false);
+  const shouldCollapse = items.length > threshold;
+
+  useEffect(() => {
+    if (!shouldCollapse && expanded) {
+      setExpanded(false);
+    }
+  }, [shouldCollapse, expanded]);
+
+  const visibleItems = expanded || !shouldCollapse
+    ? items
+    : items.slice(0, threshold);
+  const hiddenCount = items.length - visibleItems.length;
+
+  const hiddenPreview = useMemo(() => {
+    if (hiddenCount <= 0) return '';
+    const toText = getPreviewText ?? ((item: T) => String(item));
+    return items
+      .slice(threshold, threshold + previewCount)
+      .map(toText)
+      .join(', ');
+  }, [hiddenCount, getPreviewText, items, previewCount, threshold]);
+
+  return {
+    expanded,
+    setExpanded,
+    shouldCollapse,
+    visibleItems,
+    hiddenCount,
+    hiddenPreview,
+  };
 }

@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ChatMessage, streamChatCompletion } from '@/lib/llm';
+import { ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage, streamChatCompletion } from '@/lib/llm';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from '../core/SpotlightContext';
 import { assembleChatPrompt } from '@/lib/template';
+import { ChatAttachment } from '@/types/spotlight';
 
 // 节流配置
 const THROTTLE_CONFIG = {
@@ -96,8 +97,56 @@ function useThrottledStreamUpdate(
   return { append, flushFinal };
 }
 
+function buildDisplayAttachments(attachments: ChatAttachment[]): ChatMessageAttachment[] {
+  return attachments.map(item => ({
+    id: item.id,
+    kind: item.kind,
+    name: item.name,
+    mime: item.mime,
+    size: item.size,
+    previewUrl: item.kind === 'image' ? item.content : undefined
+  }));
+}
+
+function buildUserContentForApi(text: string, attachments: ChatAttachment[]): string | ChatContentPart[] {
+  if (attachments.length === 0) {
+    return text;
+  }
+
+  const parts: ChatContentPart[] = [];
+  const normalizedText = text.trim();
+  if (normalizedText) {
+    parts.push({ type: 'text', text: normalizedText });
+  }
+
+  for (const item of attachments) {
+    if (item.kind === 'image') {
+      parts.push({ type: 'text', text: `Image: ${item.name}` });
+      parts.push({
+        type: 'image_url',
+        image_url: {
+          url: item.content,
+          detail: 'auto'
+        }
+      });
+    } else {
+      parts.push({ type: 'text', text: item.content });
+    }
+  }
+
+  return parts;
+}
+
 export function useSpotlightChat() {
-  const { chatInput, setChatInput, activeTemplate, setActiveTemplate } = useSpotlight();
+  const {
+    chatInput,
+    setChatInput,
+    activeTemplate,
+    setActiveTemplate,
+    attachments,
+    clearAttachments,
+    clearAttachmentError
+  } = useSpotlight();
   const { aiConfig: uiAiConfig, setAIConfig } = useAppStore();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -105,6 +154,8 @@ export function useSpotlightChat() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
+  const requestHistoryRef = useRef<ChatRequestMessage[]>([]);
+  const currentAssistantContentRef = useRef('');
 
   // 节流后的状态更新函数
   const throttledUpdate = useCallback((content: string, reasoning: string) => {
@@ -132,15 +183,16 @@ export function useSpotlightChat() {
     }
 
     let finalContent = chatInput.trim();
+    const hasAttachments = attachments.length > 0;
 
     if (activeTemplate) {
         finalContent = assembleChatPrompt(activeTemplate.content, chatInput);
     } else {
-        if (!finalContent) return;
+        if (!finalContent && !hasAttachments) return;
     }
 
     if (isStreaming) return;
-    if (!finalContent) return;
+    if (!finalContent && !hasAttachments) return;
 
     const freshConfig = useAppStore.getState().aiConfig;
 
@@ -153,31 +205,49 @@ export function useSpotlightChat() {
        return;
     }
 
+    const userDisplayContent = finalContent.trim();
+    const userDisplayAttachments = buildDisplayAttachments(attachments);
+    const userRequestContent = buildUserContentForApi(finalContent, attachments);
+    const requestHistoryBase = requestHistoryRef.current;
+    const requestMessages: ChatRequestMessage[] = [
+      ...requestHistoryBase,
+      {
+        role: 'user',
+        content: userRequestContent
+      }
+    ];
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: userDisplayContent, attachments: userDisplayAttachments },
+      { role: 'assistant', content: '', reasoning: '' }
+    ]);
+    setIsStreaming(true);
     setChatInput('');
     setActiveTemplate(null);
+    clearAttachments();
+    clearAttachmentError();
+    currentAssistantContentRef.current = '';
+    let streamFailed = false;
 
-    const newMessages: ChatMessage[] = [...messages, { role: 'user', content: finalContent }];
-    setMessages(newMessages);
-    setIsStreaming(true);
-
-    // 添加空的助手消息占位
-    setMessages(prev => [...prev, { role: 'assistant', content: '', reasoning: '' }]);
-
-    await streamChatCompletion(newMessages, freshConfig,
+    await streamChatCompletion(requestMessages, freshConfig,
       (contentDelta, reasoningDelta) => {
+        currentAssistantContentRef.current += contentDelta;
         // 使用节流更新而非直接更新
         append(contentDelta, reasoningDelta);
       },
       (err) => {
         // 错误时先 flush 缓冲区，再添加错误信息
+        streamFailed = true;
         flushFinal();
+        const errorSuffix = `\n\n**[Error]**: ${err}`;
         setMessages(current => {
           const updated = [...current];
           const lastMsg = updated[updated.length - 1];
           if (lastMsg) {
             updated[updated.length - 1] = {
               ...lastMsg,
-              content: lastMsg.content + `\n\n**[Error]**: ${err}`
+              content: lastMsg.content + errorSuffix
             };
           }
           return updated;
@@ -186,10 +256,33 @@ export function useSpotlightChat() {
       () => {
         // 流式结束时 flush 缓冲区
         flushFinal();
+        if (!streamFailed) {
+          const nextHistory: ChatRequestMessage[] = [
+            ...requestHistoryBase,
+            // Keep original multimodal payload (especially image_url) for follow-up turns.
+            { role: 'user', content: userRequestContent }
+          ];
+          const assistantContent = currentAssistantContentRef.current.trim();
+          if (assistantContent) {
+            nextHistory.push({ role: 'assistant', content: assistantContent });
+          }
+          requestHistoryRef.current = nextHistory;
+        }
         setIsStreaming(false);
       }
     );
-  }, [chatInput, isStreaming, messages, activeTemplate, setActiveTemplate, setChatInput, append, flushFinal]);
+  }, [
+    chatInput,
+    isStreaming,
+    activeTemplate,
+    attachments,
+    setActiveTemplate,
+    setChatInput,
+    clearAttachments,
+    clearAttachmentError,
+    append,
+    flushFinal
+  ]);
 
   const clearChat = useCallback(() => {
     // 如果正在流式输出，先 flush 缓冲区避免内容丢失
@@ -200,7 +293,11 @@ export function useSpotlightChat() {
     setMessages([]);
     setChatInput('');
     setActiveTemplate(null);
-  }, [isStreaming, setChatInput, setActiveTemplate, flushFinal]);
+    clearAttachments();
+    clearAttachmentError();
+    requestHistoryRef.current = [];
+    currentAssistantContentRef.current = '';
+  }, [isStreaming, setChatInput, setActiveTemplate, clearAttachments, clearAttachmentError, flushFinal]);
 
   const cycleProvider = useCallback(() => {
     const currentSettings = useAppStore.getState().savedProviderSettings;

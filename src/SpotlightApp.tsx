@@ -36,6 +36,7 @@ function SpotlightContent() {
     chatInput, setChatInput,
     searchScope, setSearchScope,
     activeTemplate, setActiveTemplate,
+    attachments, clearAttachments,
     setMode
   } = useSpotlight();
   const { spotlightAppearance } = useAppStore();
@@ -235,6 +236,10 @@ function SpotlightContent() {
                 setChatInput('');
                 return;
             }
+            if (attachments.length > 0) {
+                clearAttachments();
+                return;
+            }
             if (activeTemplate) {
                 setActiveTemplate(null);
                 return;
@@ -276,7 +281,7 @@ function SpotlightContent() {
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [
     mode,
-    query, chatInput, searchScope, activeTemplate,
+    query, chatInput, searchScope, activeTemplate, attachments.length,
     search.results,
     search.selectedIndex,
     chat.isStreaming,

@@ -5,10 +5,37 @@ export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
   reasoning?: string;
+  attachments?: ChatMessageAttachment[];
+}
+
+export type ChatMessageContent = string | ChatContentPart[];
+
+export interface ChatMessageAttachment {
+  id: string;
+  kind: 'image' | 'file_text';
+  name: string;
+  mime: string;
+  size: number;
+  previewUrl?: string;
+}
+
+export type ChatContentPart =
+  | { type: 'text'; text: string }
+  | {
+      type: 'image_url';
+      image_url: {
+        url: string;
+        detail?: 'auto' | 'low' | 'high';
+      };
+    };
+
+export interface ChatRequestMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: ChatMessageContent;
 }
 
 export async function streamChatCompletion(
-  messages: ChatMessage[],
+  messages: ChatRequestMessage[],
   config: AIProviderConfig,
   onChunk: (contentDelta: string, reasoningDelta: string) => void,
   onError: (err: string) => void,
@@ -69,7 +96,7 @@ export async function streamChatCompletion(
 
           if (delta) {
             const contentDelta = delta.content || "";
-            const reasoningDelta = delta.reasoning_content || "";
+            const reasoningDelta = delta.reasoning_content || delta.reasoning || "";
 
             if (contentDelta || reasoningDelta) {
                 onChunk(contentDelta, reasoningDelta);
