@@ -256,18 +256,19 @@ export function useSpotlightChat() {
       () => {
         // 流式结束时 flush 缓冲区
         flushFinal();
+        const nextHistory: ChatRequestMessage[] = [
+          ...requestHistoryBase,
+          // Keep original multimodal payload (especially image_url) for follow-up turns.
+          { role: 'user', content: userRequestContent }
+        ];
         if (!streamFailed) {
-          const nextHistory: ChatRequestMessage[] = [
-            ...requestHistoryBase,
-            // Keep original multimodal payload (especially image_url) for follow-up turns.
-            { role: 'user', content: userRequestContent }
-          ];
           const assistantContent = currentAssistantContentRef.current.trim();
           if (assistantContent) {
             nextHistory.push({ role: 'assistant', content: assistantContent });
           }
-          requestHistoryRef.current = nextHistory;
         }
+        // On stream failure, persist user turn but skip assistant error text.
+        requestHistoryRef.current = nextHistory;
         setIsStreaming(false);
       }
     );
