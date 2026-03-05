@@ -91,7 +91,7 @@ impl MinerDriver {
                     SEARCH_DEBUG_PORT, SEARCH_DEBUG_CONNECT_RETRIES, last_error
                 ))
             })?;
-            (browser, handler, false)
+            (browser, handler, true)
         } else {
             let browser_path = locate_browser(BrowserType::Any).ok_or_else(|| {
                 MinerError::BrowserError("未检测到本地 Chrome 或 Edge 浏览器".into())
