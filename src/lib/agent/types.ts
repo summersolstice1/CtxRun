@@ -67,6 +67,8 @@ export interface AgentRunOptions {
   config: AIProviderConfig;
   toolPolicy?: AgentToolPolicy;
   maxToolRounds?: number;
+  maxTotalToolCalls?: number;
+  maxRuntimeMs?: number;
   callbacks?: AgentRuntimeCallbacks;
 }
 

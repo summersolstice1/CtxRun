@@ -91,6 +91,11 @@ export interface ChatCompletionOptions {
   maxTokens?: number;
 }
 
+export interface ChatCompletionStreamCallbacks {
+  onContentDelta?: (delta: string) => void;
+  onReasoningDelta?: (delta: string) => void;
+}
+
 function normalizeAssistantContent(content: unknown): string {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -104,6 +109,16 @@ function normalizeAssistantContent(content: unknown): string {
     })
     .filter(Boolean)
     .join('\n');
+}
+
+function normalizeDeltaText(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return normalizeAssistantContent(value);
+  if (value && typeof value === 'object') {
+    const text = (value as { text?: unknown }).text;
+    return typeof text === 'string' ? text : '';
+  }
+  return '';
 }
 
 function normalizeToolCalls(raw: unknown): ChatCompletionToolCall[] {
@@ -158,6 +173,152 @@ function normalizeToolCallPayload(raw: unknown): ChatCompletionToolCallPayload[]
   return payload.length > 0 ? payload : undefined;
 }
 
+function toToolCallPayloadFromCalls(calls: ChatCompletionToolCall[]): ChatCompletionToolCallPayload[] | undefined {
+  if (calls.length === 0) return undefined;
+  return calls.map((call) => ({
+    id: call.id,
+    type: 'function',
+    function: {
+      name: call.name,
+      arguments: call.arguments,
+    },
+  }));
+}
+
+function buildChatRequestBody(
+  messages: ChatRequestMessage[],
+  config: AIProviderConfig,
+  options: ChatCompletionOptions,
+  stream: boolean
+): Record<string, unknown> {
+  const body: Record<string, unknown> = {
+    model: config.modelId,
+    messages,
+    stream,
+    temperature: options.temperature ?? config.temperature,
+  };
+
+  if (options.maxTokens !== undefined) {
+    body.max_tokens = options.maxTokens;
+  }
+
+  if (options.tools && options.tools.length > 0) {
+    body.tools = options.tools;
+    body.tool_choice = options.toolChoice ?? 'auto';
+  } else if (options.toolChoice) {
+    body.tool_choice = options.toolChoice;
+  }
+
+  return body;
+}
+
+function parseChatCompletionPayload(payload: unknown): ChatCompletionResult {
+  const choice = (payload as { choices?: unknown[] })?.choices?.[0];
+  if (!choice || typeof choice !== 'object') {
+    throw new Error("Empty choices in chat completion response.");
+  }
+
+  const message = (choice as { message?: unknown }).message;
+  if (!message || typeof message !== 'object') {
+    throw new Error("Missing assistant message in chat completion response.");
+  }
+
+  const rawContent = (message as { content?: unknown }).content;
+  const rawReasoning =
+    (message as { reasoning_content?: unknown }).reasoning_content ??
+    (message as { reasoning?: unknown }).reasoning;
+  const rawToolCalls = (message as { tool_calls?: unknown }).tool_calls;
+
+  const content = normalizeAssistantContent(rawContent);
+  const reasoning = normalizeDeltaText(rawReasoning);
+  const toolCalls = normalizeToolCalls(rawToolCalls);
+  const toolCallsPayload = normalizeToolCallPayload(rawToolCalls);
+
+  return {
+    content,
+    reasoning,
+    toolCalls,
+    rawAssistantMessage: {
+      role: 'assistant',
+      content,
+      tool_calls: toolCallsPayload,
+    },
+  };
+}
+
+interface StreamToolAccumulator {
+  id?: string;
+  name?: string;
+  arguments: string;
+}
+
+function mergeToolCallDeltas(accumulators: Map<number, StreamToolAccumulator>, raw: unknown): void {
+  if (!Array.isArray(raw)) return;
+
+  for (let offset = 0; offset < raw.length; offset += 1) {
+    const item = raw[offset];
+    if (!item || typeof item !== 'object') continue;
+
+    const rawIndex = (item as { index?: unknown }).index;
+    const index = typeof rawIndex === 'number' && Number.isFinite(rawIndex)
+      ? Math.max(0, Math.floor(rawIndex))
+      : offset;
+
+    const existing = accumulators.get(index) ?? { arguments: '' };
+    const id = (item as { id?: unknown }).id;
+    if (typeof id === 'string' && id.trim()) {
+      existing.id = id;
+    }
+
+    const fn = (item as { function?: unknown }).function;
+    if (fn && typeof fn === 'object') {
+      const name = (fn as { name?: unknown }).name;
+      if (typeof name === 'string' && name.trim()) {
+        existing.name = name;
+      }
+
+      const argsPart = (fn as { arguments?: unknown }).arguments;
+      if (typeof argsPart === 'string') {
+        existing.arguments += argsPart;
+      }
+    }
+
+    accumulators.set(index, existing);
+  }
+}
+
+function finalizeStreamToolCalls(accumulators: Map<number, StreamToolAccumulator>): ChatCompletionToolCall[] {
+  if (accumulators.size === 0) return [];
+
+  const sorted = Array.from(accumulators.entries()).sort((a, b) => a[0] - b[0]);
+  const toolCalls: ChatCompletionToolCall[] = [];
+
+  for (const [index, value] of sorted) {
+    const name = value.name?.trim();
+    if (!name) continue;
+
+    toolCalls.push({
+      id: value.id?.trim() || `tool_call_${index}`,
+      name,
+      arguments: value.arguments || '{}',
+    });
+  }
+
+  return toolCalls;
+}
+
+function emitCompletionToStreamCallbacks(
+  completion: ChatCompletionResult,
+  callbacks: ChatCompletionStreamCallbacks
+): void {
+  if (completion.reasoning) {
+    callbacks.onReasoningDelta?.(completion.reasoning);
+  }
+  if (completion.content) {
+    callbacks.onContentDelta?.(completion.content);
+  }
+}
+
 export async function createChatCompletion(
   messages: ChatRequestMessage[],
   config: AIProviderConfig,
@@ -167,22 +328,7 @@ export async function createChatCompletion(
     throw new Error("API Key not configured. Please go to Settings.");
   }
 
-  const body: Record<string, unknown> = {
-    model: config.modelId,
-    messages,
-    stream: false,
-    temperature: options.temperature ?? config.temperature,
-  };
-
-  if (options.maxTokens !== undefined) {
-    body.max_tokens = options.maxTokens;
-  }
-  if (options.tools && options.tools.length > 0) {
-    body.tools = options.tools;
-    body.tool_choice = options.toolChoice ?? 'auto';
-  } else if (options.toolChoice) {
-    body.tool_choice = options.toolChoice;
-  }
+  const body = buildChatRequestBody(messages, config, options, false);
 
   const response = await fetch(`${config.baseUrl}/chat/completions`, {
     method: "POST",
@@ -205,34 +351,186 @@ export async function createChatCompletion(
     throw new Error("Invalid JSON response from chat completion API.");
   }
 
-  const choice = (payload as { choices?: unknown[] })?.choices?.[0];
-  if (!choice || typeof choice !== 'object') {
-    throw new Error("Empty choices in chat completion response.");
+  return parseChatCompletionPayload(payload);
+}
+
+export async function streamChatCompletionWithTools(
+  messages: ChatRequestMessage[],
+  config: AIProviderConfig,
+  options: ChatCompletionOptions = {},
+  callbacks: ChatCompletionStreamCallbacks = {}
+): Promise<ChatCompletionResult> {
+  if (!config.apiKey) {
+    throw new Error("API Key not configured. Please go to Settings.");
   }
 
-  const message = (choice as { message?: unknown }).message;
-  if (!message || typeof message !== 'object') {
-    throw new Error("Missing assistant message in chat completion response.");
+  const body = buildChatRequestBody(messages, config, options, true);
+  const response = await fetch(`${config.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API Error ${response.status}: ${errorText}`);
   }
 
-  const rawContent = (message as { content?: unknown }).content;
-  const rawReasoning =
-    (message as { reasoning_content?: unknown }).reasoning_content ??
-    (message as { reasoning?: unknown }).reasoning;
-  const rawToolCalls = (message as { tool_calls?: unknown }).tool_calls;
+  if (!response.body) {
+    const fallbackText = await response.text();
+    let fallbackPayload: unknown;
+    try {
+      fallbackPayload = JSON.parse(fallbackText);
+    } catch {
+      throw new Error("No streaming body and invalid JSON response.");
+    }
+    const completion = parseChatCompletionPayload(fallbackPayload);
+    emitCompletionToStreamCallbacks(completion, callbacks);
+    return completion;
+  }
 
-  const content = normalizeAssistantContent(rawContent);
-  const reasoning = typeof rawReasoning === 'string' ? rawReasoning : '';
-  const toolCalls = normalizeToolCalls(rawToolCalls);
-  const toolCallsPayload = normalizeToolCallPayload(rawToolCalls);
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+  let nonSseBuffer = "";
+  let sawSseData = false;
+  let doneSignal = false;
+
+  let content = '';
+  let reasoning = '';
+  let lastMessageContent = '';
+  let lastMessageReasoning = '';
+  let lastMessageToolCallsRaw: unknown = undefined;
+  const toolAccumulators = new Map<number, StreamToolAccumulator>();
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    buffer += chunk;
+
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      if (!trimmed.startsWith("data:")) {
+        if (!sawSseData) {
+          nonSseBuffer += trimmed;
+        }
+        continue;
+      }
+
+      sawSseData = true;
+      const dataStr = trimmed.slice(5).trimStart();
+      if (!dataStr) continue;
+      if (dataStr === "[DONE]") {
+        doneSignal = true;
+        break;
+      }
+
+      let payload: unknown;
+      try {
+        payload = JSON.parse(dataStr);
+      } catch {
+        continue;
+      }
+
+      const choice = (payload as { choices?: unknown[] })?.choices?.[0];
+      if (!choice || typeof choice !== 'object') continue;
+
+      const delta = (choice as { delta?: unknown }).delta;
+      if (delta && typeof delta === 'object') {
+        const contentDelta = normalizeAssistantContent((delta as { content?: unknown }).content);
+        const rawReasoningDelta =
+          (delta as { reasoning_content?: unknown }).reasoning_content ??
+          (delta as { reasoning?: unknown }).reasoning;
+        const reasoningDelta = normalizeDeltaText(rawReasoningDelta);
+
+        if (contentDelta) {
+          content += contentDelta;
+          callbacks.onContentDelta?.(contentDelta);
+        }
+        if (reasoningDelta) {
+          reasoning += reasoningDelta;
+          callbacks.onReasoningDelta?.(reasoningDelta);
+        }
+
+        mergeToolCallDeltas(toolAccumulators, (delta as { tool_calls?: unknown }).tool_calls);
+      }
+
+      const message = (choice as { message?: unknown }).message;
+      if (message && typeof message === 'object') {
+        const messageContent = normalizeAssistantContent((message as { content?: unknown }).content);
+        const rawMessageReasoning =
+          (message as { reasoning_content?: unknown }).reasoning_content ??
+          (message as { reasoning?: unknown }).reasoning;
+        const messageReasoning = normalizeDeltaText(rawMessageReasoning);
+
+        if (messageContent) {
+          lastMessageContent = messageContent;
+        }
+        if (messageReasoning) {
+          lastMessageReasoning = messageReasoning;
+        }
+        if ((message as { tool_calls?: unknown }).tool_calls !== undefined) {
+          lastMessageToolCallsRaw = (message as { tool_calls?: unknown }).tool_calls;
+        }
+      }
+    }
+
+    if (doneSignal) break;
+  }
+
+  const streamTail = buffer.trim();
+  if (!sawSseData) {
+    const raw = `${nonSseBuffer}${streamTail}`.trim();
+    if (!raw) {
+      return {
+        content: '',
+        reasoning: '',
+        toolCalls: [],
+        rawAssistantMessage: {
+          role: 'assistant',
+          content: '',
+        },
+      };
+    }
+
+    let payload: unknown;
+    try {
+      payload = JSON.parse(raw);
+    } catch {
+      throw new Error("Invalid non-SSE response from chat completion API.");
+    }
+
+    const completion = parseChatCompletionPayload(payload);
+    emitCompletionToStreamCallbacks(completion, callbacks);
+    return completion;
+  }
+
+  const toolCallsFromStream = finalizeStreamToolCalls(toolAccumulators);
+  const toolCalls = toolCallsFromStream.length > 0
+    ? toolCallsFromStream
+    : normalizeToolCalls(lastMessageToolCallsRaw);
+  const toolCallsPayload = toToolCallPayloadFromCalls(toolCalls);
+
+  const finalContent = content || lastMessageContent;
+  const finalReasoning = reasoning || lastMessageReasoning;
 
   return {
-    content,
-    reasoning,
+    content: finalContent,
+    reasoning: finalReasoning,
     toolCalls,
     rawAssistantMessage: {
       role: 'assistant',
-      content,
+      content: finalContent,
       tool_calls: toolCallsPayload,
     },
   };
@@ -246,75 +544,23 @@ export async function streamChatCompletion(
   onFinish: () => void
 ) {
   try {
-    if (!config.apiKey) {
-      throw new Error("API Key not configured. Please go to Settings.");
-    }
-
-    const body = {
-      model: config.modelId,
-      messages: messages,
-      stream: true,
-      temperature: config.temperature,
-    };
-
-    const response = await fetch(`${config.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API Error ${response.status}: ${errorText}`);
-    }
-
-    if (!response.body) throw new Error("No response body");
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder("utf-8");
-    let buffer = "";
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value, { stream: true });
-      buffer += chunk;
-
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith("data: ")) continue;
-
-        const dataStr = trimmed.replace("data: ", "");
-        if (dataStr === "[DONE]") break;
-
-        try {
-          const json = JSON.parse(dataStr);
-          const delta = json.choices?.[0]?.delta;
-
-          if (delta) {
-            const contentDelta = delta.content || "";
-            const reasoningDelta = delta.reasoning_content || delta.reasoning || "";
-
-            if (contentDelta || reasoningDelta) {
-                onChunk(contentDelta, reasoningDelta);
-            }
-          }
-        } catch (e) {
-        }
+    await streamChatCompletionWithTools(
+      messages,
+      config,
+      {},
+      {
+        onContentDelta: (delta) => {
+          if (delta) onChunk(delta, '');
+        },
+        onReasoningDelta: (delta) => {
+          if (delta) onChunk('', delta);
+        },
       }
-    }
-
+    );
     onFinish();
-
-  } catch (error: any) {
-    onError(error.message || "Unknown error");
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    onError(message || "Unknown error");
     onFinish();
   }
 }

@@ -5,6 +5,7 @@ import { SinglePageExtractRequest, SinglePageExtractResult } from '@/types/miner
 
 const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-miner|';
 const MAX_MARKDOWN_RETURN_CHARS = 12_000;
+const MIN_RELIABLE_MARKDOWN_CHARS = 260;
 
 interface ExtractPageArgs {
   url: string;
@@ -43,6 +44,8 @@ function normalizeExtractArgs(input: unknown): ExtractPageArgs {
 
 function buildToolOutput(result: SinglePageExtractResult): AgentToolExecutionResult {
   const originalMarkdown = result.markdown ?? '';
+  const normalizedMarkdown = originalMarkdown.replace(/\s+/g, ' ').trim();
+  const markdownLength = normalizedMarkdown.length;
   const markdownTruncated = originalMarkdown.length > MAX_MARKDOWN_RETURN_CHARS;
   const markdown = markdownTruncated
     ? `${originalMarkdown.slice(0, MAX_MARKDOWN_RETURN_CHARS)}\n\n[truncated]`
@@ -55,9 +58,23 @@ function buildToolOutput(result: SinglePageExtractResult): AgentToolExecutionRes
     markdownTruncated,
   };
 
+  if (markdownLength < MIN_RELIABLE_MARKDOWN_CHARS) {
+    return {
+      ok: false,
+      error:
+        `Extracted content from ${result.url} is too short (${markdownLength} chars) to be reliable. ` +
+        'The page may require dynamic rendering, block crawlers, or not contain the target data.',
+      structured,
+      warnings: [
+        ...(result.warnings ?? []),
+        'extracted markdown too short for reliable analysis',
+      ],
+    };
+  }
+
   return {
     ok: true,
-    text: `Fetched ${result.url} (${structured.markdownOriginalLength} chars).`,
+    text: `Fetched ${result.url} (${markdownLength} chars).`,
     structured,
     warnings: markdownTruncated ? ['markdown truncated for context safety'] : undefined,
   };
