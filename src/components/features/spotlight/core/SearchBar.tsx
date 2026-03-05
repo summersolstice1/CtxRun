@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList, Paperclip, FileText, FolderOpen, Image as ImageIcon } from 'lucide-react';
+import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList, Paperclip, FileText, FolderOpen, Image as ImageIcon, MoreVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from './SpotlightContext';
@@ -90,8 +90,10 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
 
   const [menuSelectedIndex, setMenuSelectedIndex] = useState(0);
   const [folderImportStats, setFolderImportStats] = useState<FolderImportStats | null>(null);
+  const [isChatActionsVisible, setIsChatActionsVisible] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const chatActionsHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const getAttachmentErrorText = (error: ChatAttachmentError) => {
     switch (error.type) {
@@ -134,6 +136,30 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
   });
   const visibleAttachmentErrors = attachmentErrors.slice(0, 3);
   const hiddenAttachmentErrorCount = Math.max(0, attachmentErrors.length - visibleAttachmentErrors.length);
+
+  const clearChatActionsHideTimer = () => {
+    if (!chatActionsHideTimerRef.current) return;
+    clearTimeout(chatActionsHideTimerRef.current);
+    chatActionsHideTimerRef.current = null;
+  };
+
+  const showChatActions = () => {
+    clearChatActionsHideTimer();
+    setIsChatActionsVisible(true);
+  };
+
+  const hideChatActions = () => {
+    clearChatActionsHideTimer();
+    chatActionsHideTimerRef.current = setTimeout(() => {
+      setIsChatActionsVisible(false);
+    }, 120);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearChatActionsHideTimer();
+    };
+  }, []);
 
   const handleQueryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
@@ -461,44 +487,80 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
 
       <div className="flex items-center gap-2 relative z-10">
          {mode === 'chat' && (
-            <button
-              onClick={handleAttachClick}
-              className="relative flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground group"
-              title={t('spotlight.attachFiles')}
+            <div
+              className="relative h-8 w-8"
+              onMouseEnter={showChatActions}
+              onMouseLeave={hideChatActions}
+              onFocusCapture={showChatActions}
+              onBlurCapture={(event) => {
+                const nextTarget = event.relatedTarget as Node | null;
+                if (nextTarget && event.currentTarget.contains(nextTarget)) return;
+                hideChatActions();
+              }}
             >
-                <Paperclip strokeWidth={2} size={14} />
+              <button
+                className={cn(
+                  "absolute right-0 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md border border-border/50 bg-secondary/50",
+                  "inline-flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-all duration-300 ease-out",
+                  isChatActionsVisible ? "opacity-0 pointer-events-none scale-95" : "opacity-100 scale-100"
+                )}
+                title="Quick actions"
+                onMouseEnter={showChatActions}
+              >
+                <MoreVertical strokeWidth={2} size={14} />
                 {attachments.length > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] leading-none inline-flex items-center justify-center font-semibold">
-                    {attachments.length}
+                    {attachments.length > 99 ? '99+' : attachments.length}
                   </span>
                 )}
-            </button>
-         )}
-         {mode === 'chat' && (
-            <button
-              onClick={handleAttachFolderClick}
-              className="flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground group"
-              title={t('spotlight.attachFolder')}
-            >
-                <FolderOpen strokeWidth={2} size={14} />
-            </button>
-         )}
-         {mode === 'chat' && (
-            <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/50 hover:bg-secondary text-[10px] font-mono font-medium transition-colors border border-border/50 group" title={t('spotlight.currentProvider', { provider: aiConfig.providerId })}>
-                <Zap strokeWidth={2} size={10} className={cn(
-                    aiConfig.providerId.toLowerCase().includes('deepseek') ? "text-blue-500" :
-                    aiConfig.providerId.toLowerCase().includes('openai') ? "text-green-500" :
-                    aiConfig.providerId.toLowerCase().includes('anthropic') ? "text-purple-500" :
-                    "text-orange-500"
-                )} />
-                <span className="opacity-70 group-hover:opacity-100 uppercase truncate max-w-[80px]">
-                    {aiConfig.providerId}
-                </span>
-            </button>
+              </button>
+
+              <div
+                className={cn(
+                  "absolute right-0 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2 transition-all duration-300 ease-out",
+                  isChatActionsVisible
+                    ? "opacity-100 translate-x-0 scale-100 pointer-events-auto"
+                    : "opacity-0 translate-x-2 scale-[0.98] pointer-events-none"
+                )}
+              >
+                <button
+                  onClick={handleAttachClick}
+                  className="relative flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground group"
+                  title={t('spotlight.attachFiles')}
+                >
+                    <Paperclip strokeWidth={2} size={14} />
+                    {attachments.length > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] leading-none inline-flex items-center justify-center font-semibold">
+                        {attachments.length}
+                      </span>
+                    )}
+                </button>
+
+                <button
+                  onClick={handleAttachFolderClick}
+                  className="flex items-center justify-center px-2 py-1 rounded-md text-[10px] font-mono font-medium transition-colors border border-border/50 bg-secondary/50 hover:bg-secondary text-muted-foreground hover:text-foreground group"
+                  title={t('spotlight.attachFolder')}
+                >
+                    <FolderOpen strokeWidth={2} size={14} />
+                </button>
+
+                <button onClick={cycleProvider} className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/50 hover:bg-secondary text-[10px] font-mono font-medium transition-colors border border-border/50 group" title={t('spotlight.currentProvider', { provider: aiConfig.providerId })}>
+                    <Zap strokeWidth={2} size={10} className={cn(
+                        aiConfig.providerId.toLowerCase().includes('deepseek') ? "text-blue-500" :
+                        aiConfig.providerId.toLowerCase().includes('openai') ? "text-green-500" :
+                        aiConfig.providerId.toLowerCase().includes('anthropic') ? "text-purple-500" :
+                        "text-orange-500"
+                    )} />
+                    <span className="opacity-70 group-hover:opacity-100 uppercase truncate max-w-[80px]">
+                        {aiConfig.providerId}
+                    </span>
+                </button>
+              </div>
+            </div>
          )}
          <div className="flex items-center gap-2 pointer-events-none opacity-50">
               {mode === 'search' && query && <span className="px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground">ESC {t('spotlight.clear')}</span>}
-       </div>
+        </div>
 
       </div>
 
