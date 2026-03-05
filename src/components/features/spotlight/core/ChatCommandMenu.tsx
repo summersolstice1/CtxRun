@@ -1,103 +1,136 @@
 import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Prompt } from '@/types/prompt';
-import { usePromptStore } from '@/store/usePromptStore';
-import { Sparkles, Command, ArrowRight } from 'lucide-react';
+import { Command } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ChatCommandMenuProps {
-  inputValue: string;
+  prompts: Prompt[];
+  keyword: string;
   selectedIndex: number;
   onSelect: (prompt: Prompt) => void;
+  className?: string;
 }
 
-export function ChatCommandMenu({ inputValue, selectedIndex, onSelect }: ChatCommandMenuProps) {
+function buildPromptPreview(prompt: Prompt): string {
+  const source = (prompt.description?.trim() || prompt.content || '').replace(/\s+/g, ' ').trim();
+  if (!source) return '';
+  if (source.length <= 110) return source;
+  return `${source.slice(0, 109)}…`;
+}
+
+function normalizeGroupLabel(prompt: Prompt): string {
+  const group = prompt.group?.trim();
+  return group && group.length > 0 ? group : 'General';
+}
+
+function highlightMatch(text: string, keyword: string): React.ReactNode {
+  const normalizedKeyword = keyword.trim();
+  if (!normalizedKeyword) return text;
+
+  const lowerText = text.toLowerCase();
+  const lowerKeyword = normalizedKeyword.toLowerCase();
+  const start = lowerText.indexOf(lowerKeyword);
+  if (start < 0) return text;
+
+  const end = start + normalizedKeyword.length;
+  return (
+    <>
+      {text.slice(0, start)}
+      <span className="text-primary">{text.slice(start, end)}</span>
+      {text.slice(end)}
+    </>
+  );
+}
+
+export function ChatCommandMenu({
+  prompts,
+  keyword,
+  selectedIndex,
+  onSelect,
+  className,
+}: ChatCommandMenuProps) {
   const { t } = useTranslation();
-  const { chatTemplates } = usePromptStore();
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const filtered = chatTemplates.filter(p =>
-    inputValue === '' ||
-    p.title.toLowerCase().includes(inputValue.toLowerCase())
-  ).slice(0, 5);
-
   useEffect(() => {
-    if (menuRef.current && filtered.length > 0) {
+    if (menuRef.current && prompts.length > 0) {
       const activeEl = menuRef.current.children[selectedIndex] as HTMLElement;
       if (activeEl) {
         activeEl.scrollIntoView({ block: 'nearest' });
       }
     }
-  }, [selectedIndex, filtered]);
-
-  if (filtered.length === 0) return null;
+  }, [prompts, selectedIndex]);
 
   return (
-    <div className="absolute top-[calc(100%+8px)] left-2 right-2 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
-      <div className="bg-popover/95 backdrop-blur-xl border border-border/60 rounded-xl shadow-2xl overflow-hidden ring-1 ring-black/5 dark:ring-white/10 flex flex-col">
-
-        {/* Header */}
-        <div className="px-3 py-2 bg-secondary/30 border-b border-border/40 flex justify-between items-center text-[10px] text-muted-foreground/70 select-none">
-            <span className="font-medium flex items-center gap-1.5 uppercase tracking-wider">
-                <Command size={10} />
-                {t('common.slashCommands')}
-            </span>
-            <span className="font-mono opacity-50">{t('common.navHint')}</span>
+    <div className={cn(
+      "absolute z-50 animate-in fade-in slide-in-from-top-1 duration-150",
+      className ?? "top-[calc(100%+8px)] left-2 right-2"
+    )}>
+      <div className="rounded-2xl border border-border/70 bg-popover/95 backdrop-blur-xl shadow-2xl ring-1 ring-black/25 overflow-hidden">
+        <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between text-[11px] text-muted-foreground/80">
+          <span className="inline-flex items-center gap-1.5 font-medium">
+            <Command size={12} />
+            <span>{t('common.chatSlashCommand')}</span>
+          </span>
+          <span className="font-mono">{prompts.length}</span>
         </div>
 
-        {/* List */}
-        <div ref={menuRef} className="max-h-[300px] overflow-y-auto custom-scrollbar p-1.5 space-y-0.5">
-            {filtered.map((item, idx) => {
-                const isActive = idx === selectedIndex;
-                return (
-                    <div
-                        key={item.id}
-                        onClick={() => onSelect(item)}
-                        className={cn(
-                            "relative flex flex-col gap-1 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group",
-                            isActive
-                                ? "bg-accent text-accent-foreground"
-                                : "text-foreground/80 hover:bg-secondary/40"
-                        )}
-                    >
-                        {/* 左侧激活指示条 */}
-                        {isActive && (
-                            <div className="absolute left-0 top-2 bottom-2 w-1 bg-primary rounded-r-full" />
-                        )}
+        {prompts.length === 0 ? (
+          <div className="px-4 py-3 text-sm text-muted-foreground/80">{t('spotlight.noCommands')}</div>
+        ) : (
+          <div ref={menuRef} className="max-h-[320px] overflow-y-auto custom-scrollbar py-1">
+            {prompts.map((item, idx) => {
+              const isActive = idx === selectedIndex;
+              const groupLabel = normalizeGroupLabel(item);
+              const prevGroupLabel = idx > 0 ? normalizeGroupLabel(prompts[idx - 1]) : null;
+              const showGroupLabel = idx === 0 || groupLabel !== prevGroupLabel;
+              const preview = buildPromptPreview(item);
 
-                        <div className="flex items-center justify-between pl-2">
-                            <div className="flex items-center gap-2.5 min-w-0">
-                                <div className={cn(
-                                    "flex items-center justify-center w-5 h-5 rounded-md shrink-0 transition-colors",
-                                    isActive ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
-                                )}>
-                                    <Sparkles size={12} />
-                                </div>
-
-                                <span className={cn("font-medium text-sm truncate", isActive && "text-primary")}>
-                                    {item.title}
-                                </span>
-
-                                <span className="text-[10px] text-muted-foreground/50 bg-secondary/50 px-1.5 py-0.5 rounded border border-transparent group-hover:border-border/50 transition-colors">
-                                    {item.group}
-                                </span>
-                            </div>
-
-                            {isActive && (
-                                <ArrowRight size={14} className="text-primary/50 animate-pulse mr-1" />
-                            )}
-                        </div>
-
-                        {/* Content Preview */}
-                        <div className={cn(
-                            "text-xs truncate font-mono pl-9 opacity-50 overflow-hidden text-ellipsis whitespace-nowrap",
-                            isActive ? "opacity-70" : "opacity-40"
-                        )}>
-                            {item.content}
-                        </div>
+              return (
+                <div key={item.id}>
+                  {showGroupLabel && (
+                    <div className="px-4 pt-2 pb-1 text-[11px] uppercase tracking-wide text-muted-foreground/60">
+                      {groupLabel}
                     </div>
-                )
+                  )}
+                  <button
+                    type="button"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => onSelect(item)}
+                    className={cn(
+                      'mx-2 w-[calc(100%-1rem)] rounded-lg px-3 py-2 text-left transition-colors',
+                      isActive
+                        ? 'bg-primary/25 text-foreground'
+                        : 'text-foreground/90 hover:bg-secondary/50'
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-[15px] leading-5">
+                        /{highlightMatch(item.title, keyword)}
+                      </span>
+                      <span className="shrink-0 font-mono text-[10px] text-muted-foreground/75">
+                        {idx + 1}/{prompts.length}
+                      </span>
+                    </div>
+                    {preview && (
+                      <div className={cn(
+                        'mt-1 text-xs truncate',
+                        isActive ? 'text-foreground/80' : 'text-muted-foreground/75'
+                      )}>
+                        {preview}
+                      </div>
+                    )}
+                  </button>
+                </div>
+              );
             })}
+          </div>
+        )}
+
+        <div className="px-4 py-2 border-t border-border/50 text-[10px] text-muted-foreground/70 flex items-center justify-between">
+          <span>{t('common.navHint')}</span>
+          <span className="font-mono">Enter · Select</span>
         </div>
       </div>
     </div>

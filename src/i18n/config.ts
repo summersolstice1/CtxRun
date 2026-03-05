@@ -15,9 +15,7 @@ i18n
     lng: 'en',
     fallbackLng: 'en',
     interpolation: {
-      escapeValue: false,
-      prefix: '{',
-      suffix: '}'
+      escapeValue: false
     }
   });
 

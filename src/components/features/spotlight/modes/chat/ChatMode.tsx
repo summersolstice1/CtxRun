@@ -10,6 +10,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { CodeBlock } from '@/components/ui/CodeBlock';
 import { ChatMessage, ChatToolCallTrace } from '@/lib/llm';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
+import { open } from '@tauri-apps/plugin-shell';
 
 // 将 ReactMarkdown 的 components 提取到外部，避免每次渲染都创建新对象
 const markdownComponents = {
@@ -20,14 +21,94 @@ const markdownComponents = {
     ) : (
       <code className={cn("bg-black/20 px-1 py-0.5 rounded font-mono", className)} {...props}>{children}</code>
     );
-  }
+  },
+  a({ node, children, href, ...props }: any) {
+    const externalUrl = normalizeExternalHttpUrl(href);
+    return (
+      <a
+        {...props}
+        href="#"
+        className={cn(
+          'underline decoration-dotted underline-offset-4 text-purple-300 hover:text-purple-200 transition-colors',
+          props.className
+        )}
+        title={externalUrl ?? String(href ?? '')}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openExternalLink(href);
+        }}
+        onAuxClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
+        {children}
+        {externalUrl && <span className="ml-1 text-[10px] text-purple-300/80 align-super">↗</span>}
+      </a>
+    );
+  },
 };
 
 const reasoningComponents = {
   code({ node, inline, className, children, ...props }: any) {
     return <code className={cn("bg-black/10 dark:bg-black/30 px-1 py-0.5 rounded font-mono", className)} {...props}>{children}</code>;
-  }
+  },
+  a({ node, children, href, ...props }: any) {
+    const externalUrl = normalizeExternalHttpUrl(href);
+    return (
+      <a
+        {...props}
+        href="#"
+        className={cn(
+          'underline decoration-dotted underline-offset-4 text-purple-300 hover:text-purple-200 transition-colors',
+          props.className
+        )}
+        title={externalUrl ?? String(href ?? '')}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openExternalLink(href);
+        }}
+        onAuxClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        }}
+      >
+        {children}
+        {externalUrl && <span className="ml-1 text-[10px] text-purple-300/80 align-super">↗</span>}
+      </a>
+    );
+  },
 };
+
+const TOOL_TIMELINE_VISIBLE_RECENT = 3;
+
+function normalizeExternalHttpUrl(href: unknown): string | null {
+  if (typeof href !== 'string') return null;
+  const trimmed = href.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function openExternalLink(href: unknown): void {
+  const externalUrl = normalizeExternalHttpUrl(href);
+  if (!externalUrl) return;
+
+  void open(externalUrl).catch((error) => {
+    console.error('[SpotlightChat] Failed to open external link:', error);
+  });
+}
 
 function formatToolDuration(durationMs?: number): string | null {
   if (durationMs === undefined || !Number.isFinite(durationMs)) return null;
@@ -57,6 +138,28 @@ function buildToolTimelineSummary(call: ChatToolCallTrace, toolNoOutputLabel: st
     return toolNoOutputLabel;
   }
   return '';
+}
+
+function buildCollapsedToolTimeline(calls: ChatToolCallTrace[]): {
+  visibleCalls: ChatToolCallTrace[];
+  hiddenCount: number;
+} {
+  if (calls.length <= TOOL_TIMELINE_VISIBLE_RECENT) {
+    return {
+      visibleCalls: calls,
+      hiddenCount: 0,
+    };
+  }
+
+  const recentCalls = calls.slice(-TOOL_TIMELINE_VISIBLE_RECENT);
+  const recentIds = new Set(recentCalls.map((call) => call.id));
+  const runningCalls = calls.filter((call) => call.status === 'running' && !recentIds.has(call.id));
+  const visibleCalls = sortToolCallsByStartedAt([...runningCalls, ...recentCalls]);
+
+  return {
+    visibleCalls,
+    hiddenCount: Math.max(0, calls.length - visibleCalls.length),
+  };
 }
 
 function MessageCopyMenu({ content }: { content: string }) {
@@ -108,6 +211,11 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   const hasAssistantToolCalls = assistantToolCalls.length > 0;
   const runningToolCallCount = assistantToolCalls.filter((call) => call.status === 'running').length;
   const orderedToolCalls = sortToolCallsByStartedAt(assistantToolCalls);
+  const [showAllToolCalls, setShowAllToolCalls] = useState(false);
+  const collapsedToolTimeline = buildCollapsedToolTimeline(orderedToolCalls);
+  const visibleToolCalls = showAllToolCalls ? orderedToolCalls : collapsedToolTimeline.visibleCalls;
+  const hiddenToolCallCount = showAllToolCalls ? 0 : collapsedToolTimeline.hiddenCount;
+  const shouldCollapseToolCalls = orderedToolCalls.length > TOOL_TIMELINE_VISIBLE_RECENT;
   const {
     expanded: showAllUserAttachments,
     setExpanded: setShowAllUserAttachments,
@@ -225,9 +333,20 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
                     {runningToolCallCount} {t('spotlight.toolRunning')}
                   </span>
                 )}
+                {shouldCollapseToolCalls && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllToolCalls((current) => !current)}
+                    className="ml-auto text-[10px] normal-case text-purple-300/90 hover:text-purple-200 transition-colors"
+                  >
+                    {showAllToolCalls
+                      ? t('spotlight.toolShowLess')
+                      : t('spotlight.toolShowMore', { count: hiddenToolCallCount })}
+                  </button>
+                )}
               </div>
               <div className="space-y-1.5">
-                {orderedToolCalls.map((call) => {
+                {visibleToolCalls.map((call) => {
                   const isRunning = call.status === 'running';
                   const isSuccess = call.status === 'success';
                   const statusLabel = isRunning

@@ -21,8 +21,35 @@ const DEFAULT_MAX_TOTAL_TOOL_CALLS = 120;
 const DEFAULT_MAX_RUNTIME_MS = 8 * 60 * 1000;
 const MAX_IDENTICAL_TOOL_OUTCOME_STREAK = 4;
 const HARD_MAX_TOOL_ROUNDS = 512;
+const MAX_EMPTY_FINAL_RESPONSE_RETRIES = 2;
 const DEFAULT_AGENT_SYSTEM_PROMPT =
-  'You are an assistant with tool access. Call tools when external data is needed, then use tool results to answer. Prefer web.search to discover online sources, web.extract_page to read page content, fs.search_files to locate files, fs.list_directory for structure overview, and fs.read_file for exact local content. Keep answers concise and grounded in tool outputs.';
+  `You are CtxRun, a coding-focused assistant with tool access.
+
+Core principles:
+- Be precise, honest, and concise.
+- Solve the user's request end-to-end when possible.
+- Never fabricate tool results, file contents, or web facts.
+- Match the user's language unless they ask otherwise.
+
+Tool-use strategy:
+- For local workspace tasks, prioritize: fs.search_files -> fs.list_directory -> fs.read_file.
+- For online or time-sensitive information, use web.search first, then web.extract_page on selected sources.
+- Use tools before answering whenever the request depends on external or local factual data.
+- If data is missing, state exactly what is missing and what next tool/input is needed.
+
+Coding behavior:
+- Keep recommendations minimal, practical, and aligned with existing project style.
+- Focus on root-cause solutions, not superficial patches.
+- Do not claim files were edited, commands were run, or tests passed unless tool output proves it.
+- When proposing code changes, provide clear actionable outputs (file paths, snippets, or patch-style steps).
+
+Response style:
+- Lead with the answer, then key evidence.
+- Keep output scannable and avoid unnecessary verbosity.
+- For web-derived facts, include source URLs when relevant.
+- If tool calls fail or are blocked, clearly report the failure and provide the best fallback path.`;
+const EMPTY_FINAL_RESPONSE_RECOVERY_PROMPT =
+  'You have tool results available. Provide a final answer to the user now. Do not return an empty response. Avoid calling more tools unless strictly necessary.';
 
 function toChatToolDefinition(definition: AgentToolDefinition): ChatToolDefinition {
   return {
@@ -190,6 +217,10 @@ function buildNoProgressMessage(streak: number, toolName: string): string {
   return `I stopped after ${streak} identical ${toolName} results in a row because no new progress was detected. Please narrow the target, provide another source, or ask me to continue with a different strategy.`;
 }
 
+function buildEmptyFinalResponseMessage(retries: number): string {
+  return `I completed tool calls but the model returned an empty final answer ${retries} times. Please retry, or switch to another model/provider and I can continue.`;
+}
+
 async function executeToolCall(
   registry: AgentToolRegistry,
   toolPolicy: AgentToolPolicy,
@@ -286,6 +317,8 @@ export async function runAgentTurn(
   let identicalToolOutcomeStreak = 0;
   let lastToolOutcomeFingerprint: string | null = null;
   let lastToolFailure: { name: string; error: string } | null = null;
+  let emptyFinalResponseRetries = 0;
+  let forceFinalizeAnswer = false;
 
   for (let round = 0; ; round += 1) {
     if (Date.now() - startedAt >= maxRuntimeMs) {
@@ -336,11 +369,20 @@ export async function runAgentTurn(
           .filter((tool) => isToolAllowed(tool.name, toolPolicy))
           .map(toChatToolDefinition)
       : [];
+    const completionMessages = forceFinalizeAnswer
+      ? [
+          ...history,
+          {
+            role: 'system' as const,
+            content: EMPTY_FINAL_RESPONSE_RECOVERY_PROMPT,
+          },
+        ]
+      : history;
 
     let completion: ChatCompletionResult;
     try {
       completion = await streamChatCompletionWithTools(
-        history,
+        completionMessages,
         options.config,
         {
           tools: availableTools,
@@ -367,7 +409,31 @@ export async function runAgentTurn(
     }
 
     if (completion.toolCalls.length === 0) {
-      assistantContent = completion.content ?? '';
+      const content = completion.content ?? '';
+      const hasToolHistory = history.some((message) => message.role === 'tool');
+      if (!content.trim() && hasToolHistory) {
+        emptyFinalResponseRetries += 1;
+        if (emptyFinalResponseRetries <= MAX_EMPTY_FINAL_RESPONSE_RETRIES) {
+          forceFinalizeAnswer = true;
+          continue;
+        }
+
+        const stopMessage = buildEmptyFinalResponseMessage(emptyFinalResponseRetries);
+        history.push({
+          role: 'assistant',
+          content: stopMessage,
+        });
+        callbacks?.onAssistantDelta?.(stopMessage);
+        return {
+          assistantContent: stopMessage,
+          assistantReasoning,
+          history,
+        };
+      }
+
+      forceFinalizeAnswer = false;
+      emptyFinalResponseRetries = 0;
+      assistantContent = content;
       history.push({
         role: 'assistant',
         content: assistantContent,
@@ -380,6 +446,8 @@ export async function runAgentTurn(
     }
 
     history.push(toAssistantHistoryMessage(completion));
+    forceFinalizeAnswer = false;
+    emptyFinalResponseRetries = 0;
 
     for (const call of completion.toolCalls) {
       if (totalToolCalls >= maxTotalToolCalls) {

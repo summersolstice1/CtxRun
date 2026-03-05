@@ -36,6 +36,7 @@ const FOLDER_IMPORT_EXCLUDE_DIRS = new Set([
 
 const FOLDER_IMPORT_MAX_DEPTH = 5;
 const FOLDER_IMPORT_SCAN_CAP = 3000;
+const CHAT_COMMAND_MENU_LIMIT = 8;
 
 type FolderImportSkipReason = 'excluded_dir' | 'too_deep';
 
@@ -44,6 +45,26 @@ interface FolderImportStats {
   excluded: number;
   tooDeep: number;
   capped: number;
+}
+
+function filterChatTemplates(templates: Prompt[], keyword: string): Prompt[] {
+  const normalized = keyword.trim().toLowerCase();
+  if (!normalized) {
+    return templates.slice(0, CHAT_COMMAND_MENU_LIMIT);
+  }
+
+  return templates
+    .filter((template) => {
+      const title = template.title.toLowerCase();
+      const group = (template.group || '').toLowerCase();
+      const description = (template.description || '').toLowerCase();
+      return (
+        title.includes(normalized) ||
+        group.includes(normalized) ||
+        description.includes(normalized)
+      );
+    })
+    .slice(0, CHAT_COMMAND_MENU_LIMIT);
 }
 
 function getFolderImportSkipReason(file: File): FolderImportSkipReason | null {
@@ -91,15 +112,14 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
     }
   };
 
-  const showCommandMenu = mode === 'chat' && !activeTemplate && chatInput.startsWith('/');
-  const commandKeyword = showCommandMenu ? chatInput.slice(1) : '';
-
+  const slashCommandMatch = mode === 'chat' && !activeTemplate
+    ? chatInput.match(/^\/([^\s]*)$/)
+    : null;
+  const showCommandMenu = Boolean(slashCommandMatch);
+  const commandKeyword = slashCommandMatch?.[1] ?? '';
   const filteredPrompts = showCommandMenu
-      ? chatTemplates.filter((p: Prompt) =>
-          commandKeyword === '' ||
-          p.title.toLowerCase().includes(commandKeyword.toLowerCase())
-        ).slice(0, 5)
-      : [];
+    ? filterChatTemplates(chatTemplates, commandKeyword)
+    : [];
   const {
     expanded: showAllAttachments,
     setExpanded: setShowAllAttachments,
@@ -150,7 +170,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
   const handleChatInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const val = e.target.value;
       setChatInput(val);
-      if (val.startsWith('/')) {
+      if (/^\/([^\s]*)$/.test(val)) {
           setMenuSelectedIndex(0);
       }
   };
@@ -370,7 +390,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
         mode === 'clipboard' ? "bg-blue-500/5" : // 剪贴板模式背景色
         "bg-background/50"
     )}>
-      <div className="w-full flex items-center gap-4">
+      <div className="w-full flex items-center gap-4 relative">
 
       {/* 模式切换按钮 - 单按钮循环切换，支持 Alt+1/2/3 快捷键 */}
       <button
@@ -437,14 +457,7 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
             spellCheck={false}
           />
 
-          {showCommandMenu && (
-              <ChatCommandMenu
-                  inputValue={commandKeyword}
-                  selectedIndex={menuSelectedIndex}
-                  onSelect={handleTemplateSelect}
-              />
-          )}
-      </div>
+       </div>
 
       <div className="flex items-center gap-2 relative z-10">
          {mode === 'chat' && (
@@ -485,8 +498,19 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
          )}
          <div className="flex items-center gap-2 pointer-events-none opacity-50">
               {mode === 'search' && query && <span className="px-2 py-1 rounded-md bg-secondary/50 border border-border/50 text-[10px] font-mono text-muted-foreground">ESC {t('spotlight.clear')}</span>}
-         </div>
+       </div>
+
       </div>
+
+      {showCommandMenu && (
+          <ChatCommandMenu
+              prompts={filteredPrompts}
+              keyword={commandKeyword}
+              selectedIndex={menuSelectedIndex}
+              onSelect={handleTemplateSelect}
+              className="left-0 right-0 top-[calc(100%-1px)]"
+          />
+      )}
       </div>
 
       {mode === 'chat' && attachments.length > 0 && (
