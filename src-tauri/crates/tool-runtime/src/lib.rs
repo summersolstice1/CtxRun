@@ -1,0 +1,29 @@
+use tauri::{
+    Manager, Runtime,
+    plugin::{Builder, TauriPlugin},
+};
+
+pub mod commands;
+mod fs_tools;
+mod miner_tools;
+pub mod models;
+mod patch_tools;
+mod runtime;
+mod sandbox;
+
+pub type Result<T> = std::result::Result<T, String>;
+pub use models::{ToolCallRequest, ToolCallResponse, ToolCallStatus, ToolSpec};
+pub use runtime::ToolRuntime;
+
+pub fn init<R: Runtime>() -> TauriPlugin<R> {
+    Builder::<R>::new("ctxrun-plugin-tool-runtime")
+        .invoke_handler(tauri::generate_handler![
+            commands::list_tools,
+            commands::call_tool,
+        ])
+        .setup(|app, _api| {
+            app.manage(runtime::ToolRuntime::new());
+            Ok(())
+        })
+        .build()
+}

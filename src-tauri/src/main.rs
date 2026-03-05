@@ -23,11 +23,11 @@ use tokio::time::sleep;
 use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 
 use ctxrun_db as db;
+mod agent_tools;
 mod apps;
 mod env_probe;
 mod error;
 mod hyperview;
-mod mcp_http;
 mod monitor;
 mod scheduler;
 mod shortcuts;
@@ -195,6 +195,7 @@ fn main() {
         .plugin(ctxrun_plugin_git::init())
         .plugin(ctxrun_plugin_refinery::init())
         .plugin(ctxrun_plugin_miner::init())
+        .plugin(ctxrun_plugin_tool_runtime::init())
         .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
@@ -202,10 +203,9 @@ fn main() {
             get_system_info,
             check_python_env,
             refresh_shortcuts,
-            mcp_http::mcp_http_status,
-            mcp_http::mcp_http_start,
-            mcp_http::mcp_http_stop,
-            mcp_http::mcp_http_configure,
+            agent_tools::agent_read_local_file,
+            agent_tools::agent_list_local_files,
+            agent_tools::agent_search_local_files,
             db::prompts::get_prompts,
             db::prompts::search_prompts,
             db::prompts::import_prompt_pack,
@@ -270,7 +270,6 @@ fn main() {
             let shortcut_manager = shortcuts::ShortcutManager::new();
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
-            app.manage(mcp_http::McpHttpControl::new_from_env());
 
             let quit_i = MenuItem::with_id(app, "quit", "退出/Quit", true, None::<&str>)?;
 

@@ -84,6 +84,7 @@ ctxrun-plugin-context = { path = "crates/context" }
 ctxrun-plugin-git = { path = "crates/git" }
 ctxrun-plugin-refinery = { path = "crates/refinery" }
 ctxrun-plugin-miner = { path = "crates/miner" }
+ctxrun-plugin-tool-runtime = { path = "crates/tool-runtime" }
 
 ctxrun-db = { workspace = true }
 ctxrun-browser-utils = { workspace = true } 
@@ -124,7 +125,6 @@ genai = "0.5.1"
 tokio = { workspace = true }
 futures = { workspace = true }
 thiserror = { workspace = true }
-axum = "0.8"
 infer = "0.19"
 mime_guess = "2.0"
 url = "2.5"

@@ -104,6 +104,18 @@ The following open data projects are partially sourced in this application:
 
 ---
 
+## Architecture References
+
+The following project was referenced for architecture and implementation patterns:
+
+| Project | License | Usage |
+|---------|---------|-------|
+| **OpenAI Codex CLI (codex-rs)** | Apache License 2.0 | Inspired tool orchestration, sandbox policy, and patch-runtime design patterns used in `ctxrun-plugin-tool-runtime`. |
+
+> **Compliance note**: CtxRun keeps Apache-2.0 attribution for referenced patterns and avoids direct code copy without preserving required notices.
+
+---
+
 ## Font and Icon Resources
 
 | Resource | License | Description |
@@ -145,4 +157,4 @@ We thank all the maintainers and contributors of the open source projects that m
 
 ---
 
-*This document was last updated on 2026-02-27.*
+*This document was last updated on 2026-03-05.*

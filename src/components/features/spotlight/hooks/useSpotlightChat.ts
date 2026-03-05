@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage, streamChatCompletion } from '@/lib/llm';
+import { ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage } from '@/lib/llm';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from '../core/SpotlightContext';
 import { assembleChatPrompt } from '@/lib/template';
 import { ChatAttachment } from '@/types/spotlight';
+import { runDefaultAgentTurn } from '@/lib/agent';
 
 // 节流配置
 const THROTTLE_CONFIG = {
@@ -156,6 +157,7 @@ export function useSpotlightChat() {
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
   const requestHistoryRef = useRef<ChatRequestMessage[]>([]);
   const currentAssistantContentRef = useRef('');
+  const agentSessionIdRef = useRef(`spotlight-${Math.random().toString(36).slice(2)}`);
 
   // 节流后的状态更新函数
   const throttledUpdate = useCallback((content: string, reasoning: string) => {
@@ -228,50 +230,61 @@ export function useSpotlightChat() {
     clearAttachments();
     clearAttachmentError();
     currentAssistantContentRef.current = '';
-    let streamFailed = false;
+    try {
+      const runResult = await runDefaultAgentTurn({
+        sessionId: agentSessionIdRef.current,
+        messages: requestMessages,
+        config: freshConfig,
+        toolPolicy: {
+          mode: 'allowList',
+          toolNames: ['fs.list_directory', 'fs.search_files', 'fs.read_file', 'web.extract_page'],
+        },
+        callbacks: {
+          onAssistantDelta: (contentDelta) => {
+            currentAssistantContentRef.current += contentDelta;
+            append(contentDelta, '');
+          },
+          onReasoningDelta: (reasoningDelta) => {
+            append('', reasoningDelta);
+          },
+          onToolStart: (info) => {
+            append('', `\n[tool:start] ${info.name}\n`);
+          },
+          onToolFinish: (info, result) => {
+            if (result.ok) {
+              append('', `[tool:done] ${info.name}: ${result.text}\n`);
+            } else {
+              append('', `[tool:error] ${info.name}: ${result.error}\n`);
+            }
+          },
+        },
+      });
 
-    await streamChatCompletion(requestMessages, freshConfig,
-      (contentDelta, reasoningDelta) => {
-        currentAssistantContentRef.current += contentDelta;
-        // 使用节流更新而非直接更新
-        append(contentDelta, reasoningDelta);
-      },
-      (err) => {
-        // 错误时先 flush 缓冲区，再添加错误信息
-        streamFailed = true;
-        flushFinal();
-        const errorSuffix = `\n\n**[Error]**: ${err}`;
-        setMessages(current => {
-          const updated = [...current];
-          const lastMsg = updated[updated.length - 1];
-          if (lastMsg) {
-            updated[updated.length - 1] = {
-              ...lastMsg,
-              content: lastMsg.content + errorSuffix
-            };
-          }
-          return updated;
-        });
-      },
-      () => {
-        // 流式结束时 flush 缓冲区
-        flushFinal();
-        const nextHistory: ChatRequestMessage[] = [
-          ...requestHistoryBase,
-          // Keep original multimodal payload (especially image_url) for follow-up turns.
-          { role: 'user', content: userRequestContent }
-        ];
-        if (!streamFailed) {
-          const assistantContent = currentAssistantContentRef.current.trim();
-          if (assistantContent) {
-            nextHistory.push({ role: 'assistant', content: assistantContent });
-          }
+      requestHistoryRef.current = runResult.history;
+    } catch (error) {
+      flushFinal();
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorSuffix = `\n\n**[Error]**: ${errorMessage}`;
+      setMessages(current => {
+        const updated = [...current];
+        const lastMsg = updated[updated.length - 1];
+        if (lastMsg) {
+          updated[updated.length - 1] = {
+            ...lastMsg,
+            content: lastMsg.content + errorSuffix
+          };
         }
-        // On stream failure, persist user turn but skip assistant error text.
-        requestHistoryRef.current = nextHistory;
-        setIsStreaming(false);
-      }
-    );
+        return updated;
+      });
+      const nextHistory: ChatRequestMessage[] = [
+        ...requestHistoryBase,
+        { role: 'user', content: userRequestContent }
+      ];
+      requestHistoryRef.current = nextHistory;
+    } finally {
+      flushFinal();
+      setIsStreaming(false);
+    }
   }, [
     chatInput,
     isStreaming,
@@ -298,6 +311,7 @@ export function useSpotlightChat() {
     clearAttachmentError();
     requestHistoryRef.current = [];
     currentAssistantContentRef.current = '';
+    agentSessionIdRef.current = `spotlight-${Math.random().toString(36).slice(2)}`;
   }, [isStreaming, setChatInput, setActiveTemplate, clearAttachments, clearAttachmentError, flushFinal]);
 
   const cycleProvider = useCallback(() => {

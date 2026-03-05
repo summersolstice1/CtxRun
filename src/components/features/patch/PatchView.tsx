@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { open as openDialog, save } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
-import { parseMultiFilePatch, applyPatches } from '@/lib/patch_parser';
+import { parseMultiFilePatch } from '@/lib/patch_parser';
 import { PatchSidebar } from './PatchSidebar';
 import { DiffWorkspace } from './DiffWorkspace';
 import { PatchMode, PatchFileItem, ExportFormat, ExportLayout } from './patch_types';
@@ -16,6 +15,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { ExportDialog } from './dialogs/ExportDialog';
 
 const GIT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-git|';
+const TOOL_RUNTIME_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-tool-runtime|';
 
 const MANUAL_DIFF_ID = 'manual-scratchpad';
 
@@ -33,6 +33,22 @@ interface GitDiffFile {
   modified_content: string;
   is_binary: boolean; 
   is_large: boolean;  
+}
+
+interface ToolCallResponse {
+  status: 'ok' | 'approval_required' | 'rejected' | 'not_found' | 'error';
+  data?: any;
+  message?: string;
+  approvalReason?: string;
+}
+
+interface PatchPreviewFile {
+  filePath: string;
+  fullPath: string;
+  original: string;
+  modified: string;
+  success: boolean;
+  errors: string[];
 }
 
 export function PatchView() {
@@ -126,39 +142,47 @@ export function PatchView() {
     }
 
     const timer = setTimeout(async () => {
-        const filePatches = parseMultiFilePatch(yamlInput);
-        const newFiles: PatchFileItem[] = await Promise.all(filePatches.map(async (fp) => {
-            const fullPath = `${globalProjectRoot}/${fp.filePath}`;
-            try {
-                const original = await readTextFile(fullPath);
-                const result = applyPatches(original, fp.operations);
-                return { 
-                    id: fullPath, 
-                    path: fp.filePath, 
-                    original, 
-                    modified: result.modified, 
-                    status: result.success ? 'success' : 'error', 
-                    errorMsg: result.success ? undefined : t('patch.failedToMatch', { count: result.errors.length })
-                };
-            } catch (err) {
-                return { 
-                    id: fullPath, 
-                    path: fp.filePath, 
-                    original: '', 
-                    modified: '', 
-                    status: 'error', 
-                    errorMsg: t('patch.fileNotFound') 
-                };
+        try {
+          const response = await invoke<ToolCallResponse>(`${TOOL_RUNTIME_PLUGIN_PREFIX}call_tool`, {
+            request: {
+              name: 'patch.preview_search_replace',
+              arguments: {
+                rootDir: globalProjectRoot,
+                patch: yamlInput,
+              }
             }
-        }));
-        
-        setFiles(newFiles);
-        const firstError = newFiles.find(f => f.status === 'error');
-        if (firstError) {
-          setSelectedFileId(firstError.id);
-        } else if (newFiles.length > 0) {
-          setSelectedFileId(newFiles[0].id);
-        } else {
+          });
+
+          if (response.status !== 'ok') {
+            setFiles([]);
+            setSelectedFileId(null);
+            return;
+          }
+
+          const previewFiles = (response.data?.files || []) as PatchPreviewFile[];
+          const newFiles: PatchFileItem[] = previewFiles.map(file => ({
+            id: file.fullPath || `${globalProjectRoot}/${file.filePath}`,
+            path: file.filePath,
+            original: file.original,
+            modified: file.modified,
+            status: file.success ? 'success' : 'error',
+            errorMsg: file.success
+              ? undefined
+              : (file.errors[0] || t('patch.failedToMatch', { count: Math.max(file.errors?.length ?? 0, 1) }))
+          }));
+
+          setFiles(newFiles);
+          const firstError = newFiles.find(f => f.status === 'error');
+          if (firstError) {
+            setSelectedFileId(firstError.id);
+          } else if (newFiles.length > 0) {
+            setSelectedFileId(newFiles[0].id);
+          } else {
+            setSelectedFileId(null);
+          }
+        } catch (err: any) {
+          console.error(err);
+          setFiles([]);
           setSelectedFileId(null);
         }
     }, 300);
@@ -200,7 +224,26 @@ export function PatchView() {
     const file = confirmDialog.file;
     if (!file) return;
     try {
-        await writeTextFile(file.id, file.modified);
+        if (!globalProjectRoot) {
+          throw new Error('Project root is not selected.');
+        }
+
+        const response = await invoke<ToolCallResponse>(`${TOOL_RUNTIME_PLUGIN_PREFIX}call_tool`, {
+          request: {
+            name: 'patch.apply_file_content',
+            approved: true,
+            arguments: {
+              rootDir: globalProjectRoot,
+              filePath: file.path,
+              content: file.modified
+            }
+          }
+        });
+
+        if (response.status !== 'ok') {
+          throw new Error(response.approvalReason || response.message || 'Save failed');
+        }
+
         showNotification(t('patch.toastSaved'));
         setFiles(prev => prev.map(f => f.id === file.id ? { ...f, original: file.modified, status: 'success', errorMsg: undefined } : f));
         setConfirmDialog({ show: false, file: null });

@@ -4,8 +4,8 @@ use crate::core::scope::normalize_url;
 use crate::core::storage::save_markdown;
 use crate::error::{MinerError, Result};
 use crate::models::{PageResult, SinglePageRequest, SinglePageResult};
-use chrono::Utc;
 use chromiumoxide::Page;
+use chrono::Utc;
 use std::net::IpAddr;
 use std::time::Duration;
 use url::Url;
@@ -103,7 +103,13 @@ pub async fn extract_single_page_with_page(
     let (timeout, timeout_warning) = resolve_timeout(request.timeout_ms);
 
     let page_result = extract_page_with_timeout(page, &normalized_url, timeout).await?;
-    build_single_page_result(page_result, include_links, save_to_disk, request, timeout_warning)
+    build_single_page_result(
+        page_result,
+        include_links,
+        save_to_disk,
+        request,
+        timeout_warning,
+    )
 }
 
 fn build_single_page_result(

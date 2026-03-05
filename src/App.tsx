@@ -105,46 +105,6 @@ function App() {
     });
   }, [restReminder.enabled, restReminder.intervalMinutes]);
 
-  useEffect(() => {
-    const applyMcpStartupSetting = async () => {
-      const { mcpHttpSettings } = useAppStore.getState();
-      try {
-        await invoke('mcp_http_configure', {
-          config: {
-            host: mcpHttpSettings.host,
-            port: mcpHttpSettings.port,
-            token: mcpHttpSettings.token,
-            allowStart: mcpHttpSettings.enabled,
-            restartIfRunning: false
-          }
-        });
-
-        if (!mcpHttpSettings.autoStart) return;
-
-        if (mcpHttpSettings.enabled) {
-          await invoke('mcp_http_start');
-        } else {
-          await invoke('mcp_http_stop');
-        }
-      } catch (e) {
-        console.error('Failed to apply MCP startup setting:', e);
-      }
-    };
-
-    if (useAppStore.persist.hasHydrated()) {
-      applyMcpStartupSetting();
-      return;
-    }
-
-    const unsub = useAppStore.persist.onFinishHydration(() => {
-      applyMcpStartupSetting();
-    });
-
-    return () => {
-      unsub();
-    };
-  }, []);
-
   return (
     <>
       <style>{`
