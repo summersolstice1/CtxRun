@@ -50,3 +50,62 @@ export interface SinglePageExtractResult {
   savedPath?: string | null;
   warnings: string[];
 }
+
+export interface WebSearchRequest {
+  query: string;
+  limit?: number;
+  start?: number;
+  language?: string;
+  country?: string;
+  safeSearch?: boolean;
+  timeoutMs?: number;
+  antiBotMode?: boolean;
+  debug?: boolean;
+}
+
+export interface WebSearchItem {
+  rank: number;
+  title: string;
+  url: string;
+  snippet: string;
+  host: string;
+}
+
+export interface WebSearchDebugItem {
+  title: string;
+  url: string;
+  snippet: string;
+}
+
+export interface WebSearchDebugInfo {
+  enabled: boolean;
+  attemptedEngines: string[];
+  fallbackReason?: string | null;
+  pageUrl?: string | null;
+  readyState?: string | null;
+  resultHeadingCount?: number | null;
+  anchorCount?: number | null;
+  blockedHint?: boolean | null;
+  rawItemsCount: number;
+  filteredItemsCount: number;
+  rawItemsPreview: WebSearchDebugItem[];
+  bodyTextSample?: string | null;
+  searchRootHtmlSample?: string | null;
+  notes: string[];
+}
+
+export interface WebSearchResult {
+  engine: string;
+  query: string;
+  searchUrl: string;
+  start: number;
+  limit: number;
+  totalFound: number;
+  returnedCount: number;
+  blocked: boolean;
+  pageTitle: string;
+  items: WebSearchItem[];
+  searchedAt: string;
+  warnings: string[];
+  debug?: WebSearchDebugInfo;
+}

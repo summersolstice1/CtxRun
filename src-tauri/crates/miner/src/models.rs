@@ -87,3 +87,87 @@ pub struct SinglePageResult {
     pub saved_path: Option<String>,
     pub warnings: Vec<String>,
 }
+
+/// 联网搜索请求参数（Google SERP）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSearchRequest {
+    /// 搜索关键词
+    pub query: String,
+    /// 返回结果数量（1-20，默认 8）
+    pub limit: Option<u32>,
+    /// 起始偏移（0,10,20...）
+    pub start: Option<u32>,
+    /// 语言偏好（如 en, zh-CN）
+    pub language: Option<String>,
+    /// 国家偏好（如 US, CN）
+    pub country: Option<String>,
+    /// 安全搜索
+    pub safe_search: Option<bool>,
+    /// 搜索超时（毫秒）
+    pub timeout_ms: Option<u64>,
+    /// 防风控模式（默认 true）
+    pub anti_bot_mode: Option<bool>,
+    /// 是否返回诊断信息（用于调优 SERP 解析）
+    pub debug: Option<bool>,
+}
+
+/// 单条搜索结果
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSearchItem {
+    pub rank: u32,
+    pub title: String,
+    pub url: String,
+    pub snippet: String,
+    pub host: String,
+}
+
+/// 搜索诊断（仅 debug=true 时返回）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSearchDebugItem {
+    pub title: String,
+    pub url: String,
+    pub snippet: String,
+}
+
+/// 搜索诊断信息（用于定位解析失败、反爬拦截等问题）
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSearchDebugInfo {
+    pub enabled: bool,
+    pub attempted_engines: Vec<String>,
+    pub fallback_reason: Option<String>,
+    pub page_url: Option<String>,
+    pub ready_state: Option<String>,
+    pub result_heading_count: Option<u32>,
+    pub anchor_count: Option<u32>,
+    pub blocked_hint: Option<bool>,
+    pub raw_items_count: u32,
+    pub filtered_items_count: u32,
+    pub raw_items_preview: Vec<WebSearchDebugItem>,
+    pub body_text_sample: Option<String>,
+    pub search_root_html_sample: Option<String>,
+    pub notes: Vec<String>,
+}
+
+/// 搜索结果聚合
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WebSearchResult {
+    pub engine: String,
+    pub query: String,
+    pub search_url: String,
+    pub start: u32,
+    pub limit: u32,
+    pub total_found: u32,
+    pub returned_count: u32,
+    pub blocked: bool,
+    pub page_title: String,
+    pub items: Vec<WebSearchItem>,
+    pub searched_at: String,
+    pub warnings: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub debug: Option<WebSearchDebugInfo>,
+}

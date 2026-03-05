@@ -174,6 +174,72 @@ pub fn is_debug_port_available(port: u16) -> bool {
     .is_ok()
 }
 
+/// Launch a browser with `--remote-debugging-port` for CDP automation.
+///
+/// Notes:
+/// - If the debug port is already available, this function returns immediately.
+/// - This helper intentionally does **not** kill existing browser processes.
+pub fn launch_debug_browser(
+    browser_type: BrowserType,
+    port: u16,
+    url: Option<String>,
+    use_temp_profile: bool,
+) -> Result<()> {
+    use std::process::Command;
+
+    if is_debug_port_available(port) {
+        return Ok(());
+    }
+
+    let exe_path = locate_browser(browser_type).ok_or_else(|| {
+        BrowserUtilsError::Message(format!("Browser {:?} not found", browser_type))
+    })?;
+
+    let mut cmd = Command::new(exe_path);
+    cmd.arg(format!("--remote-debugging-port={}", port));
+    cmd.arg("--no-first-run");
+    cmd.arg("--no-default-browser-check");
+
+    let base_dir = app_chrome_data_dir();
+    if use_temp_profile {
+        cmd.arg(format!(
+            "--user-data-dir={}",
+            base_dir.join("temp").to_string_lossy()
+        ));
+    } else {
+        cmd.arg(format!(
+            "--user-data-dir={}",
+            base_dir.join("persistent").to_string_lossy()
+        ));
+    }
+
+    cmd.arg(url.unwrap_or_else(|| "about:blank".into()));
+
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        const DETACHED_PROCESS: u32 = 0x00000008;
+        cmd.creation_flags(DETACHED_PROCESS);
+    }
+
+    cmd.spawn().map_err(BrowserUtilsError::Io)?;
+
+    for i in 0..10 {
+        std::thread::sleep(Duration::from_millis(500));
+        if is_debug_port_available(port) {
+            return Ok(());
+        }
+        if i == 9 {
+            return Err(BrowserUtilsError::Message(format!(
+                "Browser started but debug port {} is not available after 5 seconds.",
+                port
+            )));
+        }
+    }
+
+    Ok(())
+}
+
 /// Check if a browser process is running.
 pub fn is_browser_running(browser_type: BrowserType) -> bool {
     let name = browser_process_name(browser_type);

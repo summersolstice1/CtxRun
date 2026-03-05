@@ -22,7 +22,7 @@ const DEFAULT_MAX_RUNTIME_MS = 8 * 60 * 1000;
 const MAX_IDENTICAL_TOOL_OUTCOME_STREAK = 4;
 const HARD_MAX_TOOL_ROUNDS = 512;
 const DEFAULT_AGENT_SYSTEM_PROMPT =
-  'You are an assistant with tool access. Call tools when external data is needed, then use tool results to answer. Prefer fs.search_files to locate files, fs.list_directory for structure overview, and fs.read_file for exact content. Keep answers concise and grounded in tool outputs.';
+  'You are an assistant with tool access. Call tools when external data is needed, then use tool results to answer. Prefer web.search to discover online sources, web.extract_page to read page content, fs.search_files to locate files, fs.list_directory for structure overview, and fs.read_file for exact local content. Keep answers concise and grounded in tool outputs.';
 
 function toChatToolDefinition(definition: AgentToolDefinition): ChatToolDefinition {
   return {

@@ -4,8 +4,11 @@ use tauri::{AppHandle, Runtime, State};
 
 use crate::core::queue::run_crawl_task;
 use crate::core::single_page::extract_single_page as run_single_page_extraction;
+use crate::core::web_search::search_web as run_web_search;
 use crate::error::{MinerError, Result};
-use crate::models::{MinerConfig, SinglePageRequest, SinglePageResult};
+use crate::models::{
+    MinerConfig, SinglePageRequest, SinglePageResult, WebSearchRequest, WebSearchResult,
+};
 
 // 维护爬虫的运行状态，以便我们可以通过命令停止它
 pub struct MinerState {
@@ -56,4 +59,9 @@ pub async fn stop_mining(state: State<'_, MinerState>) -> Result<()> {
 #[tauri::command]
 pub async fn extract_single_page(request: SinglePageRequest) -> Result<SinglePageResult> {
     run_single_page_extraction(request).await
+}
+
+#[tauri::command]
+pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
+    run_web_search(request).await
 }

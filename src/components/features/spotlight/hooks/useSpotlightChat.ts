@@ -323,7 +323,7 @@ export function useSpotlightChat() {
         config: freshConfig,
         toolPolicy: {
           mode: 'allowList',
-          toolNames: ['fs.list_directory', 'fs.search_files', 'fs.read_file', 'web.extract_page'],
+          toolNames: ['fs.list_directory', 'fs.search_files', 'fs.read_file', 'web.search', 'web.extract_page'],
         },
         callbacks: {
           onAssistantDelta: (contentDelta) => {

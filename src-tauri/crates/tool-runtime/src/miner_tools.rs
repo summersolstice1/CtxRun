@@ -2,14 +2,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
-use ctxrun_plugin_miner::core::queue::{CrawlEventSink, run_crawl_task_with_sink};
+use ctxrun_plugin_miner::core::queue::{run_crawl_task_with_sink, CrawlEventSink};
 use ctxrun_plugin_miner::core::single_page::extract_single_page;
-use ctxrun_plugin_miner::models::{MinerConfig, MinerEvent, SinglePageRequest};
-use futures::FutureExt;
+use ctxrun_plugin_miner::core::web_search::search_web;
+use ctxrun_plugin_miner::models::{MinerConfig, MinerEvent, SinglePageRequest, WebSearchRequest};
 use futures::future::BoxFuture;
+use futures::FutureExt;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_json::{Value, json};
+use serde_json::{json, Value};
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
@@ -24,6 +25,20 @@ struct ExtractSinglePageArgs {
     include_links: Option<bool>,
     save_to_disk: Option<bool>,
     output_dir: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SearchWebArgs {
+    query: String,
+    limit: Option<u32>,
+    start: Option<u32>,
+    language: Option<String>,
+    country: Option<String>,
+    safe_search: Option<bool>,
+    timeout_ms: Option<u64>,
+    anti_bot_mode: Option<bool>,
+    debug: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -347,6 +362,130 @@ impl ToolHandler for MinerExtractSinglePageTool {
             };
 
             let result = extract_single_page(request)
+                .await
+                .map_err(|err| ToolRuntimeError::Message(err.to_string()))?;
+            serde_json::to_value(result).map_err(Into::into)
+        }
+        .boxed()
+    }
+}
+
+pub(crate) struct MinerSearchWebTool;
+
+impl ToolHandler for MinerSearchWebTool {
+    fn spec(&self) -> ToolSpec {
+        ToolSpec {
+            name: "miner.search_web".to_string(),
+            title: "Search Web".to_string(),
+            description:
+                "Search web in local browser (Google primary, fallback engine when blocked)."
+                    .to_string(),
+            input_schema: json!({
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "Search query keywords." },
+                    "limit": { "type": "integer", "minimum": 1, "maximum": 20, "description": "Maximum number of results to return." },
+                    "start": { "type": "integer", "minimum": 0, "maximum": 200, "description": "Result offset." },
+                    "language": { "type": "string", "description": "Language hint, e.g. en or zh-CN." },
+                    "country": { "type": "string", "description": "Country hint, e.g. US or CN." },
+                    "safeSearch": { "type": "boolean", "description": "Enable safe search." },
+                    "timeoutMs": { "type": "integer", "minimum": 3000, "maximum": 120000, "description": "Search timeout in milliseconds." },
+                    "antiBotMode": { "type": "boolean", "description": "Enable anti-bot mode (external debug browser + persistent profile)." },
+                    "debug": { "type": "boolean", "description": "Include search diagnostics for parser tuning." }
+                },
+                "required": ["query"]
+            }),
+            output_schema: Some(json!({
+                "type": "object",
+                "properties": {
+                    "engine": { "type": "string" },
+                    "query": { "type": "string" },
+                    "searchUrl": { "type": "string" },
+                    "start": { "type": "integer" },
+                    "limit": { "type": "integer" },
+                    "totalFound": { "type": "integer" },
+                    "returnedCount": { "type": "integer" },
+                    "blocked": { "type": "boolean" },
+                    "pageTitle": { "type": "string" },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "rank": { "type": "integer" },
+                                "title": { "type": "string" },
+                                "url": { "type": "string" },
+                                "snippet": { "type": "string" },
+                                "host": { "type": "string" }
+                            },
+                            "required": ["rank", "title", "url", "snippet", "host"]
+                        }
+                    },
+                    "searchedAt": { "type": "string" },
+                    "warnings": { "type": "array", "items": { "type": "string" } },
+                    "debug": {
+                        "type": "object",
+                        "properties": {
+                            "enabled": { "type": "boolean" },
+                            "attemptedEngines": { "type": "array", "items": { "type": "string" } },
+                            "fallbackReason": { "type": "string" },
+                            "pageUrl": { "type": "string" },
+                            "readyState": { "type": "string" },
+                            "resultHeadingCount": { "type": "integer" },
+                            "anchorCount": { "type": "integer" },
+                            "blockedHint": { "type": "boolean" },
+                            "rawItemsCount": { "type": "integer" },
+                            "filteredItemsCount": { "type": "integer" },
+                            "rawItemsPreview": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "title": { "type": "string" },
+                                        "url": { "type": "string" },
+                                        "snippet": { "type": "string" }
+                                    },
+                                    "required": ["title", "url", "snippet"]
+                                }
+                            },
+                            "bodyTextSample": { "type": "string" },
+                            "searchRootHtmlSample": { "type": "string" },
+                            "notes": { "type": "array", "items": { "type": "string" } }
+                        },
+                        "required": ["enabled", "attemptedEngines", "rawItemsCount", "filteredItemsCount", "rawItemsPreview", "notes"]
+                    }
+                },
+                "required": ["engine", "query", "searchUrl", "start", "limit", "totalFound", "returnedCount", "blocked", "pageTitle", "items", "searchedAt", "warnings"]
+            })),
+            annotations: ToolAnnotations {
+                title: Some("Search Web".to_string()),
+                read_only_hint: true,
+                destructive_hint: false,
+                idempotent_hint: true,
+                open_world_hint: true,
+            },
+        }
+    }
+
+    fn call<'a>(
+        &'a self,
+        arguments: Value,
+        _context: ToolExecutionContext,
+    ) -> BoxFuture<'a, Result<Value, ToolRuntimeError>> {
+        async move {
+            let args: SearchWebArgs = serde_json::from_value(arguments)?;
+            let request = WebSearchRequest {
+                query: args.query,
+                limit: args.limit,
+                start: args.start,
+                language: args.language,
+                country: args.country,
+                safe_search: args.safe_search,
+                timeout_ms: args.timeout_ms,
+                anti_bot_mode: args.anti_bot_mode,
+                debug: args.debug,
+            };
+            let result = search_web(request)
                 .await
                 .map_err(|err| ToolRuntimeError::Message(err.to_string()))?;
             serde_json::to_value(result).map_err(Into::into)

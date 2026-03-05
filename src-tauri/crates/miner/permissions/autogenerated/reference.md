@@ -36,6 +36,32 @@ Denies the extract_single_page command without any pre-configured scope.
 <tr>
 <td>
 
+`ctxrun-plugin-miner:allow-search-web`
+
+</td>
+<td>
+
+Enables the search_web command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-miner:deny-search-web`
+
+</td>
+<td>
+
+Denies the search_web command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-miner:allow-start-mining`
 
 </td>

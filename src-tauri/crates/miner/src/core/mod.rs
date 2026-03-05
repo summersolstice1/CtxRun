@@ -6,3 +6,4 @@ pub mod queue;
 pub mod scope;
 pub mod single_page;
 pub mod storage;
+pub mod web_search;

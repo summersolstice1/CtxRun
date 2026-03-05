@@ -6,16 +6,15 @@
 use std::time::Duration;
 
 use chromiumoxide::{
-    Browser, Element, Page,
     cdp::browser_protocol::{
         input::{DispatchKeyEventParams, DispatchKeyEventType},
         target::{ActivateTargetParams, TargetId, TargetInfo},
     },
     keys::{self, KeyDefinition},
+    Browser, Element, Page,
 };
 use ctxrun_browser_utils::{
-    BrowserType as UtilsBrowserType, app_chrome_data_dir, is_browser_running,
-    is_debug_port_available, kill_browser_processes, locate_browser,
+    launch_debug_browser as launch_debug_browser_shared, BrowserType as UtilsBrowserType,
 };
 use futures::StreamExt;
 use regex::Regex;
@@ -1461,65 +1460,11 @@ pub fn launch_debug_browser(
     url: Option<String>,
     use_temp_profile: bool,
 ) -> Result<()> {
-    use std::process::Command;
-
-    if is_debug_port_available(DEFAULT_DEBUG_PORT) {
-        return Ok(());
-    }
-
     let target = if is_edge {
         UtilsBrowserType::Edge
     } else {
         UtilsBrowserType::Chrome
     };
-    let exe_path = locate_browser(target)
-        .ok_or_else(|| AutomatorError::BrowserError(format!("Browser {:?} not found", target)))?;
-
-    if is_browser_running(target) {
-        kill_browser_processes(target)?;
-    }
-
-    let mut cmd = Command::new(exe_path);
-    cmd.arg(format!("--remote-debugging-port={}", DEFAULT_DEBUG_PORT));
-    cmd.arg("--no-first-run");
-    cmd.arg("--no-default-browser-check");
-
-    let base_dir = app_chrome_data_dir();
-    if use_temp_profile {
-        cmd.arg(format!(
-            "--user-data-dir={}",
-            base_dir.join("temp").to_string_lossy()
-        ));
-    } else {
-        cmd.arg(format!(
-            "--user-data-dir={}",
-            base_dir.join("persistent").to_string_lossy()
-        ));
-    }
-
-    cmd.arg(url.unwrap_or_else(|| "about:blank".into()));
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        cmd.creation_flags(DETACHED_PROCESS);
-    }
-
-    cmd.spawn()
-        .map_err(|e| AutomatorError::BrowserError(format!("Failed to launch browser: {}", e)))?;
-
-    for i in 0..10 {
-        std::thread::sleep(Duration::from_millis(500));
-        if is_debug_port_available(DEFAULT_DEBUG_PORT) {
-            return Ok(());
-        }
-        if i == 9 {
-            return Err(AutomatorError::BrowserError(
-                "Browser started but debug port is not available after 5 seconds. This may be a Chrome profile lock issue.".into(),
-            ));
-        }
-    }
-
-    Ok(())
+    launch_debug_browser_shared(target, DEFAULT_DEBUG_PORT, url, use_temp_profile)
+        .map_err(|err| AutomatorError::BrowserError(err.to_string()))
 }

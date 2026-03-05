@@ -13,7 +13,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
         .invoke_handler(tauri::generate_handler![
             commands::start_mining,
             commands::stop_mining,
-            commands::extract_single_page
+            commands::extract_single_page,
+            commands::search_web
         ])
         .setup(|app, _api| {
             // 注册全局状态

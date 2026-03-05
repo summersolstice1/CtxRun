@@ -6,8 +6,8 @@ use serde_json::Value;
 
 use crate::fs_tools::{FsGrepFilesTool, FsListDirTool, FsReadFileTool};
 use crate::miner_tools::{
-    CrawlManager, MinerExtractSinglePageTool, MinerGetCrawlStatusTool, MinerStartCrawlTool,
-    MinerStopCrawlTool,
+    CrawlManager, MinerExtractSinglePageTool, MinerGetCrawlStatusTool, MinerSearchWebTool,
+    MinerStartCrawlTool, MinerStopCrawlTool,
 };
 use crate::models::{ToolAnnotations, ToolCallRequest, ToolCallResponse, ToolSpec};
 use crate::patch_tools::{PatchApplyFileTool, PatchPreviewTool};
@@ -202,6 +202,7 @@ impl ToolRuntime {
         registry.register(FsGrepFilesTool::new("fs.search_files", "Search Files"));
 
         registry.register(MinerExtractSinglePageTool);
+        registry.register(MinerSearchWebTool);
         registry.register(MinerStartCrawlTool::new(crawl_manager.clone()));
         registry.register(MinerGetCrawlStatusTool::new(crawl_manager.clone()));
         registry.register(MinerStopCrawlTool::new(crawl_manager));
