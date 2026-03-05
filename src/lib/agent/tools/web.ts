@@ -188,18 +188,39 @@ function buildSearchDebugLines(result: WebSearchResult): string[] {
 function buildSearchOutput(result: WebSearchResult): AgentToolExecutionResult {
   const warnings = (result.warnings ?? []).filter((warning) => warning.trim().length > 0);
   const debugLines = buildSearchDebugLines(result);
+  const requiresGoogleVerification =
+    result.requiresHumanVerification === true &&
+    (result.verificationEngine ?? '').toLowerCase() === 'google';
+  const verificationUrl = (result.verificationUrl ?? '').trim();
 
-  const header = result.blocked
+  const header = requiresGoogleVerification
+    ? (
+      result.items && result.items.length > 0
+        ? `Google requires human verification. Returning ${result.engine} results for "${result.query}" while waiting for verification.`
+        : `Google requires human verification for "${result.query}".`
+    )
+    : result.blocked
     ? `${result.engine} search was blocked by consent/captcha verification. Please provide a direct URL, or retry later.`
     : (!result.items || result.items.length === 0)
       ? `No web results found for query "${result.query}".`
       : `${result.engine} search found ${result.returnedCount} results for "${result.query}".`;
+
+  const verificationLines =
+    requiresGoogleVerification && verificationUrl
+      ? [`[verify] Open and complete Google verification: ${verificationUrl}`, '[verify] Search result will be returned after verification completes.']
+      : [];
 
   const previewLines = (result.items ?? [])
     .slice(0, 5)
     .map((item) => `${item.rank}. ${item.title} - ${item.url}${item.snippet ? ` | ${compactSingleLine(item.snippet, 160)}` : ''}`);
 
   const mergedWarnings = [...warnings];
+  if (requiresGoogleVerification) {
+    mergedWarnings.push('google human verification required');
+    if (verificationUrl) {
+      mergedWarnings.push(`verify at ${verificationUrl}`);
+    }
+  }
   if (result.blocked) {
     mergedWarnings.push(`${result.engine} search blocked by consent/captcha`);
   } else if (!result.items || result.items.length === 0) {
@@ -210,7 +231,7 @@ function buildSearchOutput(result: WebSearchResult): AgentToolExecutionResult {
 
   return {
     ok: true,
-    text: [header, ...previewLines, ...debugLines].join('\n'),
+    text: [header, ...verificationLines, ...previewLines, ...debugLines].join('\n'),
     structured: result as unknown as Record<string, unknown>,
     warnings: mergedWarnings.length > 0 ? mergedWarnings : undefined,
   };
@@ -221,7 +242,7 @@ export function registerWebTools(registry: AgentToolRegistry): void {
     definition: {
       name: 'web.search',
       description:
-        'Search the web in a local browser (Google primary, fallback engine when blocked) and return ranked results.',
+        'Search the web in a local browser (Google + Bing in parallel) and return ranked results with verification hints.',
       inputSchema: {
         type: 'object',
         properties: {

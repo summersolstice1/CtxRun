@@ -32,6 +32,8 @@ const SERP_READY_POLL_MS: u64 = 180;
 const SERP_READY_MAX_POLLS: u32 = 30;
 const ANTI_BOT_PRE_NAV_DELAY_MS: u64 = 420;
 const ANTI_BOT_POST_NAV_DELAY_MS: u64 = 620;
+const HUMAN_VERIFICATION_POLL_MS: u64 = 900;
+const HUMAN_VERIFICATION_MAX_POLLS: u32 = 300;
 const DEBUG_SAMPLE_TEXT_CHARS: usize = 800;
 const DEBUG_SAMPLE_HTML_CHARS: usize = 2_000;
 const DEBUG_ITEMS_PREVIEW_LIMIT: usize = 10;
@@ -341,6 +343,13 @@ fn build_debug_info(
     })
 }
 
+fn push_unique_warning(warnings: &mut Vec<String>, message: impl Into<String>) {
+    let message = message.into();
+    if !warnings.iter().any(|existing| existing == &message) {
+        warnings.push(message);
+    }
+}
+
 async fn apply_search_anti_bot_patches(page: &Page) -> Vec<String> {
     let mut notes = Vec::new();
 
@@ -568,6 +577,48 @@ async fn apply_google_consent_cookie(page: &Page) -> Option<String> {
     }
 }
 
+async fn is_google_verification_cleared(page: &Page) -> Result<bool> {
+    let evaluation_result = page.evaluate(SEARCH_EXTRACT_SCRIPT).await.map_err(|err| {
+        MinerError::BrowserError(format!(
+            "Google verification check script execution failed: {err}"
+        ))
+    })?;
+    let raw_payload: String = evaluation_result.into_value().map_err(|err| {
+        MinerError::ExtractionError(format!(
+            "Expected JSON string from Google verification check script: {err}"
+        ))
+    })?;
+    let parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
+        MinerError::SystemError(format!(
+            "Failed to parse Google verification check payload: {err}"
+        ))
+    })?;
+    if let Some(error) = parsed_payload.error {
+        let stack = parsed_payload.stack.unwrap_or_default();
+        let detail = if stack.trim().is_empty() {
+            error
+        } else {
+            format!("{error}\n{stack}")
+        };
+        return Err(MinerError::ExtractionError(detail));
+    }
+
+    Ok(!parsed_payload.blocked.unwrap_or(false))
+}
+
+async fn wait_for_google_human_verification(page: &Page) -> Result<()> {
+    for _ in 0..HUMAN_VERIFICATION_MAX_POLLS {
+        if is_google_verification_cleared(page).await? {
+            return Ok(());
+        }
+        sleep(Duration::from_millis(HUMAN_VERIFICATION_POLL_MS)).await;
+    }
+
+    Err(MinerError::BrowserError(
+        "Google human verification was not completed in time.".to_string(),
+    ))
+}
+
 fn normalize_result_url(raw: &str) -> Option<String> {
     let parsed = Url::parse(raw).ok()?;
     if parsed.scheme() != "http" && parsed.scheme() != "https" {
@@ -695,6 +746,9 @@ async fn run_google_search(
         items,
         searched_at: Utc::now().to_rfc3339(),
         warnings,
+        requires_human_verification: None,
+        verification_engine: None,
+        verification_url: None,
         debug: build_debug_info(
             request,
             "google",
@@ -814,6 +868,9 @@ async fn run_bing_search(
         items,
         searched_at: Utc::now().to_rfc3339(),
         warnings,
+        requires_human_verification: None,
+        verification_engine: None,
+        verification_url: None,
         debug: build_debug_info(
             request,
             "bing",
@@ -832,27 +889,161 @@ pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
     let normalized = normalize_request(request)?;
     let timeout = normalized.timeout;
     let search_url = normalized.search_url.clone();
+    let anti_bot_mode = normalized.anti_bot_mode;
 
     let mut driver = MinerDriver::new_for_search(normalized.anti_bot_mode).await?;
-    let search_result = tokio::time::timeout(timeout, async {
-        let page = driver.new_page().await?;
-        let stealth_notes = if normalized.anti_bot_mode {
-            apply_search_anti_bot_patches(&page).await
-        } else {
-            Vec::new()
-        };
-        let consent_warning = apply_google_consent_cookie(&page).await;
-        let google_result = run_google_search(&page, &normalized).await;
+    let timed = tokio::time::timeout(timeout, async {
+        let google_page = driver.new_page().await?;
+        let bing_page = driver.new_page().await?;
 
-        match google_result {
-            Ok(mut result) => {
+        let mut stealth_notes = Vec::new();
+        if normalized.anti_bot_mode {
+            for note in apply_search_anti_bot_patches(&google_page).await {
+                stealth_notes.push(format!("google: {note}"));
+            }
+            for note in apply_search_anti_bot_patches(&bing_page).await {
+                stealth_notes.push(format!("bing: {note}"));
+            }
+        }
+
+        let consent_warning = apply_google_consent_cookie(&google_page).await;
+        let (google_result, bing_result) = tokio::join!(
+            run_google_search(&google_page, &normalized),
+            run_bing_search(&bing_page, &normalized)
+        );
+
+        match (google_result, bing_result) {
+            (Ok(google), Ok(bing)) => {
+                let google_blocked = google.blocked;
+                let google_returned_count = google.returned_count;
+                let google_summary = format!(
+                    "Google summary: blocked={}, returnedCount={}, totalFound={}.",
+                    google.blocked, google.returned_count, google.total_found
+                );
+                let bing_summary = format!(
+                    "Bing summary: blocked={}, returnedCount={}, totalFound={}.",
+                    bing.blocked, bing.returned_count, bing.total_found
+                );
+
+                let google_usable = !google.blocked && google.returned_count > 0;
+                let bing_usable = !bing.blocked && bing.returned_count > 0;
+
+                if google_blocked && normalized.anti_bot_mode {
+                    wait_for_google_human_verification(&google_page).await?;
+                    let mut verified_google = run_google_search(&google_page, &normalized).await?;
+
+                    if normalized.anti_bot_mode {
+                        push_unique_warning(
+                            &mut verified_google.warnings,
+                            "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
+                        );
+                    }
+                    if let Some(warning) = consent_warning.as_ref() {
+                        push_unique_warning(&mut verified_google.warnings, warning.clone());
+                    }
+                    push_unique_warning(
+                        &mut verified_google.warnings,
+                        "Google human verification completed; returning Google results.",
+                    );
+                    if bing.returned_count > 0 {
+                        push_unique_warning(
+                            &mut verified_google.warnings,
+                            "Bing parallel results were ignored after Google verification succeeded.",
+                        );
+                    }
+
+                    if let Some(debug) = verified_google.debug.as_mut() {
+                        debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
+                        debug.fallback_reason =
+                            Some("google_blocked_wait_manual_verification".to_string());
+                        debug
+                            .notes
+                            .push("Parallel execution mode enabled (Google + Bing).".to_string());
+                        debug.notes.push(google_summary);
+                        debug.notes.push(bing_summary);
+                        debug
+                            .notes
+                            .push("Google was blocked initially; waited for manual verification.".to_string());
+                        debug
+                            .notes
+                            .push("Manual verification completed; reran Google extraction.".to_string());
+                        if consent_warning.is_some() {
+                            debug
+                                .notes
+                                .push("Google CONSENT cookie injection failed.".to_string());
+                        }
+                        for note in &stealth_notes {
+                            debug.notes.push(note.clone());
+                        }
+                    }
+
+                    return Ok((verified_google, false));
+                }
+
+                let (mut selected, fallback_reason) = if google_usable {
+                    (google, None)
+                } else if bing_usable {
+                    (
+                        bing,
+                        Some(if google.blocked {
+                            "google_blocked_parallel".to_string()
+                        } else {
+                            "google_empty_results_parallel".to_string()
+                        }),
+                    )
+                } else if google.returned_count >= bing.returned_count {
+                    (
+                        google,
+                        Some("parallel_no_clear_winner_google".to_string()),
+                    )
+                } else {
+                    (bing, Some("parallel_no_clear_winner_bing".to_string()))
+                };
+
                 if normalized.anti_bot_mode {
-                    result.warnings.push(
-                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches)."
-                            .to_string(),
+                    push_unique_warning(
+                        &mut selected.warnings,
+                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
                     );
                 }
-                if let Some(debug) = result.debug.as_mut() {
+                if let Some(warning) = consent_warning.as_ref() {
+                    push_unique_warning(&mut selected.warnings, warning.clone());
+                }
+
+                if selected.engine == "bing" && (google_blocked || google_returned_count == 0) {
+                    push_unique_warning(
+                        &mut selected.warnings,
+                        "Google results were unavailable, returned Bing results from parallel search.",
+                    );
+                }
+
+                if google_blocked {
+                    push_unique_warning(
+                        &mut selected.warnings,
+                        "Google triggered consent/captcha verification for this request.",
+                    );
+                    if normalized.anti_bot_mode {
+                        push_unique_warning(
+                            &mut selected.warnings,
+                            "Please complete Google human verification in the opened Chrome window, then retry.",
+                        );
+                    } else {
+                        push_unique_warning(
+                            &mut selected.warnings,
+                            "Enable antiBotMode=true to allow manual Google verification in a visible browser window.",
+                        );
+                    }
+                    selected.requires_human_verification = Some(true);
+                    selected.verification_engine = Some("google".to_string());
+                    selected.verification_url = Some(normalized.search_url.clone());
+                }
+
+                if let Some(debug) = selected.debug.as_mut() {
+                    debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
+                    debug.fallback_reason = fallback_reason;
+                    debug.notes.push("Parallel execution mode enabled (Google + Bing).".to_string());
+                    debug.notes.push(google_summary);
+                    debug.notes.push(bing_summary);
                     debug.notes.push(format!(
                         "Anti-bot mode: {}",
                         if normalized.anti_bot_mode {
@@ -861,130 +1052,198 @@ pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
                             "disabled"
                         }
                     ));
-                    for note in &stealth_notes {
-                        debug.notes.push(note.clone());
+                    if google_blocked {
+                        debug
+                            .notes
+                            .push("Google blocked hint detected; human verification required.".to_string());
                     }
-                }
-                if let Some(warning) = consent_warning {
-                    result.warnings.push(warning);
-                    if let Some(debug) = result.debug.as_mut() {
+                    if consent_warning.is_some() {
                         debug
                             .notes
                             .push("Google CONSENT cookie injection failed.".to_string());
                     }
-                }
-                if result.blocked || result.returned_count == 0 {
-                    let fallback_reason = if result.blocked {
-                        "google_blocked".to_string()
-                    } else {
-                        "google_empty_results".to_string()
-                    };
-                    match run_bing_search(&page, &normalized).await {
-                        Ok(mut fallback) => {
-                            if normalized.anti_bot_mode {
-                                fallback.warnings.push(
-                                    "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches)."
-                                        .to_string(),
-                                );
-                            }
-                            fallback.warnings.push(
-                                "Google results were unavailable, fallback engine Bing was used."
-                                    .to_string(),
-                            );
-                            if let Some(warning) = result.warnings.first() {
-                                fallback.warnings.push(warning.clone());
-                            }
-                            if let Some(debug) = fallback.debug.as_mut() {
-                                debug.attempted_engines =
-                                    vec!["google".to_string(), "bing".to_string()];
-                                debug.fallback_reason = Some(fallback_reason);
-                                debug.notes.push(format!(
-                                    "Google summary: blocked={}, returnedCount={}, totalFound={}.",
-                                    result.blocked, result.returned_count, result.total_found
-                                ));
-                                if let Some(google_debug) = result.debug.as_ref() {
-                                    debug.notes.push(format!(
-                                        "Google debug stats: rawItems={}, filteredItems={}.",
-                                        google_debug.raw_items_count,
-                                        google_debug.filtered_items_count
-                                    ));
-                                    if let Some(page_url) = google_debug.page_url.as_ref() {
-                                        debug.notes.push(format!("Google pageUrl: {page_url}"));
-                                    }
-                                }
-                                for note in &stealth_notes {
-                                    debug.notes.push(note.clone());
-                                }
-                            }
-                            Ok(fallback)
-                        }
-                        Err(bing_error) => {
-                            result
-                                .warnings
-                                .push(format!("Bing fallback failed: {bing_error}"));
-                            if let Some(debug) = result.debug.as_mut() {
-                                debug.attempted_engines =
-                                    vec!["google".to_string(), "bing".to_string()];
-                                debug.fallback_reason =
-                                    Some("google_unavailable_bing_failed".to_string());
-                                debug
-                                    .notes
-                                    .push(format!("Bing fallback failed: {bing_error}"));
-                            }
-                            Ok(result)
-                        }
+                    for note in &stealth_notes {
+                        debug.notes.push(note.clone());
                     }
-                } else {
-                    if let Some(debug) = result.debug.as_mut() {
-                        debug.attempted_engines = vec!["google".to_string()];
-                    }
-                    Ok(result)
                 }
+
+                Ok((selected, google_blocked && normalized.anti_bot_mode))
             }
-            Err(google_error) => match run_bing_search(&page, &normalized).await {
-                Ok(mut fallback) => {
+            (Ok(mut google), Err(bing_error)) => {
+                let google_blocked = google.blocked;
+                if google_blocked && normalized.anti_bot_mode {
+                    wait_for_google_human_verification(&google_page).await?;
+                    let mut verified_google = run_google_search(&google_page, &normalized).await?;
+
                     if normalized.anti_bot_mode {
-                        fallback.warnings.push(
-                            "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches)."
-                                .to_string(),
+                        push_unique_warning(
+                            &mut verified_google.warnings,
+                            "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
                         );
                     }
-                    fallback
-                        .warnings
-                        .push("Google search failed, fallback engine Bing was used.".to_string());
-                    fallback
-                        .warnings
-                        .push(format!("Google error: {google_error}"));
-                    if let Some(warning) = consent_warning {
-                        fallback.warnings.push(warning);
+                    if let Some(warning) = consent_warning.as_ref() {
+                        push_unique_warning(&mut verified_google.warnings, warning.clone());
                     }
-                    if let Some(debug) = fallback.debug.as_mut() {
+                    push_unique_warning(
+                        &mut verified_google.warnings,
+                        "Google human verification completed; returning Google results.",
+                    );
+                    push_unique_warning(
+                        &mut verified_google.warnings,
+                        format!("Bing parallel search failed: {bing_error}"),
+                    );
+
+                    if let Some(debug) = verified_google.debug.as_mut() {
                         debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
-                        debug.fallback_reason = Some("google_error".to_string());
+                        debug.fallback_reason =
+                            Some("google_blocked_wait_manual_verification_bing_error".to_string());
                         debug
                             .notes
-                            .push(format!("Google search raised error: {google_error}"));
+                            .push("Parallel execution mode enabled (Google + Bing).".to_string());
+                        debug
+                            .notes
+                            .push("Google was blocked initially; waited for manual verification.".to_string());
+                        debug
+                            .notes
+                            .push("Manual verification completed; reran Google extraction.".to_string());
+                        debug
+                            .notes
+                            .push(format!("Bing parallel search failed: {bing_error}"));
+                        if consent_warning.is_some() {
+                            debug
+                                .notes
+                                .push("Google CONSENT cookie injection failed.".to_string());
+                        }
                         for note in &stealth_notes {
                             debug.notes.push(note.clone());
                         }
                     }
-                    Ok(fallback)
+
+                    return Ok((verified_google, false));
                 }
-                Err(bing_error) => Err(MinerError::BrowserError(format!(
-                    "Google search failed: {google_error}; Bing fallback failed: {bing_error}"
-                ))),
-            },
+
+                if normalized.anti_bot_mode {
+                    push_unique_warning(
+                        &mut google.warnings,
+                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
+                    );
+                }
+                if let Some(warning) = consent_warning.as_ref() {
+                    push_unique_warning(&mut google.warnings, warning.clone());
+                }
+                push_unique_warning(
+                    &mut google.warnings,
+                    format!("Bing parallel search failed: {bing_error}"),
+                );
+
+                if google_blocked {
+                    push_unique_warning(
+                        &mut google.warnings,
+                        "Google triggered consent/captcha verification for this request.",
+                    );
+                    if normalized.anti_bot_mode {
+                        push_unique_warning(
+                            &mut google.warnings,
+                            "Please complete Google human verification in the opened Chrome window, then retry.",
+                        );
+                    } else {
+                        push_unique_warning(
+                            &mut google.warnings,
+                            "Enable antiBotMode=true to allow manual Google verification in a visible browser window.",
+                        );
+                    }
+                    google.requires_human_verification = Some(true);
+                    google.verification_engine = Some("google".to_string());
+                    google.verification_url = Some(normalized.search_url.clone());
+                }
+
+                if let Some(debug) = google.debug.as_mut() {
+                    debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
+                    debug.fallback_reason = Some("bing_error_parallel".to_string());
+                    debug
+                        .notes
+                        .push("Parallel execution mode enabled (Google + Bing).".to_string());
+                    debug
+                        .notes
+                        .push(format!("Bing parallel search failed: {bing_error}"));
+                    if consent_warning.is_some() {
+                        debug
+                            .notes
+                            .push("Google CONSENT cookie injection failed.".to_string());
+                    }
+                    for note in &stealth_notes {
+                        debug.notes.push(note.clone());
+                    }
+                }
+
+                Ok((google, google_blocked && normalized.anti_bot_mode))
+            }
+            (Err(google_error), Ok(mut bing)) => {
+                if normalized.anti_bot_mode {
+                    push_unique_warning(
+                        &mut bing.warnings,
+                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
+                    );
+                }
+                if let Some(warning) = consent_warning.as_ref() {
+                    push_unique_warning(&mut bing.warnings, warning.clone());
+                }
+                push_unique_warning(
+                    &mut bing.warnings,
+                    "Google search failed, returned Bing results from parallel search.",
+                );
+                push_unique_warning(
+                    &mut bing.warnings,
+                    format!("Google error: {google_error}"),
+                );
+
+                if let Some(debug) = bing.debug.as_mut() {
+                    debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
+                    debug.fallback_reason = Some("google_error_parallel".to_string());
+                    debug
+                        .notes
+                        .push("Parallel execution mode enabled (Google + Bing).".to_string());
+                    debug
+                        .notes
+                        .push(format!("Google parallel search failed: {google_error}"));
+                    if consent_warning.is_some() {
+                        debug
+                            .notes
+                            .push("Google CONSENT cookie injection failed.".to_string());
+                    }
+                    for note in &stealth_notes {
+                        debug.notes.push(note.clone());
+                    }
+                }
+
+                Ok((bing, false))
+            }
+            (Err(google_error), Err(bing_error)) => Err(MinerError::BrowserError(format!(
+                "Parallel web search failed. Google error: {google_error}; Bing error: {bing_error}"
+            ))),
         }
     })
-    .await
-    .map_err(|_| {
-        MinerError::BrowserError(format!(
-            "Web search timed out after {}s: {}",
-            timeout.as_secs(),
-            search_url
-        ))
-    })?;
+    .await;
 
-    driver.shutdown().await;
-    search_result
+    let (search_result, keep_browser_open) = match timed {
+        Ok(Ok(outcome)) => outcome,
+        Ok(Err(error)) => {
+            driver.shutdown().await;
+            return Err(error);
+        }
+        Err(_) => {
+            driver.shutdown().await;
+            return Err(MinerError::BrowserError(format!(
+                "Web search timed out after {}s: {}",
+                timeout.as_secs(),
+                search_url
+            )));
+        }
+    };
+
+    if !(keep_browser_open && anti_bot_mode) {
+        driver.shutdown().await;
+    }
+
+    Ok(search_result)
 }

@@ -107,5 +107,8 @@ export interface WebSearchResult {
   items: WebSearchItem[];
   searchedAt: string;
   warnings: string[];
+  requiresHumanVerification?: boolean;
+  verificationEngine?: string;
+  verificationUrl?: string;
   debug?: WebSearchDebugInfo;
 }

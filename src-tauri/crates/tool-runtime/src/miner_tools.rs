@@ -378,7 +378,7 @@ impl ToolHandler for MinerSearchWebTool {
             name: "miner.search_web".to_string(),
             title: "Search Web".to_string(),
             description:
-                "Search web in local browser (Google primary, fallback engine when blocked)."
+                "Search web in local browser (Google + Bing in parallel, with Google human-verification hints)."
                     .to_string(),
             input_schema: json!({
                 "type": "object",
@@ -423,6 +423,9 @@ impl ToolHandler for MinerSearchWebTool {
                     },
                     "searchedAt": { "type": "string" },
                     "warnings": { "type": "array", "items": { "type": "string" } },
+                    "requiresHumanVerification": { "type": "boolean" },
+                    "verificationEngine": { "type": "string" },
+                    "verificationUrl": { "type": "string" },
                     "debug": {
                         "type": "object",
                         "properties": {

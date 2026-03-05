@@ -169,5 +169,11 @@ pub struct WebSearchResult {
     pub searched_at: String,
     pub warnings: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub requires_human_verification: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verification_engine: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verification_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub debug: Option<WebSearchDebugInfo>,
 }

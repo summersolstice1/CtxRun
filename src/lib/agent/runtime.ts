@@ -108,6 +108,21 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutErrorMess
   });
 }
 
+function buildToolNotFoundMessage(name: string, registry: AgentToolRegistry): string {
+  const availableTools = registry
+    .listDefinitions()
+    .map((tool) => tool.name)
+    .sort();
+  const scopedSuggestions = !name.includes('.')
+    ? availableTools.filter((toolName) => toolName.startsWith(`${name}.`)).slice(0, 4)
+    : [];
+  const base = `Tool "${name}" not found. Use an exact tool name. Available tools: ${availableTools.join(', ')}.`;
+  if (scopedSuggestions.length === 0) {
+    return base;
+  }
+  return `${base} Did you mean: ${scopedSuggestions.join(', ')}?`;
+}
+
 function buildToolInfo(callId: string, name: string, argumentsRaw: string, argsParsed: unknown): AgentToolCallInfo {
   return {
     id: callId,
@@ -245,27 +260,35 @@ async function executeToolCall(
     };
   }
 
-  const info = buildToolInfo(callId, name, argumentsRaw, parsedArgs);
+  const normalizedName = name.trim();
+  const info = buildToolInfo(callId, normalizedName, argumentsRaw, parsedArgs);
   onStart?.(info);
 
-  if (!isToolAllowed(name, toolPolicy)) {
-    return {
-      info,
-      result: {
-        ok: false,
-        error: `Tool "${name}" is blocked by tool policy.`,
-      },
-    };
-  }
-
-  const definition = registry.getDefinition(name);
-  const handler = registry.getHandler(name);
+  const definition = registry.getDefinition(normalizedName);
+  const handler = registry.getHandler(normalizedName);
   if (!definition || !handler) {
     return {
       info,
       result: {
         ok: false,
-        error: `Tool "${name}" not found.`,
+        error: buildToolNotFoundMessage(normalizedName || name, registry),
+      },
+    };
+  }
+
+  if (!isToolAllowed(normalizedName, toolPolicy)) {
+    const allowedTools = registry
+      .listDefinitions()
+      .map((tool) => tool.name)
+      .filter((toolName) => isToolAllowed(toolName, toolPolicy));
+    const allowedHint = allowedTools.length > 0
+      ? ` Allowed tools: ${allowedTools.join(', ')}.`
+      : '';
+    return {
+      info,
+      result: {
+        ok: false,
+        error: `Tool "${normalizedName}" is blocked by tool policy.${allowedHint}`,
       },
     };
   }
@@ -275,7 +298,7 @@ async function executeToolCall(
     const result = await withTimeout(
       handler(parsedArgs, { sessionId, callId }),
       timeoutMs,
-      `Tool "${name}" timed out after ${timeoutMs}ms.`
+      `Tool "${normalizedName}" timed out after ${timeoutMs}ms.`
     );
     return { info, result };
   } catch (error) {
