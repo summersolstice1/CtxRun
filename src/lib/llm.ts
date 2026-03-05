@@ -6,6 +6,19 @@ export interface ChatMessage {
   content: string;
   reasoning?: string;
   attachments?: ChatMessageAttachment[];
+  toolCalls?: ChatToolCallTrace[];
+}
+
+export interface ChatToolCallTrace {
+  id: string;
+  name: string;
+  status: 'running' | 'success' | 'error';
+  argumentsPreview?: string;
+  resultPreview?: string;
+  warnings?: string[];
+  startedAt: number;
+  finishedAt?: number;
+  durationMs?: number;
 }
 
 export type ChatMessageContent = string | ChatContentPart[];

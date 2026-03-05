@@ -487,7 +487,15 @@ const translations = {
       attachmentMoreErrors: "And {count} more attachment errors.",
       attachFolder: "Attach folder",
       folderImportSummary: "Folder import filtered: kept {accepted}, ignored-dir {excluded}, depth>{maxDepth} {tooDeep}, over scan cap {scanCap} {capped}.",
-      latest: "Latest"
+      latest: "Latest",
+      toolCalls: "Tool Calls",
+      toolRunning: "Running",
+      toolCompleted: "Completed",
+      toolFailed: "Failed",
+      toolArgs: "Arguments",
+      toolOutput: "Output",
+      toolNoOutput: "No text output.",
+      toolWarnings: "Warnings"
     },
     actions: {
       collapse: "Collapse Sidebar",
@@ -1152,7 +1160,15 @@ const translations = {
       attachmentMoreErrors: "另有 {count} 条附件错误。",
       attachFolder: "添加文件夹",
       folderImportSummary: "文件夹导入已过滤：保留 {accepted} 个，忽略目录过滤 {excluded} 个，超过深度 {maxDepth} 的 {tooDeep} 个，超过扫描上限 {scanCap} 的 {capped} 个。",
-      latest: "最新"
+      latest: "最新",
+      toolCalls: "工具调用",
+      toolRunning: "执行中",
+      toolCompleted: "已完成",
+      toolFailed: "失败",
+      toolArgs: "参数",
+      toolOutput: "输出",
+      toolNoOutput: "无文本输出。",
+      toolWarnings: "警告"
     },
     actions: {
       collapse: "收起侧栏",

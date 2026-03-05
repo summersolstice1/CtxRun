@@ -1,10 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage } from '@/lib/llm';
+import { ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage, ChatToolCallTrace } from '@/lib/llm';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from '../core/SpotlightContext';
 import { assembleChatPrompt } from '@/lib/template';
 import { ChatAttachment } from '@/types/spotlight';
 import { runDefaultAgentTurn } from '@/lib/agent';
+import type { AgentToolCallInfo, AgentToolExecutionResult } from '@/lib/agent/types';
 
 // 节流配置
 const THROTTLE_CONFIG = {
@@ -138,6 +139,61 @@ function buildUserContentForApi(text: string, attachments: ChatAttachment[]): st
   return parts;
 }
 
+function compactSingleLine(value: string, maxLength: number): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+  if (!normalized) return '';
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, Math.max(0, maxLength - 1))}…`;
+}
+
+function safeStringify(input: unknown): string {
+  try {
+    return JSON.stringify(input);
+  } catch {
+    return String(input);
+  }
+}
+
+function toolArgumentsPreview(info: AgentToolCallInfo): string | undefined {
+  const fromParsed =
+    info.argumentsParsed === undefined || info.argumentsParsed === null
+      ? ''
+      : typeof info.argumentsParsed === 'string'
+        ? info.argumentsParsed
+        : safeStringify(info.argumentsParsed);
+  const fallbackRaw = info.argumentsRaw?.trim() ?? '';
+  const source = fromParsed || fallbackRaw;
+  const compacted = compactSingleLine(source, 260);
+  return compacted || undefined;
+}
+
+function summarizeToolResult(result: AgentToolExecutionResult): {
+  resultPreview?: string;
+  warnings?: string[];
+} {
+  if (result.ok) {
+    const source = result.text?.trim() || (result.structured ? safeStringify(result.structured) : '');
+    const resultPreview = compactSingleLine(source, 320) || undefined;
+    const warnings = result.warnings
+      ?.map((warning) => compactSingleLine(warning, 180))
+      .filter((warning) => warning.length > 0);
+    return {
+      resultPreview,
+      warnings: warnings && warnings.length > 0 ? warnings : undefined,
+    };
+  }
+
+  const source = result.error?.trim() || (result.structured ? safeStringify(result.structured) : '');
+  const resultPreview = compactSingleLine(source, 320) || undefined;
+  const warnings = result.warnings
+    ?.map((warning) => compactSingleLine(warning, 180))
+    .filter((warning) => warning.length > 0);
+  return {
+    resultPreview,
+    warnings: warnings && warnings.length > 0 ? warnings : undefined,
+  };
+}
+
 export function useSpotlightChat() {
   const {
     chatInput,
@@ -176,6 +232,36 @@ export function useSpotlightChat() {
   }, []);
 
   const { append, flushFinal } = useThrottledStreamUpdate(throttledUpdate);
+
+  const upsertLastAssistantToolCall = useCallback(
+    (toolCallId: string, updater: (existing: ChatToolCallTrace | undefined) => ChatToolCallTrace) => {
+      setMessages((current) => {
+        if (current.length === 0) return current;
+        const updated = [...current];
+        const lastIndex = updated.length - 1;
+        const lastMessage = updated[lastIndex];
+        if (!lastMessage || lastMessage.role !== 'assistant') return current;
+
+        const nextToolCalls = [...(lastMessage.toolCalls ?? [])];
+        const existingIndex = nextToolCalls.findIndex((item) => item.id === toolCallId);
+        const existing = existingIndex >= 0 ? nextToolCalls[existingIndex] : undefined;
+        const next = updater(existing);
+
+        if (existingIndex >= 0) {
+          nextToolCalls[existingIndex] = next;
+        } else {
+          nextToolCalls.push(next);
+        }
+
+        updated[lastIndex] = {
+          ...lastMessage,
+          toolCalls: nextToolCalls,
+        };
+        return updated;
+      });
+    },
+    []
+  );
 
   const sendMessage = useCallback(async () => {
     // 如果正在流式输出，先 flush 缓冲区避免内容丢失
@@ -222,7 +308,7 @@ export function useSpotlightChat() {
     setMessages(prev => [
       ...prev,
       { role: 'user', content: userDisplayContent, attachments: userDisplayAttachments },
-      { role: 'assistant', content: '', reasoning: '' }
+      { role: 'assistant', content: '', reasoning: '', toolCalls: [] }
     ]);
     setIsStreaming(true);
     setChatInput('');
@@ -248,14 +334,33 @@ export function useSpotlightChat() {
             append('', reasoningDelta);
           },
           onToolStart: (info) => {
-            append('', `\n[tool:start] ${info.name}\n`);
+            const startedAt = Date.now();
+            const argumentsPreview = toolArgumentsPreview(info);
+            upsertLastAssistantToolCall(info.id, (existing) => ({
+              id: info.id,
+              name: info.name,
+              status: 'running',
+              argumentsPreview: argumentsPreview ?? existing?.argumentsPreview,
+              startedAt: existing?.startedAt ?? startedAt,
+            }));
           },
           onToolFinish: (info, result) => {
-            if (result.ok) {
-              append('', `[tool:done] ${info.name}: ${result.text}\n`);
-            } else {
-              append('', `[tool:error] ${info.name}: ${result.error}\n`);
-            }
+            const finishedAt = Date.now();
+            const summary = summarizeToolResult(result);
+            upsertLastAssistantToolCall(info.id, (existing) => {
+              const startedAt = existing?.startedAt ?? finishedAt;
+              return {
+                id: info.id,
+                name: info.name,
+                status: result.ok ? 'success' : 'error',
+                argumentsPreview: existing?.argumentsPreview ?? toolArgumentsPreview(info),
+                resultPreview: summary.resultPreview,
+                warnings: summary.warnings,
+                startedAt,
+                finishedAt,
+                durationMs: Math.max(0, finishedAt - startedAt),
+              };
+            });
           },
         },
       });
@@ -295,7 +400,8 @@ export function useSpotlightChat() {
     clearAttachments,
     clearAttachmentError,
     append,
-    flushFinal
+    flushFinal,
+    upsertLastAssistantToolCall
   ]);
 
   const clearChat = useCallback(() => {

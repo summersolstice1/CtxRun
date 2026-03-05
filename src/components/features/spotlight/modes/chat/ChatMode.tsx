@@ -2,7 +2,7 @@ import { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Sparkles, ChevronDown, Brain, Check, Copy, FileText } from 'lucide-react';
+import { Sparkles, ChevronDown, Brain, Check, Copy, FileText, Loader2, Wrench, CheckCircle2, AlertCircle, Clock3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollapsedItems } from '@/lib/hooks';
 import { CHAT_ATTACHMENT_COLLAPSE_THRESHOLD } from '@/lib/chat_attachment';
@@ -28,6 +28,14 @@ const reasoningComponents = {
     return <code className={cn("bg-black/10 dark:bg-black/30 px-1 py-0.5 rounded font-mono", className)} {...props}>{children}</code>;
   }
 };
+
+function formatToolDuration(durationMs?: number): string | null {
+  if (durationMs === undefined || !Number.isFinite(durationMs)) return null;
+  if (durationMs < 1000) return `${Math.max(0, Math.round(durationMs))}ms`;
+  const seconds = durationMs / 1000;
+  if (seconds < 10) return `${seconds.toFixed(1)}s`;
+  return `${Math.round(seconds)}s`;
+}
 
 function MessageCopyMenu({ content }: { content: string }) {
   const [isCopied, setIsCopied] = useState(false);
@@ -74,6 +82,9 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   const hasUserText = msg.role === 'user' && Boolean(msg.content.trim());
   const userAttachments = msg.role === 'user' ? (msg.attachments ?? []) : [];
   const hasUserAttachments = userAttachments.length > 0;
+  const assistantToolCalls = msg.role === 'assistant' ? (msg.toolCalls ?? []) : [];
+  const hasAssistantToolCalls = assistantToolCalls.length > 0;
+  const runningToolCallCount = assistantToolCalls.filter((call) => call.status === 'running').length;
   const {
     expanded: showAllUserAttachments,
     setExpanded: setShowAllUserAttachments,
@@ -156,6 +167,93 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
       <div className="rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm border relative max-w-full bg-secondary/50 border-border/50 text-foreground rounded-tl-sm markdown-body select-text cursor-text">
         {!isStreaming && <MessageCopyMenu content={msg.content} />}
         <>
+          {hasAssistantToolCalls && (
+            <details className="mb-2 group/tool-calls" open={isStreamingLast && runningToolCallCount > 0}>
+              <summary className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60 cursor-pointer hover:text-cyan-400 transition-colors select-none list-none outline-none">
+                <Wrench size={12} />
+                <span>{t('spotlight.toolCalls')} ({assistantToolCalls.length})</span>
+                {runningToolCallCount > 0 && (
+                  <span className="text-[10px] normal-case text-amber-400/90">
+                    {runningToolCallCount} {t('spotlight.toolRunning')}
+                  </span>
+                )}
+                <ChevronDown size={12} className="group-open/tool-calls:rotate-180 transition-transform duration-200" />
+              </summary>
+              <div className="mt-2 space-y-2">
+                {assistantToolCalls.map((call) => {
+                  const isRunning = call.status === 'running';
+                  const isSuccess = call.status === 'success';
+                  const statusLabel = isRunning
+                    ? t('spotlight.toolRunning')
+                    : isSuccess
+                      ? t('spotlight.toolCompleted')
+                      : t('spotlight.toolFailed');
+                  const durationLabel = formatToolDuration(call.durationMs);
+
+                  return (
+                    <div
+                      key={call.id}
+                      className="rounded-md border border-border/60 bg-background/50 px-2.5 py-2 text-xs"
+                    >
+                      <div className="flex items-center gap-2">
+                        {isRunning ? (
+                          <Loader2 size={12} className="text-amber-400 animate-spin" />
+                        ) : isSuccess ? (
+                          <CheckCircle2 size={12} className="text-emerald-400" />
+                        ) : (
+                          <AlertCircle size={12} className="text-rose-400" />
+                        )}
+                        <code className="font-mono text-foreground/90">{call.name}</code>
+                        <span className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground/80">
+                          <span>{statusLabel}</span>
+                          {durationLabel && (
+                            <>
+                              <Clock3 size={11} />
+                              <span>{durationLabel}</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      {call.argumentsPreview && (
+                        <div className="mt-1 text-[11px] text-muted-foreground/85">
+                          <span className="mr-1 uppercase tracking-wide text-muted-foreground/70">
+                            {t('spotlight.toolArgs')}:
+                          </span>
+                          <span className="font-mono break-all">{call.argumentsPreview}</span>
+                        </div>
+                      )}
+
+                      {call.resultPreview ? (
+                        <div className="mt-1 text-[11px] text-muted-foreground/85">
+                          <span className="mr-1 uppercase tracking-wide text-muted-foreground/70">
+                            {t('spotlight.toolOutput')}:
+                          </span>
+                          <span className="break-all">{call.resultPreview}</span>
+                        </div>
+                      ) : (
+                        call.status === 'success' && (
+                          <div className="mt-1 text-[11px] text-muted-foreground/70">
+                            {t('spotlight.toolNoOutput')}
+                          </div>
+                        )
+                      )}
+
+                      {call.warnings && call.warnings.length > 0 && (
+                        <div className="mt-1 text-[11px] text-amber-300/85">
+                          <span className="mr-1 uppercase tracking-wide text-amber-200/70">
+                            {t('spotlight.toolWarnings')}:
+                          </span>
+                          <span>{call.warnings.join(' · ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          )}
+
           {msg.reasoning && (
             <details className="mb-2 group/reasoning" open={isStreamingLast}>
               <summary className="flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60 cursor-pointer hover:text-purple-400 transition-colors select-none list-none outline-none">
@@ -188,6 +286,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   // 自定义比较逻辑：只有当消息内容、推理内容或流式状态发生变化时才重新渲染
   return prevProps.msg.content === nextProps.msg.content &&
     prevProps.msg.reasoning === nextProps.msg.reasoning &&
+    prevProps.msg.toolCalls === nextProps.msg.toolCalls &&
     prevProps.msg.attachments === nextProps.msg.attachments &&
     prevProps.isStreaming === nextProps.isStreaming;
 });
