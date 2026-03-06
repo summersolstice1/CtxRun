@@ -188,6 +188,7 @@ function buildSearchDebugLines(result: WebSearchResult): string[] {
 function buildSearchOutput(result: WebSearchResult): AgentToolExecutionResult {
   const warnings = (result.warnings ?? []).filter((warning) => warning.trim().length > 0);
   const debugLines = buildSearchDebugLines(result);
+  const hasItems = Array.isArray(result.items) && result.items.length > 0;
   const requiresGoogleVerification =
     result.requiresHumanVerification === true &&
     (result.verificationEngine ?? '').toLowerCase() === 'google';
@@ -195,19 +196,21 @@ function buildSearchOutput(result: WebSearchResult): AgentToolExecutionResult {
 
   const header = requiresGoogleVerification
     ? (
-      result.items && result.items.length > 0
-        ? `Google requires human verification. Returning ${result.engine} results for "${result.query}" while waiting for verification.`
+      hasItems
+        ? `Google requires human verification. Returning ${result.engine} results for "${result.query}".`
         : `Google requires human verification for "${result.query}".`
     )
     : result.blocked
     ? `${result.engine} search was blocked by consent/captcha verification. Please provide a direct URL, or retry later.`
-    : (!result.items || result.items.length === 0)
+    : !hasItems
       ? `No web results found for query "${result.query}".`
       : `${result.engine} search found ${result.returnedCount} results for "${result.query}".`;
 
   const verificationLines =
     requiresGoogleVerification && verificationUrl
-      ? [`[verify] Open and complete Google verification: ${verificationUrl}`, '[verify] Search result will be returned after verification completes.']
+      ? hasItems
+        ? [`[verify] Open and complete Google verification if you want Google results on retry: ${verificationUrl}`]
+        : [`[verify] Open and complete Google verification: ${verificationUrl}`, '[verify] Search result will be returned after verification completes.']
       : [];
 
   const previewLines = (result.items ?? [])
@@ -242,7 +245,7 @@ export function registerWebTools(registry: AgentToolRegistry): void {
     definition: {
       name: 'web.search',
       description:
-        'Search the web in a local browser (Google + Bing in parallel) and return ranked results with verification hints.',
+        'Search the web in a local browser (Google + Bing + DuckDuckGo + Brave in parallel) and return ranked results with verification hints.',
       inputSchema: {
         type: 'object',
         properties: {

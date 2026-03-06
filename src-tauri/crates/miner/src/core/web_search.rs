@@ -16,6 +16,8 @@ use crate::models::{
 
 const GOOGLE_SEARCH_URL: &str = "https://www.google.com/search";
 const BING_SEARCH_URL: &str = "https://www.bing.com/search";
+const DUCKDUCKGO_SEARCH_URL: &str = "https://html.duckduckgo.com/html/";
+const BRAVE_SEARCH_URL: &str = "https://search.brave.com/search";
 
 const DEFAULT_SEARCH_LIMIT: u32 = 8;
 const MIN_SEARCH_LIMIT: u32 = 1;
@@ -32,8 +34,6 @@ const SERP_READY_POLL_MS: u64 = 180;
 const SERP_READY_MAX_POLLS: u32 = 30;
 const ANTI_BOT_PRE_NAV_DELAY_MS: u64 = 420;
 const ANTI_BOT_POST_NAV_DELAY_MS: u64 = 620;
-const HUMAN_VERIFICATION_POLL_MS: u64 = 900;
-const HUMAN_VERIFICATION_MAX_POLLS: u32 = 300;
 const DEBUG_SAMPLE_TEXT_CHARS: usize = 800;
 const DEBUG_SAMPLE_HTML_CHARS: usize = 2_000;
 const DEBUG_ITEMS_PREVIEW_LIMIT: usize = 10;
@@ -231,6 +231,183 @@ const BING_SEARCH_EXTRACT_SCRIPT: &str = r#"
 })()
 "#;
 
+const DUCKDUCKGO_SEARCH_EXTRACT_SCRIPT: &str = r#"
+(async () => {
+  try {
+    const compact = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+    const bodyText = compact(document.body?.innerText || '').toLowerCase();
+    const blocked = (
+      bodyText.includes('automated requests') ||
+      bodyText.includes('captcha') ||
+      bodyText.includes('anomaly') ||
+      bodyText.includes('unusual traffic')
+    );
+
+    const decodeResultUrl = (rawHref) => {
+      if (!rawHref) return null;
+      try {
+        const parsed = new URL(rawHref, location.origin);
+        const redirectTarget = parsed.searchParams.get('uddg');
+        if (redirectTarget) {
+          return redirectTarget;
+        }
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return null;
+        }
+        if (parsed.hostname.includes('duckduckgo.com')) {
+          return null;
+        }
+        return parsed.toString();
+      } catch {
+        return null;
+      }
+    };
+
+    const searchRoot = document.querySelector('#links') || document.querySelector('.results') || document.body || document;
+    const nodes = Array.from(searchRoot.querySelectorAll('.result, .results_links, .web-result'));
+    const anchors = Array.from(searchRoot.querySelectorAll('a[href]'));
+    const bodySample = compact(document.body?.innerText || '').slice(0, 1200);
+    const searchRootHtmlSample = compact(
+      searchRoot && 'outerHTML' in searchRoot ? (searchRoot.outerHTML || '') : ''
+    ).slice(0, 2600);
+    const items = [];
+    const seen = new Set();
+
+    for (const node of nodes) {
+      const anchor = node.querySelector('a.result__a, h2 a[href], a[data-testid="result-title-a"], a[href]');
+      if (!anchor) continue;
+      const url = decodeResultUrl(anchor.getAttribute('href') || anchor.href || '');
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+
+      const title = compact(anchor.textContent || '');
+      if (!title) continue;
+
+      const snippet = compact(
+        node.querySelector('.result__snippet, .result-snippet, .result__extras__snippet, .result__body')?.textContent || ''
+      );
+
+      let host = '';
+      try {
+        host = new URL(url).host;
+      } catch {}
+
+      items.push({ title, url, snippet, host });
+    }
+
+    return JSON.stringify({
+      blocked,
+      pageUrl: location.href,
+      pageTitle: compact(document.title || ''),
+      readyState: document.readyState || '',
+      resultHeadingCount: nodes.length,
+      anchorCount: anchors.length,
+      bodySample,
+      searchRootHtmlSample,
+      items,
+    });
+  } catch (error) {
+    return JSON.stringify({
+      error: String(error),
+      stack: error && typeof error === 'object' && 'stack' in error ? String(error.stack || '') : '',
+    });
+  }
+})()
+"#;
+
+const BRAVE_SEARCH_EXTRACT_SCRIPT: &str = r#"
+(async () => {
+  try {
+    const compact = (value) => String(value || '').replace(/\s+/g, ' ').trim();
+    const bodyText = compact(document.body?.innerText || '').toLowerCase();
+    const blocked = (
+      bodyText.includes('verify you are human') ||
+      bodyText.includes('captcha') ||
+      bodyText.includes('unusual traffic') ||
+      bodyText.includes('request unsuccessful')
+    );
+
+    const isInternalBraveUrl = (parsed) => {
+      return parsed.hostname === 'search.brave.com' || parsed.hostname.endsWith('.brave.com');
+    };
+
+    const decodeResultUrl = (rawHref) => {
+      if (!rawHref) return null;
+      try {
+        const parsed = new URL(rawHref, location.origin);
+        const redirectTarget = parsed.searchParams.get('url') || parsed.searchParams.get('target') || parsed.searchParams.get('u');
+        if (redirectTarget) {
+          return redirectTarget;
+        }
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return null;
+        }
+        if (isInternalBraveUrl(parsed)) {
+          return null;
+        }
+        return parsed.toString();
+      } catch {
+        return null;
+      }
+    };
+
+    const searchRoot = document.querySelector('#results') || document.querySelector('main') || document.body || document;
+    const nodes = Array.from(searchRoot.querySelectorAll('[data-type="web"], .snippet, .card')).filter((node) => {
+      const text = compact(node.textContent || '').toLowerCase();
+      return text.length > 0 && !text.includes('news') && !text.includes('videos');
+    });
+    const anchors = Array.from(searchRoot.querySelectorAll('a[href]'));
+    const bodySample = compact(document.body?.innerText || '').slice(0, 1200);
+    const searchRootHtmlSample = compact(
+      searchRoot && 'outerHTML' in searchRoot ? (searchRoot.outerHTML || '') : ''
+    ).slice(0, 2600);
+    const items = [];
+    const seen = new Set();
+
+    for (const node of nodes) {
+      const anchor = node.querySelector('a[data-testid="result-title-a"], .heading a[href], h2 a[href], a[href]');
+      if (!anchor) continue;
+      const url = decodeResultUrl(anchor.getAttribute('href') || anchor.href || '');
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+
+      const title = compact(
+        anchor.querySelector('h2, .title, .heading')?.textContent || anchor.textContent || ''
+      );
+      if (!title) continue;
+
+      const snippet = compact(
+        node.querySelector('.snippet-description, .description, p, .truncate-content')?.textContent || ''
+      );
+
+      let host = '';
+      try {
+        host = new URL(url).host;
+      } catch {}
+
+      items.push({ title, url, snippet, host });
+    }
+
+    return JSON.stringify({
+      blocked,
+      pageUrl: location.href,
+      pageTitle: compact(document.title || ''),
+      readyState: document.readyState || '',
+      resultHeadingCount: nodes.length,
+      anchorCount: anchors.length,
+      bodySample,
+      searchRootHtmlSample,
+      items,
+    });
+  } catch (error) {
+    return JSON.stringify({
+      error: String(error),
+      stack: error && typeof error === 'object' && 'stack' in error ? String(error.stack || '') : '',
+    });
+  }
+})()
+"#;
+
 #[derive(Debug)]
 struct NormalizedSearchRequest {
     query: String,
@@ -348,6 +525,89 @@ fn push_unique_warning(warnings: &mut Vec<String>, message: impl Into<String>) {
     if !warnings.iter().any(|existing| existing == &message) {
         warnings.push(message);
     }
+}
+
+fn apply_parallel_metadata(
+    result: &mut WebSearchResult,
+    request: &NormalizedSearchRequest,
+    consent_warning: Option<&String>,
+    stealth_notes: &[String],
+    attempted_engines: &[&str],
+    summary_notes: &[String],
+    failure_notes: &[String],
+    fallback_reason: Option<String>,
+) {
+    if request.anti_bot_mode {
+        push_unique_warning(
+            &mut result.warnings,
+            "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
+        );
+    }
+    if let Some(warning) = consent_warning {
+        push_unique_warning(&mut result.warnings, warning.clone());
+    }
+    for note in failure_notes {
+        push_unique_warning(&mut result.warnings, note.clone());
+    }
+
+    if let Some(debug) = result.debug.as_mut() {
+        debug.attempted_engines = attempted_engines
+            .iter()
+            .map(|engine| (*engine).to_string())
+            .collect();
+        debug.fallback_reason = fallback_reason;
+        debug.notes.push(
+            "Parallel execution mode enabled (Google + Bing + DuckDuckGo + Brave).".to_string(),
+        );
+        for note in summary_notes {
+            debug.notes.push(note.clone());
+        }
+        for note in failure_notes {
+            debug.notes.push(note.clone());
+        }
+        if consent_warning.is_some() {
+            debug
+                .notes
+                .push("Google CONSENT cookie injection failed.".to_string());
+        }
+        for note in stealth_notes {
+            debug.notes.push(note.clone());
+        }
+    }
+}
+
+fn apply_google_verification_metadata(
+    result: &mut WebSearchResult,
+    request: &NormalizedSearchRequest,
+    waiting_engine: Option<&str>,
+) {
+    push_unique_warning(
+        &mut result.warnings,
+        "Google triggered consent/captcha verification for this request.",
+    );
+    if let Some(engine) = waiting_engine {
+        push_unique_warning(
+            &mut result.warnings,
+            format!(
+                "Returning {} results immediately because Google verification is pending.",
+                engine_display_name(engine)
+            ),
+        );
+    }
+    if request.anti_bot_mode {
+        push_unique_warning(
+            &mut result.warnings,
+            "Complete Google human verification in the opened Chrome window, then retry if you prefer Google results.",
+        );
+    } else {
+        push_unique_warning(
+            &mut result.warnings,
+            "Enable antiBotMode=true to allow manual Google verification in a visible browser window.",
+        );
+    }
+    result.requires_human_verification = Some(true);
+    result.verification_engine = Some("google".to_string());
+    result.verification_url = Some(request.search_url.clone());
 }
 
 async fn apply_search_anti_bot_patches(page: &Page) -> Vec<String> {
@@ -469,6 +729,87 @@ fn build_bing_search_url(request: &NormalizedSearchRequest) -> Result<String> {
     Ok(url.to_string())
 }
 
+fn build_duckduckgo_search_url(request: &NormalizedSearchRequest) -> Result<String> {
+    let mut url = Url::parse(DUCKDUCKGO_SEARCH_URL).map_err(|err| {
+        MinerError::SystemError(format!("Invalid DuckDuckGo search base URL: {err}"))
+    })?;
+    {
+        let mut query_pairs = url.query_pairs_mut();
+        query_pairs.append_pair("q", &request.query);
+        if request.start > 0 {
+            query_pairs.append_pair("s", &request.start.to_string());
+        }
+        if let Some(language) = request.language.as_deref() {
+            query_pairs.append_pair("kl", language);
+        }
+    }
+    Ok(url.to_string())
+}
+
+fn build_brave_search_url(request: &NormalizedSearchRequest) -> Result<String> {
+    let mut url = Url::parse(BRAVE_SEARCH_URL)
+        .map_err(|err| MinerError::SystemError(format!("Invalid Brave search base URL: {err}")))?;
+    {
+        let mut query_pairs = url.query_pairs_mut();
+        query_pairs.append_pair("q", &request.query);
+        query_pairs.append_pair("source", "web");
+        if request.start > 0 {
+            query_pairs.append_pair("offset", &request.start.to_string());
+        }
+        query_pairs.append_pair(
+            "safesearch",
+            if request.safe_search { "strict" } else { "off" },
+        );
+        if let Some(country) = request.country.as_deref() {
+            query_pairs.append_pair("country", country);
+        }
+    }
+    Ok(url.to_string())
+}
+
+fn engine_display_name(engine: &str) -> &'static str {
+    match engine {
+        "google" => "Google",
+        "bing" => "Bing",
+        "duckduckgo" => "DuckDuckGo",
+        "brave" => "Brave",
+        _ => "Search engine",
+    }
+}
+
+fn engine_priority(engine: &str) -> u8 {
+    match engine {
+        "google" => 4,
+        "brave" => 3,
+        "bing" => 2,
+        "duckduckgo" => 1,
+        _ => 0,
+    }
+}
+
+fn result_is_usable(result: &WebSearchResult) -> bool {
+    !result.blocked && result.returned_count > 0
+}
+
+fn summarize_result(result: &WebSearchResult) -> String {
+    format!(
+        "{} summary: blocked={}, returnedCount={}, totalFound={}.",
+        engine_display_name(&result.engine),
+        result.blocked,
+        result.returned_count,
+        result.total_found
+    )
+}
+
+fn choose_best_result_index(results: &[WebSearchResult], usable_only: bool) -> Option<usize> {
+    results
+        .iter()
+        .enumerate()
+        .filter(|(_, result)| !usable_only || result_is_usable(result))
+        .max_by_key(|(_, result)| (result.returned_count, engine_priority(&result.engine)))
+        .map(|(index, _)| index)
+}
+
 fn normalize_request(request: WebSearchRequest) -> Result<NormalizedSearchRequest> {
     let query = request.query.trim();
     if query.is_empty() {
@@ -534,14 +875,14 @@ async fn wait_for_serp_ready(page: &Page) {
             .and_then(|value| value.into_value::<String>().ok())
             .unwrap_or_default();
         let result_count = page
-            .evaluate("document.querySelectorAll('#search a[href] h3').length")
+            .evaluate("(() => { const selectors = ['#search a[href] h3', '#b_results li.b_algo', '#links .result', '.results .result', '#results [data-type=\"web\"]', 'main .snippet']; return selectors.reduce((count, selector) => count + document.querySelectorAll(selector).length, 0); })()")
             .await
             .ok()
             .and_then(|value| value.into_value::<u64>().ok())
             .unwrap_or(0);
         let likely_blocked = page
             .evaluate(
-                "(document.body && document.body.innerText || '').toLowerCase().includes('unusual traffic')",
+                "(() => { const text = ((document.body && document.body.innerText) || '').toLowerCase(); return text.includes('unusual traffic') || text.includes('captcha') || text.includes('verify you are human') || text.includes('automated requests'); })()",
             )
             .await
             .ok()
@@ -577,24 +918,40 @@ async fn apply_google_consent_cookie(page: &Page) -> Option<String> {
     }
 }
 
-async fn is_google_verification_cleared(page: &Page) -> Result<bool> {
-    let evaluation_result = page.evaluate(SEARCH_EXTRACT_SCRIPT).await.map_err(|err| {
-        MinerError::BrowserError(format!(
-            "Google verification check script execution failed: {err}"
-        ))
+async fn run_search_with_script(
+    page: &Page,
+    request: &NormalizedSearchRequest,
+    engine: &str,
+    search_url: String,
+    extract_script: &str,
+    blocked_warning: &str,
+    blocked_debug_note: &str,
+) -> Result<WebSearchResult> {
+    if request.anti_bot_mode {
+        sleep(Duration::from_millis(ANTI_BOT_PRE_NAV_DELAY_MS)).await;
+    }
+
+    page.goto(&search_url)
+        .await
+        .map_err(|err| MinerError::BrowserError(format!("Navigation failed: {err}")))?;
+
+    if request.anti_bot_mode {
+        sleep(Duration::from_millis(ANTI_BOT_POST_NAV_DELAY_MS)).await;
+    }
+
+    wait_for_serp_ready(page).await;
+
+    let evaluation_result = page.evaluate(extract_script).await.map_err(|err| {
+        MinerError::BrowserError(format!("Search script execution failed: {err}"))
     })?;
     let raw_payload: String = evaluation_result.into_value().map_err(|err| {
-        MinerError::ExtractionError(format!(
-            "Expected JSON string from Google verification check script: {err}"
-        ))
+        MinerError::ExtractionError(format!("Expected JSON string from search script: {err}"))
     })?;
     let parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
-        MinerError::SystemError(format!(
-            "Failed to parse Google verification check payload: {err}"
-        ))
+        MinerError::SystemError(format!("Failed to parse search script payload: {err}"))
     })?;
-    if let Some(error) = parsed_payload.error {
-        let stack = parsed_payload.stack.unwrap_or_default();
+    if let Some(error) = parsed_payload.error.clone() {
+        let stack = parsed_payload.stack.clone().unwrap_or_default();
         let detail = if stack.trim().is_empty() {
             error
         } else {
@@ -603,20 +960,92 @@ async fn is_google_verification_cleared(page: &Page) -> Result<bool> {
         return Err(MinerError::ExtractionError(detail));
     }
 
-    Ok(!parsed_payload.blocked.unwrap_or(false))
-}
+    let extracted_items = parsed_payload.items.clone().unwrap_or_default();
+    let raw_items_count = extracted_items.len() as u32;
+    let raw_items_preview = build_raw_items_preview(&extracted_items);
+    let total_found = raw_items_count;
+    let mut seen_urls = HashSet::new();
+    let mut items = Vec::new();
 
-async fn wait_for_google_human_verification(page: &Page) -> Result<()> {
-    for _ in 0..HUMAN_VERIFICATION_MAX_POLLS {
-        if is_google_verification_cleared(page).await? {
-            return Ok(());
+    for item in extracted_items {
+        if items.len() >= request.limit as usize {
+            break;
         }
-        sleep(Duration::from_millis(HUMAN_VERIFICATION_POLL_MS)).await;
+        let normalized_url = match normalize_result_url(item.url.trim()) {
+            Some(url) => url,
+            None => continue,
+        };
+        if !seen_urls.insert(normalized_url.clone()) {
+            continue;
+        }
+
+        let title = compact_whitespace(item.title.trim());
+        if title.is_empty() {
+            continue;
+        }
+
+        let snippet = compact_whitespace(item.snippet.trim());
+        let host = normalize_host(&normalized_url, item.host);
+        let rank = request.start + (items.len() as u32) + 1;
+
+        items.push(WebSearchItem {
+            rank,
+            title,
+            url: normalized_url,
+            snippet,
+            host,
+        });
     }
 
-    Err(MinerError::BrowserError(
-        "Google human verification was not completed in time.".to_string(),
-    ))
+    let blocked = parsed_payload.blocked.unwrap_or(false);
+    let mut warnings = request.warnings.clone();
+    if blocked {
+        warnings.push(blocked_warning.to_string());
+    }
+    if items.is_empty() {
+        warnings.push("No parsable web results were found on the returned SERP.".to_string());
+    }
+    let filtered_items_count = items.len() as u32;
+    let page_title = parsed_payload.page_title.clone().unwrap_or_default();
+
+    let mut debug_notes = Vec::new();
+    if blocked {
+        debug_notes.push(blocked_debug_note.to_string());
+    }
+    if items.is_empty() {
+        debug_notes.push(format!(
+            "{} extraction returned zero normalized items.",
+            engine_display_name(engine)
+        ));
+    }
+
+    Ok(WebSearchResult {
+        engine: engine.to_string(),
+        query: request.query.clone(),
+        search_url,
+        start: request.start,
+        limit: request.limit,
+        total_found,
+        returned_count: items.len() as u32,
+        blocked,
+        page_title,
+        items,
+        searched_at: Utc::now().to_rfc3339(),
+        warnings,
+        requires_human_verification: None,
+        verification_engine: None,
+        verification_url: None,
+        debug: build_debug_info(
+            request,
+            engine,
+            &parsed_payload,
+            blocked,
+            raw_items_count,
+            filtered_items_count,
+            raw_items_preview,
+            debug_notes,
+        ),
+    })
 }
 
 fn normalize_result_url(raw: &str) -> Option<String> {
@@ -640,251 +1069,67 @@ async fn run_google_search(
     page: &Page,
     request: &NormalizedSearchRequest,
 ) -> Result<WebSearchResult> {
-    if request.anti_bot_mode {
-        sleep(Duration::from_millis(ANTI_BOT_PRE_NAV_DELAY_MS)).await;
-    }
-
-    page.goto(&request.search_url)
-        .await
-        .map_err(|err| MinerError::BrowserError(format!("Navigation failed: {err}")))?;
-
-    if request.anti_bot_mode {
-        sleep(Duration::from_millis(ANTI_BOT_POST_NAV_DELAY_MS)).await;
-    }
-
-    wait_for_serp_ready(page).await;
-
-    let evaluation_result = page.evaluate(SEARCH_EXTRACT_SCRIPT).await.map_err(|err| {
-        MinerError::BrowserError(format!("Search script execution failed: {err}"))
-    })?;
-
-    let raw_payload: String = evaluation_result.into_value().map_err(|err| {
-        MinerError::ExtractionError(format!("Expected JSON string from search script: {err}"))
-    })?;
-
-    let parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
-        MinerError::SystemError(format!("Failed to parse search script payload: {err}"))
-    })?;
-
-    if let Some(error) = parsed_payload.error {
-        let stack = parsed_payload.stack.unwrap_or_default();
-        let detail = if stack.trim().is_empty() {
-            error
-        } else {
-            format!("{error}\n{stack}")
-        };
-        return Err(MinerError::ExtractionError(detail));
-    }
-
-    let extracted_items = parsed_payload.items.clone().unwrap_or_default();
-    let raw_items_count = extracted_items.len() as u32;
-    let raw_items_preview = build_raw_items_preview(&extracted_items);
-    let total_found = raw_items_count;
-    let mut seen_urls = HashSet::new();
-    let mut items = Vec::new();
-
-    for item in extracted_items {
-        if items.len() >= request.limit as usize {
-            break;
-        }
-        let normalized_url = match normalize_result_url(item.url.trim()) {
-            Some(url) => url,
-            None => continue,
-        };
-        if !seen_urls.insert(normalized_url.clone()) {
-            continue;
-        }
-
-        let title = compact_whitespace(item.title.trim());
-        if title.is_empty() {
-            continue;
-        }
-
-        let snippet = compact_whitespace(item.snippet.trim());
-        let host = normalize_host(&normalized_url, item.host);
-        let rank = request.start + (items.len() as u32) + 1;
-
-        items.push(WebSearchItem {
-            rank,
-            title,
-            url: normalized_url,
-            snippet,
-            host,
-        });
-    }
-
-    let blocked = parsed_payload.blocked.unwrap_or(false);
-    let mut warnings = request.warnings.clone();
-    if blocked {
-        warnings
-            .push("Google may require consent/captcha verification for this request.".to_string());
-    }
-    if items.is_empty() {
-        warnings.push("No parsable web results were found on the returned SERP.".to_string());
-    }
-    let filtered_items_count = items.len() as u32;
-    let page_title = parsed_payload.page_title.clone().unwrap_or_default();
-
-    let mut debug_notes = Vec::new();
-    if blocked {
-        debug_notes.push("Google blocked hint detected from SERP content.".to_string());
-    }
-    if items.is_empty() {
-        debug_notes.push("Google extraction returned zero normalized items.".to_string());
-    }
-
-    Ok(WebSearchResult {
-        engine: "google".to_string(),
-        query: request.query.clone(),
-        search_url: request.search_url.clone(),
-        start: request.start,
-        limit: request.limit,
-        total_found,
-        returned_count: items.len() as u32,
-        blocked,
-        page_title,
-        items,
-        searched_at: Utc::now().to_rfc3339(),
-        warnings,
-        requires_human_verification: None,
-        verification_engine: None,
-        verification_url: None,
-        debug: build_debug_info(
-            request,
-            "google",
-            &parsed_payload,
-            blocked,
-            raw_items_count,
-            filtered_items_count,
-            raw_items_preview,
-            debug_notes,
-        ),
-    })
+    run_search_with_script(
+        page,
+        request,
+        "google",
+        request.search_url.clone(),
+        SEARCH_EXTRACT_SCRIPT,
+        "Google may require consent/captcha verification for this request.",
+        "Google blocked hint detected from SERP content.",
+    )
+    .await
 }
 
 async fn run_bing_search(
     page: &Page,
     request: &NormalizedSearchRequest,
 ) -> Result<WebSearchResult> {
-    let search_url = build_bing_search_url(request)?;
-    if request.anti_bot_mode {
-        sleep(Duration::from_millis(ANTI_BOT_PRE_NAV_DELAY_MS)).await;
-    }
-
-    page.goto(&search_url)
-        .await
-        .map_err(|err| MinerError::BrowserError(format!("Navigation failed: {err}")))?;
-
-    if request.anti_bot_mode {
-        sleep(Duration::from_millis(ANTI_BOT_POST_NAV_DELAY_MS)).await;
-    }
-
-    wait_for_serp_ready(page).await;
-
-    let evaluation_result = page
-        .evaluate(BING_SEARCH_EXTRACT_SCRIPT)
-        .await
-        .map_err(|err| {
-            MinerError::BrowserError(format!("Search script execution failed: {err}"))
-        })?;
-    let raw_payload: String = evaluation_result.into_value().map_err(|err| {
-        MinerError::ExtractionError(format!("Expected JSON string from search script: {err}"))
-    })?;
-    let parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
-        MinerError::SystemError(format!("Failed to parse search script payload: {err}"))
-    })?;
-    if let Some(error) = parsed_payload.error {
-        let stack = parsed_payload.stack.unwrap_or_default();
-        let detail = if stack.trim().is_empty() {
-            error
-        } else {
-            format!("{error}\n{stack}")
-        };
-        return Err(MinerError::ExtractionError(detail));
-    }
-
-    let extracted_items = parsed_payload.items.clone().unwrap_or_default();
-    let raw_items_count = extracted_items.len() as u32;
-    let raw_items_preview = build_raw_items_preview(&extracted_items);
-    let total_found = raw_items_count;
-    let mut seen_urls = HashSet::new();
-    let mut items = Vec::new();
-    for item in extracted_items {
-        if items.len() >= request.limit as usize {
-            break;
-        }
-        let normalized_url = match normalize_result_url(item.url.trim()) {
-            Some(url) => url,
-            None => continue,
-        };
-        if !seen_urls.insert(normalized_url.clone()) {
-            continue;
-        }
-        let title = compact_whitespace(item.title.trim());
-        if title.is_empty() {
-            continue;
-        }
-        let snippet = compact_whitespace(item.snippet.trim());
-        let host = normalize_host(&normalized_url, item.host);
-        let rank = request.start + (items.len() as u32) + 1;
-        items.push(WebSearchItem {
-            rank,
-            title,
-            url: normalized_url,
-            snippet,
-            host,
-        });
-    }
-
-    let blocked = parsed_payload.blocked.unwrap_or(false);
-    let mut warnings = request.warnings.clone();
-    if blocked {
-        warnings.push("Bing may require captcha verification for this request.".to_string());
-    }
-    if items.is_empty() {
-        warnings.push("No parsable web results were found on the returned SERP.".to_string());
-    }
-    let filtered_items_count = items.len() as u32;
-    let page_title = parsed_payload.page_title.clone().unwrap_or_default();
-
-    let mut debug_notes = Vec::new();
-    if blocked {
-        debug_notes.push("Bing blocked hint detected from SERP content.".to_string());
-    }
-    if items.is_empty() {
-        debug_notes.push("Bing extraction returned zero normalized items.".to_string());
-    }
-
-    Ok(WebSearchResult {
-        engine: "bing".to_string(),
-        query: request.query.clone(),
-        search_url,
-        start: request.start,
-        limit: request.limit,
-        total_found,
-        returned_count: items.len() as u32,
-        blocked,
-        page_title,
-        items,
-        searched_at: Utc::now().to_rfc3339(),
-        warnings,
-        requires_human_verification: None,
-        verification_engine: None,
-        verification_url: None,
-        debug: build_debug_info(
-            request,
-            "bing",
-            &parsed_payload,
-            blocked,
-            raw_items_count,
-            filtered_items_count,
-            raw_items_preview,
-            debug_notes,
-        ),
-    })
+    run_search_with_script(
+        page,
+        request,
+        "bing",
+        build_bing_search_url(request)?,
+        BING_SEARCH_EXTRACT_SCRIPT,
+        "Bing may require captcha verification for this request.",
+        "Bing blocked hint detected from SERP content.",
+    )
+    .await
 }
 
-/// 联网搜索入口：使用本地 Chromium 打开 Google SERP 并结构化返回结果。
+async fn run_duckduckgo_search(
+    page: &Page,
+    request: &NormalizedSearchRequest,
+) -> Result<WebSearchResult> {
+    run_search_with_script(
+        page,
+        request,
+        "duckduckgo",
+        build_duckduckgo_search_url(request)?,
+        DUCKDUCKGO_SEARCH_EXTRACT_SCRIPT,
+        "DuckDuckGo may require additional verification for this request.",
+        "DuckDuckGo blocked hint detected from SERP content.",
+    )
+    .await
+}
+
+async fn run_brave_search(
+    page: &Page,
+    request: &NormalizedSearchRequest,
+) -> Result<WebSearchResult> {
+    run_search_with_script(
+        page,
+        request,
+        "brave",
+        build_brave_search_url(request)?,
+        BRAVE_SEARCH_EXTRACT_SCRIPT,
+        "Brave Search may require captcha verification for this request.",
+        "Brave blocked hint detected from SERP content.",
+    )
+    .await
+}
+
+/// 閼辨梻缍夐幖婊呭偍閸忋儱褰涢敍姘▏閻劍婀伴崷?Chromium 閹垫挸绱?Google SERP 楠炲墎绮ㄩ弸鍕鏉╂柨娲栫紒鎾寸亯閵?
 pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
     let normalized = normalize_request(request)?;
     let timeout = normalized.timeout;
@@ -895,6 +1140,9 @@ pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
     let timed = tokio::time::timeout(timeout, async {
         let google_page = driver.new_page().await?;
         let bing_page = driver.new_page().await?;
+        let duckduckgo_page = driver.new_page().await?;
+        let brave_page = driver.new_page().await?;
+        let attempted_engines = ["google", "bing", "duckduckgo", "brave"];
 
         let mut stealth_notes = Vec::new();
         if normalized.anti_bot_mode {
@@ -904,324 +1152,178 @@ pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
             for note in apply_search_anti_bot_patches(&bing_page).await {
                 stealth_notes.push(format!("bing: {note}"));
             }
+            for note in apply_search_anti_bot_patches(&duckduckgo_page).await {
+                stealth_notes.push(format!("duckduckgo: {note}"));
+            }
+            for note in apply_search_anti_bot_patches(&brave_page).await {
+                stealth_notes.push(format!("brave: {note}"));
+            }
         }
 
         let consent_warning = apply_google_consent_cookie(&google_page).await;
-        let (google_result, bing_result) = tokio::join!(
+        let (google_result, bing_result, duckduckgo_result, brave_result) = tokio::join!(
             run_google_search(&google_page, &normalized),
-            run_bing_search(&bing_page, &normalized)
+            run_bing_search(&bing_page, &normalized),
+            run_duckduckgo_search(&duckduckgo_page, &normalized),
+            run_brave_search(&brave_page, &normalized)
         );
 
-        match (google_result, bing_result) {
-            (Ok(google), Ok(bing)) => {
-                let google_blocked = google.blocked;
-                let google_returned_count = google.returned_count;
-                let google_summary = format!(
-                    "Google summary: blocked={}, returnedCount={}, totalFound={}.",
-                    google.blocked, google.returned_count, google.total_found
-                );
-                let bing_summary = format!(
-                    "Bing summary: blocked={}, returnedCount={}, totalFound={}.",
-                    bing.blocked, bing.returned_count, bing.total_found
-                );
+        let mut summary_notes = Vec::new();
+        let mut failure_notes = Vec::new();
+        let mut successful_results = Vec::new();
 
-                let google_usable = !google.blocked && google.returned_count > 0;
-                let bing_usable = !bing.blocked && bing.returned_count > 0;
-
-                if google_blocked && normalized.anti_bot_mode {
-                    wait_for_google_human_verification(&google_page).await?;
-                    let mut verified_google = run_google_search(&google_page, &normalized).await?;
-
-                    if normalized.anti_bot_mode {
-                        push_unique_warning(
-                            &mut verified_google.warnings,
-                            "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
-                        );
-                    }
-                    if let Some(warning) = consent_warning.as_ref() {
-                        push_unique_warning(&mut verified_google.warnings, warning.clone());
-                    }
-                    push_unique_warning(
-                        &mut verified_google.warnings,
-                        "Google human verification completed; returning Google results.",
-                    );
-                    if bing.returned_count > 0 {
-                        push_unique_warning(
-                            &mut verified_google.warnings,
-                            "Bing parallel results were ignored after Google verification succeeded.",
-                        );
-                    }
-
-                    if let Some(debug) = verified_google.debug.as_mut() {
-                        debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
-                        debug.fallback_reason =
-                            Some("google_blocked_wait_manual_verification".to_string());
-                        debug
-                            .notes
-                            .push("Parallel execution mode enabled (Google + Bing).".to_string());
-                        debug.notes.push(google_summary);
-                        debug.notes.push(bing_summary);
-                        debug
-                            .notes
-                            .push("Google was blocked initially; waited for manual verification.".to_string());
-                        debug
-                            .notes
-                            .push("Manual verification completed; reran Google extraction.".to_string());
-                        if consent_warning.is_some() {
-                            debug
-                                .notes
-                                .push("Google CONSENT cookie injection failed.".to_string());
-                        }
-                        for note in &stealth_notes {
-                            debug.notes.push(note.clone());
-                        }
-                    }
-
-                    return Ok((verified_google, false));
+        for (engine, outcome) in [
+            ("google", google_result),
+            ("bing", bing_result),
+            ("duckduckgo", duckduckgo_result),
+            ("brave", brave_result),
+        ] {
+            match outcome {
+                Ok(result) => {
+                    summary_notes.push(summarize_result(&result));
+                    successful_results.push(result);
                 }
-
-                let (mut selected, fallback_reason) = if google_usable {
-                    (google, None)
-                } else if bing_usable {
-                    (
-                        bing,
-                        Some(if google.blocked {
-                            "google_blocked_parallel".to_string()
-                        } else {
-                            "google_empty_results_parallel".to_string()
-                        }),
-                    )
-                } else if google.returned_count >= bing.returned_count {
-                    (
-                        google,
-                        Some("parallel_no_clear_winner_google".to_string()),
-                    )
-                } else {
-                    (bing, Some("parallel_no_clear_winner_bing".to_string()))
-                };
-
-                if normalized.anti_bot_mode {
-                    push_unique_warning(
-                        &mut selected.warnings,
-                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
-                    );
-                }
-                if let Some(warning) = consent_warning.as_ref() {
-                    push_unique_warning(&mut selected.warnings, warning.clone());
-                }
-
-                if selected.engine == "bing" && (google_blocked || google_returned_count == 0) {
-                    push_unique_warning(
-                        &mut selected.warnings,
-                        "Google results were unavailable, returned Bing results from parallel search.",
-                    );
-                }
-
-                if google_blocked {
-                    push_unique_warning(
-                        &mut selected.warnings,
-                        "Google triggered consent/captcha verification for this request.",
-                    );
-                    if normalized.anti_bot_mode {
-                        push_unique_warning(
-                            &mut selected.warnings,
-                            "Please complete Google human verification in the opened Chrome window, then retry.",
-                        );
-                    } else {
-                        push_unique_warning(
-                            &mut selected.warnings,
-                            "Enable antiBotMode=true to allow manual Google verification in a visible browser window.",
-                        );
-                    }
-                    selected.requires_human_verification = Some(true);
-                    selected.verification_engine = Some("google".to_string());
-                    selected.verification_url = Some(normalized.search_url.clone());
-                }
-
-                if let Some(debug) = selected.debug.as_mut() {
-                    debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
-                    debug.fallback_reason = fallback_reason;
-                    debug.notes.push("Parallel execution mode enabled (Google + Bing).".to_string());
-                    debug.notes.push(google_summary);
-                    debug.notes.push(bing_summary);
-                    debug.notes.push(format!(
-                        "Anti-bot mode: {}",
-                        if normalized.anti_bot_mode {
-                            "enabled"
-                        } else {
-                            "disabled"
-                        }
-                    ));
-                    if google_blocked {
-                        debug
-                            .notes
-                            .push("Google blocked hint detected; human verification required.".to_string());
-                    }
-                    if consent_warning.is_some() {
-                        debug
-                            .notes
-                            .push("Google CONSENT cookie injection failed.".to_string());
-                    }
-                    for note in &stealth_notes {
-                        debug.notes.push(note.clone());
-                    }
-                }
-
-                Ok((selected, google_blocked && normalized.anti_bot_mode))
+                Err(error) => failure_notes.push(format!(
+                    "{} parallel search failed: {error}",
+                    engine_display_name(engine)
+                )),
             }
-            (Ok(mut google), Err(bing_error)) => {
-                let google_blocked = google.blocked;
-                if google_blocked && normalized.anti_bot_mode {
-                    wait_for_google_human_verification(&google_page).await?;
-                    let mut verified_google = run_google_search(&google_page, &normalized).await?;
-
-                    if normalized.anti_bot_mode {
-                        push_unique_warning(
-                            &mut verified_google.warnings,
-                            "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
-                        );
-                    }
-                    if let Some(warning) = consent_warning.as_ref() {
-                        push_unique_warning(&mut verified_google.warnings, warning.clone());
-                    }
-                    push_unique_warning(
-                        &mut verified_google.warnings,
-                        "Google human verification completed; returning Google results.",
-                    );
-                    push_unique_warning(
-                        &mut verified_google.warnings,
-                        format!("Bing parallel search failed: {bing_error}"),
-                    );
-
-                    if let Some(debug) = verified_google.debug.as_mut() {
-                        debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
-                        debug.fallback_reason =
-                            Some("google_blocked_wait_manual_verification_bing_error".to_string());
-                        debug
-                            .notes
-                            .push("Parallel execution mode enabled (Google + Bing).".to_string());
-                        debug
-                            .notes
-                            .push("Google was blocked initially; waited for manual verification.".to_string());
-                        debug
-                            .notes
-                            .push("Manual verification completed; reran Google extraction.".to_string());
-                        debug
-                            .notes
-                            .push(format!("Bing parallel search failed: {bing_error}"));
-                        if consent_warning.is_some() {
-                            debug
-                                .notes
-                                .push("Google CONSENT cookie injection failed.".to_string());
-                        }
-                        for note in &stealth_notes {
-                            debug.notes.push(note.clone());
-                        }
-                    }
-
-                    return Ok((verified_google, false));
-                }
-
-                if normalized.anti_bot_mode {
-                    push_unique_warning(
-                        &mut google.warnings,
-                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
-                    );
-                }
-                if let Some(warning) = consent_warning.as_ref() {
-                    push_unique_warning(&mut google.warnings, warning.clone());
-                }
-                push_unique_warning(
-                    &mut google.warnings,
-                    format!("Bing parallel search failed: {bing_error}"),
-                );
-
-                if google_blocked {
-                    push_unique_warning(
-                        &mut google.warnings,
-                        "Google triggered consent/captcha verification for this request.",
-                    );
-                    if normalized.anti_bot_mode {
-                        push_unique_warning(
-                            &mut google.warnings,
-                            "Please complete Google human verification in the opened Chrome window, then retry.",
-                        );
-                    } else {
-                        push_unique_warning(
-                            &mut google.warnings,
-                            "Enable antiBotMode=true to allow manual Google verification in a visible browser window.",
-                        );
-                    }
-                    google.requires_human_verification = Some(true);
-                    google.verification_engine = Some("google".to_string());
-                    google.verification_url = Some(normalized.search_url.clone());
-                }
-
-                if let Some(debug) = google.debug.as_mut() {
-                    debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
-                    debug.fallback_reason = Some("bing_error_parallel".to_string());
-                    debug
-                        .notes
-                        .push("Parallel execution mode enabled (Google + Bing).".to_string());
-                    debug
-                        .notes
-                        .push(format!("Bing parallel search failed: {bing_error}"));
-                    if consent_warning.is_some() {
-                        debug
-                            .notes
-                            .push("Google CONSENT cookie injection failed.".to_string());
-                    }
-                    for note in &stealth_notes {
-                        debug.notes.push(note.clone());
-                    }
-                }
-
-                Ok((google, google_blocked && normalized.anti_bot_mode))
-            }
-            (Err(google_error), Ok(mut bing)) => {
-                if normalized.anti_bot_mode {
-                    push_unique_warning(
-                        &mut bing.warnings,
-                        "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
-                    );
-                }
-                if let Some(warning) = consent_warning.as_ref() {
-                    push_unique_warning(&mut bing.warnings, warning.clone());
-                }
-                push_unique_warning(
-                    &mut bing.warnings,
-                    "Google search failed, returned Bing results from parallel search.",
-                );
-                push_unique_warning(
-                    &mut bing.warnings,
-                    format!("Google error: {google_error}"),
-                );
-
-                if let Some(debug) = bing.debug.as_mut() {
-                    debug.attempted_engines = vec!["google".to_string(), "bing".to_string()];
-                    debug.fallback_reason = Some("google_error_parallel".to_string());
-                    debug
-                        .notes
-                        .push("Parallel execution mode enabled (Google + Bing).".to_string());
-                    debug
-                        .notes
-                        .push(format!("Google parallel search failed: {google_error}"));
-                    if consent_warning.is_some() {
-                        debug
-                            .notes
-                            .push("Google CONSENT cookie injection failed.".to_string());
-                    }
-                    for note in &stealth_notes {
-                        debug.notes.push(note.clone());
-                    }
-                }
-
-                Ok((bing, false))
-            }
-            (Err(google_error), Err(bing_error)) => Err(MinerError::BrowserError(format!(
-                "Parallel web search failed. Google error: {google_error}; Bing error: {bing_error}"
-            ))),
         }
+
+        if successful_results.is_empty() {
+            return Err(MinerError::BrowserError(format!(
+                "Parallel web search failed. {}",
+                failure_notes.join("; ")
+            )));
+        }
+
+        let google_index = successful_results
+            .iter()
+            .position(|result| result.engine == "google");
+        let google_blocked = google_index
+            .map(|index| successful_results[index].blocked)
+            .unwrap_or(false);
+        let google_returned_count = google_index
+            .map(|index| successful_results[index].returned_count)
+            .unwrap_or(0);
+
+        let best_non_google_usable_index = successful_results
+            .iter()
+            .enumerate()
+            .filter(|(_, result)| result.engine != "google" && result_is_usable(result))
+            .max_by_key(|(_, result)| (result.returned_count, engine_priority(&result.engine)))
+            .map(|(index, _)| index);
+
+        let (selected_index, keep_browser_open, fallback_reason) = if google_blocked {
+            if let Some(index) = best_non_google_usable_index {
+                (
+                    index,
+                    false,
+                    Some(format!(
+                        "google_blocked_parallel_returned_{}",
+                        successful_results[index].engine
+                    )),
+                )
+            } else if let Some(index) = google_index {
+                (
+                    index,
+                    normalized.anti_bot_mode,
+                    Some("google_blocked_parallel".to_string()),
+                )
+            } else {
+                (
+                    choose_best_result_index(&successful_results, false).unwrap_or(0),
+                    false,
+                    Some("parallel_no_google_success".to_string()),
+                )
+            }
+        } else if let Some(index) = google_index.filter(|index| result_is_usable(&successful_results[*index])) {
+            (index, false, None)
+        } else if let Some(index) = best_non_google_usable_index {
+            let reason = if google_index.is_some() && google_returned_count == 0 {
+                Some(format!(
+                    "google_empty_results_parallel_returned_{}",
+                    successful_results[index].engine
+                ))
+            } else if google_index.is_none() {
+                Some(format!(
+                    "google_error_parallel_returned_{}",
+                    successful_results[index].engine
+                ))
+            } else {
+                Some(format!(
+                    "parallel_preferred_non_google_{}",
+                    successful_results[index].engine
+                ))
+            };
+            (index, false, reason)
+        } else {
+            let index = choose_best_result_index(&successful_results, false).unwrap_or(0);
+            let reason = if successful_results[index].engine == "google" {
+                Some("parallel_no_clear_winner_google".to_string())
+            } else {
+                Some(format!(
+                    "parallel_no_clear_winner_{}",
+                    successful_results[index].engine
+                ))
+            };
+            (index, false, reason)
+        };
+
+        let mut selected = successful_results.remove(selected_index);
+
+        apply_parallel_metadata(
+            &mut selected,
+            &normalized,
+            consent_warning.as_ref(),
+            &stealth_notes,
+            &attempted_engines,
+            &summary_notes,
+            &failure_notes,
+            fallback_reason,
+        );
+
+        if google_blocked {
+            let waiting_engine = if selected.engine == "google" {
+                None
+            } else {
+                Some(selected.engine.clone())
+            };
+            apply_google_verification_metadata(&mut selected, &normalized, waiting_engine.as_deref());
+            if let Some(debug) = selected.debug.as_mut() {
+                if waiting_engine.is_some() {
+                    debug.notes.push(
+                        "Google was blocked initially; returned non-Google results immediately."
+                            .to_string(),
+                    );
+                } else {
+                    debug.notes.push(
+                        "Google was blocked initially; manual verification is required before retry."
+                            .to_string(),
+                    );
+                }
+            }
+        } else if selected.engine != "google" {
+            if google_index.is_some() && google_returned_count == 0 {
+                push_unique_warning(
+                    &mut selected.warnings,
+                    format!(
+                        "Google results were unavailable, returned {} results from parallel search.",
+                        engine_display_name(&selected.engine)
+                    ),
+                );
+            } else if google_index.is_none() {
+                push_unique_warning(
+                    &mut selected.warnings,
+                    format!(
+                        "Google search failed, returned {} results from parallel search.",
+                        engine_display_name(&selected.engine)
+                    ),
+                );
+            }
+        }
+
+        Ok((selected, keep_browser_open))
     })
     .await;
 
