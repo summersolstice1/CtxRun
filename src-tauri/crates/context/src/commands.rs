@@ -1,6 +1,6 @@
 use super::core::{self, ContextStats};
 use super::gitleaks::{self, SecretMatch};
-use super::scanner::{self, ScanIgnoreConfig, ScanNode};
+use super::scanner::{self, ScanIgnoreConfig, ScanProjectTreeResult};
 use crate::error::{ContextError, Result};
 use arboard::Clipboard;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
@@ -86,7 +86,7 @@ pub async fn scan_project_tree(
     sync_ignore_files: bool,
     max_depth: Option<usize>,
     max_entries: Option<usize>,
-) -> Result<Vec<ScanNode>> {
+) -> Result<ScanProjectTreeResult> {
     tauri::async_runtime::spawn_blocking(move || {
         scanner::scan_project_tree(
             project_root,

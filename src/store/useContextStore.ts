@@ -5,6 +5,8 @@ import { IgnoreConfig, DEFAULT_PROJECT_IGNORE, FileNode } from '@/types/context'
 import { invoke } from '@tauri-apps/api/core';
 
 const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
+let projectConfigLoadSeq = 0;
+let projectIgnoreEditSeq = 0;
 
 const setAllChildren = (node: FileNode, isSelected: boolean): FileNode => {
   const newNode = { ...node, isSelected };
@@ -82,7 +84,7 @@ interface ContextState {
   isIgnoreSyncActive: boolean;
   hasProjectIgnoreFiles: boolean;
   toggleIgnoreSync: () => void;
-  checkIgnoreFiles: () => Promise<void>;
+  checkIgnoreFiles: (projectRoot?: string) => Promise<void>;
 }
 
 export const useContextStore = create<ContextState>()(
@@ -118,15 +120,34 @@ export const useContextStore = create<ContextState>()(
       },
 
       setProjectRoot: async (path) => {
-        set({ projectRoot: path });
+        if (get().projectRoot === path) {
+          return;
+        }
+
+        set({ projectRoot: path, projectIgnore: DEFAULT_PROJECT_IGNORE });
+        const loadSeq = ++projectConfigLoadSeq;
+        const editSeqAtStart = projectIgnoreEditSeq;
+
         try {
           const savedConfig = await invoke<IgnoreConfig | null>('get_project_config', { path });
-          if (savedConfig) {
-            set({ projectIgnore: savedConfig });
-          } else {
-            set({ projectIgnore: DEFAULT_PROJECT_IGNORE });
+          const latest = get();
+          if (
+            latest.projectRoot !== path ||
+            loadSeq !== projectConfigLoadSeq ||
+            editSeqAtStart !== projectIgnoreEditSeq
+          ) {
+            return;
           }
+          set({ projectIgnore: savedConfig ?? DEFAULT_PROJECT_IGNORE });
         } catch (e) {
+          const latest = get();
+          if (
+            latest.projectRoot !== path ||
+            loadSeq !== projectConfigLoadSeq ||
+            editSeqAtStart !== projectIgnoreEditSeq
+          ) {
+            return;
+          }
           set({ projectIgnore: DEFAULT_PROJECT_IGNORE });
         }
       },
@@ -134,6 +155,7 @@ export const useContextStore = create<ContextState>()(
       setIsScanning: (status) => set({ isScanning: status }),
 
       updateProjectIgnore: (type, action, value) => {
+        projectIgnoreEditSeq += 1;
         set((state) => {
           const currentList = state.projectIgnore[type];
           let newList = currentList;
@@ -154,13 +176,16 @@ export const useContextStore = create<ContextState>()(
         });
       },
 
-      resetProjectIgnore: () => set((state) => {
-        if (state.projectRoot) {
-          invoke('save_project_config', { path: state.projectRoot, config: DEFAULT_PROJECT_IGNORE })
-            .catch(() => {});
-        }
-        return { projectIgnore: DEFAULT_PROJECT_IGNORE };
-      }),
+      resetProjectIgnore: () => {
+        projectIgnoreEditSeq += 1;
+        set((state) => {
+          if (state.projectRoot) {
+            invoke('save_project_config', { path: state.projectRoot, config: DEFAULT_PROJECT_IGNORE })
+              .catch(() => {});
+          }
+          return { projectIgnore: DEFAULT_PROJECT_IGNORE };
+        });
+      },
 
       refreshTreeStatus: async (globalConfig) => {
         const state = get();
@@ -227,10 +252,11 @@ export const useContextStore = create<ContextState>()(
       },
 
       // 探测项目是否有 ignore 文件
-      checkIgnoreFiles: async () => {
+      checkIgnoreFiles: async (projectRoot) => {
         const state = get();
-        if (!state.projectRoot) return;
-        const hasFiles = await invoke<boolean>(`${CONTEXT_PLUGIN_PREFIX}has_ignore_files`, { projectRoot: state.projectRoot });
+        const root = projectRoot ?? state.projectRoot;
+        if (!root) return;
+        const hasFiles = await invoke<boolean>(`${CONTEXT_PLUGIN_PREFIX}has_ignore_files`, { projectRoot: root });
         set({ hasProjectIgnoreFiles: hasFiles });
       },
     }),

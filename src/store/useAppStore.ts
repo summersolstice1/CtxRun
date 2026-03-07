@@ -173,10 +173,13 @@ export const useAppStore = create<AppState>()(
       })),
       setView: (view) => set({ currentView: view }),
       setProjectRoot: (path) => {
-        set({ projectRoot: path });
-        // Sync with context store to keep states consistent
+        set((state) => (state.projectRoot === path ? state : { projectRoot: path }));
+
         if (path) {
-          useContextStore.getState().setProjectRoot(path);
+          const contextState = useContextStore.getState();
+          if (contextState.projectRoot !== path) {
+            void contextState.setProjectRoot(path);
+          }
         }
       },
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),

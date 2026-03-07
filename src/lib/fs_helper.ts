@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { FileNode, IgnoreConfig } from '@/types/context';
+import { IgnoreConfig, ScanProjectResult } from '@/types/context';
 
 const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 
@@ -13,8 +13,8 @@ export async function scanProject(
   path: string,
   config: IgnoreConfig,
   options: ScanProjectOptions = {}
-): Promise<FileNode[]> {
-  return invoke<FileNode[]>(`${CONTEXT_PLUGIN_PREFIX}scan_project_tree`, {
+): Promise<ScanProjectResult> {
+  return invoke<ScanProjectResult>(`${CONTEXT_PLUGIN_PREFIX}scan_project_tree`, {
     projectRoot: path,
     ignore: config,
     syncIgnoreFiles: options.syncIgnoreFiles ?? false,

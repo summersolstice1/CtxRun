@@ -42,3 +42,10 @@ export interface FileNode {
   ignoreSource?: 'git' | 'filter';
   children?: FileNode[];
 }
+
+export interface ScanProjectResult {
+  nodes: FileNode[];
+  capped: boolean;
+  scannedEntries: number;
+  maxEntries: number;
+}

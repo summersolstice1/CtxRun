@@ -66,9 +66,53 @@ const Row = memo(function Row({ index, style, data }: RowProps) {
   );
 });
 
+interface NodeUiState {
+  isSelected: boolean;
+  isExpanded?: boolean;
+}
+
+function buildNodeStateMap(nodes: FileNode[]): Map<string, NodeUiState> {
+  const map = new Map<string, NodeUiState>();
+  const walk = (items: FileNode[]) => {
+    for (const node of items) {
+      map.set(node.id, { isSelected: node.isSelected, isExpanded: node.isExpanded });
+      if (node.children && node.children.length > 0) {
+        walk(node.children);
+      }
+    }
+  };
+  walk(nodes);
+  return map;
+}
+
+function mergeTreeUiState(nextTree: FileNode[], prevTree: FileNode[]): FileNode[] {
+  if (prevTree.length === 0) {
+    return nextTree;
+  }
+
+  const prevStateMap = buildNodeStateMap(prevTree);
+  const mergeNode = (node: FileNode, parentLocked = false): FileNode => {
+    const prev = prevStateMap.get(node.id);
+    const isLocked = parentLocked || !!node.isLocked;
+    const merged: FileNode = {
+      ...node,
+      isSelected: isLocked ? false : (prev?.isSelected ?? node.isSelected),
+      isExpanded: prev?.isExpanded ?? node.isExpanded,
+    };
+
+    if (node.children && node.children.length > 0) {
+      merged.children = node.children.map(child => mergeNode(child, isLocked));
+    }
+    return merged;
+  };
+
+  return nextTree.map(node => mergeNode(node));
+}
+
 export function ContextView() {
   const { t } = useTranslation();
   const {
+    projectRoot: contextProjectRoot,
     fileTree, isScanning,
     projectIgnore, updateProjectIgnore,
     refreshTreeStatus,
@@ -123,9 +167,9 @@ export function ContextView() {
 
   useEffect(() => {
     if (globalProjectRoot) {
-      checkIgnoreFiles();
+      checkIgnoreFiles(globalProjectRoot);
     }
-  }, [globalProjectRoot]);
+  }, [globalProjectRoot, checkIgnoreFiles]);
 
   useEffect(() => {
     if (fileTree.length > 0) {
@@ -352,15 +396,26 @@ export function ContextView() {
         extensions: Array.from(new Set([...globalIgnore.extensions, ...projectIgnore.extensions])),
       };
 
-      const tree = await scanProject(path, effectiveConfig, {
+      const result = await scanProject(path, effectiveConfig, {
         syncIgnoreFiles: isIgnoreSyncActive,
         maxDepth: 24,
         maxEntries: 100000,
       });
+      const previousTree = useContextStore.getState().fileTree;
+      const tree = mergeTreeUiState(result.nodes, previousTree);
       setFileTree(tree);
-      // Always sync project root to context store so project filter changes can persist.
-      setGlobalProjectRoot(path);
-      await checkIgnoreFiles();
+
+      if (path !== globalProjectRoot || !contextProjectRoot) {
+        setGlobalProjectRoot(path);
+      }
+      await checkIgnoreFiles(path);
+
+      if (result.capped) {
+        triggerToast(
+          t('context.scanCapped', { scanned: result.scannedEntries, max: result.maxEntries }),
+          'warning'
+        );
+      }
 
       const idealWidth = calculateIdealTreeWidth(tree);
       if (idealWidth > contextSidebarWidth) setContextSidebarWidth(idealWidth);

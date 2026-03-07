@@ -36,6 +36,15 @@ pub struct ScanNode {
     pub children: Option<Vec<ScanNode>>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ScanProjectTreeResult {
+    pub nodes: Vec<ScanNode>,
+    pub capped: bool,
+    pub scanned_entries: usize,
+    pub max_entries: usize,
+}
+
 #[derive(Debug)]
 struct ScanConfig {
     ignore_dir_names: HashSet<String>,
@@ -176,7 +185,7 @@ pub fn scan_project_tree(
     sync_ignore_files: bool,
     max_depth: Option<usize>,
     max_entries: Option<usize>,
-) -> Result<Vec<ScanNode>> {
+) -> Result<ScanProjectTreeResult> {
     let root = PathBuf::from(&project_root);
     if !root.exists() {
         return Err(ContextError::IoError(std::io::Error::new(
@@ -193,7 +202,14 @@ pub fn scan_project_tree(
 
     let cfg = ScanConfig::from_input(&root, ignore, sync_ignore_files, max_depth, max_entries);
     let mut state = ScanState::default();
-    Ok(scan_dir(&root, "", 0, &cfg, &mut state, false))
+    let nodes = scan_dir(&root, "", 0, &cfg, &mut state, false);
+
+    Ok(ScanProjectTreeResult {
+        nodes,
+        capped: state.capped,
+        scanned_entries: state.entries,
+        max_entries: cfg.max_entries,
+    })
 }
 
 fn scan_dir(
