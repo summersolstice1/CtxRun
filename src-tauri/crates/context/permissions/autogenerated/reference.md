@@ -188,4 +188,30 @@ Denies the scan_for_secrets command without any pre-configured scope.
 
 </td>
 </tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-context:allow-scan-project-tree`
+
+</td>
+<td>
+
+Enables the scan_project_tree command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-context:deny-scan-project-tree`
+
+</td>
+<td>
+
+Denies the scan_project_tree command without any pre-configured scope.
+
+</td>
+</tr>
 </table>

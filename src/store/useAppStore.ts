@@ -321,6 +321,10 @@ export const useAppStore = create<AppState>()(
         if (state?.language) {
           i18n.changeLanguage(state.language);
         }
+        // Keep context store in sync after persisted app root is restored.
+        if (state?.projectRoot) {
+          void useContextStore.getState().setProjectRoot(state.projectRoot);
+        }
       },
       partialize: (state) => ({
         theme: state.theme,

@@ -93,6 +93,7 @@ export function ContextView() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showFilters, setShowFilters] = useState(false); 
   const [rightViewMode, setRightViewMode] = useState<'dashboard' | 'preview'>('dashboard');
+  const ignoreSyncInitializedRef = useRef(false);
 
   const [toastState, setToastState] = useState<{ show: boolean; msg: string; type: ToastType }>({
       show: false,
@@ -131,6 +132,17 @@ export function ContextView() {
       refreshTreeStatus(globalIgnore);
     }
   }, [globalIgnore, projectIgnore, refreshTreeStatus, isIgnoreSyncActive]);
+
+  useEffect(() => {
+    if (!ignoreSyncInitializedRef.current) {
+      ignoreSyncInitializedRef.current = true;
+      return;
+    }
+
+    if (!globalProjectRoot || isScanning) return;
+    void performScan(globalProjectRoot);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isIgnoreSyncActive]);
 
   const selectedFileCount = useMemo(() => {
     let count = 0;
@@ -340,9 +352,13 @@ export function ContextView() {
         extensions: Array.from(new Set([...globalIgnore.extensions, ...projectIgnore.extensions])),
       };
 
-      const tree = await scanProject(path, effectiveConfig);
+      const tree = await scanProject(path, effectiveConfig, {
+        syncIgnoreFiles: isIgnoreSyncActive,
+        maxDepth: 24,
+        maxEntries: 100000,
+      });
       setFileTree(tree);
-      // setGlobalProjectRoot will automatically sync to useContextStore
+      // Always sync project root to context store so project filter changes can persist.
       setGlobalProjectRoot(path);
       await checkIgnoreFiles();
 
@@ -361,8 +377,6 @@ export function ContextView() {
       const selected = await open({ directory: true, multiple: false, recursive: false });
       if (selected && typeof selected === 'string') {
         setPathInput(selected);
-        // Update global project root - all components will receive this
-        setGlobalProjectRoot(selected);
         await performScan(selected);
       }
     } catch (err) { }
@@ -531,12 +545,13 @@ export function ContextView() {
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-10 h-full"> 
                 {rightViewMode === 'dashboard' ? (
                    <TokenDashboard
-                     fileTree={fileTree}
-                     models={activeModels}
-                     onCopy={handleCopyContext}
-                     onSave={handleSaveToFile}
-                     isGenerating={isGenerating}
-                   />
+                      fileTree={fileTree}
+                      models={activeModels}
+                      onCopy={handleCopyContext}
+                      onSave={handleSaveToFile}
+                      isGenerating={isGenerating}
+                      isActive={rightViewMode === 'dashboard'}
+                    />
                 ) : (
                    <div className="h-full">
                       <ContextPreview fileTree={fileTree} />

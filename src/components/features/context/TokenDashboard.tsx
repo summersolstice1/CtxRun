@@ -22,6 +22,7 @@ interface TokenDashboardProps {
   onCopy: () => void;
   onSave: () => void;
   isGenerating: boolean;
+  isActive: boolean;
 }
 
 export function TokenDashboard({
@@ -29,7 +30,8 @@ export function TokenDashboard({
   models,
   onCopy,
   onSave,
-  isGenerating
+  isGenerating,
+  isActive
 }: TokenDashboardProps) {
   const { t } = useTranslation();
   const { removeComments, setRemoveComments, toggleSelect, detectSecrets, setDetectSecrets } = useContextStore();
@@ -52,6 +54,7 @@ export function TokenDashboard({
 
   useEffect(() => {
     let isMounted = true;
+    if (!isActive) return;
 
     const fetchStats = async () => {
       const paths = getSelectedPaths(fileTree);
@@ -79,12 +82,13 @@ export function TokenDashboard({
       }
     };
 
-    const timer = setTimeout(fetchStats, 200);
+    const delay = fileTree.length > 2000 ? 600 : 200;
+    const timer = setTimeout(fetchStats, delay);
     return () => {
       isMounted = false;
       clearTimeout(timer);
     };
-  }, [fileTree, removeComments]);
+  }, [fileTree, removeComments, isActive]);
 
   const analytics = useMemo(() => {
     return analyzeContext(fileTree, stats.total_tokens, models);

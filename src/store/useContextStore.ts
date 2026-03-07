@@ -52,20 +52,6 @@ const collectDirIds = (nodes: FileNode[]): string[] => {
   return ids;
 };
 
-const collectAllPaths = (nodes: FileNode[]): string[] => {
-  let paths: string[] = [];
-  const traverse = (nodeList: FileNode[]) => {
-    for (const node of nodeList) {
-      paths.push(node.path);
-      if (node.children) {
-        traverse(node.children);
-      }
-    }
-  };
-  traverse(nodes);
-  return paths;
-};
-
 interface ContextState {
   projectIgnore: IgnoreConfig;
   removeComments: boolean;
@@ -178,25 +164,10 @@ export const useContextStore = create<ContextState>()(
 
       refreshTreeStatus: async (globalConfig) => {
         const state = get();
-        const { projectRoot, fileTree, isIgnoreSyncActive } = state;
+        const { fileTree, isIgnoreSyncActive } = state;
 
-        let protocolIgnoredPaths: string[] = [];
-
-        // 如果开启了同步，从后端获取被 ignore 命中的所有路径
-        if (isIgnoreSyncActive && projectRoot) {
-          const allPaths = collectAllPaths(fileTree);
-          protocolIgnoredPaths = await invoke<string[]>(`${CONTEXT_PLUGIN_PREFIX}get_ignored_by_protocol`, {
-            projectRoot,
-            paths: allPaths
-          });
-        }
-
-        const protocolSet = new Set(protocolIgnoredPaths);
-
-        // 应用锁定逻辑
         const applyStatus = (nodes: FileNode[], parentLocked = false, parentGitIgnored = false): FileNode[] => {
           return nodes.map(node => {
-            // 判定是否被常规规则命中
             let isConfigIgnored = parentLocked ||
                                   state.projectIgnore.dirs.includes(node.name) ||
                                   globalConfig.dirs.includes(node.name);
@@ -212,27 +183,25 @@ export const useContextStore = create<ContextState>()(
               }
             }
 
-            // 判定是否被 Git 协议命中（自身或父级被 git 忽略）
-            const isProtocolIgnored = parentGitIgnored || protocolSet.has(node.path);
+            // Git ignore 状态由扫描阶段产出，这里只做继承和开关控制。
+            const isNodeGitIgnored = isIgnoreSyncActive && (node.ignoreSource === 'git' || parentGitIgnored);
+            const shouldLock = isConfigIgnored || isNodeGitIgnored;
+            const shouldAutoReselect = !isIgnoreSyncActive && node.ignoreSource === 'git' && !isConfigIgnored;
 
-            const shouldLock = isConfigIgnored || isProtocolIgnored;
-
-            // 确定忽略来源：优先显示 Git 忽略，其次显示过滤规则
             let ignoreSource: 'git' | 'filter' | undefined = undefined;
             if (shouldLock) {
-              ignoreSource = isProtocolIgnored ? 'git' : 'filter';
+              ignoreSource = isNodeGitIgnored ? 'git' : 'filter';
             }
 
             const newNode: FileNode = {
               ...node,
-              isSelected: shouldLock ? false : node.isSelected,
+              isSelected: shouldLock ? false : (shouldAutoReselect ? true : node.isSelected),
               isLocked: shouldLock,
               ignoreSource,
             };
 
             if (newNode.children) {
-              // 如果当前节点被 git 忽略，子节点也继承这个状态
-              newNode.children = applyStatus(newNode.children, shouldLock, isProtocolIgnored);
+              newNode.children = applyStatus(newNode.children, shouldLock, isNodeGitIgnored);
             }
             return newNode;
           });

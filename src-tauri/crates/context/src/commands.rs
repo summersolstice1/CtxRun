@@ -1,5 +1,6 @@
 use super::core::{self, ContextStats};
 use super::gitleaks::{self, SecretMatch};
+use super::scanner::{self, ScanIgnoreConfig, ScanNode};
 use crate::error::{ContextError, Result};
 use arboard::Clipboard;
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
@@ -77,6 +78,28 @@ pub async fn save_context_to_file<R: tauri::Runtime>(
     .await
     .map_err(|e| ContextError::JoinError(e.to_string()))?
 }
+
+#[tauri::command]
+pub async fn scan_project_tree(
+    project_root: String,
+    ignore: ScanIgnoreConfig,
+    sync_ignore_files: bool,
+    max_depth: Option<usize>,
+    max_entries: Option<usize>,
+) -> Result<Vec<ScanNode>> {
+    tauri::async_runtime::spawn_blocking(move || {
+        scanner::scan_project_tree(
+            project_root,
+            ignore,
+            sync_ignore_files,
+            max_depth,
+            max_entries,
+        )
+    })
+    .await
+    .map_err(|e| ContextError::JoinError(e.to_string()))?
+}
+
 #[tauri::command]
 pub fn has_ignore_files(project_root: String) -> bool {
     let root = Path::new(&project_root);

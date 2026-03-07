@@ -77,6 +77,7 @@
     "ctxrun-plugin-context:allow-get-context-content",
     "ctxrun-plugin-context:allow-copy-context-to-clipboard",
     "ctxrun-plugin-context:allow-save-context-to-file",
+    "ctxrun-plugin-context:allow-scan-project-tree",
     "ctxrun-plugin-context:allow-has-ignore-files",
     "ctxrun-plugin-context:allow-get-ignored-by-protocol",
     "ctxrun-plugin-git:allow-get-git-commits",

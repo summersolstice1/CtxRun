@@ -8,6 +8,7 @@ pub mod core;
 pub mod error;
 pub mod gitleaks;
 pub mod processing;
+pub mod scanner;
 pub mod tokenizer;
 
 pub use error::{ContextError, Result};
@@ -19,6 +20,7 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::get_context_content,
             commands::copy_context_to_clipboard,
             commands::save_context_to_file,
+            commands::scan_project_tree,
             commands::has_ignore_files,
             commands::get_ignored_by_protocol,
             commands::scan_for_secrets,
