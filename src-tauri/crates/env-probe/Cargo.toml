@@ -1,0 +1,16 @@
+[package]
+name = "ctxrun-env-probe"
+version = "2.0.0"
+edition = "2024"
+description = "Environment probing utilities for CtxRun"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+rayon = { workspace = true }
+regex = { workspace = true }
+once_cell = { workspace = true }
+which = { workspace = true }
+tauri = { workspace = true }
+sysinfo = "0.37"
+wait-timeout = "0.2"

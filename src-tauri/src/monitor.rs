@@ -12,7 +12,7 @@ use sysinfo::{
 };
 use tauri::State;
 
-use crate::env_probe::{self, AiContextReport, EnvReport};
+use ctxrun_env_probe::env_probe::{self, AiContextReport, EnvReport};
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
 

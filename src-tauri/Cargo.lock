@@ -1158,6 +1158,8 @@ dependencies = [
  "csv",
  "ctxrun-browser-utils",
  "ctxrun-db",
+ "ctxrun-env-probe",
+ "ctxrun-hyperview",
  "ctxrun-plugin-automator",
  "ctxrun-plugin-context",
  "ctxrun-plugin-git",
@@ -1231,6 +1233,32 @@ dependencies = [
  "tauri",
  "thiserror 2.0.17",
  "uuid",
+]
+
+[[package]]
+name = "ctxrun-env-probe"
+version = "2.0.0"
+dependencies = [
+ "once_cell",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_json",
+ "sysinfo",
+ "tauri",
+ "wait-timeout",
+ "which",
+]
+
+[[package]]
+name = "ctxrun-hyperview"
+version = "2.0.0"
+dependencies = [
+ "infer",
+ "mime_guess",
+ "percent-encoding",
+ "serde",
+ "tauri",
 ]
 
 [[package]]

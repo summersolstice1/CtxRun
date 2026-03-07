@@ -25,9 +25,7 @@ use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 use ctxrun_db as db;
 mod agent_tools;
 mod apps;
-mod env_probe;
 mod error;
-mod hyperview;
 mod monitor;
 mod scheduler;
 mod shortcuts;
@@ -196,7 +194,10 @@ fn main() {
         .plugin(ctxrun_plugin_refinery::init())
         .plugin(ctxrun_plugin_miner::init())
         .plugin(ctxrun_plugin_tool_runtime::init())
-        .register_uri_scheme_protocol("preview", hyperview::protocol::preview_protocol_handler)
+        .register_uri_scheme_protocol(
+            "preview",
+            ctxrun_hyperview::protocol::preview_protocol_handler,
+        )
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
             get_file_size,
@@ -242,7 +243,7 @@ fn main() {
             monitor::get_env_info,
             monitor::diagnose_network,
             monitor::get_ai_context,
-            hyperview::get_file_meta,
+            ctxrun_hyperview::get_file_meta,
             scheduler::update_reminder_config,
         ])
         .setup(|app| {
