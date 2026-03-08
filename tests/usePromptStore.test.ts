@@ -140,6 +140,35 @@ describe('usePromptStore loadPrompts', () => {
     expect(invokeMock).not.toHaveBeenCalled();
   });
 
+  it('restores previous prompts when reset load fails', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    invokeMock.mockRejectedValue(new Error('search failed'));
+    const usePromptStore = await importFreshPromptStore();
+
+    usePromptStore.setState({
+      prompts: [makePrompt('old', 'Old Prompt')],
+      page: 3,
+      hasMore: false,
+      searchQuery: 'will-fail',
+    });
+
+    await usePromptStore.getState().loadPrompts(true);
+
+    const state = usePromptStore.getState();
+    expect(invokeMock).toHaveBeenCalledWith(
+      'search_prompts',
+      expect.objectContaining({
+        query: 'will-fail',
+        page: 1,
+      })
+    );
+    expect(state.prompts.map((p) => p.id)).toEqual(['old']);
+    expect(state.page).toBe(3);
+    expect(state.hasMore).toBe(false);
+    expect(state.isLoading).toBe(false);
+    expect(errorSpy).toHaveBeenCalled();
+  });
+
   it('allows reset load while already loading', async () => {
     invokeMock.mockResolvedValue([makePrompt('reset', 'Reset Prompt')]);
     const usePromptStore = await importFreshPromptStore();

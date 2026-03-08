@@ -1,7 +1,7 @@
 import React from 'react';
 import { act } from 'react';
-import { render, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { invokeMock, appStoreSnapshot } = vi.hoisted(() => ({
   invokeMock: vi.fn(),
@@ -53,16 +53,19 @@ function deferred<T>() {
   return { promise, resolve, reject };
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 let latestSpotlight:
   | ReturnType<typeof useSpotlight>
   | null = null;
 let latestSearch:
   | ReturnType<typeof useSpotlightSearch>
   | null = null;
+
+async function flushDebounce(ms = 160) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+    await Promise.resolve();
+  });
+}
 
 function Harness() {
   const spotlight = useSpotlight();
@@ -74,9 +77,15 @@ function Harness() {
 
 describe('useSpotlightSearch race handling', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     latestSpotlight = null;
     latestSearch = null;
     invokeMock.mockReset();
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('keeps newest query results when older search resolves later', async () => {
@@ -107,38 +116,28 @@ describe('useSpotlightSearch race handling', () => {
       </SpotlightProvider>
     );
 
-    await waitFor(() => {
-      expect(latestSpotlight).not.toBeNull();
-      expect(latestSearch).not.toBeNull();
-    });
+    expect(latestSpotlight).not.toBeNull();
+    expect(latestSearch).not.toBeNull();
 
     act(() => {
       latestSpotlight!.setQuery('first');
     });
-    await act(async () => {
-      await sleep(150);
-    });
+    await flushDebounce();
 
-    await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        'search_prompts',
-        expect.objectContaining({ query: 'first' })
-      );
-    });
+    expect(invokeMock).toHaveBeenCalledWith(
+      'search_prompts',
+      expect.objectContaining({ query: 'first' })
+    );
 
     act(() => {
       latestSpotlight!.setQuery('second');
     });
-    await act(async () => {
-      await sleep(150);
-    });
+    await flushDebounce();
 
-    await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        'search_prompts',
-        expect.objectContaining({ query: 'second' })
-      );
-    });
+    expect(invokeMock).toHaveBeenCalledWith(
+      'search_prompts',
+      expect.objectContaining({ query: 'second' })
+    );
 
     second.resolve([makePrompt('prompt-2', 'Second Prompt')]);
     await act(async () => {
@@ -146,9 +145,7 @@ describe('useSpotlightSearch race handling', () => {
       await Promise.resolve();
     });
 
-    await waitFor(() => {
-      expect(latestSearch!.results.map((item) => item.id)).toEqual(['prompt-2']);
-    });
+    expect(latestSearch!.results.map((item) => item.id)).toEqual(['prompt-2']);
 
     first.resolve([makePrompt('prompt-1', 'First Prompt')]);
     await act(async () => {
@@ -156,9 +153,7 @@ describe('useSpotlightSearch race handling', () => {
       await Promise.resolve();
     });
 
-    await waitFor(() => {
-      expect(latestSearch!.results.map((item) => item.id)).toEqual(['prompt-2']);
-    });
+    expect(latestSearch!.results.map((item) => item.id)).toEqual(['prompt-2']);
 
   });
 
@@ -185,45 +180,33 @@ describe('useSpotlightSearch race handling', () => {
       </SpotlightProvider>
     );
 
-    await waitFor(() => {
-      expect(latestSpotlight).not.toBeNull();
-      expect(latestSearch).not.toBeNull();
-    });
+    expect(latestSpotlight).not.toBeNull();
+    expect(latestSearch).not.toBeNull();
 
     act(() => {
       latestSpotlight!.setMode('clipboard');
     });
-    await act(async () => {
-      await sleep(120);
-    });
+    await flushDebounce(130);
 
     act(() => {
       latestSpotlight!.setQuery('old-clip');
     });
-    await act(async () => {
-      await sleep(150);
-    });
+    await flushDebounce();
 
-    await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        'plugin:ctxrun-plugin-refinery|get_refinery_history',
-        expect.objectContaining({ searchQuery: 'old-clip' })
-      );
-    });
+    expect(invokeMock).toHaveBeenCalledWith(
+      'plugin:ctxrun-plugin-refinery|get_refinery_history',
+      expect.objectContaining({ searchQuery: 'old-clip' })
+    );
 
     act(() => {
       latestSpotlight!.setQuery('new-clip');
     });
-    await act(async () => {
-      await sleep(150);
-    });
+    await flushDebounce();
 
-    await waitFor(() => {
-      expect(invokeMock).toHaveBeenCalledWith(
-        'plugin:ctxrun-plugin-refinery|get_refinery_history',
-        expect.objectContaining({ searchQuery: 'new-clip' })
-      );
-    });
+    expect(invokeMock).toHaveBeenCalledWith(
+      'plugin:ctxrun-plugin-refinery|get_refinery_history',
+      expect.objectContaining({ searchQuery: 'new-clip' })
+    );
 
     newClipboard.resolve([
       {
@@ -242,9 +225,7 @@ describe('useSpotlightSearch race handling', () => {
       await Promise.resolve();
     });
 
-    await waitFor(() => {
-      expect(latestSearch!.results.map((item) => item.id)).toEqual(['clip-new']);
-    });
+    expect(latestSearch!.results.map((item) => item.id)).toEqual(['clip-new']);
 
     oldClipboard.resolve([
       {
@@ -263,8 +244,6 @@ describe('useSpotlightSearch race handling', () => {
       await Promise.resolve();
     });
 
-    await waitFor(() => {
-      expect(latestSearch!.results.map((item) => item.id)).toEqual(['clip-new']);
-    });
+    expect(latestSearch!.results.map((item) => item.id)).toEqual(['clip-new']);
   });
 });

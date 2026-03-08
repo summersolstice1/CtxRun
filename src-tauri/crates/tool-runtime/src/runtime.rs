@@ -230,31 +230,3 @@ impl Default for ToolRuntime {
         Self::new()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use std::collections::HashSet;
-
-    use super::ToolRuntime;
-
-    #[test]
-    fn registers_fs_tools_and_aliases() {
-        let runtime = ToolRuntime::new();
-        let names = runtime
-            .list_tools()
-            .into_iter()
-            .map(|spec| spec.name)
-            .collect::<HashSet<_>>();
-
-        for expected in [
-            "read_file",
-            "fs.read_file",
-            "list_dir",
-            "fs.list_directory",
-            "grep_files",
-            "fs.search_files",
-        ] {
-            assert!(names.contains(expected), "missing tool: {expected}");
-        }
-    }
-}

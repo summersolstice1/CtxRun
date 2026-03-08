@@ -146,6 +146,13 @@ export const usePromptStore = create<PromptState>()(
         const state = get();
         if (state.isLoading && !reset) return;
         const requestId = ++promptLoadRequestSeq;
+        const previousResetState = reset
+          ? {
+              prompts: state.prompts,
+              page: state.page,
+              hasMore: state.hasMore
+            }
+          : null;
 
         const currentPage = reset ? 1 : state.page;
         if (reset) {
@@ -190,6 +197,9 @@ export const usePromptStore = create<PromptState>()(
         } catch (e) {
             if (requestId === promptLoadRequestSeq) {
               console.error('[PromptStore] Failed to load prompts:', e);
+              if (previousResetState) {
+                set(previousResetState);
+              }
             }
         } finally {
             if (requestId === promptLoadRequestSeq) {

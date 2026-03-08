@@ -1378,6 +1378,17 @@ dependencies = [
 [[package]]
 name = "ctxrun-workspace-tests"
 version = "0.1.0"
+dependencies = [
+ "ctxrun-db",
+ "ctxrun-plugin-context",
+ "ctxrun-plugin-git",
+ "ctxrun-plugin-miner",
+ "ctxrun-plugin-refinery",
+ "ctxrun-plugin-tool-runtime",
+ "rusqlite",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "darling"

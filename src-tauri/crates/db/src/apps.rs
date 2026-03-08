@@ -79,8 +79,8 @@ pub fn sync_scanned_apps(
     let mut new_entries = Vec::new();
 
     for app in &scanned_apps {
-        scanned_paths.insert(app.path.clone());
-        if !existing_paths.contains(&app.path) {
+        // Deduplicate by path to avoid duplicate INSERT attempts when scanner returns duplicates.
+        if scanned_paths.insert(app.path.clone()) && !existing_paths.contains(&app.path) {
             new_entries.push(app);
         }
     }
