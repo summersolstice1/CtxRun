@@ -16,4 +16,4 @@ similar = { workspace = true }
 thiserror = { workspace = true }
 
 [build-dependencies]
-tauri-plugin = { workspace = true }
+tauri-plugin = { workspace = true, features = ["build"] }

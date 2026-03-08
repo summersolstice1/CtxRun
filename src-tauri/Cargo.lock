@@ -1376,6 +1376,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctxrun-workspace-tests"
+version = "0.1.0"
+
+[[package]]
 name = "darling"
 version = "0.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
