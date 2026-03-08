@@ -29,6 +29,7 @@ import { Toast, ToastType } from '@/components/ui/Toast';
 import { FileNode } from '@/types/context';
 import { FixedSizeList as List } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import { useShallow } from 'zustand/react/shallow';
 
 interface FlatNode {
   node: FileNode;
@@ -111,25 +112,69 @@ function mergeTreeUiState(nextTree: FileNode[], prevTree: FileNode[]): FileNode[
 
 export function ContextView() {
   const { t } = useTranslation();
-  const {
-    projectRoot: contextProjectRoot,
-    fileTree, isScanning,
-    projectIgnore, updateProjectIgnore,
+  const [
+    contextProjectRoot,
+    fileTree,
+    isScanning,
+    projectIgnore,
+    updateProjectIgnore,
     refreshTreeStatus,
-    setFileTree, setIsScanning, toggleSelect,
-    removeComments, detectSecrets, invertSelection,
-    expandedIds, toggleExpand,
-    hasProjectIgnoreFiles, isIgnoreSyncActive, toggleIgnoreSync, checkIgnoreFiles
-  } = useContextStore();
+    setFileTree,
+    setIsScanning,
+    toggleSelect,
+    removeComments,
+    detectSecrets,
+    invertSelection,
+    expandedIds,
+    toggleExpand,
+    hasProjectIgnoreFiles,
+    isIgnoreSyncActive,
+    toggleIgnoreSync,
+    checkIgnoreFiles
+  ] = useContextStore(
+    useShallow((state) => [
+      state.projectRoot,
+      state.fileTree,
+      state.isScanning,
+      state.projectIgnore,
+      state.updateProjectIgnore,
+      state.refreshTreeStatus,
+      state.setFileTree,
+      state.setIsScanning,
+      state.toggleSelect,
+      state.removeComments,
+      state.detectSecrets,
+      state.invertSelection,
+      state.expandedIds,
+      state.toggleExpand,
+      state.hasProjectIgnoreFiles,
+      state.isIgnoreSyncActive,
+      state.toggleIgnoreSync,
+      state.checkIgnoreFiles
+    ])
+  );
 
-  const {
-    isContextSidebarOpen, setContextSidebarOpen,
-    contextSidebarWidth, setContextSidebarWidth,
+  const [
+    isContextSidebarOpen,
+    setContextSidebarOpen,
+    contextSidebarWidth,
+    setContextSidebarWidth,
     globalIgnore,
     models,
-    projectRoot: globalProjectRoot,
-    setProjectRoot: setGlobalProjectRoot
-  } = useAppStore();
+    globalProjectRoot,
+    setGlobalProjectRoot
+  ] = useAppStore(
+    useShallow((state) => [
+      state.isContextSidebarOpen,
+      state.setContextSidebarOpen,
+      state.contextSidebarWidth,
+      state.setContextSidebarWidth,
+      state.globalIgnore,
+      state.models,
+      state.projectRoot,
+      state.setProjectRoot
+    ])
+  );
 
   const { openPreview } = usePreviewStore();
 
@@ -288,6 +333,7 @@ export function ContextView() {
               await executeFinalAction(text, action, savePath);
           }
       } catch (e) {
+          console.warn('Security scan failed, fallback to direct action:', e);
           triggerToast("Security scan error, proceeding anyway.", 'warning');
           await executeFinalAction(text, action, savePath);
       }
@@ -343,6 +389,7 @@ export function ContextView() {
         triggerToast(t('context.toastCopied'), 'success');
       }
     } catch (err) {
+      console.error('Failed to copy context to clipboard:', err);
       triggerToast("Copy failed", 'error');
     } finally {
       setIsGenerating(false);
@@ -380,6 +427,7 @@ export function ContextView() {
         triggerToast(t('context.toastSaved'), 'success');
       }
     } catch (err) {
+      console.error('Failed to generate and save context:', err);
       triggerToast("Generation failed", 'error');
     } finally {
       setIsGenerating(false);
@@ -421,6 +469,7 @@ export function ContextView() {
       if (idealWidth > contextSidebarWidth) setContextSidebarWidth(idealWidth);
       if (!isContextSidebarOpen) setContextSidebarOpen(true);
     } catch (err) {
+      console.error('Project scan failed:', err);
       triggerToast("Scan failed. Check path.", 'error');
     } finally {
       setIsScanning(false);
@@ -434,7 +483,9 @@ export function ContextView() {
         setPathInput(selected);
         await performScan(selected);
       }
-    } catch (err) { }
+    } catch (err) {
+      console.error('Failed to browse project directory:', err);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

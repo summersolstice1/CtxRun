@@ -9,6 +9,7 @@ import { fetchFromMirrors, PROMPT_MIRROR_BASES } from '@/lib/network';
 
 const PAGE_SIZE = 20;
 const LEGACY_STORE_FILE = 'prompts-data.json';
+let promptLoadRequestSeq = 0;
 
 interface PromptState {
   prompts: Prompt[];
@@ -76,6 +77,7 @@ export const usePromptStore = create<PromptState>()(
             const counts = await invoke<{ prompt: number, command: number }>('get_prompt_counts');
             set({ counts });
         } catch (e) {
+            console.error('[PromptStore] Failed to refresh prompt counts:', e);
         }
       },
 
@@ -84,6 +86,7 @@ export const usePromptStore = create<PromptState>()(
               const templates = await invoke<Prompt[]>('get_chat_templates');
               set({ chatTemplates: templates });
           } catch (e) {
+              console.error('[PromptStore] Failed to fetch chat templates:', e);
           }
       },
 
@@ -123,6 +126,7 @@ export const usePromptStore = create<PromptState>()(
                 }
             }
         } catch (e) {
+            console.error('[PromptStore] Legacy prompt migration failed:', e);
         } finally {
             set({ migrationVersion: 1 });
         }
@@ -134,15 +138,26 @@ export const usePromptStore = create<PromptState>()(
             const uniqueGroups = Array.from(new Set([DEFAULT_GROUP, ...groups]));
             set({ groups: uniqueGroups });
         } catch (e) {
+            console.error('[PromptStore] Failed to refresh groups:', e);
         }
       },
 
       loadPrompts: async (reset = false) => {
         const state = get();
-        if (state.isLoading) return;
+        if (state.isLoading && !reset) return;
+        const requestId = ++promptLoadRequestSeq;
 
         const currentPage = reset ? 1 : state.page;
-        set({ isLoading: true });
+        if (reset) {
+          set({
+            isLoading: true,
+            prompts: [],
+            page: 1,
+            hasMore: true
+          });
+        } else {
+          set({ isLoading: true });
+        }
 
         try {
             let newPrompts: Prompt[] = [];
@@ -163,30 +178,39 @@ export const usePromptStore = create<PromptState>()(
                 });
             }
 
+            if (requestId !== promptLoadRequestSeq) {
+              return;
+            }
+
             set((prev) => ({
                 prompts: reset ? newPrompts : [...prev.prompts, ...newPrompts],
                 page: currentPage + 1,
-                hasMore: newPrompts.length === PAGE_SIZE,
-                isLoading: false
+                hasMore: newPrompts.length === PAGE_SIZE
             }));
         } catch (e) {
-            set({ isLoading: false });
+            if (requestId === promptLoadRequestSeq) {
+              console.error('[PromptStore] Failed to load prompts:', e);
+            }
+        } finally {
+            if (requestId === promptLoadRequestSeq) {
+              set({ isLoading: false });
+            }
         }
       },
 
       setSearchQuery: (query) => {
         set({ searchQuery: query });
-        get().loadPrompts(true);
+        void get().loadPrompts(true);
       },
 
       setActiveGroup: (group) => {
         set({ activeGroup: group });
-        get().loadPrompts(true);
+        void get().loadPrompts(true);
       },
 
       setActiveCategory: (category) => {
         set({ activeCategory: category, activeGroup: 'all' });
-        get().loadPrompts(true);
+        void get().loadPrompts(true);
       },
 
       addPrompt: async (data) => {
@@ -200,9 +224,9 @@ export const usePromptStore = create<PromptState>()(
         };
         await invoke('save_prompt', { prompt: newPrompt });
 
-        get().loadPrompts(true);
-        get().refreshGroups();
-        get().refreshCounts();
+        void get().loadPrompts(true);
+        void get().refreshGroups();
+        void get().refreshCounts();
       },
 
       updatePrompt: async (id, data) => {
@@ -225,7 +249,7 @@ export const usePromptStore = create<PromptState>()(
         set(state => ({
             prompts: state.prompts.filter(p => p.id !== id)
         }));
-        get().refreshCounts();
+        void get().refreshCounts();
       },
 
       toggleFavorite: async (id) => {
@@ -256,6 +280,7 @@ export const usePromptStore = create<PromptState>()(
                 isStoreLoading: false
             });
         } catch (errors) {
+            console.error('[PromptStore] Failed to fetch prompt manifest:', errors);
             set({ isStoreLoading: false });
         }
       },
@@ -297,9 +322,9 @@ export const usePromptStore = create<PromptState>()(
                 installedPackIds: Array.from(new Set([...state.installedPackIds, pack.id]))
             }));
 
-            get().loadPrompts(true);
-            get().refreshGroups();
-            get().refreshCounts();
+            void get().loadPrompts(true);
+            void get().refreshGroups();
+            void get().refreshCounts();
         } catch (e: any) {
             throw e;
         } finally {
@@ -319,10 +344,11 @@ export const usePromptStore = create<PromptState>()(
                 installedPackIds: state.installedPackIds.filter(id => id !== packId)
             }));
 
-            get().loadPrompts(true);
-            get().refreshGroups();
-            get().refreshCounts();
+            void get().loadPrompts(true);
+            void get().refreshGroups();
+            void get().refreshCounts();
         } catch (e) {
+            console.error('[PromptStore] Failed to uninstall prompt pack:', e);
         } finally {
             set({ isStoreLoading: false });
         }

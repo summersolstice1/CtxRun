@@ -154,17 +154,33 @@ impl BrowserConnection {
         })
     }
 
-    fn into_tab_session(mut self, page: Page) -> TabSession {
+    fn browser_ref(&self, context: &str) -> Result<&Browser> {
+        self.browser.as_ref().ok_or_else(|| {
+            AutomatorError::BrowserError(format!("Browser connection unavailable {}", context))
+        })
+    }
+
+    fn browser_mut(&mut self, context: &str) -> Result<&mut Browser> {
+        self.browser.as_mut().ok_or_else(|| {
+            AutomatorError::BrowserError(format!("Browser connection unavailable {}", context))
+        })
+    }
+
+    fn into_tab_session(mut self, page: Page) -> Result<TabSession> {
         let browser = self
             .browser
             .take()
-            .expect("BrowserConnection missing browser in into_tab_session");
-        TabSession {
+            .ok_or_else(|| {
+                AutomatorError::BrowserError(
+                    "Browser connection unavailable while creating tab session".into(),
+                )
+            })?;
+        Ok(TabSession {
             page,
             _browser: browser,
             handler_task: self.handler_task.take(),
             shutdown_tx: self.shutdown_tx.take(),
-        }
+        })
     }
 }
 
@@ -190,10 +206,7 @@ impl TabSession {
 
         tokio::time::sleep(TARGET_SYNC_WAIT).await;
 
-        let browser = connection
-            .browser
-            .as_mut()
-            .expect("BrowserConnection missing browser while finding target");
+        let browser = connection.browser_mut("while finding target")?;
         let target = match find_target_with_retry(browser, normalized_filter).await {
             Ok(target) => target,
             Err(err) => {
@@ -201,10 +214,7 @@ impl TabSession {
                 return Err(err);
             }
         };
-        let browser = connection
-            .browser
-            .as_ref()
-            .expect("BrowserConnection missing browser while attaching page");
+        let browser = connection.browser_ref("while attaching page")?;
         let page = match get_page_with_retry(browser, target.target_id).await {
             Ok(page) => page,
             Err(err) => {
@@ -214,7 +224,7 @@ impl TabSession {
         };
         let _ = page.bring_to_front().await;
 
-        Ok(connection.into_tab_session(page))
+        connection.into_tab_session(page)
     }
 
     // -- Tab/session management ---------------------------------------------
@@ -225,10 +235,7 @@ impl TabSession {
         tokio::time::sleep(TARGET_SYNC_WAIT).await;
 
         let target_url = sanitize_optional_string(url).unwrap_or_else(|| "about:blank".to_string());
-        let browser = connection
-            .browser
-            .as_ref()
-            .expect("BrowserConnection missing browser while opening new tab");
+        let browser = connection.browser_ref("while opening new tab")?;
         let page = browser
             .new_page(target_url.as_str())
             .await
@@ -247,16 +254,10 @@ impl TabSession {
         let mut connection = BrowserConnection::connect().await?;
         tokio::time::sleep(TARGET_SYNC_WAIT).await;
 
-        let browser = connection
-            .browser
-            .as_mut()
-            .expect("BrowserConnection missing browser while switching tab");
+        let browser = connection.browser_mut("while switching tab")?;
         let candidates = fetch_page_targets_with_retry(browser, None).await?;
         let selected = select_tab_for_switch(&candidates, strategy, index, value)?;
-        let browser = connection
-            .browser
-            .as_ref()
-            .expect("BrowserConnection missing browser while attaching switched tab");
+        let browser = connection.browser_ref("while attaching switched tab")?;
         focus_target_with_retry(browser, selected).await?;
         tokio::time::sleep(Duration::from_millis(120)).await;
 

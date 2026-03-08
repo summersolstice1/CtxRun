@@ -57,10 +57,8 @@ pub fn get_refinery_history(
                 .replace('\\', "\\\\")
                 .replace('"', "\"\"")
                 .replace(' ', " AND ");
-            sql.push_str(&format!(
-                " AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH \"{}\")",
-                escaped_query
-            ));
+            sql.push_str(" AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH ?)");
+            params.push(Box::new(escaped_query));
         }
     }
 
@@ -438,10 +436,10 @@ pub fn execute_count_cleanup<R: Runtime>(
     if keep_pinned {
         sql.push_str(" AND is_pinned = 0");
     }
-    sql.push_str(&format!(" ORDER BY updated_at ASC LIMIT {}", to_delete));
+    sql.push_str(" ORDER BY updated_at ASC LIMIT ?");
     let ids: Vec<String> = conn
         .prepare(&sql)?
-        .query_map([], |row: &rusqlite::Row| row.get(0))?
+        .query_map(params![to_delete], |row: &rusqlite::Row| row.get(0))?
         .filter_map(|r| r.ok())
         .collect();
     if ids.is_empty() {

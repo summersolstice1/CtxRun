@@ -6,6 +6,7 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { message } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useAppStore, AppTheme } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
@@ -25,6 +26,7 @@ import { SearchMode } from '@/components/features/spotlight/modes/search/SearchM
 import { ChatMode } from '@/components/features/spotlight/modes/chat/ChatMode';
 import { SpotlightItem } from '@/types/spotlight';
 import { ShellType } from '@/types/prompt';
+import { applyThemeToDocument } from '@/lib/theme';
 
 const appWindow = getCurrentWebviewWindow();
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
@@ -39,8 +41,8 @@ function SpotlightContent() {
     attachments, clearAttachments,
     setMode
   } = useSpotlight();
-  const { spotlightAppearance } = useAppStore();
-  const { projectRoot } = useContextStore();
+  const spotlightAppearance = useAppStore((state) => state.spotlightAppearance);
+  const projectRoot = useContextStore((state) => state.projectRoot);
   const { t } = useTranslation();
 
   const search = useSpotlightSearch(t);
@@ -121,7 +123,9 @@ function SpotlightContent() {
     if (item.type === 'url' && item.url) {
         try {
             await open(item.url);
-            invoke('record_url_visit', { url: item.url }).catch(() => {});
+            void invoke('record_url_visit', { url: item.url }).catch((err) => {
+              console.error('Failed to record URL visit:', err);
+            });
             await appWindow.hide();
             setQuery('');
         } catch (e) {
@@ -133,10 +137,13 @@ function SpotlightContent() {
     if (item.type === 'web_search' && item.url) {
         try {
             await open(item.url);
-            invoke('record_url_visit', { url: item.url }).catch(() => {});
+            void invoke('record_url_visit', { url: item.url }).catch((err) => {
+              console.error('Failed to record web search visit:', err);
+            });
             await appWindow.hide();
             setQuery('');
         } catch (e) {
+            console.error('Failed to open web search URL:', e);
         }
         return;
     }
@@ -180,6 +187,7 @@ function SpotlightContent() {
           }
         }, 300);
       } catch (err) {
+        console.error('Failed to copy spotlight item:', err);
       }
     }
   };
@@ -321,24 +329,26 @@ function SpotlightContent() {
 }
 
 export default function SpotlightApp() {
-  const { setTheme, theme } = useAppStore();
-  const { fetchChatTemplates } = usePromptStore();
+  const [setTheme, theme] = useAppStore(
+    useShallow((state) => [state.setTheme, state.theme])
+  );
+  const fetchChatTemplates = usePromptStore((state) => state.fetchChatTemplates);
 
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark', 'black');
-    if (theme === 'black') {
-      root.classList.add('dark', 'black');
-    } else {
-      root.classList.add(theme);
-    }
+    applyThemeToDocument(theme);
+  }, [theme]);
 
+  useEffect(() => {
     const unlistenPromise = appWindow.onFocusChanged(async ({ payload: isFocused }) => {
       if (isFocused) {
-        await useAppStore.persist.rehydrate();
-        await useContextStore.persist.rehydrate();
-        fetchChatTemplates();
-        appWindow.setFocus();
+        try {
+          await useAppStore.persist.rehydrate();
+          await useContextStore.persist.rehydrate();
+          await fetchChatTemplates();
+          await appWindow.setFocus();
+        } catch (err) {
+          console.error('Failed to rehydrate spotlight state on focus:', err);
+        }
       }
     });
 
@@ -350,7 +360,7 @@ export default function SpotlightApp() {
         unlistenPromise.then(f => f());
         themeUnlisten.then(f => f());
     };
-  }, [theme]);
+  }, [fetchChatTemplates, setTheme]);
 
   return (
     <div className="spotlight-window h-full">

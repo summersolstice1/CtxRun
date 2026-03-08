@@ -188,26 +188,25 @@ export const useAppStore = create<AppState>()(
       setPromptSidebarOpen: (open) => set({ isPromptSidebarOpen: open }),
       setContextSidebarOpen: (open) => set({ isContextSidebarOpen: open }),
       setContextSidebarWidth: (width) => set({ contextSidebarWidth: width }),
-      setTheme: (theme, skipEmit = false) => set(() => {
-        const root = document.documentElement;
-        root.classList.remove('light', 'dark', 'black');
-        if (theme === 'black') {
-          root.classList.add('dark', 'black');
-        } else {
-          root.classList.add(theme);
-        }
+      setTheme: (theme, skipEmit = false) => {
+        set({ theme });
         if (!skipEmit) {
-            emit('theme-changed', theme);
+          void emit('theme-changed', theme).catch((err) => {
+            console.error('[AppStore] Failed to emit theme-changed event:', err);
+          });
         }
-        return { theme };
-      }),
+      },
       setSpotlightShortcut: (shortcut) => {
         set({ spotlightShortcut: shortcut });
-        invoke('refresh_shortcuts').catch(() => {});
+        void invoke('refresh_shortcuts').catch((err) => {
+          console.error('[AppStore] Failed to refresh shortcuts after spotlight update:', err);
+        });
       },
       setAutomatorShortcut: (shortcut) => {
         set({ automatorShortcut: shortcut });
-        invoke('refresh_shortcuts').catch(() => {});
+        void invoke('refresh_shortcuts').catch((err) => {
+          console.error('[AppStore] Failed to refresh shortcuts after automator update:', err);
+        });
       },
       setRestReminder: (config) => set((state) => ({
         restReminder: { ...state.restReminder, ...config }
@@ -284,6 +283,7 @@ export const useAppStore = create<AppState>()(
           });
 
         } catch (err) {
+          console.error('[AppStore] Failed to sync models from mirrors:', err);
         }
       },
 

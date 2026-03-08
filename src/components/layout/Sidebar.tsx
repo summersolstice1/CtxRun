@@ -5,14 +5,19 @@ import { BookOpen, FileJson, GitMerge, Factory, Settings, ChevronLeft, ChevronRi
 import { useAppStore, AppView } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useShallow } from 'zustand/react/shallow';
 
 export function Sidebar() {
   const { t } = useTranslation();
-  const {
-    currentView, setView,
-    isSidebarOpen, toggleSidebar,
-    setSettingsOpen
-  } = useAppStore();
+  const [currentView, setView, isSidebarOpen, toggleSidebar, setSettingsOpen] = useAppStore(
+    useShallow((state) => [
+      state.currentView,
+      state.setView,
+      state.isSidebarOpen,
+      state.toggleSidebar,
+      state.setSettingsOpen
+    ])
+  );
 
   const menuItems: { id: AppView; icon: any }[] = [
     { id: 'prompts', icon: BookOpen },

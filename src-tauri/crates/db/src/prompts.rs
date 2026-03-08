@@ -102,11 +102,11 @@ pub fn search_prompts(
     let mut sql = String::from(
         "SELECT *,
         (
-            (CASE WHEN title LIKE ?1 THEN 100 ELSE 0 END) +
-            (CASE WHEN title LIKE ?2 THEN 80 ELSE 0 END) +
-            (CASE WHEN title LIKE ?3 THEN 60 ELSE 0 END) +
-            (CASE WHEN title LIKE ?4 THEN 40 ELSE 0 END) +
-            (CASE WHEN content LIKE ?5 THEN 20 ELSE 0 END) +
+            (CASE WHEN title LIKE ? THEN 100 ELSE 0 END) +
+            (CASE WHEN title LIKE ? THEN 80 ELSE 0 END) +
+            (CASE WHEN title LIKE ? THEN 60 ELSE 0 END) +
+            (CASE WHEN title LIKE ? THEN 40 ELSE 0 END) +
+            (CASE WHEN content LIKE ? THEN 20 ELSE 0 END) +
             (is_favorite * 10)
         ) as score
         FROM prompts
@@ -123,7 +123,7 @@ pub fn search_prompts(
         if cat == "prompt" {
             sql.push_str(" AND (type = 'prompt' OR type IS NULL)");
         } else {
-            sql.push_str(&format!(" AND type = '{}'", cat));
+            sql.push_str(" AND type = ?");
         }
     }
 
@@ -144,6 +144,12 @@ pub fn search_prompts(
         params.push(Box::new(format!("{}%", kw))); // title LIKE ?
         params.push(Box::new(format!("%{}%", kw))); // content LIKE ?
         params.push(Box::new(format!("%{}%", kw))); // description LIKE ?
+    }
+
+    if let Some(cat) = &category {
+        if cat != "prompt" {
+            params.push(Box::new(cat.clone()));
+        }
     }
 
     // 绑定 LIMIT 和 OFFSET

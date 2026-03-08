@@ -3,6 +3,7 @@ import { X, Activity, Network, Terminal, Settings2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { useShallow } from 'zustand/react/shallow';
 
 // 懒加载子组件
 const MonitorDashboard = lazy(() => import('./tabs/MonitorDashboard').then(module => ({ default: module.MonitorDashboard })));
@@ -13,7 +14,9 @@ const NetworkDoctor = lazy(() => import('./tabs/NetworkDoctor').then(module => (
 type TabType = 'dashboard' | 'ports' | 'env' | 'network';
 
 export function SystemMonitorModal() {
-  const { isMonitorOpen, setMonitorOpen } = useAppStore();
+  const [isMonitorOpen, setMonitorOpen] = useAppStore(
+    useShallow((state) => [state.isMonitorOpen, state.setMonitorOpen])
+  );
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
 

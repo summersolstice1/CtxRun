@@ -76,6 +76,7 @@ export function useSpotlightSearch(t: TFunction) {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const pageRef = useRef(page); // 使用 ref 避免依赖 page
+  const requestSeqRef = useRef(0);
 
   // 同步 page 到 ref
   useEffect(() => {
@@ -84,12 +85,16 @@ export function useSpotlightSearch(t: TFunction) {
 
   // 当搜索词变化时，重置页码和列表
   useEffect(() => {
+    requestSeqRef.current += 1;
     setPage(1);
     setHasMore(true);
+    setIsLoading(false);
     setResults([]); // 清空旧数据，避免闪烁
-  }, [debouncedQuery, mode]);
+  }, [debouncedQuery, mode, searchScope]);
 
   const performSearch = useCallback(async (isLoadMore = false) => {
+    const requestId = ++requestSeqRef.current;
+    const isStale = () => requestId !== requestSeqRef.current;
     const currentPage = isLoadMore ? pageRef.current + 1 : 1;
     const q = debouncedQuery.trim();
 
@@ -108,6 +113,8 @@ export function useSpotlightSearch(t: TFunction) {
           endDate: null
         });
 
+        if (isStale()) return;
+
         const newItems: SpotlightItem[] = data.map(item => ({
           id: item.id,
           title: item.title || (item.kind === 'image' ? '[Image/图片]' : (item.preview || '').replace(/\n/g, ' ')),
@@ -122,10 +129,13 @@ export function useSpotlightSearch(t: TFunction) {
         setHasMore(data.length === 20);
         if (!isLoadMore) setSelectedIndex(0);
       } catch (e) {
+        if (isStale()) return;
         console.error("Failed to load clipboard history", e);
         setResults([]);
       } finally {
-        setIsLoading(false);
+        if (!isStale()) {
+          setIsLoading(false);
+        }
       }
       return;
     }
@@ -133,10 +143,12 @@ export function useSpotlightSearch(t: TFunction) {
     // ... 以下是原有的 search 模式逻辑，保持不变 ...
     if (searchScope === 'math') {
       if (!q) {
+        if (isStale()) return;
         setResults([]);
         return;
       }
       const mathResult = evaluateMath(q);
+      if (isStale()) return;
       if (mathResult) {
         setResults([{
           id: 'math-result',
@@ -193,6 +205,7 @@ export function useSpotlightSearch(t: TFunction) {
         console.error("Failed to load shell history:", err);
       }
 
+      if (isStale()) return;
       setResults(shellResults);
       setSelectedIndex(0);
       setIsLoading(false);
@@ -201,6 +214,7 @@ export function useSpotlightSearch(t: TFunction) {
 
     if (searchScope === 'web') {
       if (!q) {
+        if (isStale()) return;
         setResults([]);
         return;
       }
@@ -233,6 +247,7 @@ export function useSpotlightSearch(t: TFunction) {
         };
       });
 
+      if (isStale()) return;
       setResults(webItems);
       setSelectedIndex(0);
       setIsLoading(false);
@@ -276,6 +291,7 @@ export function useSpotlightSearch(t: TFunction) {
       }
 
       const [promptsData, urlHistoryData, appsData] = await Promise.all(promises);
+      if (isStale()) return;
 
       let dynamicUrlItem: SpotlightItem | null = null;
       if (searchScope === 'global' && isValidUrl(q)) {
@@ -331,13 +347,17 @@ export function useSpotlightSearch(t: TFunction) {
         finalResults = [...finalResults, ...appItems, ...historyItems, ...promptItems];
       }
 
+      if (isStale()) return;
       setResults(finalResults);
       setSelectedIndex(0);
     } catch (err) {
+      if (isStale()) return;
       console.error("Search failed:", err);
       setResults([]);
     } finally {
-      setIsLoading(false);
+      if (!isStale()) {
+        setIsLoading(false);
+      }
     }
   }, [debouncedQuery, mode, searchScope, searchSettings, language]);
 
