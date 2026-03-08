@@ -335,8 +335,8 @@ impl ToolHandler for FsGrepFilesTool {
                 .filter(|value| !value.is_empty())
                 .map(ToOwned::to_owned);
 
-            let matches = run_rg_search(pattern, include.as_deref(), &search_path, limit).await?;
-            let truncated = matches.len() >= limit;
+            let (matches, truncated) =
+                run_rg_search(pattern, include.as_deref(), &search_path, limit).await?;
 
             Ok(json!({
                 "rootDir": root_dir.to_string_lossy(),
@@ -519,7 +519,7 @@ async fn run_rg_search(
     include: Option<&str>,
     search_path: &Path,
     limit: usize,
-) -> Result<Vec<String>, ToolRuntimeError> {
+) -> Result<(Vec<String>, bool), ToolRuntimeError> {
     let mut command = Command::new("rg");
     command
         .arg("--files-with-matches")
@@ -545,7 +545,7 @@ async fn run_rg_search(
 
     match output.status.code() {
         Some(0) => Ok(parse_rg_results(&output.stdout, limit)),
-        Some(1) => Ok(Vec::new()),
+        Some(1) => Ok((Vec::new(), false)),
         _ => {
             let stderr = String::from_utf8_lossy(&output.stderr);
             Err(ToolRuntimeError::Message(format!("rg failed: {stderr}")))
@@ -553,8 +553,9 @@ async fn run_rg_search(
     }
 }
 
-fn parse_rg_results(stdout: &[u8], limit: usize) -> Vec<String> {
+fn parse_rg_results(stdout: &[u8], limit: usize) -> (Vec<String>, bool) {
     let mut results = Vec::new();
+    let mut truncated = false;
     for line in stdout.split(|byte| *byte == b'\n') {
         if line.is_empty() {
             continue;
@@ -563,12 +564,14 @@ fn parse_rg_results(stdout: &[u8], limit: usize) -> Vec<String> {
         if text.is_empty() {
             continue;
         }
-        results.push(text.replace('\\', "/"));
-        if results.len() == limit {
+        if results.len() < limit {
+            results.push(text.replace('\\', "/"));
+        } else {
+            truncated = true;
             break;
         }
     }
-    results
+    (results, truncated)
 }
 
 fn to_root_relative(root_dir: &Path, path: &Path) -> String {

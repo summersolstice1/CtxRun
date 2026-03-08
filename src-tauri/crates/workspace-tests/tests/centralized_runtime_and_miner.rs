@@ -289,6 +289,42 @@ async fn centralized_grep_files_respects_limit() {
 }
 
 #[tokio::test]
+async fn centralized_grep_files_exact_limit_is_not_truncated() {
+    if !has_ripgrep() {
+        return;
+    }
+
+    let root = temp_root("grep-exact-limit");
+    fs::write(root.join("a.rs"), "needle").expect("write a");
+    fs::write(root.join("b.rs"), "needle").expect("write b");
+    fs::write(root.join("c.rs"), "needle").expect("write c");
+
+    let runtime = ToolRuntime::new();
+    let response = runtime
+        .call_tool(ToolCallRequest {
+            name: "grep_files".to_string(),
+            arguments: json!({
+                "rootDir": root.to_string_lossy(),
+                "pattern": "needle",
+                "limit": 3
+            }),
+            approved: false,
+        })
+        .await;
+
+    let data = ensure_success(&response, "grep_files should succeed");
+    let matches = data["matches"].as_array().expect("matches should be an array");
+    assert_eq!(matches.len(), 3, "grep_files should return all matches");
+    assert_eq!(
+        data["truncated"].as_bool(),
+        Some(false),
+        "exactly limit matches should not be marked truncated"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
 async fn centralized_runtime_reports_not_found_for_unknown_tool() {
     let runtime = ToolRuntime::new();
     let response = runtime

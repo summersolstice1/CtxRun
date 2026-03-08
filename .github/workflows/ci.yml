@@ -26,8 +26,8 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Run frontend tests
-        run: npm test
+      - name: Run frontend tests with coverage gate
+        run: npm run test:coverage
 
   rust-checks:
     name: Rust Checks
@@ -42,6 +42,9 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
       - name: Run centralized Rust tests
         run: cargo test -p ctxrun-workspace-tests
 
@@ -50,3 +53,6 @@ jobs:
 
       - name: Check core Rust plugin crates
         run: cargo check -p ctxrun-plugin-automator -p ctxrun-plugin-context -p ctxrun-plugin-git -p ctxrun-plugin-miner -p ctxrun-plugin-refinery
+
+      - name: Enforce Rust coverage gate
+        run: cargo llvm-cov -p ctxrun-workspace-tests --summary-only --fail-under-lines 40
