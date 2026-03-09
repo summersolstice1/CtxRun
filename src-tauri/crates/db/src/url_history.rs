@@ -1,9 +1,21 @@
 use regex::Regex;
 use rusqlite::{Connection, params};
+use std::sync::LazyLock;
 use tauri::{AppHandle, Manager, State};
 
 use super::init::DbState;
 use super::models::UrlHistoryItem;
+
+static TITLE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)<title>(.*?)</title>").expect("valid title regex"));
+
+static TITLE_FETCH_CLIENT: LazyLock<Option<reqwest::Client>> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        .timeout(std::time::Duration::from_secs(3))
+        .build()
+        .ok()
+});
 
 // ============================================================================
 // URL History Commands
@@ -32,12 +44,7 @@ pub async fn record_url_visit(
 
     let url_clone = url.clone();
     tauri::async_runtime::spawn(async move {
-        let client = reqwest::Client::builder()
-            .user_agent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-            .timeout(std::time::Duration::from_secs(3))
-            .build();
-
-        if let Ok(c) = client {
+        if let Some(c) = TITLE_FETCH_CLIENT.as_ref() {
             if let Ok(resp) = c
                 .get(&url_clone)
                 .header("Range", "bytes=0-16384") // Only request the first 16KB
@@ -49,26 +56,24 @@ pub async fn record_url_visit(
                     || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT
                 {
                     if let Ok(text) = resp.text().await {
-                        if let Ok(re) = Regex::new(r"(?is)<title>(.*?)</title>") {
-                            if let Some(caps) = re.captures(&text) {
-                                if let Some(title_match) = caps.get(1) {
-                                    let raw_title = title_match.as_str().trim();
-                                    let clean_title = raw_title
-                                        .replace('\n', " ")
-                                        .replace('\r', "")
-                                        .trim()
-                                        .to_string();
+                        if let Some(caps) = TITLE_REGEX.captures(&text) {
+                            if let Some(title_match) = caps.get(1) {
+                                let raw_title = title_match.as_str().trim();
+                                let clean_title = raw_title
+                                    .replace('\n', " ")
+                                    .replace('\r', "")
+                                    .trim()
+                                    .to_string();
 
-                                    if !clean_title.is_empty() {
-                                        if let Ok(app_dir) = app_handle.path().app_local_data_dir()
-                                        {
-                                            let db_path = app_dir.join("prompts.db");
-                                            if let Ok(conn) = Connection::open(db_path) {
-                                                let _ = conn.execute(
-                                                    "UPDATE url_history SET title = ?1 WHERE url = ?2 AND (title IS NULL OR title = '')",
-                                                    params![clean_title, url_clone],
-                                                );
-                                            }
+                                if !clean_title.is_empty() {
+                                    if let Ok(app_dir) = app_handle.path().app_local_data_dir()
+                                    {
+                                        let db_path = app_dir.join("prompts.db");
+                                        if let Ok(conn) = Connection::open(db_path) {
+                                            let _ = conn.execute(
+                                                "UPDATE url_history SET title = ?1 WHERE url = ?2 AND (title IS NULL OR title = '')",
+                                                params![clean_title, url_clone],
+                                            );
                                         }
                                     }
                                 }

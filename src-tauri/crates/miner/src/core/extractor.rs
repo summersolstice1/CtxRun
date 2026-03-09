@@ -2,6 +2,7 @@ use super::postprocess::post_process_markdown;
 use crate::error::{MinerError, Result};
 use crate::models::PageResult;
 use chromiumoxide::Page;
+use std::sync::LazyLock;
 use std::time::Duration;
 
 const READABILITY_JS: &str = include_str!("../../assets/Readability.js");
@@ -13,6 +14,27 @@ const RENDER_SETTLE_POLL_MS: u64 = 150;
 const RENDER_SETTLE_MAX_POLLS: u32 = 32;
 const PRIMING_SCROLL_POLL_MS: u64 = 220;
 const PRIMING_SCROLL_MAX_ROUNDS: u32 = 10;
+
+static FULL_EXTRACT_SCRIPT: LazyLock<String> = LazyLock::new(|| {
+    format!(
+        r#"
+            (async function() {{
+                try {{
+                    let module = undefined;
+                    let exports = undefined;
+                    {}
+                    {}
+                    {}
+                    {}
+                    return await executeCtxRunExtraction();
+                }} catch (e) {{
+                    return JSON.stringify({{ error: e.toString(), stack: e.stack }});
+                }}
+            }})()
+            "#,
+        READABILITY_JS, TURNDOWN_JS, TURNDOWN_GFM_JS, EXTRACT_JS
+    )
+});
 
 pub async fn extract_page(page: &Page, url: &str) -> Result<PageResult> {
     extract_page_with_timeout(page, url, EXTRACT_TIMEOUT).await
@@ -31,27 +53,8 @@ pub async fn extract_page_with_timeout(
         prime_page_for_extraction(page).await;
         wait_for_render_settle(page).await;
 
-        let full_script = format!(
-            r#"
-            (async function() {{
-                try {{
-                    let module = undefined;
-                    let exports = undefined;
-                    {}
-                    {}
-                    {}
-                    {}
-                    return await executeCtxRunExtraction();
-                }} catch (e) {{
-                    return JSON.stringify({{ error: e.toString(), stack: e.stack }});
-                }}
-            }})()
-            "#,
-            READABILITY_JS, TURNDOWN_JS, TURNDOWN_GFM_JS, EXTRACT_JS
-        );
-
         let evaluation_result = page
-            .evaluate(full_script)
+            .evaluate(FULL_EXTRACT_SCRIPT.as_str())
             .await
             .map_err(|e| MinerError::BrowserError(format!("Execution failed: {}", e)))?;
 

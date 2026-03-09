@@ -4,6 +4,7 @@ use crate::models::{ExportFormat, ExportLayout, GitCommit, GitDiffFile};
 use chrono::{DateTime, Local};
 use git2::{Delta, DiffFormat, DiffOptions, Oid, Repository};
 use rayon::prelude::*;
+use std::collections::HashSet;
 use std::path::Path;
 
 struct DiffItem {
@@ -167,40 +168,43 @@ pub fn get_git_diff(
 
     let files: Vec<GitDiffFile> = diff_items
         .into_par_iter()
-        .map(|item| {
-            let local_repo = Repository::open(&project_path).ok();
+        .map_init(
+            || Repository::open(&project_path).ok(),
+            |local_repo, item| {
+                let repo_ref = local_repo.as_ref();
 
-            let (original_content, old_binary, old_large) = if let Some(r) = &local_repo {
-                read_blob_content(r, item.old_oid, MAX_SIZE)
-            } else {
-                (String::new(), false, false)
-            };
-
-            let (modified_content, new_binary, new_large) = if is_workdir_mode {
-                if item.delta_status == Delta::Deleted {
-                    (String::new(), false, false)
-                } else {
-                    let full_path = Path::new(&project_path).join(&item.path);
-                    read_file_content(&full_path, MAX_SIZE)
-                }
-            } else {
-                if let Some(r) = &local_repo {
-                    read_blob_content(r, item.new_oid, MAX_SIZE)
+                let (original_content, old_binary, old_large) = if let Some(r) = repo_ref {
+                    read_blob_content(r, item.old_oid, MAX_SIZE)
                 } else {
                     (String::new(), false, false)
-                }
-            };
+                };
 
-            GitDiffFile {
-                path: item.path,
-                status: item.status,
-                old_path: item.old_path,
-                original_content,
-                modified_content,
-                is_binary: old_binary || new_binary,
-                is_large: old_large || new_large,
-            }
-        })
+                let (modified_content, new_binary, new_large) = if is_workdir_mode {
+                    if item.delta_status == Delta::Deleted {
+                        (String::new(), false, false)
+                    } else {
+                        let full_path = Path::new(&project_path).join(&item.path);
+                        read_file_content(&full_path, MAX_SIZE)
+                    }
+                } else {
+                    if let Some(r) = repo_ref {
+                        read_blob_content(r, item.new_oid, MAX_SIZE)
+                    } else {
+                        (String::new(), false, false)
+                    }
+                };
+
+                GitDiffFile {
+                    path: item.path,
+                    status: item.status,
+                    old_path: item.old_path,
+                    original_content,
+                    modified_content,
+                    is_binary: old_binary || new_binary,
+                    is_large: old_large || new_large,
+                }
+            },
+        )
         .collect();
 
     Ok(files)
@@ -251,10 +255,11 @@ pub async fn export_git_diff(
 ) -> Result<()> {
     tauri::async_runtime::spawn_blocking(move || {
         let all_files = get_git_diff(project_path, old_hash, new_hash)?;
+        let selected_path_set: HashSet<&str> = selected_paths.iter().map(String::as_str).collect();
 
         let filtered_files: Vec<GitDiffFile> = all_files
             .into_iter()
-            .filter(|f| selected_paths.contains(&f.path))
+            .filter(|f| selected_path_set.contains(f.path.as_str()))
             .collect();
 
         if filtered_files.is_empty() {

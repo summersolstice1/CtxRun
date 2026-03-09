@@ -177,10 +177,24 @@ pub async fn run_crawl_task_with_sink(
                                         }
                                     }
 
+                                    // Keep queue growth bounded by remaining page budget.
+                                    let remaining_slots = config_clone
+                                        .max_pages
+                                        .saturating_sub(crawled_count_clone.load(Ordering::SeqCst))
+                                        .saturating_sub(
+                                            queued_tasks_clone.load(Ordering::SeqCst) as u32
+                                        ) as usize;
+
                                     let mut pending_enqueue = Vec::new();
-                                    {
+                                    if remaining_slots > 0 {
+                                        pending_enqueue = Vec::with_capacity(
+                                            normalized_links.len().min(remaining_slots),
+                                        );
                                         let mut v_lock = visited_clone.lock().await;
                                         for norm_link in normalized_links {
+                                            if pending_enqueue.len() >= remaining_slots {
+                                                break;
+                                            }
                                             if v_lock.insert(norm_link.clone()) {
                                                 pending_enqueue.push(norm_link);
                                             }

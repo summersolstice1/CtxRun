@@ -449,7 +449,24 @@ struct SearchEvalPayload {
 }
 
 fn compact_whitespace(value: &str) -> String {
-    value.split_whitespace().collect::<Vec<_>>().join(" ")
+    let mut out = String::with_capacity(value.len());
+    let mut saw_whitespace = false;
+
+    for ch in value.chars() {
+        if ch.is_whitespace() {
+            if !out.is_empty() {
+                saw_whitespace = true;
+            }
+            continue;
+        }
+        if saw_whitespace {
+            out.push(' ');
+            saw_whitespace = false;
+        }
+        out.push(ch);
+    }
+
+    out
 }
 
 fn truncate_chars(value: &str, max_chars: usize) -> String {
@@ -947,20 +964,20 @@ async fn run_search_with_script(
     let raw_payload: String = evaluation_result.into_value().map_err(|err| {
         MinerError::ExtractionError(format!("Expected JSON string from search script: {err}"))
     })?;
-    let parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
+    let mut parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
         MinerError::SystemError(format!("Failed to parse search script payload: {err}"))
     })?;
-    if let Some(error) = parsed_payload.error.clone() {
-        let stack = parsed_payload.stack.clone().unwrap_or_default();
+    if let Some(error) = parsed_payload.error.as_deref() {
+        let stack = parsed_payload.stack.as_deref().unwrap_or_default();
         let detail = if stack.trim().is_empty() {
-            error
+            error.to_string()
         } else {
             format!("{error}\n{stack}")
         };
         return Err(MinerError::ExtractionError(detail));
     }
 
-    let extracted_items = parsed_payload.items.clone().unwrap_or_default();
+    let extracted_items = parsed_payload.items.take().unwrap_or_default();
     let raw_items_count = extracted_items.len() as u32;
     let raw_items_preview = build_raw_items_preview(&extracted_items);
     let total_found = raw_items_count;
@@ -1006,7 +1023,7 @@ async fn run_search_with_script(
         warnings.push("No parsable web results were found on the returned SERP.".to_string());
     }
     let filtered_items_count = items.len() as u32;
-    let page_title = parsed_payload.page_title.clone().unwrap_or_default();
+    let page_title = parsed_payload.page_title.take().unwrap_or_default();
 
     let mut debug_notes = Vec::new();
     if blocked {

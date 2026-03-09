@@ -1,7 +1,6 @@
 use crate::error::{ContextError, Result};
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -131,7 +130,13 @@ impl ScanConfig {
             return self
                 .ignore_dir_paths
                 .iter()
-                .any(|rule| rel_path_lower == rule || rel_path_lower.starts_with(&(rule.clone() + "/")));
+                .any(|rule| {
+                    rel_path_lower == rule
+                        || rel_path_lower
+                            .strip_prefix(rule.as_str())
+                            .map(|suffix| suffix.starts_with('/'))
+                            .unwrap_or(false)
+                });
         }
 
         if self.ignore_file_names.contains(name_lower) {
@@ -145,12 +150,11 @@ impl ScanConfig {
         let ext = name_lower
             .rsplit_once('.')
             .map(|(_, ext)| ext)
-            .unwrap_or_default()
-            .to_string();
+            .unwrap_or_default();
         if ext.is_empty() {
             return false;
         }
-        self.ignore_exts.contains(&ext)
+        self.ignore_exts.contains(ext)
     }
 
     fn is_protocol_ignored(&self, path: &Path, is_dir: bool) -> bool {
@@ -317,13 +321,9 @@ fn scan_dir(
         }
     }
 
-    nodes.sort_by(|a, b| match (a.kind.as_str(), b.kind.as_str()) {
-        ("dir", "file") => Ordering::Less,
-        ("file", "dir") => Ordering::Greater,
-        _ => a
-            .name
-            .to_ascii_lowercase()
-            .cmp(&b.name.to_ascii_lowercase()),
+    nodes.sort_by_cached_key(|node| {
+        let kind_rank = if node.kind == "dir" { 0u8 } else { 1u8 };
+        (kind_rank, node.name.to_ascii_lowercase())
     });
 
     nodes
