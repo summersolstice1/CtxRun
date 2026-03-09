@@ -1,5 +1,5 @@
 {
-  "updated_at": 1772432318798,
+  "updated_at": 1773021469465,
   "version": "2.1.0",
   "packages": [
     {
@@ -128,9 +128,9 @@
       "language": "en",
       "platform": "common",
       "name": "Common Tools (EN)",
-      "description": "Contains 20078 en commands for common.",
-      "count": 20078,
-      "size_kb": 9726,
+      "description": "Contains 20130 en commands for common.",
+      "count": 20130,
+      "size_kb": 9749,
       "url": "packs/commands/en/common.json",
       "category": "command"
     },
@@ -161,8 +161,8 @@
       "language": "en",
       "platform": "osx",
       "name": "macOS (EN)",
-      "description": "Contains 944 en commands for osx.",
-      "count": 944,
+      "description": "Contains 946 en commands for osx.",
+      "count": 946,
       "size_kb": 417,
       "url": "packs/commands/en/osx.json",
       "category": "command"
@@ -172,9 +172,9 @@
       "language": "en",
       "platform": "linux",
       "name": "Linux Ops (EN)",
-      "description": "Contains 7867 en commands for linux.",
-      "count": 7867,
-      "size_kb": 3718,
+      "description": "Contains 7880 en commands for linux.",
+      "count": 7880,
+      "size_kb": 3724,
       "url": "packs/commands/en/linux.json",
       "category": "command"
     },
@@ -227,9 +227,9 @@
       "language": "en",
       "platform": "windows",
       "name": "Windows (EN)",
-      "description": "Contains 1090 en commands for windows.",
-      "count": 1090,
-      "size_kb": 533,
+      "description": "Contains 1097 en commands for windows.",
+      "count": 1097,
+      "size_kb": 536,
       "url": "packs/commands/en/windows.json",
       "category": "command"
     },
@@ -238,9 +238,9 @@
       "language": "en",
       "platform": "llm",
       "name": "ChatGPT Prompts (English)",
-      "description": "Collection of 1370 role-play prompts.",
-      "count": 1370,
-      "size_kb": 3485.51,
+      "description": "Collection of 1399 role-play prompts.",
+      "count": 1399,
+      "size_kb": 3568.91,
       "url": "packs/prompts/en/roles.json",
       "category": "prompt"
     },

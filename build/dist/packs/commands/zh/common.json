@@ -44253,7 +44253,7 @@
     "id": "tldr-zh-common-brew-list-0",
     "type": "command",
     "title": "brew-list - 列出所有安装的软件包和安装包",
-    "content": "brew list",
+    "content": "brew {{[ls|list]}}",
     "group": "通用工具 (Common)",
     "description": "brew-list: 列出已安装的软件包/安装包，或者它们所含的文件。 (列出所有安装的软件包和安装包)",
     "tags": [
@@ -44268,7 +44268,7 @@
     "id": "tldr-zh-common-brew-list-1",
     "type": "command",
     "title": "brew-list - 列出属于已安装软件包的文件",
-    "content": "brew list {{软件包}}",
+    "content": "brew {{[ls|list]}} {{软件包}}",
     "group": "通用工具 (Common)",
     "description": "brew-list: 列出已安装的软件包/安装包，或者它们所含的文件。 (列出属于已安装软件包的文件)",
     "tags": [
@@ -44283,7 +44283,7 @@
     "id": "tldr-zh-common-brew-list-2",
     "type": "command",
     "title": "brew-list - 列出安装包的所含文件",
-    "content": "brew list {{安装包}}",
+    "content": "brew {{[ls|list]}} {{安装包}}",
     "group": "通用工具 (Common)",
     "description": "brew-list: 列出已安装的软件包/安装包，或者它们所含的文件。 (列出安装包的所含文件)",
     "tags": [
@@ -44298,7 +44298,7 @@
     "id": "tldr-zh-common-brew-list-3",
     "type": "command",
     "title": "brew-list - 仅列出软件包",
-    "content": "brew list --formula",
+    "content": "brew {{[ls|list]}} --formula",
     "group": "通用工具 (Common)",
     "description": "brew-list: 列出已安装的软件包/安装包，或者它们所含的文件。 (仅列出软件包)",
     "tags": [
@@ -44313,7 +44313,7 @@
     "id": "tldr-zh-common-brew-list-4",
     "type": "command",
     "title": "brew-list - 仅列出安装包",
-    "content": "brew list --cask",
+    "content": "brew {{[ls|list]}} --cask",
     "group": "通用工具 (Common)",
     "description": "brew-list: 列出已安装的软件包/安装包，或者它们所含的文件。 (仅列出安装包)",
     "tags": [
@@ -44328,7 +44328,7 @@
     "id": "tldr-zh-common-brew-list-5",
     "type": "command",
     "title": "brew-list - 仅列出锁定的软件包",
-    "content": "brew list --pinned",
+    "content": "brew {{[ls|list]}} --pinned",
     "group": "通用工具 (Common)",
     "description": "brew-list: 列出已安装的软件包/安装包，或者它们所含的文件。 (仅列出锁定的软件包)",
     "tags": [

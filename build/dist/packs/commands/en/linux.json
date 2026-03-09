@@ -10308,7 +10308,7 @@
     "id": "tldr-en-linux-opkg-3",
     "type": "command",
     "title": "opkg - Upgrade one or more specific package(s)",
-    "content": "opkg upgrade {{package(s)}}",
+    "content": "opkg upgrade {{package1 package2 ...}}",
     "group": "Linux Ops",
     "description": "opkg: A lightweight package manager used to install OpenWrt packages. (Upgrade one or more specific package(s))",
     "tags": [
@@ -27543,7 +27543,7 @@
     "id": "tldr-en-linux-apt-file-1",
     "type": "command",
     "title": "apt-file - Search for packages that contain the specified file or path",
-    "content": "apt-file {{search|find}} {{path/to/file}}",
+    "content": "apt-file {{[find|search]}} {{path/to/file}}",
     "group": "Linux Ops",
     "description": "apt-file: Search for files in `apt` packages, including ones not yet installed. (Search for packages that contain the specified file or path)",
     "tags": [
@@ -27558,7 +27558,7 @@
     "id": "tldr-en-linux-apt-file-2",
     "type": "command",
     "title": "apt-file - List the contents of a specific package",
-    "content": "apt-file {{show|list}} {{package}}",
+    "content": "apt-file list {{package}}",
     "group": "Linux Ops",
     "description": "apt-file: Search for files in `apt` packages, including ones not yet installed. (List the contents of a specific package)",
     "tags": [
@@ -27573,7 +27573,7 @@
     "id": "tldr-en-linux-apt-file-3",
     "type": "command",
     "title": "apt-file - Search for packages that match the `regex`",
-    "content": "apt-file {{search|find}} {{[-x|--regexp]}} {{regex}}",
+    "content": "apt-file {{[find|search]}} {{[-x|--regexp]}} {{regex}}",
     "group": "Linux Ops",
     "description": "apt-file: Search for files in `apt` packages, including ones not yet installed. (Search for packages that match the `regex`)",
     "tags": [
@@ -28530,111 +28530,6 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-cmus-0",
-    "type": "command",
-    "title": "cmus - Open `cmus` into the specified directory (this will become your new working directory)",
-    "content": "cmus {{path/to/directory}}",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Open `cmus` into the specified directory (this will become your new working directory))",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-cmus-1",
-    "type": "command",
-    "title": "cmus - Add file/directory to library",
-    "content": "<:>add {{path/to/file_or_directory}}",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Add file/directory to library)",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-cmus-2",
-    "type": "command",
-    "title": "cmus - Refresh the metadata of songs in the library",
-    "content": "<:>update-cache",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Refresh the metadata of songs in the library)",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-cmus-3",
-    "type": "command",
-    "title": "cmus - Search for songs, albums, or artists",
-    "content": "</>{{something}}",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Search for songs, albums, or artists)",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-cmus-4",
-    "type": "command",
-    "title": "cmus - Pause/unpause current song",
-    "content": "<c>",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Pause/unpause current song)",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-cmus-5",
-    "type": "command",
-    "title": "cmus - Toggle shuffle mode on/off",
-    "content": "<s>",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Toggle shuffle mode on/off)",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-cmus-6",
-    "type": "command",
-    "title": "cmus - Quit `cmus`",
-    "content": "<q>",
-    "group": "Linux Ops",
-    "description": "cmus: Command-line music player. Use `` to navigate, `` to select, and numbers ``-`` switch between different views. (Quit `cmus`)",
-    "tags": [
-      "linux",
-      "cmus",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
     "id": "tldr-en-linux-foreman-0",
     "type": "command",
     "title": "foreman - Start an application with the Procfile in the current directory",
@@ -29358,7 +29253,7 @@
     "id": "tldr-en-linux-flock-1",
     "type": "command",
     "title": "flock - Run a command with a file lock, or exit if the lock is currently being held (with exit code 1)",
-    "content": "flock {{path/to/lock.lock}} {{[-n|--nonblock]}} {{command}}",
+    "content": "flock {{[-n|--nonblock]}} {{path/to/lock.lock}} {{command}}",
     "group": "Linux Ops",
     "description": "flock: Manage file locks from shell scripts. It can be used to ensure that only one instance of a command is running. (Run a command with a file lock, or exit if the lock is currently being held (with exit code 1))",
     "tags": [
@@ -29373,7 +29268,7 @@
     "id": "tldr-en-linux-flock-2",
     "type": "command",
     "title": "flock - Run a command with a file lock, or exit with a specific error code if the lock is currently being held",
-    "content": "flock {{path/to/lock.lock}} {{[-n|--nonblock]}} {{[-E|--conflict-exit-code]}} {{123}} {{command}}",
+    "content": "flock {{[-n|--nonblock]}} {{[-E|--conflict-exit-code]}} {{123}} {{path/to/lock.lock}} {{command}}",
     "group": "Linux Ops",
     "description": "flock: Manage file locks from shell scripts. It can be used to ensure that only one instance of a command is running. (Run a command with a file lock, or exit with a specific error code if the lock is currently being held)",
     "tags": [
@@ -29388,7 +29283,7 @@
     "id": "tldr-en-linux-flock-3",
     "type": "command",
     "title": "flock - Run a command with a file lock, waiting up to 10 seconds for the lock to be available before giving up",
-    "content": "flock {{path/to/lock.lock}} {{[-w|--timeout]}} 10 {{command}}",
+    "content": "flock {{[-w|--timeout]}} 10 {{path/to/lock.lock}} {{command}}",
     "group": "Linux Ops",
     "description": "flock: Manage file locks from shell scripts. It can be used to ensure that only one instance of a command is running. (Run a command with a file lock, waiting up to 10 seconds for the lock to be available before giving up)",
     "tags": [
@@ -29522,25 +29417,10 @@
   {
     "id": "tldr-en-linux-genisoimage-0",
     "type": "command",
-    "title": "genisoimage - Create an ISO image from the given source directory",
-    "content": "genisoimage -o {{myimage.iso}} {{path/to/source_directory}}",
+    "title": "genisoimage - View documentation for the original command",
+    "content": "tldr mkisofs",
     "group": "Linux Ops",
-    "description": "genisoimage: Pre-mastering program to generate ISO9660/Joliet/HFS hybrid filesystems. (Create an ISO image from the given source directory)",
-    "tags": [
-      "linux",
-      "genisoimage",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-genisoimage-1",
-    "type": "command",
-    "title": "genisoimage - Create an ISO image with files larger than 2GiB by reporting a smaller apparent size for ISO9660 filesystems",
-    "content": "genisoimage -o -allow-limited-size {{myimage.iso}} {{path/to/source_directory}}",
-    "group": "Linux Ops",
-    "description": "genisoimage: Pre-mastering program to generate ISO9660/Joliet/HFS hybrid filesystems. (Create an ISO image with files larger than 2GiB by reporting a smaller apparent size for ISO9660 filesystems)",
+    "description": "genisoimage: This command is an alias of `mkisofs`. (View documentation for the original command)",
     "tags": [
       "linux",
       "genisoimage",
@@ -54645,6 +54525,66 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-cdrecord-0",
+    "type": "command",
+    "title": "cdrecord - Display optical drives available to `cdrecord`",
+    "content": "cdrecord --devices",
+    "group": "Linux Ops",
+    "description": "cdrecord: Record data to CDs or DVDs. Some invocations of cdrecord can cause destructive actions, such as erasing all the data on a disc. (Display optical drives available to `cdrecord`)",
+    "tags": [
+      "linux",
+      "cdrecord",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-cdrecord-1",
+    "type": "command",
+    "title": "cdrecord - Record (\"burn\") an audio-only disc",
+    "content": "cdrecord dev={{/dev/optical_drive}} -audio {{track*.cdaudio}}",
+    "group": "Linux Ops",
+    "description": "cdrecord: Record data to CDs or DVDs. Some invocations of cdrecord can cause destructive actions, such as erasing all the data on a disc. (Record (\"burn\") an audio-only disc)",
+    "tags": [
+      "linux",
+      "cdrecord",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-cdrecord-2",
+    "type": "command",
+    "title": "cdrecord - Burn a file to a disc, ejecting the disc once done (some recorders require this)",
+    "content": "cdrecord -eject dev={{/dev/optical_drive}} -data {{file.iso}}",
+    "group": "Linux Ops",
+    "description": "cdrecord: Record data to CDs or DVDs. Some invocations of cdrecord can cause destructive actions, such as erasing all the data on a disc. (Burn a file to a disc, ejecting the disc once done (some recorders require this))",
+    "tags": [
+      "linux",
+      "cdrecord",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-cdrecord-3",
+    "type": "command",
+    "title": "cdrecord - Burn a file to the disc in an optical drive, potentially writing to multiple discs in succession",
+    "content": "cdrecord -tao dev={{/dev/optical_drive}} -data {{file.iso}}",
+    "group": "Linux Ops",
+    "description": "cdrecord: Record data to CDs or DVDs. Some invocations of cdrecord can cause destructive actions, such as erasing all the data on a disc. (Burn a file to the disc in an optical drive, potentially writing to multiple discs in succession)",
+    "tags": [
+      "linux",
+      "cdrecord",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-silentcast-0",
     "type": "command",
     "title": "silentcast - Launch silentcast",
@@ -57527,10 +57467,10 @@
   {
     "id": "tldr-en-linux-journalctl-0",
     "type": "command",
-    "title": "journalctl - Show all messages with priority level 3 (errors) from this boot",
-    "content": "journalctl {{[-b|--boot]}} {{[-p|--priority]}} 3",
+    "title": "journalctl - Show the latest `n` lines and follow new messages (like `tail --follow` for traditional syslog)",
+    "content": "journalctl {{[-n|--lines]}} {{n}} {{[-f|--follow]}}",
     "group": "Linux Ops",
-    "description": "journalctl: Query the systemd journal. (Show all messages with priority level 3 (errors) from this boot)",
+    "description": "journalctl: Query the systemd journal. (Show the latest `n` lines and follow new messages (like `tail --follow` for traditional syslog))",
     "tags": [
       "linux",
       "journalctl",
@@ -57542,10 +57482,10 @@
   {
     "id": "tldr-en-linux-journalctl-1",
     "type": "command",
-    "title": "journalctl - Delete journal logs which are older than 2 days",
-    "content": "journalctl --vacuum-time 2d",
+    "title": "journalctl - Show all messages with priority level 3 (errors) from the boot before last shutdown",
+    "content": "journalctl {{[-b|--boot]}} -1 {{[-p|--priority]}} 3",
     "group": "Linux Ops",
-    "description": "journalctl: Query the systemd journal. (Delete journal logs which are older than 2 days)",
+    "description": "journalctl: Query the systemd journal. (Show all messages with priority level 3 (errors) from the boot before last shutdown)",
     "tags": [
       "linux",
       "journalctl",
@@ -57556,21 +57496,6 @@
   },
   {
     "id": "tldr-en-linux-journalctl-2",
-    "type": "command",
-    "title": "journalctl - Show only the last `n` lines and follow new messages (like `tail -f` for traditional syslog)",
-    "content": "journalctl {{[-n|--lines]}} {{n}} {{[-f|--follow]}}",
-    "group": "Linux Ops",
-    "description": "journalctl: Query the systemd journal. (Show only the last `n` lines and follow new messages (like `tail -f` for traditional syslog))",
-    "tags": [
-      "linux",
-      "journalctl",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-journalctl-3",
     "type": "command",
     "title": "journalctl - Show all messages by a specific unit",
     "content": "journalctl {{[-u|--unit]}} {{unit}}",
@@ -57585,7 +57510,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-journalctl-4",
+    "id": "tldr-en-linux-journalctl-3",
     "type": "command",
     "title": "journalctl - Show logs for a given unit since the last time it started",
     "content": "journalctl _SYSTEMD_INVOCATION_ID=$(systemctl show --value --property=InvocationID {{unit}})",
@@ -57600,10 +57525,10 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-journalctl-5",
+    "id": "tldr-en-linux-journalctl-4",
     "type": "command",
     "title": "journalctl - Filter messages within a time range (either timestamp or placeholders like \"yesterday\")",
-    "content": "journalctl {{[-S|--since]}} {{now|today|yesterday|tomorrow}} {{[-U|--until]}} \"{{YYYY-MM-DD HH:MM:SS}}\"",
+    "content": "journalctl {{[-S|--since]}} {{now|today|yesterday|tomorrow|...}} {{[-U|--until]}} \"{{YYYY-MM-DD HH:MM:SS}}\"",
     "group": "Linux Ops",
     "description": "journalctl: Query the systemd journal. (Filter messages within a time range (either timestamp or placeholders like \"yesterday\"))",
     "tags": [
@@ -57615,7 +57540,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-journalctl-6",
+    "id": "tldr-en-linux-journalctl-5",
     "type": "command",
     "title": "journalctl - Show all messages by a specific process",
     "content": "journalctl _PID={{pid}}",
@@ -57630,12 +57555,27 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-journalctl-7",
+    "id": "tldr-en-linux-journalctl-6",
     "type": "command",
     "title": "journalctl - Show all messages by a specific executable",
     "content": "journalctl {{path/to/executable}}",
     "group": "Linux Ops",
     "description": "journalctl: Query the systemd journal. (Show all messages by a specific executable)",
+    "tags": [
+      "linux",
+      "journalctl",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-journalctl-7",
+    "type": "command",
+    "title": "journalctl - Delete journal logs which are older than 2 days",
+    "content": "journalctl --vacuum-time 2d",
+    "group": "Linux Ops",
+    "description": "journalctl: Query the systemd journal. (Delete journal logs which are older than 2 days)",
     "tags": [
       "linux",
       "journalctl",
@@ -64194,6 +64134,126 @@
     "tags": [
       "linux",
       "adduser",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-0",
+    "type": "command",
+    "title": "lure - Install a package",
+    "content": "lure {{[in|install]}} {{package}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Install a package)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-1",
+    "type": "command",
+    "title": "lure - Remove a package",
+    "content": "lure {{[rm|remove]}} {{package}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Remove a package)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-2",
+    "type": "command",
+    "title": "lure - Update packages",
+    "content": "lure {{[up|upgrade]}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Update packages)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-3",
+    "type": "command",
+    "title": "lure - List all available packages",
+    "content": "lure {{[ls|list]}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (List all available packages)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-4",
+    "type": "command",
+    "title": "lure - Pull all repositories that have changed",
+    "content": "lure {{[ref|refresh]}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Pull all repositories that have changed)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-5",
+    "type": "command",
+    "title": "lure - Add a new repository",
+    "content": "lure {{[ar|addrepo]}} {{[-n|--name]}} {{repository_name}} --url {{repository_url}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Add a new repository)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-6",
+    "type": "command",
+    "title": "lure - Remove an existing repository",
+    "content": "lure {{[rr|removerepo]}} {{[-n|--name]}} {{repository_name}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Remove an existing repository)",
+    "tags": [
+      "linux",
+      "lure",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-lure-7",
+    "type": "command",
+    "title": "lure - Build a package",
+    "content": "lure build -s {{path/to/script}}",
+    "group": "Linux Ops",
+    "description": "lure: A distro-agnostic build system and user repository for Linux. (Build a package)",
+    "tags": [
+      "linux",
+      "lure",
       "tldr",
       "en"
     ],
@@ -74357,10 +74417,10 @@
   {
     "id": "tldr-en-linux-loadkeys-2",
     "type": "command",
-    "title": "loadkeys - Create a kernel source table",
-    "content": "loadkeys {{[-m|--mktable]}}",
+    "title": "loadkeys - Print the kernel source table of a keymap to `stdout`",
+    "content": "loadkeys {{[-m|--mktable]}} {{en|de|fi|...}}",
     "group": "Linux Ops",
-    "description": "loadkeys: Load the kernel keymap for the console. (Create a kernel source table)",
+    "description": "loadkeys: Load the kernel keymap for the console. (Print the kernel source table of a keymap to `stdout`)",
     "tags": [
       "linux",
       "loadkeys",
@@ -74372,10 +74432,10 @@
   {
     "id": "tldr-en-linux-loadkeys-3",
     "type": "command",
-    "title": "loadkeys - Create a binary keymap",
-    "content": "loadkeys {{[-b|--bkeymap]}}",
+    "title": "loadkeys - Print the binary format of a keymap to `stdout`",
+    "content": "loadkeys {{[-b|--bkeymap]}} {{en|de|fi|...}}",
     "group": "Linux Ops",
-    "description": "loadkeys: Load the kernel keymap for the console. (Create a binary keymap)",
+    "description": "loadkeys: Load the kernel keymap for the console. (Print the binary format of a keymap to `stdout`)",
     "tags": [
       "linux",
       "loadkeys",
@@ -74388,7 +74448,7 @@
     "id": "tldr-en-linux-loadkeys-4",
     "type": "command",
     "title": "loadkeys - Search and parse keymap without action",
-    "content": "loadkeys {{[-p|--parse]}}",
+    "content": "loadkeys {{[-p|--parse]}} {{en|de|fi|...}}",
     "group": "Linux Ops",
     "description": "loadkeys: Load the kernel keymap for the console. (Search and parse keymap without action)",
     "tags": [
@@ -74402,10 +74462,10 @@
   {
     "id": "tldr-en-linux-loadkeys-5",
     "type": "command",
-    "title": "loadkeys - Load the keymap suppressing all output",
-    "content": "loadkeys {{[-q|--quiet]}}",
+    "title": "loadkeys - Load a keymap from `stdin`, suppressing all output",
+    "content": "{{command}} | sudo loadkeys {{[-q|--quiet]}}",
     "group": "Linux Ops",
-    "description": "loadkeys: Load the kernel keymap for the console. (Load the keymap suppressing all output)",
+    "description": "loadkeys: Load the kernel keymap for the console. (Load a keymap from `stdin`, suppressing all output)",
     "tags": [
       "linux",
       "loadkeys",
@@ -74433,7 +74493,7 @@
     "id": "tldr-en-linux-loadkeys-7",
     "type": "command",
     "title": "loadkeys - Load a keymap from the specified file for the console",
-    "content": "loadkeys {{[-C|--console]}} {{/dev/ttyN}} /{{path/to/file}}",
+    "content": "sudo loadkeys {{[-C|--console]}} {{/dev/ttyN}} /{{path/to/file}}",
     "group": "Linux Ops",
     "description": "loadkeys: Load the kernel keymap for the console. (Load a keymap from the specified file for the console)",
     "tags": [
@@ -83190,6 +83250,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-mkisofs-2",
+    "type": "command",
+    "title": "mkisofs - Create an ISO image with files larger than 2GiB by reporting a smaller apparent size for ISO9660 filesystems",
+    "content": "mkisofs -o {{filename.iso}} -allow-limited-size {{path/to/source_directory}}",
+    "group": "Linux Ops",
+    "description": "mkisofs: Create ISO files from directories. Also aliased as `genisoimage`. (Create an ISO image with files larger than 2GiB by reporting a smaller apparent size for ISO9660 filesystems)",
+    "tags": [
+      "linux",
+      "mkisofs",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-systemd-tty-ask-password-agent-0",
     "type": "command",
     "title": "systemd-tty-ask-password-agent - List all currently pending system password requests",
@@ -85809,6 +85884,51 @@
     "tags": [
       "linux",
       "hcitool",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pipetron-0",
+    "type": "command",
+    "title": "pipetron - Start daemon specified in config file (defaults to volume daemon if not specified)",
+    "content": "pipetron {{[-d|--daemon]}}",
+    "group": "Linux Ops",
+    "description": "pipetron: Electron node manager for PipeWire. (Start daemon specified in config file (defaults to volume daemon if not specified))",
+    "tags": [
+      "linux",
+      "pipetron",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pipetron-1",
+    "type": "command",
+    "title": "pipetron - Start volume daemon (mirror volume settings)",
+    "content": "pipetron {{[-vd|--volume-daemon]}}",
+    "group": "Linux Ops",
+    "description": "pipetron: Electron node manager for PipeWire. (Start volume daemon (mirror volume settings))",
+    "tags": [
+      "linux",
+      "pipetron",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pipetron-2",
+    "type": "command",
+    "title": "pipetron - Start audio daemon (mirror audio data)",
+    "content": "pipetron {{[-ad|--audio-daemon]}}",
+    "group": "Linux Ops",
+    "description": "pipetron: Electron node manager for PipeWire. (Start audio daemon (mirror audio data))",
+    "tags": [
+      "linux",
+      "pipetron",
       "tldr",
       "en"
     ],
@@ -99918,7 +100038,7 @@
     "id": "tldr-en-linux-distrobox-stop-1",
     "type": "command",
     "title": "distrobox-stop - Stop a Distrobox container non-interactively (without confirmation)",
-    "content": "distrobox-stop {{[-n|--name]}} {{container_name}} {{[-Y|--yes]}}",
+    "content": "distrobox-stop {{container_name}} {{[-Y|--yes]}}",
     "group": "Linux Ops",
     "description": "distrobox-stop: Stop a Distrobox container. (Stop a Distrobox container non-interactively (without confirmation))",
     "tags": [
@@ -105390,6 +105510,126 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-apptainer-config-0",
+    "type": "command",
+    "title": "apptainer-config - Add a fakeroot user mapping",
+    "content": "sudo apptainer config fakeroot {{[-a|--add]}} {{username}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Add a fakeroot user mapping)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-1",
+    "type": "command",
+    "title": "apptainer-config - Remove a fakeroot user mapping",
+    "content": "sudo apptainer config fakeroot {{[-r|--remove]}} {{username}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Remove a fakeroot user mapping)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-2",
+    "type": "command",
+    "title": "apptainer-config - Enable a fakeroot user mapping",
+    "content": "sudo apptainer config fakeroot {{[-e|--enable]}} {{username}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Enable a fakeroot user mapping)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-3",
+    "type": "command",
+    "title": "apptainer-config - Disable a fakeroot user mapping",
+    "content": "sudo apptainer config fakeroot {{[-d|--disable]}} {{username}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Disable a fakeroot user mapping)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-4",
+    "type": "command",
+    "title": "apptainer-config - Get the current value of a global configuration directive",
+    "content": "sudo apptainer config global {{[-g|--get]}} {{directive}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Get the current value of a global configuration directive)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-5",
+    "type": "command",
+    "title": "apptainer-config - Set a global configuration directive value",
+    "content": "sudo apptainer config global {{[-s|--set]}} {{directive}} {{value}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Set a global configuration directive value)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-6",
+    "type": "command",
+    "title": "apptainer-config - Unset a global configuration directive value",
+    "content": "sudo apptainer config global {{[-u|--unset]}} {{directive}} {{value}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Unset a global configuration directive value)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-config-7",
+    "type": "command",
+    "title": "apptainer-config - Reset a global configuration directive to its default value",
+    "content": "sudo apptainer config global {{[-r|--reset]}} {{directive}}",
+    "group": "Linux Ops",
+    "description": "apptainer-config: Manage various Apptainer configurations. (Reset a global configuration directive to its default value)",
+    "tags": [
+      "linux",
+      "apptainer-config",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-lxc-ls-0",
     "type": "command",
     "title": "lxc-ls - List all containers",
@@ -109460,7 +109700,7 @@
     "title": "drm_info - Dump DRM information",
     "content": "drm_info",
     "group": "Linux Ops",
-    "description": "drm_info: Dump information about DRM devices. (Dump DRM information)",
+    "description": "drm_info: Dump information about Direct Rendering Manager devices. (Dump DRM information)",
     "tags": [
       "linux",
       "drm_info",
@@ -109475,7 +109715,7 @@
     "title": "drm_info - Dump DRM information in [j]SON format",
     "content": "drm_info -j",
     "group": "Linux Ops",
-    "description": "drm_info: Dump information about DRM devices. (Dump DRM information in [j]SON format)",
+    "description": "drm_info: Dump information about Direct Rendering Manager devices. (Dump DRM information in [j]SON format)",
     "tags": [
       "linux",
       "drm_info",
@@ -109877,55 +110117,10 @@
   {
     "id": "tldr-en-linux-wodim-0",
     "type": "command",
-    "title": "wodim - Display optical drives available to `wodim`",
-    "content": "wodim --devices",
+    "title": "wodim - View documentation for the original command",
+    "content": "tldr cdrecord",
     "group": "Linux Ops",
-    "description": "wodim: Command (aliased as `cdrecord` on some systems) for recording data to CDs or DVDs. Some invocations of wodim can cause destructive actions, such as erasing all the data on a disc. (Display optical drives available to `wodim`)",
-    "tags": [
-      "linux",
-      "wodim",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-wodim-1",
-    "type": "command",
-    "title": "wodim - Record (\"burn\") an audio-only disc",
-    "content": "wodim dev={{/dev/optical_drive}} -audio {{track*.cdaudio}}",
-    "group": "Linux Ops",
-    "description": "wodim: Command (aliased as `cdrecord` on some systems) for recording data to CDs or DVDs. Some invocations of wodim can cause destructive actions, such as erasing all the data on a disc. (Record (\"burn\") an audio-only disc)",
-    "tags": [
-      "linux",
-      "wodim",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-wodim-2",
-    "type": "command",
-    "title": "wodim - Burn a file to a disc, ejecting the disc once done (some recorders require this)",
-    "content": "wodim -eject dev={{/dev/optical_drive}} -data {{file.iso}}",
-    "group": "Linux Ops",
-    "description": "wodim: Command (aliased as `cdrecord` on some systems) for recording data to CDs or DVDs. Some invocations of wodim can cause destructive actions, such as erasing all the data on a disc. (Burn a file to a disc, ejecting the disc once done (some recorders require this))",
-    "tags": [
-      "linux",
-      "wodim",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-wodim-3",
-    "type": "command",
-    "title": "wodim - Burn a file to the disc in an optical drive, potentially writing to multiple discs in succession",
-    "content": "wodim -tao dev={{/dev/optical_drive}} -data {{file.iso}}",
-    "group": "Linux Ops",
-    "description": "wodim: Command (aliased as `cdrecord` on some systems) for recording data to CDs or DVDs. Some invocations of wodim can cause destructive actions, such as erasing all the data on a disc. (Burn a file to the disc in an optical drive, potentially writing to multiple discs in succession)",
+    "description": "wodim: This command is an alias of `cdrecord`. (View documentation for the original command)",
     "tags": [
       "linux",
       "wodim",

@@ -6165,6 +6165,111 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-windows-ping-0",
+    "type": "command",
+    "title": "ping - Ping a host 4 times",
+    "content": "ping {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Ping a host 4 times)",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-ping-1",
+    "type": "command",
+    "title": "ping - Ping a host a specific number of times",
+    "content": "ping -n {{count}} {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Ping a host a specific number of times)",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-ping-2",
+    "type": "command",
+    "title": "ping - Ping a host continuously (until stopped with `<Ctrl c>`)",
+    "content": "ping -t {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Ping a host continuously (until stopped with `<Ctrl c>`))",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-ping-3",
+    "type": "command",
+    "title": "ping - Set the timeout in milliseconds to wait for each reply",
+    "content": "ping -w {{milliseconds}} {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Set the timeout in milliseconds to wait for each reply)",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-ping-4",
+    "type": "command",
+    "title": "ping - Set the buffer size of the ping packet in bytes",
+    "content": "ping -l {{bytes}} {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Set the buffer size of the ping packet in bytes)",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-ping-5",
+    "type": "command",
+    "title": "ping - Ping a host using a specific source IP address",
+    "content": "ping -S {{source_ip}} {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Ping a host using a specific source IP address)",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-ping-6",
+    "type": "command",
+    "title": "ping - Resolve address to hostname",
+    "content": "ping -a {{host}}",
+    "group": "Windows",
+    "description": "ping: Send ICMP ECHO_REQUEST packets to network hosts. Unlike Unix-like systems, Windows `ping` sends only 4 packets by default. (Resolve address to hostname)",
+    "tags": [
+      "windows",
+      "ping",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-windows-comp-0",
     "type": "command",
     "title": "comp - Compare files interactively",
