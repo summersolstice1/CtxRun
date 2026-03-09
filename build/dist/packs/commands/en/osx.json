@@ -7245,6 +7245,36 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-osx-tccutil-0",
+    "type": "command",
+    "title": "tccutil - Reset a specific service",
+    "content": "sudo tccutil reset {{service}}",
+    "group": "macOS",
+    "description": "tccutil: Reset decisions stored in the privacy database. Forces apps to prompt again the next time they access the service. (Reset a specific service)",
+    "tags": [
+      "osx",
+      "tccutil",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-osx-tccutil-1",
+    "type": "command",
+    "title": "tccutil - Reset all services",
+    "content": "sudo tccutil reset All",
+    "group": "macOS",
+    "description": "tccutil: Reset decisions stored in the privacy database. Forces apps to prompt again the next time they access the service. (Reset all services)",
+    "tags": [
+      "osx",
+      "tccutil",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-osx-head-0",
     "type": "command",
     "title": "head - Output the first 10 lines of a file",
