@@ -63,4 +63,4 @@ jobs:
         run: cargo check -p ctxrun-plugin-automator -p ctxrun-plugin-context -p ctxrun-plugin-git -p ctxrun-plugin-miner -p ctxrun-plugin-refinery
 
       - name: Enforce Rust coverage gate
-        run: cargo llvm-cov -p ctxrun-workspace-tests --summary-only --fail-under-lines 40
+        run: cargo llvm-cov -p ctxrun-workspace-tests -p ctxrun-db -p ctxrun-plugin-context -p ctxrun-plugin-git -p ctxrun-plugin-refinery -p ctxrun-plugin-tool-runtime --fail-under-lines 40
