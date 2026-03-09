@@ -4,9 +4,11 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 const DEFAULT_MAX_DEPTH: usize = 24;
 const DEFAULT_MAX_ENTRIES: usize = 100_000;
+static ACTIVE_SCAN_ID: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -205,8 +207,9 @@ pub fn scan_project_tree(
     }
 
     let cfg = ScanConfig::from_input(&root, ignore, sync_ignore_files, max_depth, max_entries);
+    let scan_id = ACTIVE_SCAN_ID.fetch_add(1, Ordering::AcqRel) + 1;
     let mut state = ScanState::default();
-    let nodes = scan_dir(&root, "", 0, &cfg, &mut state, false);
+    let nodes = scan_dir(&root, "", 0, &cfg, &mut state, false, scan_id);
 
     Ok(ScanProjectTreeResult {
         nodes,
@@ -223,8 +226,9 @@ fn scan_dir(
     cfg: &ScanConfig,
     state: &mut ScanState,
     parent_git_ignored: bool,
+    scan_id: u64,
 ) -> Vec<ScanNode> {
-    if state.capped || depth > cfg.max_depth {
+    if state.capped || depth > cfg.max_depth || ACTIVE_SCAN_ID.load(Ordering::Acquire) != scan_id {
         return Vec::new();
     }
 
@@ -235,7 +239,7 @@ fn scan_dir(
     let mut nodes = Vec::new();
 
     for entry_res in entries {
-        if state.capped {
+        if state.capped || ACTIVE_SCAN_ID.load(Ordering::Acquire) != scan_id {
             break;
         }
 
@@ -264,10 +268,7 @@ fn scan_dir(
         };
 
         let is_dir = file_type.is_dir();
-
-        if cfg.is_config_ignored(&name_lower, &rel_path_lower, is_dir) {
-            continue;
-        }
+        let config_ignored = cfg.is_config_ignored(&name_lower, &rel_path_lower, is_dir);
 
         if state.entries >= cfg.max_entries {
             state.capped = true;
@@ -276,20 +277,31 @@ fn scan_dir(
         state.entries += 1;
 
         let git_ignored = parent_git_ignored || cfg.is_protocol_ignored(&path, is_dir);
+        let is_locked = config_ignored || git_ignored;
         let ignore_source = if git_ignored {
             Some("git".to_string())
+        } else if config_ignored {
+            Some("filter".to_string())
         } else {
             None
         };
-        let is_locked = if git_ignored { Some(true) } else { None };
+        let is_locked = if is_locked { Some(true) } else { None };
         let path_str = path.to_string_lossy().to_string();
 
         if is_dir {
-            // For git-ignored directories we keep a locked placeholder node but skip deep recursion.
-            let children = if git_ignored || depth >= cfg.max_depth {
+            // Keep ignored directories visible as locked placeholders, but skip deep recursion.
+            let children = if is_locked.is_some() || depth >= cfg.max_depth {
                 Vec::new()
             } else {
-                scan_dir(&path, &rel_path_lower, depth + 1, cfg, state, git_ignored)
+                scan_dir(
+                    &path,
+                    &rel_path_lower,
+                    depth + 1,
+                    cfg,
+                    state,
+                    git_ignored,
+                    scan_id,
+                )
             };
 
             nodes.push(ScanNode {
@@ -298,21 +310,25 @@ fn scan_dir(
                 path: path_str,
                 kind: "dir".to_string(),
                 size: None,
-                is_selected: !git_ignored,
+                is_selected: is_locked.is_none(),
                 is_expanded: false,
                 is_locked,
                 ignore_source,
                 children: Some(children),
             });
         } else {
-            let size = entry.metadata().map(|m| m.len()).ok();
+            let size = if is_locked.is_some() {
+                None
+            } else {
+                entry.metadata().map(|m| m.len()).ok()
+            };
             nodes.push(ScanNode {
                 id: path_str.clone(),
                 name,
                 path: path_str,
                 kind: "file".to_string(),
                 size,
-                is_selected: !git_ignored,
+                is_selected: is_locked.is_none(),
                 is_expanded: false,
                 is_locked,
                 ignore_source,

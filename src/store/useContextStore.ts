@@ -8,37 +8,55 @@ const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 let projectConfigLoadSeq = 0;
 let projectIgnoreEditSeq = 0;
 
-const setAllChildren = (node: FileNode, isSelected: boolean): FileNode => {
-  const newNode = { ...node, isSelected };
+const setAllChildren = (node: FileNode, isSelected: boolean, parentLocked = false): FileNode => {
+  const effectiveLocked = parentLocked || !!node.isLocked;
+  const newNode = { ...node, isSelected: effectiveLocked ? false : isSelected };
   if (newNode.children) {
-    newNode.children = newNode.children.map(child => setAllChildren(child, isSelected));
+    newNode.children = newNode.children.map(child => setAllChildren(child, isSelected, effectiveLocked));
   }
   return newNode;
 };
 
-const updateNodeState = (nodes: FileNode[], targetId: string, isSelected: boolean): FileNode[] => {
+const updateNodeState = (
+  nodes: FileNode[],
+  targetId: string,
+  isSelected: boolean,
+  parentLocked = false
+): FileNode[] => {
   return nodes.map(node => {
+    const effectiveLocked = parentLocked || !!node.isLocked;
     if (node.id === targetId) {
-      return setAllChildren(node, isSelected);
+      if (effectiveLocked) {
+        return setAllChildren(node, false, true);
+      }
+      return setAllChildren(node, isSelected, false);
     }
     if (node.children) {
       return {
         ...node,
-        children: updateNodeState(node.children, targetId, isSelected)
+        children: updateNodeState(node.children, targetId, isSelected, effectiveLocked)
       };
     }
     return node;
   });
 };
 
-const invertTreeSelection = (nodes: FileNode[]): FileNode[] => {
+const invertTreeSelection = (nodes: FileNode[], parentLocked = false): FileNode[] => {
   return nodes.map(node => {
-    if (node.isLocked) return node;
+    const effectiveLocked = parentLocked || !!node.isLocked;
+    const children = node.children ? invertTreeSelection(node.children, effectiveLocked) : undefined;
+    if (effectiveLocked) {
+      return {
+        ...node,
+        isSelected: false,
+        children
+      };
+    }
 
     return {
       ...node,
       isSelected: !node.isSelected,
-      children: node.children ? invertTreeSelection(node.children) : undefined
+      children
     };
   });
 };
@@ -191,9 +209,11 @@ export const useContextStore = create<ContextState>()(
         const state = get();
         const { fileTree, isIgnoreSyncActive } = state;
 
-        const applyStatus = (nodes: FileNode[], parentLocked = false, parentGitIgnored = false): FileNode[] => {
+        const applyStatus = (nodes: FileNode[], parentFilterLocked = false, parentGitIgnored = false): FileNode[] => {
           return nodes.map(node => {
-            let isConfigIgnored = parentLocked ||
+            const backendFilterLocked = !!node.isLocked && node.ignoreSource === 'filter';
+            let isConfigIgnored = parentFilterLocked ||
+                                  backendFilterLocked ||
                                   state.projectIgnore.dirs.includes(node.name) ||
                                   globalConfig.dirs.includes(node.name);
             if (node.kind === 'file') {
@@ -226,7 +246,7 @@ export const useContextStore = create<ContextState>()(
             };
 
             if (newNode.children) {
-              newNode.children = applyStatus(newNode.children, shouldLock, isNodeGitIgnored);
+              newNode.children = applyStatus(newNode.children, isConfigIgnored, isNodeGitIgnored);
             }
             return newNode;
           });

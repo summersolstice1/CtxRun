@@ -57,6 +57,12 @@ export function FileTreeNode({
 
   const Icon = hasChildren ? (isExpanded ? ChevronDown : ChevronRight) : null;
   const TypeIcon = node.kind === 'dir' ? Folder : FileCode;
+  const lockedReason = node.ignoreSource === 'git'
+    ? t('common.ignoredByGit')
+    : t('common.ignoredByFilter');
+  const lockedTitle = node.kind === 'dir'
+    ? `${lockedReason}. ${t('common.lockedDirNotScanned')}`
+    : lockedReason;
 
   return (
     <div
@@ -74,9 +80,7 @@ export function FileTreeNode({
       onClick={handleExpandClick}
       onDoubleClick={handleDoubleClick}
       title={node.isLocked
-        ? (node.ignoreSource === 'git'
-          ? t('common.ignoredByGit')
-          : t('common.ignoredByFilter'))
+        ? lockedTitle
         : node.path}
     >
       <div className="w-5 h-5 flex items-center justify-center shrink-0 text-muted-foreground">

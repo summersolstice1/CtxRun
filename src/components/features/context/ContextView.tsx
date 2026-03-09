@@ -183,6 +183,10 @@ export function ContextView() {
   const [showFilters, setShowFilters] = useState(false); 
   const [rightViewMode, setRightViewMode] = useState<'dashboard' | 'preview'>('dashboard');
   const ignoreSyncInitializedRef = useRef(false);
+  const ignoreRescanInitializedRef = useRef(false);
+  const ignoreRescanTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const globalProjectRootRef = useRef<string | null>(null);
+  const scanRequestIdRef = useRef(0);
 
   const [toastState, setToastState] = useState<{ show: boolean; msg: string; type: ToastType }>({
       show: false,
@@ -217,6 +221,10 @@ export function ContextView() {
   }, [globalProjectRoot, checkIgnoreFiles]);
 
   useEffect(() => {
+    globalProjectRootRef.current = globalProjectRoot;
+  }, [globalProjectRoot]);
+
+  useEffect(() => {
     if (fileTree.length > 0) {
       refreshTreeStatus(globalIgnore);
     }
@@ -228,10 +236,36 @@ export function ContextView() {
       return;
     }
 
-    if (!globalProjectRoot || isScanning) return;
-    void performScan(globalProjectRoot);
+    const root = globalProjectRootRef.current;
+    if (!root) return;
+    void performScan(root);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isIgnoreSyncActive]);
+
+  useEffect(() => {
+    if (!ignoreRescanInitializedRef.current) {
+      ignoreRescanInitializedRef.current = true;
+      return;
+    }
+
+    if (ignoreRescanTimerRef.current) {
+      clearTimeout(ignoreRescanTimerRef.current);
+    }
+
+    ignoreRescanTimerRef.current = setTimeout(() => {
+      const root = globalProjectRootRef.current;
+      if (!root) return;
+      void performScan(root);
+    }, 400);
+
+    return () => {
+      if (ignoreRescanTimerRef.current) {
+        clearTimeout(ignoreRescanTimerRef.current);
+        ignoreRescanTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globalIgnore, projectIgnore]);
 
   const selectedFileCount = useMemo(() => {
     let count = 0;
@@ -436,6 +470,7 @@ export function ContextView() {
 
   const performScan = async (path: string) => {
     if (!path.trim()) return;
+    const requestId = ++scanRequestIdRef.current;
     setIsScanning(true);
     try {
       const effectiveConfig = {
@@ -449,6 +484,7 @@ export function ContextView() {
         maxDepth: 24,
         maxEntries: 100000,
       });
+      if (requestId !== scanRequestIdRef.current) return;
       const previousTree = useContextStore.getState().fileTree;
       const tree = mergeTreeUiState(result.nodes, previousTree);
       setFileTree(tree);
@@ -469,10 +505,13 @@ export function ContextView() {
       if (idealWidth > contextSidebarWidth) setContextSidebarWidth(idealWidth);
       if (!isContextSidebarOpen) setContextSidebarOpen(true);
     } catch (err) {
+      if (requestId !== scanRequestIdRef.current) return;
       console.error('Project scan failed:', err);
       triggerToast("Scan failed. Check path.", 'error');
     } finally {
-      setIsScanning(false);
+      if (requestId === scanRequestIdRef.current) {
+        setIsScanning(false);
+      }
     }
   };
 
@@ -538,7 +577,7 @@ export function ContextView() {
         <button onClick={handleBrowse} className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 border border-border rounded-md text-sm font-medium transition-colors whitespace-nowrap">
           <FolderOpen size={16} /><span>{t('context.browse')}</span>
         </button>
-        <button onClick={() => performScan(globalProjectRoot || '')} disabled={!globalProjectRoot || isScanning} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50">
+        <button onClick={() => performScan(globalProjectRoot || '')} disabled={!globalProjectRoot} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50">
           <RefreshCw size={16} className={cn(isScanning && "animate-spin")} />
         </button>
       </div>
