@@ -44,7 +44,7 @@ pub fn communication_rules() -> Vec<Rule> {
             id: "discord-webhook",
             description: "Discord Webhook URL",
             regex: Regex::new(
-                r"https://discord(app)?\\.com/api/webhooks/[0-9]{18,19}/[A-Za-z0-9_\\-]{68}",
+                r"https://discord(app)?\.com/api/webhooks/[0-9]{18,19}/[A-Za-z0-9_-]{68}",
             )
             .unwrap(),
             entropy: Some(3.8),
@@ -78,7 +78,7 @@ pub fn communication_rules() -> Vec<Rule> {
         Rule {
             id: "sendgrid-api-key",
             description: "SendGrid API Key",
-            regex: Regex::new(r"SG\\.[0-9A-Za-z_\\-]{22}\\.[0-9A-Za-z_\\-]{43}").unwrap(),
+            regex: Regex::new(r"SG\.[0-9A-Za-z_-]{22}\.[0-9A-Za-z_-]{43}").unwrap(),
             entropy: Some(3.8),
             keywords: &["SG."],
         },

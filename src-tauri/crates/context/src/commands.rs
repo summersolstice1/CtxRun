@@ -10,11 +10,7 @@ use std::path::Path;
 use tauri::State;
 
 #[tauri::command]
-pub async fn calculate_context_stats<R: tauri::Runtime>(
-    _app: tauri::AppHandle<R>,
-    paths: Vec<String>,
-    remove_comments: bool,
-) -> Result<ContextStats> {
+pub async fn calculate_context_stats(paths: Vec<String>, remove_comments: bool) -> Result<ContextStats> {
     let stats = tauri::async_runtime::spawn_blocking(move || {
         core::calculate_stats_parallel(paths, remove_comments)
     })
@@ -25,8 +21,7 @@ pub async fn calculate_context_stats<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub async fn get_context_content<R: tauri::Runtime>(
-    _app: tauri::AppHandle<R>,
+pub async fn get_context_content(
     paths: Vec<String>,
     header: String,
     remove_comments: bool,
@@ -41,8 +36,7 @@ pub async fn get_context_content<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub async fn copy_context_to_clipboard<R: tauri::Runtime>(
-    _app: tauri::AppHandle<R>,
+pub async fn copy_context_to_clipboard(
     paths: Vec<String>,
     header: String,
     remove_comments: bool,
@@ -62,8 +56,7 @@ pub async fn copy_context_to_clipboard<R: tauri::Runtime>(
 }
 
 #[tauri::command]
-pub async fn save_context_to_file<R: tauri::Runtime>(
-    _app: tauri::AppHandle<R>,
+pub async fn save_context_to_file(
     paths: Vec<String>,
     header: String,
     remove_comments: bool,

@@ -13,6 +13,8 @@ ctxrun-plugin-git = { path = "../git" }
 ctxrun-plugin-miner = { path = "../miner" }
 ctxrun-plugin-refinery = { path = "../refinery" }
 ctxrun-plugin-tool-runtime = { path = "../tool-runtime" }
+tauri = { workspace = true }
+git2 = { workspace = true }
 rusqlite = { workspace = true }
 serde_json = "1.0"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }

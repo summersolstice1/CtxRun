@@ -48,6 +48,11 @@ pub fn is_safe_value(val: &str) -> bool {
         return true;
     }
 
+    let v_lower = val.to_lowercase();
+    let is_secret_webhook_url = v_lower.contains("hooks.slack.com/services/")
+        || v_lower.contains("discord.com/api/webhooks/")
+        || v_lower.contains("discordapp.com/api/webhooks/");
+
     if is_uuid(val) {
         return true;
     }
@@ -55,10 +60,10 @@ pub fn is_safe_value(val: &str) -> bool {
         return true;
     }
 
-    if val.contains('/') || val.contains('\\') {
+    if !is_secret_webhook_url && (val.contains('/') || val.contains('\\')) {
         return true;
     }
-    if val.starts_with("http") {
+    if !is_secret_webhook_url && v_lower.starts_with("http") {
         return true;
     }
     if val.contains(' ') {
@@ -67,8 +72,6 @@ pub fn is_safe_value(val: &str) -> bool {
     if val.contains('.') && val.chars().all(|c| c.is_numeric() || c == '.') {
         return true;
     }
-
-    let v_lower = val.to_lowercase();
     if v_lower.contains("example")
         || v_lower.contains("xxxx")
         || v_lower.contains("changeme")

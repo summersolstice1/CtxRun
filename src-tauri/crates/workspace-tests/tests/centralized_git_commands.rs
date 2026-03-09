@@ -1,0 +1,182 @@
+use std::{
+    fs,
+    path::PathBuf,
+    process,
+    time::{SystemTime, UNIX_EPOCH},
+};
+
+use ctxrun_plugin_git::{
+    commands::{export_git_diff, get_git_commits, get_git_diff, get_git_diff_text},
+    models::{ExportFormat, ExportLayout},
+};
+use git2::{IndexAddOption, Repository, Signature};
+
+fn temp_root(prefix: &str) -> PathBuf {
+    let nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or(0);
+    let root = std::env::temp_dir().join(format!(
+        "ctxrun-workspace-tests-{prefix}-{}-{nanos}",
+        process::id()
+    ));
+    fs::create_dir_all(&root).expect("create temp root");
+    root
+}
+
+fn commit_all(repo: &Repository, message: &str) -> String {
+    let mut index = repo.index().expect("open git index");
+    index
+        .add_all(["*"].iter(), IndexAddOption::DEFAULT, None)
+        .expect("git add all");
+    index.write().expect("write index");
+    let tree_id = index.write_tree().expect("write tree");
+    let tree = repo.find_tree(tree_id).expect("find tree");
+    let sig = Signature::now("Tester", "tester@example.com").expect("signature");
+
+    let parent = repo
+        .head()
+        .ok()
+        .and_then(|h| h.target())
+        .and_then(|oid| repo.find_commit(oid).ok());
+
+    let oid = if let Some(parent) = parent {
+        repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &[&parent])
+            .expect("commit with parent")
+    } else {
+        repo.commit(Some("HEAD"), &sig, &sig, message, &tree, &[])
+            .expect("initial commit")
+    };
+
+    oid.to_string()
+}
+
+fn setup_repo_with_two_commits(prefix: &str) -> (PathBuf, String, String) {
+    let root = temp_root(prefix);
+    let repo = Repository::init(&root).expect("init git repo");
+
+    fs::write(root.join("file.txt"), "line-1\n").expect("write initial file");
+    let old_hash = commit_all(&repo, "initial");
+
+    fs::write(root.join("file.txt"), "line-1\nline-2\n").expect("write modified file");
+    let new_hash = commit_all(&repo, "second");
+
+    (root, old_hash, new_hash)
+}
+
+#[test]
+fn centralized_git_commands_get_commits_returns_recent_history() {
+    let (root, _old_hash, _new_hash) = setup_repo_with_two_commits("git-commits");
+
+    let commits = get_git_commits(root.to_string_lossy().to_string()).expect("get commits");
+    assert!(commits.len() >= 2);
+    assert!(!commits[0].hash.is_empty());
+    assert!(!commits[0].message.is_empty());
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn centralized_git_commands_get_diff_between_commits_contains_modified_content() {
+    let (root, old_hash, new_hash) = setup_repo_with_two_commits("git-diff-tree");
+
+    let diffs = get_git_diff(
+        root.to_string_lossy().to_string(),
+        old_hash.clone(),
+        new_hash.clone(),
+    )
+    .expect("get git diff");
+    assert!(!diffs.is_empty());
+
+    let file = diffs
+        .iter()
+        .find(|f| f.path == "file.txt")
+        .expect("file.txt diff entry");
+    assert_eq!(file.status, "Modified");
+    assert!(file.original_content.contains("line-1"));
+    assert!(file.modified_content.contains("line-2"));
+    assert!(!file.is_binary);
+    assert!(!file.is_large);
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn centralized_git_commands_get_diff_workdir_detects_binary_and_large_files() {
+    let (root, _old_hash, new_hash) = setup_repo_with_two_commits("git-diff-workdir");
+
+    fs::write(root.join("bin.dat"), vec![0_u8, 1, 2, 3]).expect("write binary file");
+    fs::write(root.join("huge.txt"), "x".repeat(2 * 1024 * 1024 + 32)).expect("write huge file");
+
+    let diffs = get_git_diff(
+        root.to_string_lossy().to_string(),
+        new_hash,
+        "__WORK_DIR__".to_string(),
+    )
+    .expect("get workdir diff");
+
+    let binary = diffs
+        .iter()
+        .find(|f| f.path == "bin.dat")
+        .expect("binary file entry");
+    assert!(binary.is_binary);
+
+    let large = diffs
+        .iter()
+        .find(|f| f.path == "huge.txt")
+        .expect("large file entry");
+    assert!(large.is_large);
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[test]
+fn centralized_git_commands_get_diff_text_contains_patch_markers() {
+    let (root, old_hash, new_hash) = setup_repo_with_two_commits("git-diff-text");
+
+    let diff_text =
+        get_git_diff_text(root.to_string_lossy().to_string(), old_hash, new_hash)
+            .expect("get diff text");
+    assert!(diff_text.contains("@@"));
+    assert!(diff_text.contains("+line-2"));
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn centralized_git_commands_export_diff_handles_success_and_no_selection_error() {
+    let (root, old_hash, new_hash) = setup_repo_with_two_commits("git-export");
+    let save_path = root.join("diff.md");
+
+    let ok = export_git_diff(
+        root.to_string_lossy().to_string(),
+        old_hash.clone(),
+        new_hash.clone(),
+        ExportFormat::Markdown,
+        ExportLayout::Unified,
+        save_path.to_string_lossy().to_string(),
+        vec!["file.txt".into()],
+    )
+    .await;
+    assert!(ok.is_ok(), "export with selected file should succeed");
+    let exported = fs::read_to_string(&save_path).expect("read exported diff");
+    assert!(exported.contains("file.txt"));
+
+    let err = export_git_diff(
+        root.to_string_lossy().to_string(),
+        old_hash,
+        new_hash,
+        ExportFormat::Markdown,
+        ExportLayout::Split,
+        root.join("empty.md").to_string_lossy().to_string(),
+        vec![],
+    )
+    .await
+    .expect_err("export without selected paths should fail");
+    assert!(
+        err.to_string().contains("No files selected"),
+        "expected no-selection error, got: {err}"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}

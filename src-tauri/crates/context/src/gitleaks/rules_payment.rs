@@ -47,7 +47,7 @@ pub fn payment_rules() -> Vec<Rule> {
         Rule {
             id: "paypal-braintree-access-token",
             description: "PayPal Braintree Access Token",
-            regex: Regex::new(r"access_token\\$production\\$[0-9a-z]{16}\\$[0-9a-f]{32}").unwrap(),
+            regex: Regex::new(r"access_token\$production\$[0-9a-z]{16}\$[0-9a-f]{32}").unwrap(),
             entropy: Some(3.8),
             keywords: &["access_token$production"],
         },

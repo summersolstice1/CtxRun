@@ -1385,8 +1385,10 @@ dependencies = [
  "ctxrun-plugin-miner",
  "ctxrun-plugin-refinery",
  "ctxrun-plugin-tool-runtime",
+ "git2",
  "rusqlite",
  "serde_json",
+ "tauri",
  "tokio",
 ]
 
