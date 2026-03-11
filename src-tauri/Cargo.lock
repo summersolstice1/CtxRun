@@ -1150,7 +1150,7 @@ dependencies = [
 
 [[package]]
 name = "ctxrun"
-version = "2.2.5"
+version = "2.2.6"
 dependencies = [
  "arboard",
  "base64 0.22.1",
