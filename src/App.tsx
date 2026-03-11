@@ -6,7 +6,6 @@ import { Loader2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { TitleBar } from "@/components/layout/TitleBar";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { SettingsModal } from "@/components/settings/SettingsModal";
 import { useAppStore, AppTheme } from "@/store/useAppStore";
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
 import { useTranslation } from 'react-i18next';
@@ -18,6 +17,7 @@ const PatchView = lazy(() => import('@/components/features/patch/PatchView').the
 const RefineryView = lazy(() => import('@/components/features/refinery/RefineryView').then(module => ({ default: module.RefineryView })));
 const AutomatorView = lazy(() => import('@/components/features/automator/AutomatorView').then(module => ({ default: module.AutomatorView })));
 const MinerView = lazy(() => import('@/components/features/miner/MinerView').then(module => ({ default: module.MinerView })));
+const SettingsView = lazy(() => import('@/components/settings/SettingsView').then(module => ({ default: module.SettingsView })));
 const SystemMonitorModal = lazy(() => import('@/components/features/monitor/SystemMonitorModal').then(module => ({ default: module.SystemMonitorModal })));
 
 const appWindow = getCurrentWebviewWindow()
@@ -134,10 +134,10 @@ function App() {
             {currentView === 'refinery' && <RefineryView />}
             {currentView === 'automator' && <AutomatorView />}
             {currentView === 'miner' && <MinerView />}
+            {currentView === 'settings' && <SettingsView />}
           </Suspense>
         </main>
       </div>
-      <SettingsModal />
       <Suspense fallback={null}>
         <SystemMonitorModal />
       </Suspense>

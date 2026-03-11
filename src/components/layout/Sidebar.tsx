@@ -9,13 +9,12 @@ import { useShallow } from 'zustand/react/shallow';
 
 export function Sidebar() {
   const { t } = useTranslation();
-  const [currentView, setView, isSidebarOpen, toggleSidebar, setSettingsOpen] = useAppStore(
+  const [currentView, setView, isSidebarOpen, toggleSidebar] = useAppStore(
     useShallow((state) => [
       state.currentView,
       state.setView,
       state.isSidebarOpen,
-      state.toggleSidebar,
-      state.setSettingsOpen
+      state.toggleSidebar
     ])
   );
 
@@ -111,10 +110,14 @@ export function Sidebar() {
       </nav>
 
       <div className="shrink-0 px-2 flex flex-col overflow-hidden whitespace-nowrap py-2">
+        {currentView !== 'settings' && <div className="h-px bg-border/50 mx-2 mb-2" />}
         <button
-          onClick={() => setSettingsOpen(true)}
+          onClick={() => setView('settings')}
           className={cn(
-            "relative flex items-center h-10 w-full rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors group/btn"
+            "relative flex items-center h-10 w-full rounded-lg transition-colors group/btn",
+            currentView === 'settings'
+              ? "text-primary bg-primary/10 border border-primary/20"
+              : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
           )}
           title={!isSidebarOpen ? t('menu.settings') : undefined}
         >

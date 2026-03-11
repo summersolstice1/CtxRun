@@ -9,7 +9,7 @@ import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
 import { useContextStore } from './useContextStore';
 
-export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner';
+export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner' | 'settings';
 export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';
@@ -90,7 +90,6 @@ function buildRecentProjectRoots(current: string[], path: string | null): string
 interface AppState {
   currentView: AppView;
   isSidebarOpen: boolean;
-  isSettingsOpen: boolean;
   isMonitorOpen: boolean;
   isPromptSidebarOpen: boolean;
   isContextSidebarOpen: boolean;
@@ -125,7 +124,6 @@ interface AppState {
   setProjectRoot: (path: string | null) => void;
   clearProjectRoot: () => void;
   toggleSidebar: () => void;
-  setSettingsOpen: (open: boolean) => void;
   setMonitorOpen: (open: boolean) => void;
   setPromptSidebarOpen: (open: boolean) => void;
   setContextSidebarOpen: (open: boolean) => void;
@@ -151,7 +149,6 @@ export const useAppStore = create<AppState>()(
     (set) => ({
       currentView: 'prompts',
       isSidebarOpen: true,
-      isSettingsOpen: false,
       isMonitorOpen: false,
       isPromptSidebarOpen: true,
       isContextSidebarOpen: true,
@@ -217,7 +214,6 @@ export const useAppStore = create<AppState>()(
         }
       },
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
-      setSettingsOpen: (open) => set({ isSettingsOpen: open }),
       setMonitorOpen: (open) => set({ isMonitorOpen: open }),
       setPromptSidebarOpen: (open) => set({ isPromptSidebarOpen: open }),
       setContextSidebarOpen: (open) => set({ isContextSidebarOpen: open }),
