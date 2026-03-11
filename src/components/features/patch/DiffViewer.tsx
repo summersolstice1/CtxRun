@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DiffEditor, DiffOnMount } from '@monaco-editor/react';
 import { Columns, Rows, FileCode, Loader2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
@@ -18,10 +18,12 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
   const [renderSideBySide, setRenderSideBySide] = useState(true);
   const { t } = useTranslation();
   const monacoRef = useRef<any>(null);
+  const editorRef = useRef<any>(null);
 
   const monacoLanguage = getMonacoLanguage(fileName);
 
-  const handleEditorDidMount: DiffOnMount = (_editor, monaco) => {
+  const handleEditorDidMount: DiffOnMount = (editor, monaco) => {
+    editorRef.current = editor;
     monacoRef.current = monaco;
 
     monaco.editor.defineTheme('codeforge-dark', {
@@ -70,6 +72,30 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
       monacoRef.current.editor.setTheme(targetTheme);
     }
   }, [theme]);
+
+  useLayoutEffect(() => {
+    return () => {
+      const editor = editorRef.current;
+      const model = editor?.getModel?.();
+
+      if (!editor || !model) {
+        return;
+      }
+
+      try {
+        editor.setModel(null);
+      } catch (error) {
+        console.warn('Failed to detach diff editor model before unmount:', error);
+      }
+
+      try {
+        model.original?.dispose?.();
+        model.modified?.dispose?.();
+      } catch (error) {
+        console.warn('Failed to dispose diff editor models during unmount:', error);
+      }
+    };
+  }, []);
 
   if (!modified && !original) {
     return (

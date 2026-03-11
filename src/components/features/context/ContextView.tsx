@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useMemo, useEffect, useRef, type CSSProperties, memo } from 'react';
-import { open, save } from '@tauri-apps/plugin-dialog';
+import { save } from '@tauri-apps/plugin-dialog';
 import { basename } from '@tauri-apps/api/path';
 import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
@@ -8,8 +8,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 import {
-  FolderOpen, RefreshCw, Loader2, FileJson,
-  PanelLeft, Search, ArrowRight, SlidersHorizontal, ChevronUp,
+  RefreshCw, Loader2, FileJson,
+  PanelLeft, SlidersHorizontal, ChevronUp,
   LayoutDashboard, FileText, ArrowRightLeft, GitBranch
 } from 'lucide-react';
 import { useContextStore } from '@/store/useContextStore';
@@ -113,7 +113,7 @@ function mergeTreeUiState(nextTree: FileNode[], prevTree: FileNode[]): FileNode[
 export function ContextView() {
   const { t } = useTranslation();
   const [
-    contextProjectRoot,
+    scannedProjectRoot,
     fileTree,
     isScanning,
     projectIgnore,
@@ -133,7 +133,7 @@ export function ContextView() {
     checkIgnoreFiles
   ] = useContextStore(
     useShallow((state) => [
-      state.projectRoot,
+      state.scannedProjectRoot,
       state.fileTree,
       state.isScanning,
       state.projectIgnore,
@@ -161,8 +161,7 @@ export function ContextView() {
     setContextSidebarWidth,
     globalIgnore,
     models,
-    globalProjectRoot,
-    setGlobalProjectRoot
+    globalProjectRoot
   ] = useAppStore(
     useShallow((state) => [
       state.isContextSidebarOpen,
@@ -171,14 +170,12 @@ export function ContextView() {
       state.setContextSidebarWidth,
       state.globalIgnore,
       state.models,
-      state.projectRoot,
-      state.setProjectRoot
+      state.projectRoot
     ])
   );
 
   const { openPreview } = usePreviewStore();
 
-  const [pathInput, setPathInput] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [showFilters, setShowFilters] = useState(false); 
   const [rightViewMode, setRightViewMode] = useState<'dashboard' | 'preview'>('dashboard');
@@ -210,17 +207,6 @@ export function ContextView() {
   const activeModels = (models && models.length > 0) ? models : DEFAULT_MODELS;
 
   useEffect(() => {
-    // Sync global project root to local input
-    if (globalProjectRoot) setPathInput(globalProjectRoot);
-  }, [globalProjectRoot]);
-
-  useEffect(() => {
-    if (globalProjectRoot) {
-      checkIgnoreFiles(globalProjectRoot);
-    }
-  }, [globalProjectRoot, checkIgnoreFiles]);
-
-  useEffect(() => {
     globalProjectRootRef.current = globalProjectRoot;
   }, [globalProjectRoot]);
 
@@ -237,10 +223,10 @@ export function ContextView() {
     }
 
     const root = globalProjectRootRef.current;
-    if (!root) return;
+    if (!root || scannedProjectRoot !== root) return;
     void performScan(root);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isIgnoreSyncActive]);
+  }, [isIgnoreSyncActive, scannedProjectRoot]);
 
   useEffect(() => {
     if (!ignoreRescanInitializedRef.current) {
@@ -254,7 +240,7 @@ export function ContextView() {
 
     ignoreRescanTimerRef.current = setTimeout(() => {
       const root = globalProjectRootRef.current;
-      if (!root) return;
+      if (!root || scannedProjectRoot !== root) return;
       void performScan(root);
     }, 400);
 
@@ -265,7 +251,7 @@ export function ContextView() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [globalIgnore, projectIgnore]);
+  }, [globalIgnore, projectIgnore, scannedProjectRoot]);
 
   const selectedFileCount = useMemo(() => {
     let count = 0;
@@ -488,10 +474,6 @@ export function ContextView() {
       const previousTree = useContextStore.getState().fileTree;
       const tree = mergeTreeUiState(result.nodes, previousTree);
       setFileTree(tree);
-
-      if (path !== globalProjectRoot || !contextProjectRoot) {
-        setGlobalProjectRoot(path);
-      }
       await checkIgnoreFiles(path);
 
       if (result.capped) {
@@ -513,22 +495,6 @@ export function ContextView() {
         setIsScanning(false);
       }
     }
-  };
-
-  const handleBrowse = async () => {
-    try {
-      const selected = await open({ directory: true, multiple: false, recursive: false });
-      if (selected && typeof selected === 'string') {
-        setPathInput(selected);
-        await performScan(selected);
-      }
-    } catch (err) {
-      console.error('Failed to browse project directory:', err);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') performScan(pathInput);
   };
 
   const isResizingRef = useRef(false);
@@ -553,33 +519,48 @@ export function ContextView() {
     <div className="h-full flex flex-col bg-background relative">
 
       <div className="h-14 border-b border-border flex items-center px-4 gap-3 shrink-0 bg-background/80 backdrop-blur z-10">
-        <button 
-          onClick={() => setContextSidebarOpen(!isContextSidebarOpen)} 
-          className={cn("p-2 rounded-md transition-colors", !isContextSidebarOpen ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary")}
-        >
-          <PanelLeft size={18} />
-        </button>
-
-        <div className="flex-1 flex items-center gap-2 bg-secondary/30 border border-border/50 rounded-md px-2 py-1 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/50 transition-all">
-          <Search size={14} className="text-muted-foreground/50" />
-          <input 
-            className="flex-1 bg-transparent border-none outline-none text-sm h-8 placeholder:text-muted-foreground/40"
-            placeholder={t('context.searchPlaceholder')}
-            value={pathInput}
-            onChange={(e) => setPathInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
-          {pathInput && pathInput !== globalProjectRoot && (
-             <button onClick={() => performScan(pathInput)} className="p-1 hover:bg-primary hover:text-primary-foreground rounded-sm transition-colors"><ArrowRight size={14} /></button>
-          )}
+        <div className="flex items-center gap-3 min-w-0 shrink-0">
+          <button 
+            onClick={() => setContextSidebarOpen(!isContextSidebarOpen)} 
+            className={cn("p-2 rounded-md transition-colors", !isContextSidebarOpen ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-secondary")}
+          >
+            <PanelLeft size={18} />
+          </button>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-foreground">{t('menu.context')}</div>
+          </div>
         </div>
 
-        <button onClick={handleBrowse} className="flex items-center gap-2 px-3 py-1.5 bg-secondary hover:bg-secondary/80 border border-border rounded-md text-sm font-medium transition-colors whitespace-nowrap">
-          <FolderOpen size={16} /><span>{t('context.browse')}</span>
-        </button>
-        <button onClick={() => performScan(globalProjectRoot || '')} disabled={!globalProjectRoot} className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50">
-          <RefreshCw size={16} className={cn(isScanning && "animate-spin")} />
-        </button>
+        <div className="flex-1 flex justify-center px-4">
+          <div className="bg-secondary/50 border border-border/60 p-1 rounded-xl flex items-center shadow-sm">
+            <ViewToggleBtn 
+              active={rightViewMode === 'dashboard'} 
+              onClick={() => setRightViewMode('dashboard')}
+              icon={<LayoutDashboard size={14} />} 
+              label={t('context.tabDashboard')}
+            />
+            <ViewToggleBtn 
+              active={rightViewMode === 'preview'} 
+              onClick={() => setRightViewMode('preview')}
+              icon={<FileText size={14} />} 
+              label={t('context.tabPreview')}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 shrink-0 min-w-[120px]">
+          <span className="bg-secondary/50 px-2 py-1 rounded-md text-[10px] font-medium tabular-nums text-muted-foreground">
+            {t('context.selectedCount', { count: selectedFileCount })}
+          </span>
+          <button
+            onClick={() => performScan(globalProjectRoot || '')}
+            disabled={!globalProjectRoot}
+            title={t('workspace.rescan')}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50"
+          >
+            <RefreshCw size={16} className={cn(isScanning && "animate-spin")} />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -612,17 +593,20 @@ export function ContextView() {
                 >
                    <ArrowRightLeft size={12} />
                 </button>
-                <span className="bg-secondary/50 px-1.5 py-0.5 rounded text-[10px] tabular-nums">
-                  {t('context.selectedCount', { count: selectedFileCount })}
-                </span>
-             </div>
-          </div>
+              </div>
+           </div>
           
           <div className="flex-1 overflow-hidden relative">
             {!globalProjectRoot ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2 text-center px-4"><p className="text-sm">{t('context.enterPath')}</p></div>
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-50 gap-2 text-center px-4">
+                <p className="text-sm">{t('workspace.selectHint')}</p>
+              </div>
             ) : isScanning ? (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground animate-pulse"><Loader2 size={20} className="animate-spin text-primary" /><span>{t('context.scanning')}</span></div>
+            ) : scannedProjectRoot !== globalProjectRoot ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground opacity-60 gap-3 text-center px-4">
+                <p className="text-sm">{t('workspace.loadHint')}</p>
+              </div>
             ) : fileTree.length === 0 ? (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-muted-foreground">{t('context.emptyDir')}</div>
             ) : (
@@ -666,27 +650,6 @@ export function ContextView() {
         <div className="flex-1 bg-background min-w-0 flex flex-col relative">
             <div className="absolute inset-0 bg-grid-slate-900/[0.04] bg-[bottom_1px_center] dark:bg-grid-slate-400/[0.05] [mask-image:linear-gradient(to_bottom,transparent,black)] pointer-events-none" />
             
-            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
-               <div className={cn(
-                  "pointer-events-auto bg-background/80 backdrop-blur-md border border-border p-1 rounded-xl flex items-center shadow-sm",
-                  "transition-all duration-300 ease-out", 
-                  "opacity-10 hover:opacity-100 hover:shadow-md hover:scale-[1.02]"
-               )}>
-                  <ViewToggleBtn 
-                    active={rightViewMode === 'dashboard'} 
-                    onClick={() => setRightViewMode('dashboard')}
-                    icon={<LayoutDashboard size={14} />} 
-                    label={t('context.tabDashboard')}
-                  />
-                  <ViewToggleBtn 
-                    active={rightViewMode === 'preview'} 
-                    onClick={() => setRightViewMode('preview')}
-                    icon={<FileText size={14} />} 
-                    label={t('context.tabPreview')}
-                  />
-               </div>
-            </div>
-
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-10 h-full"> 
                 {rightViewMode === 'dashboard' ? (
                    <TokenDashboard

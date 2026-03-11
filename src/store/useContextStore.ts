@@ -77,6 +77,7 @@ interface ContextState {
   removeComments: boolean;
 
   projectRoot: string | null;
+  scannedProjectRoot: string | null;
   fileTree: FileNode[];
   isScanning: boolean;
   detectSecrets: boolean;
@@ -86,7 +87,7 @@ interface ContextState {
   toggleExpand: (id: string) => void;
   setAllExpanded: (expanded: boolean) => void;
 
-  setProjectRoot: (path: string) => Promise<void>;
+  setProjectRoot: (path: string | null) => Promise<void>;
   setFileTree: (tree: FileNode[]) => void;
   setIsScanning: (status: boolean) => void;
 
@@ -112,6 +113,7 @@ export const useContextStore = create<ContextState>()(
       removeComments: false,
       detectSecrets: true,
       projectRoot: null,
+      scannedProjectRoot: null,
       fileTree: [],
       isScanning: false,
       isIgnoreSyncActive: false,
@@ -142,7 +144,26 @@ export const useContextStore = create<ContextState>()(
           return;
         }
 
-        set({ projectRoot: path, projectIgnore: DEFAULT_PROJECT_IGNORE });
+        if (!path) {
+          set({
+            projectRoot: null,
+            scannedProjectRoot: null,
+            projectIgnore: DEFAULT_PROJECT_IGNORE,
+            fileTree: [],
+            expandedIds: [],
+            hasProjectIgnoreFiles: false,
+          });
+          return;
+        }
+
+        set({
+          projectRoot: path,
+          scannedProjectRoot: null,
+          projectIgnore: DEFAULT_PROJECT_IGNORE,
+          fileTree: [],
+          expandedIds: [],
+          hasProjectIgnoreFiles: false,
+        });
         const loadSeq = ++projectConfigLoadSeq;
         const editSeqAtStart = projectIgnoreEditSeq;
 
@@ -169,7 +190,10 @@ export const useContextStore = create<ContextState>()(
           set({ projectIgnore: DEFAULT_PROJECT_IGNORE });
         }
       },
-      setFileTree: (tree) => set({ fileTree: tree }),
+      setFileTree: (tree) => set((state) => ({
+        fileTree: tree,
+        scannedProjectRoot: state.projectRoot,
+      })),
       setIsScanning: (status) => set({ isScanning: status }),
 
       updateProjectIgnore: (type, action, value) => {

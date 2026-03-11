@@ -3,15 +3,13 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMinerStore } from '@/store/useMinerStore';
 import { useAppStore } from '@/store/useAppStore';
-import { open } from '@tauri-apps/plugin-dialog';
-import { Globe, FolderOpen, Play, Square, Settings2, ShieldCheck, TerminalSquare, AlertCircle, CheckCircle2, Loader2, Info } from 'lucide-react';
+import { Globe, Play, Square, Settings2, ShieldCheck, TerminalSquare, AlertCircle, CheckCircle2, Loader2, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NumberInput } from '@/components/ui/NumberInput';
 
 export function MinerView() {
   const { t } = useTranslation();
   const projectRoot = useAppStore(state => state.projectRoot);
-  const setProjectRoot = useAppStore(state => state.setProjectRoot);
   const {
     config, setConfig,
     isRunning, progress, logs,
@@ -23,18 +21,6 @@ export function MinerView() {
   useEffect(() => {
     void initListeners();
   }, []);
-
-  const handleSelectProjectRoot = async () => {
-    if (isRunning) return;
-    try {
-      const selected = await open({ directory: true, multiple: false });
-      if (selected && typeof selected === 'string') {
-        setProjectRoot(selected);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const handleUrlChange = (val: string) => {
     // 智能联动：当用户输入 URL 时，自动把 Match Prefix 设为同样的值（大部分情况下的默认需求）
@@ -55,7 +41,12 @@ export function MinerView() {
               <Square size={14} fill="currentColor" /> {t('miner.stopTask')}
             </button>
           ) : (
-            <button onClick={startMining} className="flex items-center gap-2 px-6 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm">
+            <button
+              onClick={startMining}
+              disabled={!projectRoot}
+              title={!projectRoot ? t('workspace.selectHint') : undefined}
+              className="flex items-center gap-2 px-6 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Play size={14} fill="currentColor" /> {t('miner.startMining')}
             </button>
           )}
@@ -95,19 +86,6 @@ export function MinerView() {
               </p>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-muted-foreground">{t('miner.outputDirectory')}</label>
-              <button
-                disabled={isRunning}
-                onClick={handleSelectProjectRoot}
-                className="w-full flex items-center justify-between bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm hover:border-primary/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <span className="truncate flex-1 text-left mr-2">
-                  {projectRoot || t('miner.selectFolder')}
-                </span>
-                <FolderOpen size={16} className="text-muted-foreground shrink-0" />
-              </button>
-            </div>
           </div>
 
           <div className="w-full h-px bg-border/50" />

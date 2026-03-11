@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { useState } from 'react';
 import {
-  FolderOpen, FileText, Sparkles, FileCode,
+  FileText, Sparkles, FileCode,
   CheckCircle2, ArrowRightLeft, Loader2,
   Copy, ChevronDown, ChevronRight, Trash2, Info, GitMerge,
-  CheckSquare, Square, FileImage, AlertOctagon
+  CheckSquare, Square, FileImage, AlertOctagon, RefreshCw, AlertCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { CommitSelector } from './CommitSelector';
@@ -73,8 +73,7 @@ interface PatchSidebarProps {
   mode: PatchMode;
   setMode: (m: PatchMode) => void;
   
-  projectRoot: string | null;
-  onLoadProject: () => void;
+  workspaceRoot: string | null;
   yamlInput: string;
   onYamlChange: (val: string) => void;
   onClearYaml: () => void;
@@ -83,8 +82,6 @@ interface PatchSidebarProps {
   selectedFileId: string | null;
   onSelectFile: (id: string) => void;
 
-  gitProjectRoot: string | null;
-  onBrowseGitProject: () => void;
   commits: GitCommit[];
   baseHash: string;
   setBaseHash: (h: string) => void;
@@ -92,6 +89,9 @@ interface PatchSidebarProps {
   setCompareHash: (h: string) => void;
   onCompare: () => void;
   isGitLoading: boolean;
+  gitError: string | null;
+  repositoryLoaded: boolean;
+  onRefreshRepository: () => void;
 
   selectedExportIds?: Set<string>;
   onToggleExport?: (id: string, checked: boolean) => void;
@@ -99,12 +99,12 @@ interface PatchSidebarProps {
 
 export function PatchSidebar({
   mode, setMode,
-  projectRoot, onLoadProject,
+  workspaceRoot,
   yamlInput, onYamlChange, onClearYaml,
   files, selectedFileId, onSelectFile,
-  gitProjectRoot, onBrowseGitProject, commits,
+  commits,
   baseHash, setBaseHash, compareHash, setCompareHash,
-  onCompare, isGitLoading,
+  onCompare, isGitLoading, gitError, repositoryLoaded, onRefreshRepository,
   selectedExportIds,
   onToggleExport
 }: PatchSidebarProps) {
@@ -138,6 +138,8 @@ export function PatchSidebar({
   const gitFiles = files.filter(f => f.gitStatus);
   const manualFile = files.find(f => f.isManual);
   const aiPatchFiles = files.filter(f => !f.isManual && !f.gitStatus);
+  const hasWorkspace = !!workspaceRoot;
+  const canShowRepoControls = hasWorkspace && repositoryLoaded && !gitError;
 
   // 将 WorkDir 选项合并到 commit 列表头部
   const compareCommits = [WORK_DIR_OPTION, ...commits];
@@ -183,20 +185,13 @@ export function PatchSidebar({
                 <Sparkles size={14} /> {t('patch.aiPatch')}
              </span>
            </button>
-        </div>
+         </div>
       </div>
 
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           
           {mode === 'patch' && (
             <div className="flex-1 flex flex-col min-h-0">
-              <div className="p-4 border-b border-border">
-                <button onClick={onLoadProject} className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all", projectRoot ? "bg-background border-border text-foreground shadow-sm hover:border-primary/50" : "bg-primary/5 border-dashed border-primary/30 text-primary hover:bg-primary/10")} title={projectRoot || t('common.selectFolder')}>
-                    <div className="flex items-center gap-2 truncate"><FolderOpen size={14} /> <span className="truncate font-medium">{projectRoot || "Browse Project..."}</span></div>
-                    {projectRoot && <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />}
-                </button>
-              </div>
-
               <div className="bg-background border-b border-border shrink-0">
                   <button onClick={() => setIsPromptOpen(!isPromptOpen)} className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider hover:bg-secondary/50 transition-colors">
                       <span className="flex items-center gap-1.5"><Info size={12} /> {t('patch.aiInstruction')}</span>
@@ -240,14 +235,20 @@ export function PatchSidebar({
           {mode === 'diff' && (
             <div className="flex-1 flex flex-col min-h-0">
               <div className="p-4 border-b border-border bg-background/80 space-y-3 shrink-0">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><GitMerge size={12}/> Git Snapshot Compare</h3>
-                
-                <button onClick={onBrowseGitProject} className={cn("w-full flex items-center justify-between px-3 py-2 rounded-lg border text-xs transition-all", gitProjectRoot ? "bg-background border-border text-foreground shadow-sm hover:border-primary/50" : "bg-primary/5 border-dashed border-primary/30 text-primary hover:bg-primary/10")} title={gitProjectRoot || t('patch.browseGit')}>
-                  <div className="flex items-center gap-2 truncate"><FolderOpen size={14} className={gitProjectRoot ? "text-blue-500" : ""} /> <span className="truncate font-medium">{gitProjectRoot || t('patch.browseGit')}</span></div>
-                  {gitProjectRoot && <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />}
-                </button>
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5"><GitMerge size={12}/> Git Snapshot Compare</h3>
+                  <button
+                    type="button"
+                    onClick={onRefreshRepository}
+                    disabled={!workspaceRoot || isGitLoading}
+                    title={t('workspace.rescan')}
+                    className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={cn(isGitLoading && 'animate-spin')} />
+                  </button>
+                </div>
 
-                {gitProjectRoot && (
+                {canShowRepoControls ? (
                   <div className="space-y-3 animate-in fade-in duration-300">
                     <div className="space-y-1">
                       <label className="text-[10px] font-medium text-muted-foreground">{t('patch.baseVersion')}</label>
@@ -262,6 +263,31 @@ export function PatchSidebar({
                       {isGitLoading ? <Loader2 size={14} className="animate-spin"/> : <GitMerge size={14}/>}
                       {isGitLoading ? t('patch.comparing') : t('patch.generateDiff')}
                     </button>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-border bg-secondary/15 px-3 py-3 text-xs text-muted-foreground">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle size={14} className="mt-0.5 shrink-0" />
+                      <div className="space-y-1">
+                        <div>
+                          {!workspaceRoot
+                            ? t('workspace.selectHint')
+                            : gitError
+                              ? t('common.errorMsg', { msg: gitError })
+                              : t('workspace.loadHint')}
+                        </div>
+                        {(gitError || (workspaceRoot && !repositoryLoaded)) && (
+                          <button
+                            type="button"
+                            onClick={onRefreshRepository}
+                            disabled={!workspaceRoot || isGitLoading}
+                            className="text-primary transition-colors hover:text-primary/80 disabled:opacity-50"
+                          >
+                            {t('workspace.rescan')}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -342,7 +368,7 @@ export function PatchSidebar({
                     );
                   })}
 
-                  {files.length <= 1 && !gitProjectRoot && (
+                  {files.length <= 1 && (!workspaceRoot || !!gitError || !repositoryLoaded) && (
                     <div className="text-center text-xs text-muted-foreground/60 p-4">
                       {t('patch.gitTip')}
                     </div>

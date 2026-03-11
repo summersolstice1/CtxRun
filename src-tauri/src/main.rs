@@ -175,6 +175,41 @@ fn refresh_shortcuts(app: tauri::AppHandle) {
     });
 }
 
+#[tauri::command]
+fn open_folder_in_file_manager(path: String) -> crate::error::Result<()> {
+    let metadata = fs::metadata(&path).map_err(|e| format!("Failed to access path: {e}"))?;
+    if !metadata.is_dir() {
+        return Err("Path is not a directory".into());
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer")
+            .arg(&path)
+            .creation_flags(CREATE_NO_WINDOW.0)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {e}"))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {e}"))?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        Command::new("xdg-open")
+            .arg(&path)
+            .spawn()
+            .map_err(|e| format!("Failed to open folder: {e}"))?;
+    }
+
+    Ok(())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
@@ -204,6 +239,7 @@ fn main() {
             get_system_info,
             check_python_env,
             refresh_shortcuts,
+            open_folder_in_file_manager,
             agent_tools::agent_read_local_file,
             agent_tools::agent_list_local_files,
             agent_tools::agent_search_local_files,

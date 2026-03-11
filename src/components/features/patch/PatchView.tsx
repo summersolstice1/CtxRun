@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { open as openDialog, save } from '@tauri-apps/plugin-dialog';
+import { save } from '@tauri-apps/plugin-dialog';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
@@ -52,7 +52,7 @@ interface PatchPreviewFile {
 }
 
 export function PatchView() {
-  const { aiConfig, projectRoot: globalProjectRoot, setProjectRoot } = useAppStore();
+  const { aiConfig, projectRoot: globalProjectRoot } = useAppStore();
   const { t } = useTranslation();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -81,6 +81,8 @@ export function PatchView() {
   const [baseHash, setBaseHash] = useState<string>('');
   const [compareHash, setCompareHash] = useState<string>('');
   const [isGitLoading, setIsGitLoading] = useState(false);
+  const [gitError, setGitError] = useState<string | null>(null);
+  const [loadedRepositoryRoot, setLoadedRepositoryRoot] = useState<string | null>(null);
 
   const showNotification = (msg: string, type: ToastType = 'success') => {
     setToastState({ show: true, msg, type });
@@ -107,19 +109,6 @@ export function PatchView() {
       }
     }
   }, [mode]);
-
-  const handleLoadPatchProject = async () => {
-    try {
-      const selected = await openDialog({ directory: true, multiple: false });
-      if (typeof selected === 'string') {
-        // Update global project root - shared across all features
-        setProjectRoot(selected);
-        showNotification(t('patch.projectLoaded'));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const handleClear = () => {
       setYamlInput('');
@@ -257,77 +246,122 @@ export function PatchView() {
   // Git 相关逻辑函数
   // =================================================================
 
-  const handleBrowseGitProject = async () => {
-    try {
-      const selected = await openDialog({ directory: true, multiple: false });
-      if (typeof selected === 'string') {
-        // Update global project root - shared across all features
-        setProjectRoot(selected);
-        setIsGitLoading(true);
-        try {
-          const result = await invoke<GitCommit[]>(`${GIT_PLUGIN_PREFIX}get_git_commits`, { projectPath: selected });
-          setCommits(result);
+  const keepManualFilesOnly = () => {
+    setFiles((prev) => prev.filter((file) => file.isManual));
+    setSelectedExportIds(new Set());
+    setSelectedFileId(MANUAL_DIFF_ID);
+  };
 
-          // 修改此处逻辑：默认对比 Working Directory 和 HEAD
-          if (result.length > 0) {
-            setBaseHash(result[0].hash); // HEAD
-            setCompareHash("__WORK_DIR__"); // Working Directory
-          }
-        } catch (err: any) {
-          showNotification(t('common.errorMsg', { msg: err.toString() }), 'error');
-          setCommits([]);
-        } finally {
-          setIsGitLoading(false);
-        }
+  const applyGitDiffFiles = (result: GitDiffFile[], notifyWhenEmpty = false) => {
+    const newFiles: PatchFileItem[] = result.map((file) => ({
+      id: file.path,
+      path: file.path,
+      original: file.original_content,
+      modified: file.modified_content,
+      status: 'success',
+      gitStatus: file.status,
+      isBinary: file.is_binary,
+      isLarge: file.is_large
+    }));
+
+    setFiles((prev) => [...prev.filter((file) => file.isManual), ...newFiles]);
+
+    const autoSelected = new Set(
+      newFiles
+        .filter((file) => !file.isBinary && !file.isLarge)
+        .map((file) => file.id)
+    );
+    setSelectedExportIds(autoSelected);
+
+    if (newFiles.length > 0) {
+      setSelectedFileId(newFiles[0].id);
+    } else {
+      setSelectedFileId(MANUAL_DIFF_ID);
+      if (notifyWhenEmpty) {
+        showNotification(t('patch.noDiff'), 'info');
       }
-    } catch (e) { console.error(e); }
+    }
+  };
+
+  const fetchGitDiff = async (
+    projectPath: string,
+    oldHash: string,
+    newHash: string,
+    notifyWhenEmpty = false
+  ) => {
+    keepManualFilesOnly();
+    try {
+      const result = await invoke<GitDiffFile[]>(`${GIT_PLUGIN_PREFIX}get_git_diff`, {
+        projectPath,
+        oldHash,
+        newHash,
+      });
+      applyGitDiffFiles(result, notifyWhenEmpty);
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const loadGitRepository = async (projectPath: string, silent = false) => {
+    setIsGitLoading(true);
+    setGitError(null);
+
+    try {
+      const result = await invoke<GitCommit[]>(`${GIT_PLUGIN_PREFIX}get_git_commits`, { projectPath });
+      setCommits(result);
+
+      if (result.length === 0) {
+        setBaseHash('');
+        setCompareHash('');
+        setLoadedRepositoryRoot(projectPath);
+        keepManualFilesOnly();
+        return;
+      }
+
+      const headHash = result[0].hash;
+      setBaseHash(headHash);
+      setCompareHash("__WORK_DIR__");
+      setLoadedRepositoryRoot(projectPath);
+      await fetchGitDiff(projectPath, headHash, "__WORK_DIR__");
+    } catch (err: any) {
+      const message = err?.toString?.() || String(err);
+      setGitError(message);
+      setLoadedRepositoryRoot(null);
+      setCommits([]);
+      setBaseHash('');
+      setCompareHash('');
+      keepManualFilesOnly();
+      if (!silent) {
+        showNotification(t('common.errorMsg', { msg: message }), 'error');
+      }
+    } finally {
+      setIsGitLoading(false);
+    }
   };
 
   const handleGenerateDiff = async () => {
     if (!globalProjectRoot || !baseHash || !compareHash) return;
     setIsGitLoading(true);
-    setFiles(prev => prev.filter(p => p.isManual));
-    setSelectedFileId(null);
+    setGitError(null);
     try {
-      const result = await invoke<GitDiffFile[]>(`${GIT_PLUGIN_PREFIX}get_git_diff`, {
-        projectPath: globalProjectRoot,
-        oldHash: baseHash,
-        newHash: compareHash,
-      });
-      
-      const newFiles: PatchFileItem[] = result.map(f => ({
-        id: f.path, 
-        path: f.path, 
-        original: f.original_content, 
-        modified: f.modified_content,
-        status: 'success', 
-        gitStatus: f.status,
-        isBinary: f.is_binary,
-        isLarge: f.is_large
-      }));
-
-      setFiles(prev => [...prev.filter(p => p.isManual), ...newFiles]);
-      
-      // 智能默认选中：排除二进制和大文件
-      const autoSelected = new Set(
-          newFiles
-            .filter(f => !f.isBinary && !f.isLarge)
-            .map(f => f.id)
-      );
-      setSelectedExportIds(autoSelected);
-
-      if (newFiles.length > 0) {
-        setSelectedFileId(newFiles[0].id);
-      } else {
-         setSelectedFileId(MANUAL_DIFF_ID);
-         showNotification(t('patch.noDiff'), 'info');
-      }
+      await fetchGitDiff(globalProjectRoot, baseHash, compareHash, true);
     } catch (err: any) {
-      showNotification(t('common.errorMsg', { msg: err.toString() }), 'error');
+      const message = err?.toString?.() || String(err);
+      setGitError(message);
+      showNotification(t('common.errorMsg', { msg: message }), 'error');
     } finally {
       setIsGitLoading(false);
     }
   };
+
+  useEffect(() => {
+    setGitError(null);
+    setLoadedRepositoryRoot(null);
+    setCommits([]);
+    setBaseHash('');
+    setCompareHash('');
+    keepManualFilesOnly();
+  }, [globalProjectRoot]);
 
   const [_isExporting, setIsExporting] = useState(false);
 
@@ -396,13 +430,19 @@ export function PatchView() {
         <div className="w-[350px] h-full">
             <PatchSidebar
                 mode={mode} setMode={setMode}
-                projectRoot={globalProjectRoot} onLoadProject={handleLoadPatchProject}
+                workspaceRoot={globalProjectRoot}
                 yamlInput={yamlInput} onYamlChange={setYamlInput} onClearYaml={handleClear}
                 files={files} selectedFileId={selectedFileId} onSelectFile={setSelectedFileId}
-                gitProjectRoot={globalProjectRoot} onBrowseGitProject={handleBrowseGitProject}
                 commits={commits} baseHash={baseHash} setBaseHash={setBaseHash}
                 compareHash={compareHash} setCompareHash={setCompareHash}
                 onCompare={handleGenerateDiff} isGitLoading={isGitLoading}
+                gitError={gitError}
+                repositoryLoaded={loadedRepositoryRoot === globalProjectRoot}
+                onRefreshRepository={() => {
+                  if (globalProjectRoot) {
+                    void loadGitRepository(globalProjectRoot);
+                  }
+                }}
                 selectedExportIds={selectedExportIds}
                 onToggleExport={toggleFileExport}
             />

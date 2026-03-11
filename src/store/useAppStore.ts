@@ -78,6 +78,15 @@ export const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
 
 export type WindowDestroyDelay = number;
 
+const MAX_RECENT_PROJECT_ROOTS = 5;
+
+function buildRecentProjectRoots(current: string[], path: string | null): string[] {
+  if (!path) return current;
+
+  const deduped = current.filter((item) => item !== path);
+  return [path, ...deduped].slice(0, MAX_RECENT_PROJECT_ROOTS);
+}
+
 interface AppState {
   currentView: AppView;
   isSidebarOpen: boolean;
@@ -97,6 +106,7 @@ interface AppState {
 
   // Global project root - shared across all features (Context, Patch, Git Diff)
   projectRoot: string | null;
+  recentProjectRoots: string[];
 
   models: AIModelConfig[];
   lastUpdated: number;
@@ -113,6 +123,7 @@ interface AppState {
 
   setView: (view: AppView) => void;
   setProjectRoot: (path: string | null) => void;
+  clearProjectRoot: () => void;
   toggleSidebar: () => void;
   setSettingsOpen: (open: boolean) => void;
   setMonitorOpen: (open: boolean) => void;
@@ -158,6 +169,7 @@ export const useAppStore = create<AppState>()(
       },
       windowDestroyDelay: 0,
       projectRoot: null,
+      recentProjectRoots: [],
 
       models: DEFAULT_MODELS,
       lastUpdated: 0,
@@ -173,13 +185,35 @@ export const useAppStore = create<AppState>()(
       })),
       setView: (view) => set({ currentView: view }),
       setProjectRoot: (path) => {
-        set((state) => (state.projectRoot === path ? state : { projectRoot: path }));
+        const normalizedPath = path?.trim() || null;
 
-        if (path) {
-          const contextState = useContextStore.getState();
-          if (contextState.projectRoot !== path) {
-            void contextState.setProjectRoot(path);
+        set((state) => {
+          const nextRecentProjectRoots = buildRecentProjectRoots(state.recentProjectRoots, normalizedPath);
+          const recentUnchanged =
+            nextRecentProjectRoots.length === state.recentProjectRoots.length &&
+            nextRecentProjectRoots.every((item, index) => item === state.recentProjectRoots[index]);
+
+          if (state.projectRoot === normalizedPath && recentUnchanged) {
+            return state;
           }
+
+          return {
+            projectRoot: normalizedPath,
+            recentProjectRoots: nextRecentProjectRoots,
+          };
+        });
+
+        const contextState = useContextStore.getState();
+        if (contextState.projectRoot !== normalizedPath) {
+          void contextState.setProjectRoot(normalizedPath);
+        }
+      },
+      clearProjectRoot: () => {
+        set((state) => (state.projectRoot === null ? state : { projectRoot: null }));
+
+        const contextState = useContextStore.getState();
+        if (contextState.projectRoot !== null) {
+          void contextState.setProjectRoot(null);
         }
       },
       toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
@@ -333,6 +367,7 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,
         language: state.language,
         projectRoot: state.projectRoot,
+        recentProjectRoots: state.recentProjectRoots,
         spotlightShortcut: state.spotlightShortcut,
         automatorShortcut: state.automatorShortcut,
         isSidebarOpen: state.isSidebarOpen,

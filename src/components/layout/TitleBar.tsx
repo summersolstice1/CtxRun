@@ -5,6 +5,7 @@ import { Minus, X, Maximize2, Copy, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { ClockPopover } from '@/components/ui/ClockPopover';
+import { WorkspaceSwitcher } from '@/components/layout/WorkspaceSwitcher';
 
 const appWindow = getCurrentWebviewWindow()
 
@@ -77,6 +78,8 @@ export function TitleBar() {
           onClose={() => setIsClockPopoverOpen(false)}
           triggerRef={clockTriggerRef}
         />
+
+        <WorkspaceSwitcher />
       </div>
 
       <div className="flex h-full items-center px-1 gap-1">
