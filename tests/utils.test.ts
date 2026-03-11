@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { stripMarkdown } from '@/lib/utils';
+import { cn, getPathLabel, stripMarkdown } from '@/lib/utils';
 
 describe('stripMarkdown', () => {
   it('removes markdown syntax while keeping readable text', () => {
@@ -35,5 +35,24 @@ const a = 1;
 
   it('returns empty string for empty input', () => {
     expect(stripMarkdown('')).toBe('');
+  });
+});
+
+describe('getPathLabel', () => {
+  it('extracts folder name from unix and windows paths', () => {
+    expect(getPathLabel('/home/user/project')).toBe('project');
+    expect(getPathLabel('C:\\Users\\Flynn\\CtxRun\\')).toBe('CtxRun');
+  });
+
+  it('handles empty and root-like paths', () => {
+    expect(getPathLabel(undefined)).toBe('');
+    expect(getPathLabel('')).toBe('');
+    expect(getPathLabel('/')).toBe('/');
+  });
+});
+
+describe('cn', () => {
+  it('merges tailwind class conflicts', () => {
+    expect(cn('px-2', 'px-4', false && 'hidden', 'text-sm')).toBe('px-4 text-sm');
   });
 });

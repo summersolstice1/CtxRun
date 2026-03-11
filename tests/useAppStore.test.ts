@@ -82,4 +82,32 @@ describe('useAppStore setTheme', () => {
     expect(useAppStore.getState().theme).toBe('black');
     expect(emitMock).not.toHaveBeenCalled();
   });
+
+  it('setProjectRoot normalizes path and keeps latest 5 recent roots', async () => {
+    const useAppStore = await importFreshAppStore();
+
+    useAppStore.getState().setProjectRoot('  /a  ');
+    useAppStore.getState().setProjectRoot('/b');
+    useAppStore.getState().setProjectRoot('/c');
+    useAppStore.getState().setProjectRoot('/d');
+    useAppStore.getState().setProjectRoot('/e');
+    useAppStore.getState().setProjectRoot('/f');
+    useAppStore.getState().setProjectRoot('/d');
+
+    const state = useAppStore.getState();
+    expect(state.projectRoot).toBe('/d');
+    expect(state.recentProjectRoots).toEqual(['/d', '/f', '/e', '/c', '/b']);
+  });
+
+  it('clearProjectRoot clears current root and keeps recent history', async () => {
+    const useAppStore = await importFreshAppStore();
+
+    useAppStore.getState().setProjectRoot('/workspace-a');
+    useAppStore.getState().setProjectRoot('/workspace-b');
+    useAppStore.getState().clearProjectRoot();
+
+    const state = useAppStore.getState();
+    expect(state.projectRoot).toBeNull();
+    expect(state.recentProjectRoots).toEqual(['/workspace-b', '/workspace-a']);
+  });
 });

@@ -88,7 +88,7 @@ interface ContextState {
   setAllExpanded: (expanded: boolean) => void;
 
   setProjectRoot: (path: string | null) => Promise<void>;
-  setFileTree: (tree: FileNode[]) => void;
+  setFileTree: (tree: FileNode[], scannedRoot?: string | null) => void;
   setIsScanning: (status: boolean) => void;
 
   updateProjectIgnore: (type: keyof IgnoreConfig, action: 'add' | 'remove', value: string) => void;
@@ -190,10 +190,16 @@ export const useContextStore = create<ContextState>()(
           set({ projectIgnore: DEFAULT_PROJECT_IGNORE });
         }
       },
-      setFileTree: (tree) => set((state) => ({
-        fileTree: tree,
-        scannedProjectRoot: state.projectRoot,
-      })),
+      setFileTree: (tree, scannedRoot) => set((state) => {
+        if (scannedRoot && state.projectRoot !== scannedRoot) {
+          return state;
+        }
+
+        return {
+          fileTree: tree,
+          scannedProjectRoot: scannedRoot ?? state.projectRoot,
+        };
+      }),
       setIsScanning: (status) => set({ isScanning: status }),
 
       updateProjectIgnore: (type, action, value) => {

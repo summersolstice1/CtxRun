@@ -84,6 +84,28 @@ describe('useContextStore', () => {
     expect(state.projectIgnore).toEqual({ dirs: ['b'], files: [], extensions: [] });
   });
 
+  it('setProjectRoot(null) clears project-scoped state', async () => {
+    const useContextStore = await importFreshContextStore();
+    useContextStore.setState({
+      projectRoot: '/project',
+      scannedProjectRoot: '/project',
+      projectIgnore: { dirs: ['dist'], files: ['a.txt'], extensions: ['log'] },
+      fileTree: [makeNode({ id: 'a', name: 'a.ts', path: '/project/a.ts' })],
+      expandedIds: ['dir-a'],
+      hasProjectIgnoreFiles: true,
+    });
+
+    await useContextStore.getState().setProjectRoot(null);
+
+    const state = useContextStore.getState();
+    expect(state.projectRoot).toBeNull();
+    expect(state.scannedProjectRoot).toBeNull();
+    expect(state.projectIgnore).toEqual(DEFAULT_PROJECT_IGNORE);
+    expect(state.fileTree).toEqual([]);
+    expect(state.expandedIds).toEqual([]);
+    expect(state.hasProjectIgnoreFiles).toBe(false);
+  });
+
   it('updateProjectIgnore deduplicates add operations and persists config', async () => {
     invokeMock.mockResolvedValue(null);
     const useContextStore = await importFreshContextStore();
@@ -163,6 +185,25 @@ describe('useContextStore', () => {
     expect(gitLocked.isLocked).toBe(true);
     expect(gitLocked.isSelected).toBe(false);
     expect(gitLocked.ignoreSource).toBe('git');
+  });
+
+  it('setFileTree ignores stale scan result and accepts matching scan root', async () => {
+    const useContextStore = await importFreshContextStore();
+    useContextStore.setState({
+      projectRoot: '/project-b',
+      scannedProjectRoot: null,
+      fileTree: [],
+    });
+
+    const staleTree = [makeNode({ id: 'stale', name: 'stale.ts', path: '/project-a/stale.ts' })];
+    useContextStore.getState().setFileTree(staleTree, '/project-a');
+    expect(useContextStore.getState().fileTree).toEqual([]);
+    expect(useContextStore.getState().scannedProjectRoot).toBeNull();
+
+    const activeTree = [makeNode({ id: 'active', name: 'active.ts', path: '/project-b/active.ts' })];
+    useContextStore.getState().setFileTree(activeTree, '/project-b');
+    expect(useContextStore.getState().fileTree).toEqual(activeTree);
+    expect(useContextStore.getState().scannedProjectRoot).toBe('/project-b');
   });
 
   it('setAllExpanded collects only directory ids and supports collapse all', async () => {

@@ -471,10 +471,12 @@ export function ContextView() {
         maxEntries: 100000,
       });
       if (requestId !== scanRequestIdRef.current) return;
+      if (useAppStore.getState().projectRoot !== path) return;
       const previousTree = useContextStore.getState().fileTree;
       const tree = mergeTreeUiState(result.nodes, previousTree);
-      setFileTree(tree);
+      setFileTree(tree, path);
       await checkIgnoreFiles(path);
+      if (useAppStore.getState().projectRoot !== path) return;
 
       if (result.capped) {
         triggerToast(
