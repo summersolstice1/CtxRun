@@ -124,6 +124,7 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
         const isCopied = copiedId === item.id;
         const isExecutable = !!item.isExecutable;
         const hasDesc = !!item.description;
+        const showClipboardPreview = item.type === 'clipboard' && !item.isImage && Boolean(item.content);
 
         let Icon = Sparkles;
         if (item.type === 'clipboard') Icon = Check;
@@ -206,8 +207,21 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
                 </div>
               )}
 
-              {item.type !== 'math' && item.type !== 'web_search' && (
-                <div className={cn("text-xs transition-all duration-200", isActive ? (item.type === 'app' ? "opacity-80 text-white/80 truncate" : "mt-1 bg-black/20 rounded p-2 text-white/95 whitespace-pre-wrap break-all line-clamp-6") : (hasDesc ? "hidden" : "text-muted-foreground opacity-50 truncate"))}>
+              {showClipboardPreview && (
+                <div
+                  className={cn(
+                    "mt-1 rounded-md px-2.5 py-2 text-[11px] leading-relaxed whitespace-pre-wrap break-words transition-all duration-200",
+                    isActive
+                      ? "max-h-36 overflow-y-auto custom-scrollbar bg-black/20 text-white/95"
+                      : "max-h-14 overflow-hidden bg-secondary/40 text-muted-foreground/85"
+                  )}
+                >
+                  {item.content}
+                </div>
+              )}
+
+              {item.type !== 'math' && item.type !== 'web_search' && item.type !== 'clipboard' && (
+                <div className={cn("text-xs transition-all duration-200", isActive ? (item.type === 'app' ? "opacity-80 text-white/80 truncate" : "mt-1 bg-black/20 rounded p-2 text-white/95 whitespace-pre-wrap break-words max-h-36 overflow-y-auto custom-scrollbar") : (hasDesc ? "hidden" : "text-muted-foreground opacity-50 truncate"))}>
                     {item.content}
                 </div>
               )}

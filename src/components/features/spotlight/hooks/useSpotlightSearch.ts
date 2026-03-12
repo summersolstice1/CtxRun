@@ -11,6 +11,19 @@ import { TFunction } from 'i18next';
 
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
+function buildClipboardTitle(item: RefineryItem): string {
+  if (item.title?.trim()) return item.title.trim();
+  if (item.kind === 'image') return '[Image/图片]';
+
+  const source = (item.preview || item.content || '').replace(/\r/g, '');
+  const firstMeaningfulLine = source
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+
+  return firstMeaningfulLine || source.trim() || '[Empty]';
+}
+
 interface AppEntry {
   name: string;
   path: string;
@@ -117,7 +130,7 @@ export function useSpotlightSearch(t: TFunction) {
 
         const newItems: SpotlightItem[] = data.map(item => ({
           id: item.id,
-          title: item.title || (item.kind === 'image' ? '[Image/图片]' : (item.preview || '').replace(/\n/g, ' ')),
+          title: buildClipboardTitle(item),
           description: `${formatTimeAgo(item.createdAt, language)} • ${item.sourceApp || 'Unknown'} • ${item.sizeInfo}`,
           content: item.content || item.preview,
           type: 'clipboard',

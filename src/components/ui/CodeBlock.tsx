@@ -10,9 +10,10 @@ interface CodeBlockProps {
   language: string;
   children: string;
   className?: string;
+  wrapLongLines?: boolean;
 }
 
-export function CodeBlock({ language, children, className }: CodeBlockProps) {
+export function CodeBlock({ language, children, className, wrapLongLines = false }: CodeBlockProps) {
   const { t } = useTranslation();
   const [isCopied, setIsCopied] = useState(false);
 
@@ -77,21 +78,30 @@ export function CodeBlock({ language, children, className }: CodeBlockProps) {
         </button>
       </div>
 
-      <div className="relative">
+      <div className="relative select-text cursor-text">
         <SyntaxHighlighter
             style={vscDarkPlus}
             language={language}
             PreTag="div"
             className="code-block-scroll"
+            wrapLongLines={wrapLongLines}
             customStyle={{
                 margin: 0,
                 padding: '1rem', 
                 fontSize: '0.875rem',
                 lineHeight: '1.6',
                 background: 'transparent',
+                whiteSpace: wrapLongLines ? 'pre-wrap' : 'pre',
+                overflowX: wrapLongLines ? 'hidden' : 'auto',
+                userSelect: 'text',
             }}
             codeTagProps={{
-                style: { fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace' }
+                style: {
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    overflowWrap: wrapLongLines ? 'anywhere' : 'normal',
+                    wordBreak: wrapLongLines ? 'break-word' : 'normal',
+                    userSelect: 'text',
+                }
             }}
         >
             {children}

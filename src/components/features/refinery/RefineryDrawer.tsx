@@ -270,6 +270,7 @@ export function RefineryDrawer() {
                     <CodeBlock
                       language={activeItem.metaParsed.format || 'text'}
                       className="text-sm shadow-sm border border-border/50 bg-secondary/5 min-h-[200px]"
+                      wrapLongLines
                     >
                       {activeItem.content || ''}
                     </CodeBlock>

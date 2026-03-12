@@ -128,7 +128,11 @@ export function ContentWorkbench() {
 
                 {/* A. 文本部分 (Text 或 Mixed) */}
                 {(activeItem.kind === 'text' || activeItem.kind === 'mixed') && (
-                    <CodeBlock language={activeItem.metaParsed.format || 'text'} className="text-sm shadow-sm border border-border/50">
+                    <CodeBlock
+                        language={activeItem.metaParsed.format || 'text'}
+                        className="text-sm shadow-sm border border-border/50"
+                        wrapLongLines
+                    >
                         {activeItem.content || ''}
                     </CodeBlock>
                 )}
