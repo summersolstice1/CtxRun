@@ -300,3 +300,55 @@ async fn centralized_context_commands_scan_for_secrets_filters_ignored_values() 
         "non-ignored secret should still be reported"
     );
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn centralized_context_commands_calculate_stats_and_content_roundtrip() {
+    let root = temp_root("context-content");
+    let file = root.join("main.ts");
+    fs::write(&file, "const answer = 42; // strip me\n").expect("write context file");
+
+    let stats = commands::calculate_context_stats(vec![file.to_string_lossy().to_string()], true)
+        .await
+        .expect("calculate context stats");
+    assert_eq!(stats.file_count, 1);
+    assert!(stats.total_size > 0);
+    assert!(stats.total_tokens > 0);
+
+    let content = commands::get_context_content(
+        vec![file.to_string_lossy().to_string()],
+        "<project_context>".into(),
+        true,
+    )
+    .await
+    .expect("get context content");
+    assert!(content.starts_with("<project_context>\n<source_files>"));
+    assert!(content.contains("<file path=\""));
+    assert!(content.contains("const answer = 42;"));
+    assert!(!content.contains("strip me"));
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn centralized_context_commands_save_context_to_file_persists_rendered_output() {
+    let root = temp_root("context-save");
+    let source = root.join("notes.txt");
+    let output = root.join("context.xml");
+    fs::write(&source, "line one\nline two\n").expect("write source file");
+
+    commands::save_context_to_file(
+        vec![source.to_string_lossy().to_string()],
+        "<project_context>".into(),
+        false,
+        output.to_string_lossy().to_string(),
+    )
+    .await
+    .expect("save context to file");
+
+    let saved = fs::read_to_string(&output).expect("read saved context file");
+    assert!(saved.contains("<project_context>"));
+    assert!(saved.contains("line one"));
+    assert!(saved.contains("</project_context>"));
+
+    let _ = fs::remove_dir_all(root);
+}

@@ -46,3 +46,28 @@ impl Serialize for ContextError {
 
 /// Result type alias for context operations
 pub type Result<T> = std::result::Result<T, ContextError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn context_error_conversions_and_serialization_use_display_strings() {
+        let from_string = ContextError::from("db failed".to_string());
+        let from_str = ContextError::from("db failed again");
+        let from_io = ContextError::from(std::io::Error::other("disk failed"));
+        let clipboard = ContextError::ClipboardError("clipboard down".into());
+        let gitignore = ContextError::GitignoreError("bad ignore".into());
+        let join = ContextError::JoinError("join failed".into());
+
+        assert_eq!(from_string.to_string(), "Database error: db failed");
+        assert_eq!(from_str.to_string(), "Database error: db failed again");
+        assert!(from_io.to_string().contains("IO error: disk failed"));
+        assert_eq!(clipboard.to_string(), "Clipboard error: clipboard down");
+        assert_eq!(gitignore.to_string(), "Gitignore error: bad ignore");
+        assert_eq!(join.to_string(), "Async operation failed: join failed");
+
+        let serialized = serde_json::to_string(&clipboard).expect("serialize context error");
+        assert_eq!(serialized, "\"Clipboard error: clipboard down\"");
+    }
+}

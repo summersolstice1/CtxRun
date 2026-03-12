@@ -8,8 +8,8 @@ use std::{
 
 use ctxrun_db::{
     init::DbState,
-    models::{IgnoredSecret, ProjectConfig, Prompt},
-    project_config, prompts, secrets, shell_history, url_history,
+    models::{AppEntry, IgnoredSecret, ProjectConfig, Prompt},
+    apps, project_config, prompts, secrets, shell_history, url_history,
 };
 use rusqlite::{Connection, params};
 
@@ -384,4 +384,64 @@ fn centralized_db_ignored_secrets_commands_cover_add_get_delete() {
     let after_delete =
         secrets::get_ignored_secrets(state_of(&db_state)).expect("get ignored after delete");
     assert_eq!(after_delete.len(), 1);
+}
+
+#[test]
+fn centralized_db_app_commands_cover_search_and_usage_updates() {
+    let db_state = make_db_state();
+    {
+        let conn = db_state.conn.lock().expect("lock db");
+        conn.execute(
+            "INSERT INTO apps (path, name, keywords, icon, usage_count, last_used_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                "/apps/code.exe",
+                "Code Editor",
+                "code editor typescript",
+                "icon-code",
+                4_i64,
+                10_i64
+            ],
+        )
+        .expect("insert code app");
+        conn.execute(
+            "INSERT INTO apps (path, name, keywords, icon, usage_count, last_used_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            params![
+                "/apps/coderunner.exe",
+                "Code Runner",
+                "runner terminal",
+                "icon-runner",
+                7_i64,
+                20_i64
+            ],
+        )
+        .expect("insert runner app");
+    }
+
+    let results = apps::search_apps_in_db(state_of(&db_state), " code ".into())
+        .expect("search apps in db");
+    assert_eq!(results.len(), 2);
+    assert_eq!(results[0].name, "Code Runner");
+    assert_eq!(results[1].name, "Code Editor");
+
+    apps::record_app_usage(state_of(&db_state), "/apps/code.exe".into())
+        .expect("record app usage");
+    let updated = apps::search_apps_in_db(state_of(&db_state), "editor".into())
+        .expect("search updated app");
+    assert_eq!(updated.len(), 1);
+    assert_eq!(updated[0].path, "/apps/code.exe");
+    assert_eq!(updated[0].usage_count, 5);
+
+    let inserted = apps::sync_scanned_apps(
+        &db_state.conn.lock().expect("lock db"),
+        vec![AppEntry {
+            name: "New Tool".into(),
+            path: "/apps/new-tool.exe".into(),
+            icon: Some("icon-tool".into()),
+            usage_count: 0,
+        }],
+    )
+    .expect("sync scanned apps");
+    assert_eq!(inserted, 1);
 }

@@ -234,4 +234,195 @@ describe('useContextStore', () => {
     useContextStore.getState().setAllExpanded(false);
     expect(useContextStore.getState().expandedIds).toEqual([]);
   });
+
+  it('toggleExpand adds and removes ids while same-root project loads are ignored', async () => {
+    const useContextStore = await importFreshContextStore();
+    useContextStore.setState({ expandedIds: ['dir-1'], projectRoot: '/project' });
+
+    useContextStore.getState().toggleExpand('dir-2');
+    expect(useContextStore.getState().expandedIds.sort()).toEqual(['dir-1', 'dir-2']);
+
+    useContextStore.getState().toggleExpand('dir-1');
+    expect(useContextStore.getState().expandedIds).toEqual(['dir-2']);
+
+    await useContextStore.getState().setProjectRoot('/project');
+    expect(invokeMock).not.toHaveBeenCalled();
+  });
+
+  it('setProjectRoot falls back to default ignore config when loading fails', async () => {
+    invokeMock.mockRejectedValue(new Error('load failed'));
+    const useContextStore = await importFreshContextStore();
+
+    await useContextStore.getState().setProjectRoot('/project');
+
+    expect(useContextStore.getState().projectRoot).toBe('/project');
+    expect(useContextStore.getState().projectIgnore).toEqual(DEFAULT_PROJECT_IGNORE);
+  });
+
+  it('setFileTree without scannedRoot uses the active project root', async () => {
+    const useContextStore = await importFreshContextStore();
+    const tree = [makeNode({ id: 'active', name: 'active.ts', path: '/project/active.ts' })];
+    useContextStore.setState({
+      projectRoot: '/project',
+      scannedProjectRoot: null,
+    });
+
+    useContextStore.getState().setFileTree(tree);
+
+    expect(useContextStore.getState().fileTree).toEqual(tree);
+    expect(useContextStore.getState().scannedProjectRoot).toBe('/project');
+  });
+
+  it('toggleSelect and invertSelection respect locked ancestors', async () => {
+    const useContextStore = await importFreshContextStore();
+    useContextStore.setState({
+      fileTree: [
+        makeNode({
+          id: 'locked-dir',
+          name: 'vendor',
+          kind: 'dir',
+          isSelected: false,
+          isLocked: true,
+          children: [
+            makeNode({
+              id: 'locked-child',
+              name: 'a.ts',
+              path: '/vendor/a.ts',
+              isSelected: true,
+            }),
+          ],
+        }),
+        makeNode({
+          id: 'open-dir',
+          name: 'src',
+          kind: 'dir',
+          isSelected: false,
+          children: [
+            makeNode({
+              id: 'open-child',
+              name: 'b.ts',
+              path: '/src/b.ts',
+              isSelected: false,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    useContextStore.getState().toggleSelect('locked-dir', true);
+    let state = useContextStore.getState();
+    const lockedDir = state.fileTree[0];
+    expect(lockedDir.isSelected).toBe(false);
+    expect(lockedDir.children?.[0].isSelected).toBe(false);
+
+    useContextStore.getState().toggleSelect('open-dir', true);
+    state = useContextStore.getState();
+    const openDir = state.fileTree[1];
+    expect(openDir.isSelected).toBe(true);
+    expect(openDir.children?.[0].isSelected).toBe(true);
+
+    useContextStore.getState().invertSelection();
+    state = useContextStore.getState();
+    expect(state.fileTree[0].isSelected).toBe(false);
+    expect(state.fileTree[0].children?.[0].isSelected).toBe(false);
+    expect(state.fileTree[1].isSelected).toBe(false);
+    expect(state.fileTree[1].children?.[0].isSelected).toBe(false);
+  });
+
+  it('refreshTreeStatus applies directory and extension ignores recursively', async () => {
+    const useContextStore = await importFreshContextStore();
+    useContextStore.setState({
+      projectIgnore: { dirs: ['dist'], files: [], extensions: ['log'] },
+      isIgnoreSyncActive: true,
+      fileTree: [
+        makeNode({
+          id: 'dist',
+          name: 'dist',
+          kind: 'dir',
+          isSelected: true,
+          children: [
+            makeNode({
+              id: 'dist-child',
+              name: 'bundle.js',
+              path: '/dist/bundle.js',
+              isSelected: true,
+            }),
+          ],
+        }),
+        makeNode({
+          id: 'log-file',
+          name: 'debug.log',
+          path: '/debug.log',
+          isSelected: true,
+        }),
+        makeNode({
+          id: 'git-dir',
+          name: 'ignored-from-git',
+          kind: 'dir',
+          isSelected: true,
+          ignoreSource: 'git',
+          children: [
+            makeNode({
+              id: 'git-child',
+              name: 'nested.ts',
+              path: '/ignored-from-git/nested.ts',
+              isSelected: true,
+            }),
+          ],
+        }),
+      ],
+    });
+
+    await useContextStore.getState().refreshTreeStatus(DEFAULT_PROJECT_IGNORE);
+    const [distDir, logFile, gitDir] = useContextStore.getState().fileTree;
+    expect(distDir.isLocked).toBe(true);
+    expect(distDir.ignoreSource).toBe('filter');
+    expect(distDir.children?.[0].isLocked).toBe(true);
+    expect(logFile.isLocked).toBe(true);
+    expect(logFile.ignoreSource).toBe('filter');
+    expect(gitDir.isLocked).toBe(true);
+    expect(gitDir.children?.[0].isLocked).toBe(true);
+    expect(gitDir.ignoreSource).toBe('git');
+  });
+
+  it('persists ignore config only when a project root exists and can reset it', async () => {
+    invokeMock.mockResolvedValue(null);
+    const useContextStore = await importFreshContextStore();
+
+    useContextStore.setState({
+      projectRoot: null,
+      projectIgnore: { dirs: [], files: [], extensions: [] },
+    });
+    useContextStore.getState().updateProjectIgnore('files', 'add', 'notes.txt');
+    expect(invokeMock).not.toHaveBeenCalled();
+    expect(useContextStore.getState().projectIgnore.files).toEqual(['notes.txt']);
+
+    useContextStore.setState({ projectRoot: '/project' });
+    useContextStore.getState().resetProjectIgnore();
+    expect(useContextStore.getState().projectIgnore).toEqual(DEFAULT_PROJECT_IGNORE);
+    expect(invokeMock).toHaveBeenCalledWith('save_project_config', {
+      path: '/project',
+      config: DEFAULT_PROJECT_IGNORE,
+    });
+  });
+
+  it('toggles ignore sync, simple flags, and detects project ignore files', async () => {
+    invokeMock.mockResolvedValue(true);
+    const useContextStore = await importFreshContextStore();
+    useContextStore.setState({ projectRoot: '/project' });
+
+    useContextStore.getState().setRemoveComments(true);
+    useContextStore.getState().setDetectSecrets(false);
+    useContextStore.getState().toggleIgnoreSync();
+    await useContextStore.getState().checkIgnoreFiles();
+
+    expect(useContextStore.getState().removeComments).toBe(true);
+    expect(useContextStore.getState().detectSecrets).toBe(false);
+    expect(useContextStore.getState().isIgnoreSyncActive).toBe(true);
+    expect(useContextStore.getState().hasProjectIgnoreFiles).toBe(true);
+    expect(invokeMock).toHaveBeenCalledWith(
+      'plugin:ctxrun-plugin-context|has_ignore_files',
+      { projectRoot: '/project' }
+    );
+  });
 });

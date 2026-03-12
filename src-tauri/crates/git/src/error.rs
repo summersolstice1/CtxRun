@@ -48,3 +48,28 @@ impl Serialize for GitError {
 ///
 /// Usage: `pub fn my_function() -> Result<Value, GitError>`
 pub type Result<T> = std::result::Result<T, GitError>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn git_error_variants_format_and_serialize_cleanly() {
+        let git = GitError::from(
+            git2::Repository::open("__definitely_missing_repo__")
+                .err()
+                .expect("missing repo"),
+        );
+        let io = GitError::from(std::io::Error::other("disk failed"));
+        let none_selected = GitError::NoFilesSelected;
+        let join = GitError::JoinError("join failed".into());
+
+        assert!(git.to_string().contains("Git operation failed:"));
+        assert_eq!(io.to_string(), "IO error: disk failed");
+        assert_eq!(none_selected.to_string(), "No files selected for export");
+        assert_eq!(join.to_string(), "Async operation failed: join failed");
+
+        let serialized = serde_json::to_string(&join).expect("serialize git error");
+        assert_eq!(serialized, "\"Async operation failed: join failed\"");
+    }
+}

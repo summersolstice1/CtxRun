@@ -1379,6 +1379,7 @@ dependencies = [
 name = "ctxrun-workspace-tests"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "ctxrun-db",
  "ctxrun-plugin-context",
  "ctxrun-plugin-git",

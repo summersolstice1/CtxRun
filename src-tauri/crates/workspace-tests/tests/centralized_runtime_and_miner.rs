@@ -6,7 +6,7 @@ use std::{
 };
 
 use ctxrun_plugin_miner::core::postprocess::post_process_markdown;
-use ctxrun_plugin_tool_runtime::{ToolCallRequest, ToolCallStatus, ToolRuntime};
+use ctxrun_plugin_tool_runtime::{ToolCallRequest, ToolCallStatus, ToolRuntime, commands};
 use serde_json::json;
 
 fn temp_root(prefix: &str) -> PathBuf {
@@ -39,6 +39,10 @@ fn has_ripgrep() -> bool {
         .output()
         .map(|out| out.status.success())
         .unwrap_or(false)
+}
+
+fn state_of<'a, T: Send + Sync + 'static>(value: &'a T) -> tauri::State<'a, T> {
+    unsafe { std::mem::transmute::<&'a T, tauri::State<'a, T>>(value) }
 }
 
 #[test]
@@ -96,6 +100,30 @@ fn centralized_runtime_registers_fs_tools_and_aliases() {
     ] {
         assert!(names.contains(expected), "missing tool: {expected}");
     }
+}
+
+#[test]
+fn centralized_runtime_command_wrapper_lists_registered_tools() {
+    let runtime = ToolRuntime::new();
+    let tools = commands::list_tools(state_of(&runtime)).expect("list tools through command wrapper");
+    assert!(tools.iter().any(|tool| tool.name == "read_file"));
+    assert!(tools.iter().any(|tool| tool.name == "patch.preview_search_replace"));
+}
+
+#[tokio::test]
+async fn centralized_runtime_command_wrapper_forwards_call_results() {
+    let runtime = ToolRuntime::new();
+    let response = commands::call_tool(
+        state_of(&runtime),
+        ToolCallRequest {
+            name: "unknown.tool".to_string(),
+            arguments: json!({}),
+            approved: false,
+        },
+    )
+    .await
+    .expect("wrapper call should succeed");
+    assert_eq!(response.status, ToolCallStatus::NotFound);
 }
 
 #[tokio::test]
@@ -420,6 +448,134 @@ async fn centralized_read_file_rejects_zero_offset() {
             .unwrap_or_default()
             .contains("offset"),
         "error message should mention invalid offset"
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn centralized_read_file_rejects_empty_root_and_absolute_file_paths() {
+    let root = temp_root("read-invalid-paths");
+    let file = root.join("sample.txt");
+    fs::write(&file, "hello\n").expect("write sample");
+
+    let runtime = ToolRuntime::new();
+    let empty_root = runtime
+        .call_tool(ToolCallRequest {
+            name: "read_file".to_string(),
+            arguments: json!({
+                "rootDir": "   ",
+                "filePath": "sample.txt"
+            }),
+            approved: false,
+        })
+        .await;
+    assert_eq!(empty_root.status, ToolCallStatus::Error);
+    assert!(
+        empty_root
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .contains("rootDir cannot be empty")
+    );
+
+    let absolute_path = runtime
+        .call_tool(ToolCallRequest {
+            name: "read_file".to_string(),
+            arguments: json!({
+                "rootDir": root.to_string_lossy(),
+                "filePath": file.to_string_lossy().to_string()
+            }),
+            approved: false,
+        })
+        .await;
+    assert_eq!(absolute_path.status, ToolCallStatus::Error);
+    assert!(
+        absolute_path
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .contains("Absolute filePath is not allowed")
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn centralized_read_file_rejects_parent_traversal_and_directory_targets() {
+    let root = temp_root("read-directory-target");
+    let nested = root.join("nested");
+    let child = nested.join("sample.txt");
+    fs::create_dir_all(&nested).expect("create nested dir");
+    fs::write(&child, "hello\n").expect("write sample");
+
+    let runtime = ToolRuntime::new();
+    let traversal = runtime
+        .call_tool(ToolCallRequest {
+            name: "read_file".to_string(),
+            arguments: json!({
+                "rootDir": root.to_string_lossy(),
+                "filePath": "../escape.txt"
+            }),
+            approved: false,
+        })
+        .await;
+    assert_eq!(traversal.status, ToolCallStatus::Error);
+    assert!(
+        traversal
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .contains("filePath cannot contain '..'")
+    );
+
+    let directory_target = runtime
+        .call_tool(ToolCallRequest {
+            name: "read_file".to_string(),
+            arguments: json!({
+                "rootDir": root.to_string_lossy(),
+                "filePath": "nested"
+            }),
+            approved: false,
+        })
+        .await;
+    assert_eq!(directory_target.status, ToolCallStatus::Error);
+    assert!(
+        directory_target
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .contains("Target path is not a regular file")
+    );
+
+    let _ = fs::remove_dir_all(root);
+}
+
+#[tokio::test]
+async fn centralized_list_dir_rejects_file_targets() {
+    let root = temp_root("list-dir-file-target");
+    let file = root.join("note.txt");
+    fs::write(&file, "hello\n").expect("write sample");
+
+    let runtime = ToolRuntime::new();
+    let response = runtime
+        .call_tool(ToolCallRequest {
+            name: "list_dir".to_string(),
+            arguments: json!({
+                "rootDir": root.to_string_lossy(),
+                "dirPath": "note.txt"
+            }),
+            approved: false,
+        })
+        .await;
+
+    assert_eq!(response.status, ToolCallStatus::Error);
+    assert!(
+        response
+            .message
+            .as_deref()
+            .unwrap_or_default()
+            .contains("Target path is not a directory")
     );
 
     let _ = fs::remove_dir_all(root);
