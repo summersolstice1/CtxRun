@@ -108,7 +108,7 @@ function normalizeAssistantContent(content: unknown): string {
       return typeof text === 'string' ? text : '';
     })
     .filter(Boolean)
-    .join('\n');
+    .join('');
 }
 
 function normalizeDeltaText(value: unknown): string {
