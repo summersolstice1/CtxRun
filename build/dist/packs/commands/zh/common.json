@@ -243,7 +243,7 @@
     "id": "tldr-zh-common-cargo-owner-0",
     "type": "command",
     "title": "cargo-owner - 邀请指定的用户或团队作为所有者",
-    "content": "cargo owner --add {{用户名|github:机构名称:团队名称}} {{包名}}",
+    "content": "cargo owner {{[-a|--add]}} {{用户名|github:机构名称:团队名称}} {{包名}}",
     "group": "通用工具 (Common)",
     "description": "cargo-owner: 管理包在注册表上的所有者。 (邀请指定的用户或团队作为所有者)",
     "tags": [
@@ -258,7 +258,7 @@
     "id": "tldr-zh-common-cargo-owner-1",
     "type": "command",
     "title": "cargo-owner - 将指定的用户或团队从所有者中删除",
-    "content": "cargo owner --remove {{用户名|github:机构名称:团队名称}} {{包名}}",
+    "content": "cargo owner {{[-r|--remove]}} {{用户名|github:机构名称:团队名称}} {{包名}}",
     "group": "通用工具 (Common)",
     "description": "cargo-owner: 管理包在注册表上的所有者。 (将指定的用户或团队从所有者中删除)",
     "tags": [
@@ -273,7 +273,7 @@
     "id": "tldr-zh-common-cargo-owner-2",
     "type": "command",
     "title": "cargo-owner - 列出一个包的所有者",
-    "content": "cargo owner --list {{包名}}",
+    "content": "cargo owner {{[-l|--list]}} {{包名}}",
     "group": "通用工具 (Common)",
     "description": "cargo-owner: 管理包在注册表上的所有者。 (列出一个包的所有者)",
     "tags": [
@@ -3459,6 +3459,96 @@
     "tags": [
       "common",
       "grep",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-ghostty-0",
+    "type": "command",
+    "title": "ghostty - 打开新的 Ghostty 窗口（不支持 macOS）",
+    "content": "ghostty",
+    "group": "通用工具 (Common)",
+    "description": "ghostty: 一款快速、功能丰富、跨平台，使用原生 UI 和 GPU 加速的终端模拟器。 提示：所有配置文件的选项皆可在命令行使用（使用 `--option=argument`）。 (打开新的 Ghostty 窗口（不支持 macOS）)",
+    "tags": [
+      "common",
+      "ghostty",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-ghostty-1",
+    "type": "command",
+    "title": "ghostty - 在新打开的 Ghostty 窗口运行指定命令（不支持 macOS）",
+    "content": "ghostty -e {{命令}}",
+    "group": "通用工具 (Common)",
+    "description": "ghostty: 一款快速、功能丰富、跨平台，使用原生 UI 和 GPU 加速的终端模拟器。 提示：所有配置文件的选项皆可在命令行使用（使用 `--option=argument`）。 (在新打开的 Ghostty 窗口运行指定命令（不支持 macOS）)",
+    "tags": [
+      "common",
+      "ghostty",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-ghostty-2",
+    "type": "command",
+    "title": "ghostty - 列出所有默认和已配置的快捷键",
+    "content": "ghostty +list-keybinds",
+    "group": "通用工具 (Common)",
+    "description": "ghostty: 一款快速、功能丰富、跨平台，使用原生 UI 和 GPU 加速的终端模拟器。 提示：所有配置文件的选项皆可在命令行使用（使用 `--option=argument`）。 (列出所有默认和已配置的快捷键)",
+    "tags": [
+      "common",
+      "ghostty",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-ghostty-3",
+    "type": "command",
+    "title": "ghostty - 列出所有操作（即可以通过快捷键触发的操作）",
+    "content": "ghostty +list-actions",
+    "group": "通用工具 (Common)",
+    "description": "ghostty: 一款快速、功能丰富、跨平台，使用原生 UI 和 GPU 加速的终端模拟器。 提示：所有配置文件的选项皆可在命令行使用（使用 `--option=argument`）。 (列出所有操作（即可以通过快捷键触发的操作）)",
+    "tags": [
+      "common",
+      "ghostty",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-ghostty-4",
+    "type": "command",
+    "title": "ghostty - 浏览互动式主题列表",
+    "content": "ghostty +list-themes",
+    "group": "通用工具 (Common)",
+    "description": "ghostty: 一款快速、功能丰富、跨平台，使用原生 UI 和 GPU 加速的终端模拟器。 提示：所有配置文件的选项皆可在命令行使用（使用 `--option=argument`）。 (浏览互动式主题列表)",
+    "tags": [
+      "common",
+      "ghostty",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-ghostty-5",
+    "type": "command",
+    "title": "ghostty - 打印默认配置（包括注释）",
+    "content": "ghostty +show-config --default --docs",
+    "group": "通用工具 (Common)",
+    "description": "ghostty: 一款快速、功能丰富、跨平台，使用原生 UI 和 GPU 加速的终端模拟器。 提示：所有配置文件的选项皆可在命令行使用（使用 `--option=argument`）。 (打印默认配置（包括注释）)",
+    "tags": [
+      "common",
+      "ghostty",
       "tldr",
       "zh"
     ],
@@ -21378,7 +21468,7 @@
     "id": "tldr-zh-common-cargo-package-1",
     "type": "command",
     "title": "cargo-package - 显示将包含在tarball中的文件，而不实际创建它",
-    "content": "cargo package --list",
+    "content": "cargo package {{[-l|--list]}}",
     "group": "通用工具 (Common)",
     "description": "cargo-package: 将本地包装成一个可分发的 tarball 文件（`.crate` 文件）。 类似于 `cargo publish --dry-run`，但具有更多选项。 (显示将包含在tarball中的文件，而不实际创建它)",
     "tags": [
@@ -21498,7 +21588,7 @@
     "id": "tldr-zh-common-acme.sh-dns-0",
     "type": "command",
     "title": "acme.sh-dns - 使用自动 DNS API 模式签发证书",
-    "content": "acme.sh --issue --dns {{gnd_gd}} --domain {{example.com}}",
+    "content": "acme.sh --issue --dns {{dns_gd}} --domain {{example.com}}",
     "group": "通用工具 (Common)",
     "description": "acme.sh-dns: 使用 DNS-01 挑战来签发 TLS 证书。 (使用自动 DNS API 模式签发证书)",
     "tags": [
@@ -23043,7 +23133,7 @@
     "id": "tldr-zh-common-cargo-tree-4",
     "type": "command",
     "title": "cargo-tree - 仅显示 normal/build/dev 依赖",
-    "content": "cargo tree --edges {{normal|build|dev}}",
+    "content": "cargo tree {{[-e|--edges]}} {{normal|build|dev}}",
     "group": "通用工具 (Common)",
     "description": "cargo-tree: 显示依赖图的树形可视化。 注意：在树中，标有 `(*)` 的包的依赖已在图的其他位置显示过，因此不会重复显示。 (仅显示 normal/build/dev 依赖)",
     "tags": [
@@ -34563,7 +34653,7 @@
     "id": "tldr-zh-common-cargo-clean-2",
     "type": "command",
     "title": "cargo-clean - 删除 release 模式的构建产物 (`target/release` 目录)",
-    "content": "cargo clean --release",
+    "content": "cargo clean {{[-r|--release]}}",
     "group": "通用工具 (Common)",
     "description": "cargo-clean: 删除 `target` 目录中生成的构建产物。 (删除 release 模式的构建产物 (`target/release` 目录))",
     "tags": [
@@ -35118,7 +35208,7 @@
     "id": "tldr-zh-common-cargo-publish-1",
     "type": "command",
     "title": "cargo-publish - 执行检查，创建一个 `.crate` 文件，但不上传它 (相当于 `cargo package`)",
-    "content": "cargo publish --dry-run",
+    "content": "cargo publish {{[-n|--dry-run]}}",
     "group": "通用工具 (Common)",
     "description": "cargo-publish: 将包上传到注册表。 注意：在发布包之前，您必须使用 `cargo login` 添加身份验证令牌。 (执行检查，创建一个 `.crate` 文件，但不上传它 (相当于 `cargo package`))",
     "tags": [
@@ -38148,7 +38238,7 @@
     "id": "tldr-zh-common-cargo-update-1",
     "type": "command",
     "title": "cargo-update - 显示将会更新的内容，但实际上不写入锁定文件",
-    "content": "cargo update --dry-run",
+    "content": "cargo update {{[-n|--dry-run]}}",
     "group": "通用工具 (Common)",
     "description": "cargo-update: 更新记录在 `Cargo.lock` 中的依赖关系。 (显示将会更新的内容，但实际上不写入锁定文件)",
     "tags": [
@@ -41223,7 +41313,7 @@
     "id": "tldr-zh-common-cargo-version-1",
     "type": "command",
     "title": "cargo-version - 显示额外的构建信息",
-    "content": "cargo version --verbose",
+    "content": "cargo version {{[-v|--verbose]}}",
     "group": "通用工具 (Common)",
     "description": "cargo-version: 显示 `cargo` 版本信息。 (显示额外的构建信息)",
     "tags": [
@@ -43398,7 +43488,7 @@
     "id": "tldr-zh-common-cargo-clippy-4",
     "type": "command",
     "title": "cargo-clippy - 运行特定 lint 组的检查（参见 <https://rust-lang.github.io/rust-clippy/stable/index.html#?groups=cargo,complexity,correctness,deprecated,nursery,pedantic,perf,restriction,style,suspicious>）",
-    "content": "cargo clippy -- --warn clippy::{{lint组}}",
+    "content": "cargo clippy -- {{[-W|--warn]}} clippy::{{lint组}}",
     "group": "通用工具 (Common)",
     "description": "cargo-clippy: 一系列 lint 工具，用于捕获常见错误并改进 Rust 代码。 (运行特定 lint 组的检查（参见 <https://rust-lang.github.io/rust-clippy/stable/index.html#?groups=cargo,complexity,correctness,deprecated,nursery,pedantic,perf,restriction,style,suspicious>）)",
     "tags": [
@@ -43413,7 +43503,7 @@
     "id": "tldr-zh-common-cargo-clippy-5",
     "type": "command",
     "title": "cargo-clippy - 将警告视为错误",
-    "content": "cargo clippy -- --deny warnings",
+    "content": "cargo clippy -- {{[-D|--deny]}} warnings",
     "group": "通用工具 (Common)",
     "description": "cargo-clippy: 一系列 lint 工具，用于捕获常见错误并改进 Rust 代码。 (将警告视为错误)",
     "tags": [
@@ -43428,7 +43518,7 @@
     "id": "tldr-zh-common-cargo-clippy-6",
     "type": "command",
     "title": "cargo-clippy - 运行检查并忽略警告",
-    "content": "cargo clippy -- --allow warnings",
+    "content": "cargo clippy -- {{[-A|--allow]}} warnings",
     "group": "通用工具 (Common)",
     "description": "cargo-clippy: 一系列 lint 工具，用于捕获常见错误并改进 Rust 代码。 (运行检查并忽略警告)",
     "tags": [
@@ -43473,7 +43563,7 @@
     "id": "tldr-zh-common-cargo-rustc-1",
     "type": "command",
     "title": "cargo-rustc - 在 release 模式下构建构建，启用优化",
-    "content": "cargo rustc --release",
+    "content": "cargo rustc {{[-r|--release]}}",
     "group": "通用工具 (Common)",
     "description": "cargo-rustc: 编译一个 Rust 包。类似于 `cargo build`，但您可以向编译器传递额外的选项。 查看 `rustc --help` 获取所有可用选项。 (在 release 模式下构建构建，启用优化)",
     "tags": [
@@ -43488,7 +43578,7 @@
     "id": "tldr-zh-common-cargo-rustc-2",
     "type": "command",
     "title": "cargo-rustc - 使用针对当前 CPU 的特定架构优化编译",
-    "content": "cargo rustc --release -- -C target-cpu=native",
+    "content": "cargo rustc {{[-r|--release]}} -- -C target-cpu=native",
     "group": "通用工具 (Common)",
     "description": "cargo-rustc: 编译一个 Rust 包。类似于 `cargo build`，但您可以向编译器传递额外的选项。 查看 `rustc --help` 获取所有可用选项。 (使用针对当前 CPU 的特定架构优化编译)",
     "tags": [
@@ -43548,7 +43638,7 @@
     "id": "tldr-zh-common-cargo-rustc-6",
     "type": "command",
     "title": "cargo-rustc - 构建特定的包",
-    "content": "cargo rustc --package {{package}}",
+    "content": "cargo rustc {{[-p|--package]}} {{package}}",
     "group": "通用工具 (Common)",
     "description": "cargo-rustc: 编译一个 Rust 包。类似于 `cargo build`，但您可以向编译器传递额外的选项。 查看 `rustc --help` 获取所有可用选项。 (构建特定的包)",
     "tags": [
@@ -53313,7 +53403,7 @@
     "id": "tldr-zh-common-git-check-ignore-2",
     "type": "command",
     "title": "git-check-ignore - 从标准输入读取路径列表（每行一个路径）",
-    "content": "git check-ignore --stdin < {{路径/到/文件列表}}",
+    "content": "git < {{路径/到/文件列表}} check-ignore --stdin",
     "group": "通用工具 (Common)",
     "description": "git-check-ignore: 分析和调试 Git 忽略规则（`.gitignore` 文件）。 (从标准输入读取路径列表（每行一个路径）)",
     "tags": [

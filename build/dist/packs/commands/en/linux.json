@@ -5777,10 +5777,10 @@
   {
     "id": "tldr-en-linux-e2undo-4",
     "type": "command",
-    "title": "e2undo - Write the old contents of the block to an undo file before overwriting a file system block",
+    "title": "e2undo - Write the old contents of the block to an undo file before overwriting a filesystem block",
     "content": "e2undo -z {{path/to/file.e2undo}} {{path/to/undo_file}} {{/dev/sdXN}}",
     "group": "Linux Ops",
-    "description": "e2undo: Replay undo logs for an ext2/ext3/ext4 filesystem. This can be used to undo a failed operation by an e2fsprogs program. (Write the old contents of the block to an undo file before overwriting a file system block)",
+    "description": "e2undo: Replay undo logs for an ext2/ext3/ext4 filesystem. This can be used to undo a failed operation by an e2fsprogs program. (Write the old contents of the block to an undo file before overwriting a filesystem block)",
     "tags": [
       "linux",
       "e2undo",
@@ -9875,7 +9875,7 @@
     "title": "pacfile - List all available packages",
     "content": "pacfile {{path/to/file_or_directory}}",
     "group": "Linux Ops",
-    "description": "pacfile: Display information about package files, including repository data, file system checks, and database comparisons. (List all available packages)",
+    "description": "pacfile: Display information about package files, including repository data, filesystem checks, and database comparisons. (List all available packages)",
     "tags": [
       "linux",
       "pacfile",
@@ -9887,10 +9887,10 @@
   {
     "id": "tldr-en-linux-pacfile-1",
     "type": "command",
-    "title": "pacfile - Compare database values to the file system",
+    "title": "pacfile - Compare database values to the filesystem",
     "content": "pacfile {{path/to/file_or_directory}} --check",
     "group": "Linux Ops",
-    "description": "pacfile: Display information about package files, including repository data, file system checks, and database comparisons. (Compare database values to the file system)",
+    "description": "pacfile: Display information about package files, including repository data, filesystem checks, and database comparisons. (Compare database values to the filesystem)",
     "tags": [
       "linux",
       "pacfile",
@@ -9905,7 +9905,7 @@
     "title": "pacfile - Display help",
     "content": "pacfile --help",
     "group": "Linux Ops",
-    "description": "pacfile: Display information about package files, including repository data, file system checks, and database comparisons. (Display help)",
+    "description": "pacfile: Display information about package files, including repository data, filesystem checks, and database comparisons. (Display help)",
     "tags": [
       "linux",
       "pacfile",
@@ -9920,7 +9920,7 @@
     "title": "pacfile - Display version",
     "content": "pacfile --version",
     "group": "Linux Ops",
-    "description": "pacfile: Display information about package files, including repository data, file system checks, and database comparisons. (Display version)",
+    "description": "pacfile: Display information about package files, including repository data, filesystem checks, and database comparisons. (Display version)",
     "tags": [
       "linux",
       "pacfile",
@@ -10877,10 +10877,10 @@
   {
     "id": "tldr-en-linux-systemd-mount-0",
     "type": "command",
-    "title": "systemd-mount - Mount a file system (image or block device) at `/run/media/system/LABEL` where LABEL is the filesystem label or the device name if there is no label",
+    "title": "systemd-mount - Mount a filesystem (image or block device) at `/run/media/system/LABEL` where LABEL is the filesystem label or the device name if there is no label",
     "content": "systemd-mount {{path/to/file_or_device}}",
     "group": "Linux Ops",
-    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a file system (image or block device) at `/run/media/system/LABEL` where LABEL is the filesystem label or the device name if there is no label)",
+    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a filesystem (image or block device) at `/run/media/system/LABEL` where LABEL is the filesystem label or the device name if there is no label)",
     "tags": [
       "linux",
       "systemd-mount",
@@ -10892,10 +10892,10 @@
   {
     "id": "tldr-en-linux-systemd-mount-1",
     "type": "command",
-    "title": "systemd-mount - Mount a file system (image or block device) at a specific location",
+    "title": "systemd-mount - Mount a filesystem (image or block device) at a specific location",
     "content": "systemd-mount {{path/to/file_or_device}} {{path/to/mount_point}}",
     "group": "Linux Ops",
-    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a file system (image or block device) at a specific location)",
+    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a filesystem (image or block device) at a specific location)",
     "tags": [
       "linux",
       "systemd-mount",
@@ -10907,10 +10907,10 @@
   {
     "id": "tldr-en-linux-systemd-mount-2",
     "type": "command",
-    "title": "systemd-mount - List all local, known block devices with file systems that may be mounted",
+    "title": "systemd-mount - List all local, known block devices with filesystems that may be mounted",
     "content": "systemd-mount --list",
     "group": "Linux Ops",
-    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (List all local, known block devices with file systems that may be mounted)",
+    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (List all local, known block devices with filesystems that may be mounted)",
     "tags": [
       "linux",
       "systemd-mount",
@@ -10922,10 +10922,10 @@
   {
     "id": "tldr-en-linux-systemd-mount-3",
     "type": "command",
-    "title": "systemd-mount - Create an automount point that mounts the actual file system at the time of first access",
+    "title": "systemd-mount - Create an automount point that mounts the actual filesystem at the time of first access",
     "content": "systemd-mount --automount yes {{path/to/file_or_device}}",
     "group": "Linux Ops",
-    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Create an automount point that mounts the actual file system at the time of first access)",
+    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Create an automount point that mounts the actual filesystem at the time of first access)",
     "tags": [
       "linux",
       "systemd-mount",
@@ -10952,10 +10952,10 @@
   {
     "id": "tldr-en-linux-systemd-mount-5",
     "type": "command",
-    "title": "systemd-mount - Mount a file system (image or block device) with a specific file system type",
+    "title": "systemd-mount - Mount a filesystem (image or block device) with a specific filesystem type",
     "content": "systemd-mount {{[-t|--type]}} {{file_system_type}} {{path/to/file_or_device}} {{path/to/mount_point}}",
     "group": "Linux Ops",
-    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a file system (image or block device) with a specific file system type)",
+    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a filesystem (image or block device) with a specific filesystem type)",
     "tags": [
       "linux",
       "systemd-mount",
@@ -10967,10 +10967,10 @@
   {
     "id": "tldr-en-linux-systemd-mount-6",
     "type": "command",
-    "title": "systemd-mount - Mount a file system (image or block device) with additional mount options",
+    "title": "systemd-mount - Mount a filesystem (image or block device) with additional mount options",
     "content": "systemd-mount {{[-o|--options]}} {{mount_options}} {{path/to/file_or_device}} {{path/to/mount_point}}",
     "group": "Linux Ops",
-    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a file system (image or block device) with additional mount options)",
+    "description": "systemd-mount: Establish and destroy transient mount or auto-mount points. (Mount a filesystem (image or block device) with additional mount options)",
     "tags": [
       "linux",
       "systemd-mount",
@@ -17165,7 +17165,7 @@
     "title": "runlim - Print the time and memory usage of a command",
     "content": "runlim {{command}} {{command_arguments}}",
     "group": "Linux Ops",
-    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc file system on Linux. (Print the time and memory usage of a command)",
+    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc filesystem on Linux. (Print the time and memory usage of a command)",
     "tags": [
       "linux",
       "runlim",
@@ -17180,7 +17180,7 @@
     "title": "runlim - Log statistics to a file instead of `stdout`",
     "content": "runlim --output-file={{path/to/file}} {{command}} {{command_arguments}}",
     "group": "Linux Ops",
-    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc file system on Linux. (Log statistics to a file instead of `stdout`)",
+    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc filesystem on Linux. (Log statistics to a file instead of `stdout`)",
     "tags": [
       "linux",
       "runlim",
@@ -17195,7 +17195,7 @@
     "title": "runlim - Limit time to an upper bound (in seconds)",
     "content": "runlim --time-limit={{number}} {{command}} {{command_arguments}}",
     "group": "Linux Ops",
-    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc file system on Linux. (Limit time to an upper bound (in seconds))",
+    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc filesystem on Linux. (Limit time to an upper bound (in seconds))",
     "tags": [
       "linux",
       "runlim",
@@ -17210,7 +17210,7 @@
     "title": "runlim - Limit real-time to an upper bound (in seconds)",
     "content": "runlim --real-time-limit={{number}} {{command}} {{command_arguments}}",
     "group": "Linux Ops",
-    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc file system on Linux. (Limit real-time to an upper bound (in seconds))",
+    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc filesystem on Linux. (Limit real-time to an upper bound (in seconds))",
     "tags": [
       "linux",
       "runlim",
@@ -17225,7 +17225,7 @@
     "title": "runlim - Limit space to an upper bound (in MB)",
     "content": "runlim --space-limit={{number}} {{command}} {{command_arguments}}",
     "group": "Linux Ops",
-    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc file system on Linux. (Limit space to an upper bound (in MB))",
+    "description": "runlim: Sample and limit time and memory usage of a program and its child processes using the proc filesystem on Linux. (Limit space to an upper bound (in MB))",
     "tags": [
       "linux",
       "runlim",
@@ -23415,6 +23415,66 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-update-ca-certificates-0",
+    "type": "command",
+    "title": "update-ca-certificates - Update certificates",
+    "content": "sudo update-ca-certificates",
+    "group": "Linux Ops",
+    "description": "update-ca-certificates: Update the CA certificates bundle and regenerate `/etc/ssl/certs`. (Update certificates)",
+    "tags": [
+      "linux",
+      "update-ca-certificates",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-update-ca-certificates-1",
+    "type": "command",
+    "title": "update-ca-certificates - Update certificates in verbose mode",
+    "content": "sudo update-ca-certificates {{[-v|--verbose]}}",
+    "group": "Linux Ops",
+    "description": "update-ca-certificates: Update the CA certificates bundle and regenerate `/etc/ssl/certs`. (Update certificates in verbose mode)",
+    "tags": [
+      "linux",
+      "update-ca-certificates",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-update-ca-certificates-2",
+    "type": "command",
+    "title": "update-ca-certificates - Perform a fresh update (remove all symlinks and regenerate)",
+    "content": "sudo update-ca-certificates {{[-f|--fresh]}}",
+    "group": "Linux Ops",
+    "description": "update-ca-certificates: Update the CA certificates bundle and regenerate `/etc/ssl/certs`. (Perform a fresh update (remove all symlinks and regenerate))",
+    "tags": [
+      "linux",
+      "update-ca-certificates",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-update-ca-certificates-3",
+    "type": "command",
+    "title": "update-ca-certificates - Add a custom certificate (copy it first, then update)",
+    "content": "sudo cp {{path/to/certificate.crt}} /usr/local/share/ca-certificates/ && sudo update-ca-certificates",
+    "group": "Linux Ops",
+    "description": "update-ca-certificates: Update the CA certificates bundle and regenerate `/etc/ssl/certs`. (Add a custom certificate (copy it first, then update))",
+    "tags": [
+      "linux",
+      "update-ca-certificates",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-pulseaudio-0",
     "type": "command",
     "title": "pulseaudio - Check if PulseAudio is running (a non-zero exit code means it is not running)",
@@ -23529,6 +23589,66 @@
     "tags": [
       "linux",
       "register_new_matrix_user",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-steamosctl-0",
+    "type": "command",
+    "title": "steamosctl - Change to desktop mode",
+    "content": "steamosctl switch-to-desktop-mode",
+    "group": "Linux Ops",
+    "description": "steamosctl: Control the SteamOS system. (Change to desktop mode)",
+    "tags": [
+      "linux",
+      "steamosctl",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-steamosctl-1",
+    "type": "command",
+    "title": "steamosctl - Change to gamemode",
+    "content": "steamosctl switch-to-game-mode",
+    "group": "Linux Ops",
+    "description": "steamosctl: Control the SteamOS system. (Change to gamemode)",
+    "tags": [
+      "linux",
+      "steamosctl",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-steamosctl-2",
+    "type": "command",
+    "title": "steamosctl - Change whether the system opens gamemode or desktop during login",
+    "content": "steamosctl set-default-login-mode {{game|desktop}}",
+    "group": "Linux Ops",
+    "description": "steamosctl: Control the SteamOS system. (Change whether the system opens gamemode or desktop during login)",
+    "tags": [
+      "linux",
+      "steamosctl",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-steamosctl-3",
+    "type": "command",
+    "title": "steamosctl - Display help",
+    "content": "steamosctl",
+    "group": "Linux Ops",
+    "description": "steamosctl: Control the SteamOS system. (Display help)",
+    "tags": [
+      "linux",
+      "steamosctl",
       "tldr",
       "en"
     ],
@@ -34592,10 +34712,10 @@
   {
     "id": "tldr-en-linux-grub-mount-0",
     "type": "command",
-    "title": "grub-mount - Mount a block device or file system image to a mount point",
+    "title": "grub-mount - Mount a block device or filesystem image to a mount point",
     "content": "grub-mount {{/dev/sdXY}} {{/mnt}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Mount a block device or file system image to a mount point)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Mount a block device or filesystem image to a mount point)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34610,7 +34730,7 @@
     "title": "grub-mount - Mount an entire disk image's second partition, `-r` specifies the partition number in the image",
     "content": "grub-mount {{[-r|--root]}} {{2}} {{disk.img}} {{/mnt}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Mount an entire disk image's second partition, `-r` specifies the partition number in the image)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Mount an entire disk image's second partition, `-r` specifies the partition number in the image)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34625,7 +34745,7 @@
     "title": "grub-mount - Mount an encrypted device and prompt for a passphrase",
     "content": "grub-mount {{[-C|--crypto]}} {{/dev/sdXY}} {{/mnt}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Mount an encrypted device and prompt for a passphrase)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Mount an encrypted device and prompt for a passphrase)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34640,7 +34760,7 @@
     "title": "grub-mount - Load a ZFS encryption key from a file",
     "content": "grub-mount {{[-K|--zfs-key]}} /{{path/to/zfs.key}} {{/dev/sdX}} {{/mnt}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Load a ZFS encryption key from a file)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Load a ZFS encryption key from a file)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34655,7 +34775,7 @@
     "title": "grub-mount - Show debugging output for a matching category",
     "content": "grub-mount {{[-d|--debug]}} {{string}} {{image}} {{/mnt}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Show debugging output for a matching category)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Show debugging output for a matching category)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34670,7 +34790,7 @@
     "title": "grub-mount - Enable verbose output",
     "content": "grub-mount {{[-v|--verbose]}} {{image}} {{/mnt}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Enable verbose output)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Enable verbose output)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34685,7 +34805,7 @@
     "title": "grub-mount - Display help",
     "content": "grub-mount {{[-?|--help]}}",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Display help)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Display help)",
     "tags": [
       "linux",
       "grub-mount",
@@ -34700,7 +34820,7 @@
     "title": "grub-mount - Display version",
     "content": "grub-mount --version",
     "group": "Linux Ops",
-    "description": "grub-mount: Mount a file system or file system image read-only using GRUB's file system drivers. (Display version)",
+    "description": "grub-mount: Mount a filesystem or filesystem image read-only using GRUB's filesystem drivers. (Display version)",
     "tags": [
       "linux",
       "grub-mount",
@@ -35945,7 +36065,7 @@
     "title": "systemd-repart - Grow the root partition (/) to all available disk space",
     "content": "systemd-repart",
     "group": "Linux Ops",
-    "description": "systemd-repart: Automatically grow and add partitions. Grows and adds partitions based on the configuration files described in repart.d. Does not automatically resize file system on partition. See systemd-growfs to extend file system. (Grow the root partition (/) to all available disk space)",
+    "description": "systemd-repart: Automatically grow and add partitions. Grows and adds partitions based on the configuration files described in repart.d. Does not automatically resize filesystem on partition. See systemd-growfs to extend filesystem. (Grow the root partition (/) to all available disk space)",
     "tags": [
       "linux",
       "systemd-repart",
@@ -35960,7 +36080,7 @@
     "title": "systemd-repart - View changes without applying",
     "content": "systemd-repart --dry-run yes",
     "group": "Linux Ops",
-    "description": "systemd-repart: Automatically grow and add partitions. Grows and adds partitions based on the configuration files described in repart.d. Does not automatically resize file system on partition. See systemd-growfs to extend file system. (View changes without applying)",
+    "description": "systemd-repart: Automatically grow and add partitions. Grows and adds partitions based on the configuration files described in repart.d. Does not automatically resize filesystem on partition. See systemd-growfs to extend filesystem. (View changes without applying)",
     "tags": [
       "linux",
       "systemd-repart",
@@ -35975,7 +36095,7 @@
     "title": "systemd-repart - Grow root partition size to 10 gigabytes",
     "content": "systemd-repart --size 10G --root /",
     "group": "Linux Ops",
-    "description": "systemd-repart: Automatically grow and add partitions. Grows and adds partitions based on the configuration files described in repart.d. Does not automatically resize file system on partition. See systemd-growfs to extend file system. (Grow root partition size to 10 gigabytes)",
+    "description": "systemd-repart: Automatically grow and add partitions. Grows and adds partitions based on the configuration files described in repart.d. Does not automatically resize filesystem on partition. See systemd-growfs to extend filesystem. (Grow root partition size to 10 gigabytes)",
     "tags": [
       "linux",
       "systemd-repart",
@@ -37310,7 +37430,7 @@
     "title": "steamos-session-select - Change to desktop mode",
     "content": "steamos-session-select plasma",
     "group": "Linux Ops",
-    "description": "steamos-session-select: Manipulate which session is currently in use. (Change to desktop mode)",
+    "description": "steamos-session-select: Manipulate which session is currently in use. Note: This command is deprecated, use `steamosctl` instead. (Change to desktop mode)",
     "tags": [
       "linux",
       "steamos-session-select",
@@ -37322,10 +37442,10 @@
   {
     "id": "tldr-en-linux-steamos-session-select-1",
     "type": "command",
-    "title": "steamos-session-select - Change to gamemode (sets the system to boot into gamemode if `-persistent` options were selected previously)",
+    "title": "steamos-session-select - Change to gamemode (sets the system to boot into gamemode if `-persistent` arguments were selected previously)",
     "content": "steamos-session-select",
     "group": "Linux Ops",
-    "description": "steamos-session-select: Manipulate which session is currently in use. (Change to gamemode (sets the system to boot into gamemode if `-persistent` options were selected previously))",
+    "description": "steamos-session-select: Manipulate which session is currently in use. Note: This command is deprecated, use `steamosctl` instead. (Change to gamemode (sets the system to boot into gamemode if `-persistent` arguments were selected previously))",
     "tags": [
       "linux",
       "steamos-session-select",
@@ -37340,7 +37460,7 @@
     "title": "steamos-session-select - Change to Wayland desktop mode",
     "content": "steamos-session-select plasma-wayland",
     "group": "Linux Ops",
-    "description": "steamos-session-select: Manipulate which session is currently in use. (Change to Wayland desktop mode)",
+    "description": "steamos-session-select: Manipulate which session is currently in use. Note: This command is deprecated, use `steamosctl` instead. (Change to Wayland desktop mode)",
     "tags": [
       "linux",
       "steamos-session-select",
@@ -37355,7 +37475,7 @@
     "title": "steamos-session-select - Change to Wayland desktop mode and have the device boot to desktop",
     "content": "steamos-session-select plasma-wayland-persistent",
     "group": "Linux Ops",
-    "description": "steamos-session-select: Manipulate which session is currently in use. (Change to Wayland desktop mode and have the device boot to desktop)",
+    "description": "steamos-session-select: Manipulate which session is currently in use. Note: This command is deprecated, use `steamosctl` instead. (Change to Wayland desktop mode and have the device boot to desktop)",
     "tags": [
       "linux",
       "steamos-session-select",
@@ -37370,7 +37490,7 @@
     "title": "steamos-session-select - Change to X11 desktop mode and have the device boot to desktop",
     "content": "steamos-session-select plasma-x11-persistent",
     "group": "Linux Ops",
-    "description": "steamos-session-select: Manipulate which session is currently in use. (Change to X11 desktop mode and have the device boot to desktop)",
+    "description": "steamos-session-select: Manipulate which session is currently in use. Note: This command is deprecated, use `steamosctl` instead. (Change to X11 desktop mode and have the device boot to desktop)",
     "tags": [
       "linux",
       "steamos-session-select",
@@ -41205,6 +41325,81 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-sprof-0",
+    "type": "command",
+    "title": "sprof - Generate a flat profile and call graph (default output)",
+    "content": "sprof {{path/to/library.so}} {{path/to/library.so.profile}}",
+    "group": "Linux Ops",
+    "description": "sprof: Read and display shared object profiling data. Note: Requires profile data generated via the `$LD_PROFILE` environment variable. (Generate a flat profile and call graph (default output))",
+    "tags": [
+      "linux",
+      "sprof",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-sprof-1",
+    "type": "command",
+    "title": "sprof - Generate a flat profile with counts and ticks",
+    "content": "sprof {{[-p|--flat-profile]}} {{path/to/library.so}} {{path/to/library.so.profile}}",
+    "group": "Linux Ops",
+    "description": "sprof: Read and display shared object profiling data. Note: Requires profile data generated via the `$LD_PROFILE` environment variable. (Generate a flat profile with counts and ticks)",
+    "tags": [
+      "linux",
+      "sprof",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-sprof-2",
+    "type": "command",
+    "title": "sprof - Generate a call graph",
+    "content": "sprof {{[-q|--graph]}} {{path/to/library.so}} {{path/to/library.so.profile}}",
+    "group": "Linux Ops",
+    "description": "sprof: Read and display shared object profiling data. Note: Requires profile data generated via the `$LD_PROFILE` environment variable. (Generate a call graph)",
+    "tags": [
+      "linux",
+      "sprof",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-sprof-3",
+    "type": "command",
+    "title": "sprof - Print call pairs and their usage counts",
+    "content": "sprof {{[-c|--call-pairs]}} {{path/to/library.so}} {{path/to/library.so.profile}}",
+    "group": "Linux Ops",
+    "description": "sprof: Read and display shared object profiling data. Note: Requires profile data generated via the `$LD_PROFILE` environment variable. (Print call pairs and their usage counts)",
+    "tags": [
+      "linux",
+      "sprof",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-sprof-4",
+    "type": "command",
+    "title": "sprof - Use profile data from current directory (auto-detected by soname)",
+    "content": "sprof {{path/to/library.so}}",
+    "group": "Linux Ops",
+    "description": "sprof: Read and display shared object profiling data. Note: Requires profile data generated via the `$LD_PROFILE` environment variable. (Use profile data from current directory (auto-detected by soname))",
+    "tags": [
+      "linux",
+      "sprof",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-urpmi.removemedia-0",
     "type": "command",
     "title": "urpmi.removemedia - Remove a medium",
@@ -44072,6 +44267,21 @@
   {
     "id": "tldr-en-linux-steamos-readonly-0",
     "type": "command",
+    "title": "steamos-readonly - View the filesystem mutability status",
+    "content": "steamos-readonly status",
+    "group": "Linux Ops",
+    "description": "steamos-readonly: Set the readonly status of the filesystem. (View the filesystem mutability status)",
+    "tags": [
+      "linux",
+      "steamos-readonly",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-steamos-readonly-1",
+    "type": "command",
     "title": "steamos-readonly - Set the filesystem to be mutable",
     "content": "sudo steamos-readonly disable",
     "group": "Linux Ops",
@@ -44085,12 +44295,27 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-steamos-readonly-1",
+    "id": "tldr-en-linux-steamos-readonly-2",
     "type": "command",
     "title": "steamos-readonly - Set the filesystem to be read only",
     "content": "sudo steamos-readonly enable",
     "group": "Linux Ops",
     "description": "steamos-readonly: Set the readonly status of the filesystem. (Set the filesystem to be read only)",
+    "tags": [
+      "linux",
+      "steamos-readonly",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-steamos-readonly-3",
+    "type": "command",
+    "title": "steamos-readonly - Toggle the filesystem mutability",
+    "content": "sudo steamos-readonly toggle",
+    "group": "Linux Ops",
+    "description": "steamos-readonly: Set the readonly status of the filesystem. (Toggle the filesystem mutability)",
     "tags": [
       "linux",
       "steamos-readonly",
@@ -50190,6 +50415,111 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-owut-0",
+    "type": "command",
+    "title": "owut - List available OpenWrt versions for the current device",
+    "content": "owut versions",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (List available OpenWrt versions for the current device)",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-owut-1",
+    "type": "command",
+    "title": "owut - List user installed or removed packages",
+    "content": "owut list",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (List user installed or removed packages)",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-owut-2",
+    "type": "command",
+    "title": "owut - Check for updates without performing an upgrade",
+    "content": "owut check",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (Check for updates without performing an upgrade)",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-owut-3",
+    "type": "command",
+    "title": "owut - Automatically build, download, verify, and install the latest available firmware",
+    "content": "owut upgrade",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (Automatically build, download, verify, and install the latest available firmware)",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-owut-4",
+    "type": "command",
+    "title": "owut - Upgrade to a specific version and include additional packages",
+    "content": "owut upgrade {{[-V|--version-to]}} {{version}} {{[-a|--add]}} \"{{htop vim}}\"",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (Upgrade to a specific version and include additional packages)",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-owut-5",
+    "type": "command",
+    "title": "owut - Download and verify a specific image without installing it",
+    "content": "owut download {{[-V|--version-to]}} {{25.12.0}}",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (Download and verify a specific image without installing it)",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-owut-6",
+    "type": "command",
+    "title": "owut - Verify the latest downloaded image and install it (device will reboot)",
+    "content": "owut install",
+    "group": "Linux Ops",
+    "description": "owut: OpenWrt Upgrade Tool for automating builds and installs via Attended SysUpgrade (ASU). (Verify the latest downloaded image and install it (device will reboot))",
+    "tags": [
+      "linux",
+      "owut",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-phpquery-0",
     "type": "command",
     "title": "phpquery - List available PHP versions",
@@ -51515,7 +51845,7 @@
     "title": "dutree - Show a graphical tree of the current directory",
     "content": "dutree",
     "group": "Linux Ops",
-    "description": "dutree: Analyze file system usage with colorful text-based trees. (Show a graphical tree of the current directory)",
+    "description": "dutree: Analyze filesystem usage with colorful text-based trees. (Show a graphical tree of the current directory)",
     "tags": [
       "linux",
       "dutree",
@@ -51530,7 +51860,7 @@
     "title": "dutree - Show a specific directory",
     "content": "dutree {{path/to/directory}}",
     "group": "Linux Ops",
-    "description": "dutree: Analyze file system usage with colorful text-based trees. (Show a specific directory)",
+    "description": "dutree: Analyze filesystem usage with colorful text-based trees. (Show a specific directory)",
     "tags": [
       "linux",
       "dutree",
@@ -51545,7 +51875,7 @@
     "title": "dutree - Aggregate items smaller than a number of KB (or M for MB, or G for GB)",
     "content": "dutree --aggr {{number}}K",
     "group": "Linux Ops",
-    "description": "dutree: Analyze file system usage with colorful text-based trees. (Aggregate items smaller than a number of KB (or M for MB, or G for GB))",
+    "description": "dutree: Analyze filesystem usage with colorful text-based trees. (Aggregate items smaller than a number of KB (or M for MB, or G for GB))",
     "tags": [
       "linux",
       "dutree",
@@ -51560,7 +51890,7 @@
     "title": "dutree - Show subdirectories up to the specified depth (default is 1)",
     "content": "dutree --depth {{depth}}",
     "group": "Linux Ops",
-    "description": "dutree: Analyze file system usage with colorful text-based trees. (Show subdirectories up to the specified depth (default is 1))",
+    "description": "dutree: Analyze filesystem usage with colorful text-based trees. (Show subdirectories up to the specified depth (default is 1))",
     "tags": [
       "linux",
       "dutree",
@@ -51575,7 +51905,7 @@
     "title": "dutree - Skip directories for a fast local overview",
     "content": "dutree --files-only",
     "group": "Linux Ops",
-    "description": "dutree: Analyze file system usage with colorful text-based trees. (Skip directories for a fast local overview)",
+    "description": "dutree: Analyze filesystem usage with colorful text-based trees. (Skip directories for a fast local overview)",
     "tags": [
       "linux",
       "dutree",
@@ -51590,7 +51920,7 @@
     "title": "dutree - Exclude hidden files",
     "content": "dutree --no-hidden",
     "group": "Linux Ops",
-    "description": "dutree: Analyze file system usage with colorful text-based trees. (Exclude hidden files)",
+    "description": "dutree: Analyze filesystem usage with colorful text-based trees. (Exclude hidden files)",
     "tags": [
       "linux",
       "dutree",
@@ -55764,6 +56094,126 @@
     "tags": [
       "linux",
       "trap",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-0",
+    "type": "command",
+    "title": "apptainer-registry - List all configured registry credentials",
+    "content": "apptainer registry list",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (List all configured registry credentials)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-1",
+    "type": "command",
+    "title": "apptainer-registry - Log in to a registry with a username (password will be prompted)",
+    "content": "apptainer registry login {{[-u|--username]}} {{username}} docker://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log in to a registry with a username (password will be prompted))",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-2",
+    "type": "command",
+    "title": "apptainer-registry - Log in to a custom OCI registry",
+    "content": "apptainer registry login {{[-u|--username]}} {{username}} oras://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log in to a custom OCI registry)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-3",
+    "type": "command",
+    "title": "apptainer-registry - Log in with username and password",
+    "content": "apptainer registry login {{[-u|--username]}} {{username}} {{[-p|--password]}} {{password}} docker://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log in with username and password)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-4",
+    "type": "command",
+    "title": "apptainer-registry - Log in with a password from `stdin`",
+    "content": "echo \"{{password}}\" | apptainer registry login {{[-u|--username]}} {{username}} --password-stdin docker://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log in with a password from `stdin`)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-5",
+    "type": "command",
+    "title": "apptainer-registry - Log in using a custom authentication file",
+    "content": "apptainer registry login --authfile {{path/to/auth.json}} {{[-u|--username]}} {{username}} docker://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log in using a custom authentication file)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-6",
+    "type": "command",
+    "title": "apptainer-registry - Log out from a registry",
+    "content": "apptainer registry logout docker://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log out from a registry)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-registry-7",
+    "type": "command",
+    "title": "apptainer-registry - Log out using a custom authentication file",
+    "content": "apptainer registry logout --authfile {{path/to/auth.json}} docker://{{registry}}",
+    "group": "Linux Ops",
+    "description": "apptainer-registry: Manage authentication to OCI/Docker registries. (Log out using a custom authentication file)",
+    "tags": [
+      "linux",
+      "apptainer-registry",
       "tldr",
       "en"
     ],
@@ -75260,7 +75710,7 @@
     "title": "xmount - Mount a `.raw` image file into a DMG container file",
     "content": "xmount --in {{raw}} {{path/to/image.dd}} --out {{dmg}} {{mountpoint}}",
     "group": "Linux Ops",
-    "description": "xmount: Convert on-the-fly between multiple input and output hard disk image types with optional write cache support. Create a virtual file system using FUSE (Filesystem in Userspace) that contains a virtual representation of the input image. (Mount a `.raw` image file into a DMG container file)",
+    "description": "xmount: Convert on-the-fly between multiple input and output hard disk image types with optional write cache support. Create a virtual filesystem using FUSE (Filesystem in Userspace) that contains a virtual representation of the input image. (Mount a `.raw` image file into a DMG container file)",
     "tags": [
       "linux",
       "xmount",
@@ -75275,7 +75725,7 @@
     "title": "xmount - Mount an EWF image file with write-cache support into a VHD file to boot from",
     "content": "xmount --cache {{path/to/cache.ovl}} --in {{ewf}} {{path/to/image.E??}} --out {{vhd}} {{mountpoint}}",
     "group": "Linux Ops",
-    "description": "xmount: Convert on-the-fly between multiple input and output hard disk image types with optional write cache support. Create a virtual file system using FUSE (Filesystem in Userspace) that contains a virtual representation of the input image. (Mount an EWF image file with write-cache support into a VHD file to boot from)",
+    "description": "xmount: Convert on-the-fly between multiple input and output hard disk image types with optional write cache support. Create a virtual filesystem using FUSE (Filesystem in Userspace) that contains a virtual representation of the input image. (Mount an EWF image file with write-cache support into a VHD file to boot from)",
     "tags": [
       "linux",
       "xmount",
@@ -75290,7 +75740,7 @@
     "title": "xmount - Mount the first partition at sector 2048 into a new `.raw` image file",
     "content": "xmount --offset {{2048}} --in {{raw}} {{path/to/image.dd}} --out {{raw}} {{mountpoint}}",
     "group": "Linux Ops",
-    "description": "xmount: Convert on-the-fly between multiple input and output hard disk image types with optional write cache support. Create a virtual file system using FUSE (Filesystem in Userspace) that contains a virtual representation of the input image. (Mount the first partition at sector 2048 into a new `.raw` image file)",
+    "description": "xmount: Convert on-the-fly between multiple input and output hard disk image types with optional write cache support. Create a virtual filesystem using FUSE (Filesystem in Userspace) that contains a virtual representation of the input image. (Mount the first partition at sector 2048 into a new `.raw` image file)",
     "tags": [
       "linux",
       "xmount",
@@ -90600,111 +91050,6 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-sherlock-0",
-    "type": "command",
-    "title": "sherlock - Search for a specific username on social networks saving the results to a file",
-    "content": "sherlock {{username}} --output {{path/to/file}}",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Search for a specific username on social networks saving the results to a file)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-sherlock-1",
-    "type": "command",
-    "title": "sherlock - Search for specific usernames on social networks saving the results into a directory",
-    "content": "sherlock {{username1 username2 ...}} --folderoutput {{path/to/directory}}",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Search for specific usernames on social networks saving the results into a directory)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-sherlock-2",
-    "type": "command",
-    "title": "sherlock - Search for a specific username on social networks using the Tor network",
-    "content": "sherlock --tor {{username}}",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Search for a specific username on social networks using the Tor network)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-sherlock-3",
-    "type": "command",
-    "title": "sherlock - Make requests over Tor with a new Tor circuit after each request",
-    "content": "sherlock --unique-tor {{username}}",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Make requests over Tor with a new Tor circuit after each request)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-sherlock-4",
-    "type": "command",
-    "title": "sherlock - Search for a specific username on social networks using a proxy",
-    "content": "sherlock {{username}} --proxy {{proxy_url}}",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Search for a specific username on social networks using a proxy)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-sherlock-5",
-    "type": "command",
-    "title": "sherlock - Search for a specific username on social networks and open results in the default web browser",
-    "content": "sherlock {{username}} --browse",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Search for a specific username on social networks and open results in the default web browser)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-sherlock-6",
-    "type": "command",
-    "title": "sherlock - Display help",
-    "content": "sherlock --help",
-    "group": "Linux Ops",
-    "description": "sherlock: Find usernames across social networks. (Display help)",
-    "tags": [
-      "linux",
-      "sherlock",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
     "id": "tldr-en-linux-aa-teardown-0",
     "type": "command",
     "title": "aa-teardown - Disable all AppArmor profiles and stop enforcement",
@@ -102489,6 +102834,81 @@
     "tags": [
       "linux",
       "iwlist",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-resample-0",
+    "type": "command",
+    "title": "spa-resample - Resample an audio file",
+    "content": "spa-resample {{path/to/input.wav}} {{path/to/output.wav}}",
+    "group": "Linux Ops",
+    "description": "spa-resample: Resample an audio file using the PipeWire resampler. Note: This utility is primarily intended for testing and debugging the resampler. (Resample an audio file)",
+    "tags": [
+      "linux",
+      "spa-resample",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-resample-1",
+    "type": "command",
+    "title": "spa-resample - Resample an audio file to a specific sample rate",
+    "content": "spa-resample {{[-r|--rate]}} {{48000}} {{path/to/input.wav}} {{path/to/output.wav}}",
+    "group": "Linux Ops",
+    "description": "spa-resample: Resample an audio file using the PipeWire resampler. Note: This utility is primarily intended for testing and debugging the resampler. (Resample an audio file to a specific sample rate)",
+    "tags": [
+      "linux",
+      "spa-resample",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-resample-2",
+    "type": "command",
+    "title": "spa-resample - Resample an audio file to a specific format",
+    "content": "spa-resample {{[-f|--format]}} {{s8|s16|s32|f32|f64}} {{path/to/input.wav}} {{path/to/output.wav}}",
+    "group": "Linux Ops",
+    "description": "spa-resample: Resample an audio file using the PipeWire resampler. Note: This utility is primarily intended for testing and debugging the resampler. (Resample an audio file to a specific format)",
+    "tags": [
+      "linux",
+      "spa-resample",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-resample-3",
+    "type": "command",
+    "title": "spa-resample - Resample an audio file with a specific quality (0 is lowest, 14 is highest)",
+    "content": "spa-resample {{[-q|--quality]}} {{0..14}} {{path/to/input.wav}} {{path/to/output.wav}}",
+    "group": "Linux Ops",
+    "description": "spa-resample: Resample an audio file using the PipeWire resampler. Note: This utility is primarily intended for testing and debugging the resampler. (Resample an audio file with a specific quality (0 is lowest, 14 is highest))",
+    "tags": [
+      "linux",
+      "spa-resample",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-resample-4",
+    "type": "command",
+    "title": "spa-resample - Display help",
+    "content": "spa-resample -h",
+    "group": "Linux Ops",
+    "description": "spa-resample: Resample an audio file using the PipeWire resampler. Note: This utility is primarily intended for testing and debugging the resampler. (Display help)",
+    "tags": [
+      "linux",
+      "spa-resample",
       "tldr",
       "en"
     ],
@@ -114860,7 +115280,7 @@
     "title": "systemd-dissect - Show general image information about the OS image",
     "content": "systemd-dissect {{path/to/image.raw}}",
     "group": "Linux Ops",
-    "description": "systemd-dissect: Introspect and interact with file system OS disk images, specifically Discoverable Disk Images (DDIs). (Show general image information about the OS image)",
+    "description": "systemd-dissect: Introspect and interact with filesystem OS disk images, specifically Discoverable Disk Images (DDIs). (Show general image information about the OS image)",
     "tags": [
       "linux",
       "systemd-dissect",
@@ -114875,7 +115295,7 @@
     "title": "systemd-dissect - Mount an OS image",
     "content": "systemd-dissect {{[-m|--mount]}} {{path/to/image.raw}} {{/mnt/image}}",
     "group": "Linux Ops",
-    "description": "systemd-dissect: Introspect and interact with file system OS disk images, specifically Discoverable Disk Images (DDIs). (Mount an OS image)",
+    "description": "systemd-dissect: Introspect and interact with filesystem OS disk images, specifically Discoverable Disk Images (DDIs). (Mount an OS image)",
     "tags": [
       "linux",
       "systemd-dissect",
@@ -114890,7 +115310,7 @@
     "title": "systemd-dissect - Unmount an OS image",
     "content": "systemd-dissect {{[-u|--umount]}} {{/mnt/image}}",
     "group": "Linux Ops",
-    "description": "systemd-dissect: Introspect and interact with file system OS disk images, specifically Discoverable Disk Images (DDIs). (Unmount an OS image)",
+    "description": "systemd-dissect: Introspect and interact with filesystem OS disk images, specifically Discoverable Disk Images (DDIs). (Unmount an OS image)",
     "tags": [
       "linux",
       "systemd-dissect",
@@ -114905,7 +115325,7 @@
     "title": "systemd-dissect - List files in an image",
     "content": "systemd-dissect {{[-l|--list]}} {{path/to/image.raw}}",
     "group": "Linux Ops",
-    "description": "systemd-dissect: Introspect and interact with file system OS disk images, specifically Discoverable Disk Images (DDIs). (List files in an image)",
+    "description": "systemd-dissect: Introspect and interact with filesystem OS disk images, specifically Discoverable Disk Images (DDIs). (List files in an image)",
     "tags": [
       "linux",
       "systemd-dissect",
@@ -114920,7 +115340,7 @@
     "title": "systemd-dissect - Attach an OS image to an automatically allocated loopback block device and print its path",
     "content": "systemd-dissect --attach {{path/to/image.raw}}",
     "group": "Linux Ops",
-    "description": "systemd-dissect: Introspect and interact with file system OS disk images, specifically Discoverable Disk Images (DDIs). (Attach an OS image to an automatically allocated loopback block device and print its path)",
+    "description": "systemd-dissect: Introspect and interact with filesystem OS disk images, specifically Discoverable Disk Images (DDIs). (Attach an OS image to an automatically allocated loopback block device and print its path)",
     "tags": [
       "linux",
       "systemd-dissect",
@@ -114935,7 +115355,7 @@
     "title": "systemd-dissect - Detach an OS image from a loopback block device",
     "content": "systemd-dissect --detach {{path/to/device}}",
     "group": "Linux Ops",
-    "description": "systemd-dissect: Introspect and interact with file system OS disk images, specifically Discoverable Disk Images (DDIs). (Detach an OS image from a loopback block device)",
+    "description": "systemd-dissect: Introspect and interact with filesystem OS disk images, specifically Discoverable Disk Images (DDIs). (Detach an OS image from a loopback block device)",
     "tags": [
       "linux",
       "systemd-dissect",
@@ -117729,6 +118149,66 @@
     "tags": [
       "linux",
       "qm-rescan",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-imp-0",
+    "type": "command",
+    "title": "imp - Initialize the helper functions and keep WSL running until explicit shutdown (run once, at start)",
+    "content": "imp {{[-i|--initialize]}}",
+    "group": "Linux Ops",
+    "description": "imp: A helper to use native systemd support under WSL (Windows Subsystem for Linux). Note: To run these from Windows rather than an already-running distribution, precede them with `wsl`. (Initialize the helper functions and keep WSL running until explicit shutdown (run once, at start))",
+    "tags": [
+      "linux",
+      "imp",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-imp-1",
+    "type": "command",
+    "title": "imp - Run a shell inside a systemd user session",
+    "content": "imp {{[-s|--shell]}}",
+    "group": "Linux Ops",
+    "description": "imp: A helper to use native systemd support under WSL (Windows Subsystem for Linux). Note: To run these from Windows rather than an already-running distribution, precede them with `wsl`. (Run a shell inside a systemd user session)",
+    "tags": [
+      "linux",
+      "imp",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-imp-2",
+    "type": "command",
+    "title": "imp - Run a specified command inside a systemd user session (preserves working directory)",
+    "content": "imp {{[-c|--command]}} {{command}}",
+    "group": "Linux Ops",
+    "description": "imp: A helper to use native systemd support under WSL (Windows Subsystem for Linux). Note: To run these from Windows rather than an already-running distribution, precede them with `wsl`. (Run a specified command inside a systemd user session (preserves working directory))",
+    "tags": [
+      "linux",
+      "imp",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-imp-3",
+    "type": "command",
+    "title": "imp - Shut down systemd and the WSL instance",
+    "content": "imp {{[-u|--shutdown]}}",
+    "group": "Linux Ops",
+    "description": "imp: A helper to use native systemd support under WSL (Windows Subsystem for Linux). Note: To run these from Windows rather than an already-running distribution, precede them with `wsl`. (Shut down systemd and the WSL instance)",
+    "tags": [
+      "linux",
+      "imp",
       "tldr",
       "en"
     ],

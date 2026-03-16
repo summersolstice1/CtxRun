@@ -12512,10 +12512,10 @@
   {
     "id": "tldr-en-osx-diskutil-partitiondisk-4",
     "type": "command",
-    "title": "diskutil-partitiondisk - List all supported file systems for partitioning",
+    "title": "diskutil-partitiondisk - List all supported filesystems for partitioning",
     "content": "diskutil listFilesystems",
     "group": "macOS",
-    "description": "diskutil-partitiondisk: Utility to manage partitions inside disks and volumes. Part of `diskutil`. APM is only supported for macOS, MBR is optimized for DOS, while GPT is compatible for most modern systems. (List all supported file systems for partitioning)",
+    "description": "diskutil-partitiondisk: Utility to manage partitions inside disks and volumes. Part of `diskutil`. APM is only supported for macOS, MBR is optimized for DOS, while GPT is compatible for most modern systems. (List all supported filesystems for partitioning)",
     "tags": [
       "osx",
       "diskutil-partitiondisk",
@@ -14120,7 +14120,7 @@
     "title": "cvfsck - Check an Xsan volume for metadata corruption (read-only mode)",
     "content": "sudo cvfsck {{/Volumes/XsanVolume}}",
     "group": "macOS",
-    "description": "cvfsck: Check and repair an Xsan file system volume. Part of the Xsan file system utilities on macOS. (Check an Xsan volume for metadata corruption (read-only mode))",
+    "description": "cvfsck: Check and repair an Xsan filesystem volume. Part of the Xsan filesystem utilities on macOS. (Check an Xsan volume for metadata corruption (read-only mode))",
     "tags": [
       "osx",
       "cvfsck",
@@ -14135,7 +14135,7 @@
     "title": "cvfsck - Repair a corrupted Xsan volume (make modifications to fix problems)",
     "content": "sudo cvfsck -w {{/Volumes/XsanVolume}}",
     "group": "macOS",
-    "description": "cvfsck: Check and repair an Xsan file system volume. Part of the Xsan file system utilities on macOS. (Repair a corrupted Xsan volume (make modifications to fix problems))",
+    "description": "cvfsck: Check and repair an Xsan filesystem volume. Part of the Xsan filesystem utilities on macOS. (Repair a corrupted Xsan volume (make modifications to fix problems))",
     "tags": [
       "osx",
       "cvfsck",
@@ -14150,7 +14150,7 @@
     "title": "cvfsck - Log problems to the system log (used mainly during automatic startup checks)",
     "content": "sudo cvfsck -l {{/Volumes/XsanVolume}}",
     "group": "macOS",
-    "description": "cvfsck: Check and repair an Xsan file system volume. Part of the Xsan file system utilities on macOS. (Log problems to the system log (used mainly during automatic startup checks))",
+    "description": "cvfsck: Check and repair an Xsan filesystem volume. Part of the Xsan filesystem utilities on macOS. (Log problems to the system log (used mainly during automatic startup checks))",
     "tags": [
       "osx",
       "cvfsck",
@@ -14165,7 +14165,7 @@
     "title": "cvfsck - Report free-space fragmentation on an Xsan volume",
     "content": "sudo cvfsck -f {{/Volumes/XsanVolume}}",
     "group": "macOS",
-    "description": "cvfsck: Check and repair an Xsan file system volume. Part of the Xsan file system utilities on macOS. (Report free-space fragmentation on an Xsan volume)",
+    "description": "cvfsck: Check and repair an Xsan filesystem volume. Part of the Xsan filesystem utilities on macOS. (Report free-space fragmentation on an Xsan volume)",
     "tags": [
       "osx",
       "cvfsck",
@@ -14180,7 +14180,7 @@
     "title": "xsand - Start the daemon",
     "content": "xsand",
     "group": "macOS",
-    "description": "xsand: Xsan file system management daemon. Provides services for the Xsan file system. It should not be invoked manually. (Start the daemon)",
+    "description": "xsand: Xsan filesystem management daemon. Provides services for the Xsan filesystem. It should not be invoked manually. (Start the daemon)",
     "tags": [
       "osx",
       "xsand",

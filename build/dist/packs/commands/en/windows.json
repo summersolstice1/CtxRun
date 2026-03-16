@@ -2732,10 +2732,10 @@
   {
     "id": "tldr-en-windows-set-volume-0",
     "type": "command",
-    "title": "set-volume - Change the file system label of a volume identified by drive letter",
+    "title": "set-volume - Change the filesystem label of a volume identified by drive letter",
     "content": "Set-Volume -DriveLetter \"D\" -NewFileSystemLabel \"DataVolume\"",
     "group": "Windows",
-    "description": "set-volume: Set or change the file system label of an existing volume. Note: This command can only be used through PowerShell. (Change the file system label of a volume identified by drive letter)",
+    "description": "set-volume: Set or change the filesystem label of an existing volume. Note: This command can only be used through PowerShell. (Change the filesystem label of a volume identified by drive letter)",
     "tags": [
       "windows",
       "set-volume",
@@ -2747,10 +2747,10 @@
   {
     "id": "tldr-en-windows-set-volume-1",
     "type": "command",
-    "title": "set-volume - Change the file system label of a volume identified by the system label",
+    "title": "set-volume - Change the filesystem label of a volume identified by the system label",
     "content": "Set-Volume -FileSystemLabel \"OldLabel\" -NewFileSystemLabel \"NewLabel\"",
     "group": "Windows",
-    "description": "set-volume: Set or change the file system label of an existing volume. Note: This command can only be used through PowerShell. (Change the file system label of a volume identified by the system label)",
+    "description": "set-volume: Set or change the filesystem label of an existing volume. Note: This command can only be used through PowerShell. (Change the filesystem label of a volume identified by the system label)",
     "tags": [
       "windows",
       "set-volume",
@@ -2765,7 +2765,7 @@
     "title": "set-volume - Modify the properties of a volume using a volume object",
     "content": "Set-Volume -InputObject $(Get-Volume -DriveLetter \"E\") -NewFileSystemLabel \"Backup\"",
     "group": "Windows",
-    "description": "set-volume: Set or change the file system label of an existing volume. Note: This command can only be used through PowerShell. (Modify the properties of a volume using a volume object)",
+    "description": "set-volume: Set or change the filesystem label of an existing volume. Note: This command can only be used through PowerShell. (Modify the properties of a volume using a volume object)",
     "tags": [
       "windows",
       "set-volume",
@@ -2780,7 +2780,7 @@
     "title": "set-volume - Specify the Data Deduplication mode for the volume",
     "content": "Set-Volume -DriveLetter \"D\" -DedupMode Backup",
     "group": "Windows",
-    "description": "set-volume: Set or change the file system label of an existing volume. Note: This command can only be used through PowerShell. (Specify the Data Deduplication mode for the volume)",
+    "description": "set-volume: Set or change the filesystem label of an existing volume. Note: This command can only be used through PowerShell. (Specify the Data Deduplication mode for the volume)",
     "tags": [
       "windows",
       "set-volume",
@@ -8270,7 +8270,7 @@
     "title": "fsutil - Display a list of volumes",
     "content": "fsutil volume list",
     "group": "Windows",
-    "description": "fsutil: Display information about file system volumes. (Display a list of volumes)",
+    "description": "fsutil: Display information about filesystem volumes. (Display a list of volumes)",
     "tags": [
       "windows",
       "fsutil",
@@ -8282,10 +8282,10 @@
   {
     "id": "tldr-en-windows-fsutil-1",
     "type": "command",
-    "title": "fsutil - Display information about a volume's file system",
+    "title": "fsutil - Display information about a volume's filesystem",
     "content": "fsutil fsInfo volumeInfo {{drive_letter|volume_path}}",
     "group": "Windows",
-    "description": "fsutil: Display information about file system volumes. (Display information about a volume's file system)",
+    "description": "fsutil: Display information about filesystem volumes. (Display information about a volume's filesystem)",
     "tags": [
       "windows",
       "fsutil",
@@ -8297,10 +8297,10 @@
   {
     "id": "tldr-en-windows-fsutil-2",
     "type": "command",
-    "title": "fsutil - Display the current state of the file system auto-repair for all volumes",
+    "title": "fsutil - Display the current state of the filesystem auto-repair for all volumes",
     "content": "fsutil repair state",
     "group": "Windows",
-    "description": "fsutil: Display information about file system volumes. (Display the current state of the file system auto-repair for all volumes)",
+    "description": "fsutil: Display information about filesystem volumes. (Display the current state of the filesystem auto-repair for all volumes)",
     "tags": [
       "windows",
       "fsutil",
@@ -8315,7 +8315,7 @@
     "title": "fsutil - Display the dirty bit state of all volumes",
     "content": "fsutil dirty query",
     "group": "Windows",
-    "description": "fsutil: Display information about file system volumes. (Display the dirty bit state of all volumes)",
+    "description": "fsutil: Display information about filesystem volumes. (Display the dirty bit state of all volumes)",
     "tags": [
       "windows",
       "fsutil",
@@ -8330,7 +8330,7 @@
     "title": "fsutil - Set the dirty bit state of a volume",
     "content": "fsutil dirty set {{drive_letter|volume_path}}",
     "group": "Windows",
-    "description": "fsutil: Display information about file system volumes. (Set the dirty bit state of a volume)",
+    "description": "fsutil: Display information about filesystem volumes. (Set the dirty bit state of a volume)",
     "tags": [
       "windows",
       "fsutil",
@@ -13295,7 +13295,7 @@
     "title": "chkdsk - Specify the drive letter (followed by a colon), mount point, or volume name to check",
     "content": "chkdsk {{volume}}",
     "group": "Windows",
-    "description": "chkdsk: Check file system and volume metadata for errors. (Specify the drive letter (followed by a colon), mount point, or volume name to check)",
+    "description": "chkdsk: Check filesystem and volume metadata for errors. (Specify the drive letter (followed by a colon), mount point, or volume name to check)",
     "tags": [
       "windows",
       "chkdsk",
@@ -13310,7 +13310,7 @@
     "title": "chkdsk - Fix errors on a specific volume",
     "content": "chkdsk {{volume}} /f",
     "group": "Windows",
-    "description": "chkdsk: Check file system and volume metadata for errors. (Fix errors on a specific volume)",
+    "description": "chkdsk: Check filesystem and volume metadata for errors. (Fix errors on a specific volume)",
     "tags": [
       "windows",
       "chkdsk",
@@ -13325,7 +13325,7 @@
     "title": "chkdsk - Dismount a specific volume before checking",
     "content": "chkdsk {{volume}} /x",
     "group": "Windows",
-    "description": "chkdsk: Check file system and volume metadata for errors. (Dismount a specific volume before checking)",
+    "description": "chkdsk: Check filesystem and volume metadata for errors. (Dismount a specific volume before checking)",
     "tags": [
       "windows",
       "chkdsk",
@@ -13340,7 +13340,7 @@
     "title": "chkdsk - Change the log file size to the specified size (only for NTFS)",
     "content": "chkdsk /l{{size}}",
     "group": "Windows",
-    "description": "chkdsk: Check file system and volume metadata for errors. (Change the log file size to the specified size (only for NTFS))",
+    "description": "chkdsk: Check filesystem and volume metadata for errors. (Change the log file size to the specified size (only for NTFS))",
     "tags": [
       "windows",
       "chkdsk",

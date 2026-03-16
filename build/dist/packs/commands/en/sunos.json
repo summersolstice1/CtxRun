@@ -107,10 +107,10 @@
   {
     "id": "tldr-en-sunos-share-0",
     "type": "command",
-    "title": "share - List all currently shared file systems",
+    "title": "share - List all currently shared filesystems",
     "content": "share",
     "group": "SunOS",
-    "description": "share: Make local resource/filesystem available for mounting by remote systems. (List all currently shared file systems)",
+    "description": "share: Make local resource/filesystem available for mounting by remote systems. (List all currently shared filesystems)",
     "tags": [
       "sunos",
       "share",
