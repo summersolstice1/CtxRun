@@ -3363,7 +3363,7 @@
     "id": "tldr-zh-linux-apt-file-1",
     "type": "command",
     "title": "apt-file - 查找包含指定文件或路径的软件包",
-    "content": "apt-file {{search|find}} {{文件路径}}",
+    "content": "apt-file {{[find|search]}} {{文件路径}}",
     "group": "Linux 运维",
     "description": "apt-file: 在 APT 软件包中查找文件，其中也包括未安装的软件。 (查找包含指定文件或路径的软件包)",
     "tags": [
@@ -3378,7 +3378,7 @@
     "id": "tldr-zh-linux-apt-file-2",
     "type": "command",
     "title": "apt-file - 列出指定包的内容",
-    "content": "apt-file {{show|list}} {{软件包名}}",
+    "content": "apt-file list {{软件包名}}",
     "group": "Linux 运维",
     "description": "apt-file: 在 APT 软件包中查找文件，其中也包括未安装的软件。 (列出指定包的内容)",
     "tags": [
@@ -3393,7 +3393,7 @@
     "id": "tldr-zh-linux-apt-file-3",
     "type": "command",
     "title": "apt-file - 查找符合给定 `pattern` 中`regex`式的软件包",
-    "content": "apt-file {{search|find}} {{[-x|--regexp]}} {{正则表达式}}",
+    "content": "apt-file {{[find|search]}} {{[-x|--regexp]}} {{正则表达式}}",
     "group": "Linux 运维",
     "description": "apt-file: 在 APT 软件包中查找文件，其中也包括未安装的软件。 (查找符合给定 `pattern` 中`regex`式的软件包)",
     "tags": [
