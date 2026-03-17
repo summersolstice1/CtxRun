@@ -549,7 +549,7 @@ const translations = {
     topbar: {
       openSwitcher: "Open module switcher",
       closeSwitcher: "Close module switcher",
-      dragHint: "Drag from center or click a module",
+      dragHint: "Click a module to switch",
       openSettings: "Open settings",
       backToModule: "Back to {{module}}"
     },
@@ -1257,7 +1257,7 @@ const translations = {
     topbar: {
       openSwitcher: "打开模块切换",
       closeSwitcher: "关闭模块切换",
-      dragHint: "从中心拖动或直接点击模块",
+      dragHint: "点击模块切换",
       openSettings: "打开设置",
       backToModule: "返回 {{module}}"
     },

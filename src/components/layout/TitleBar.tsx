@@ -7,7 +7,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { ClockPopover } from '@/components/ui/ClockPopover';
 import { WorkspaceSwitcher } from '@/components/layout/WorkspaceSwitcher';
 import { ViewSwitcher } from '@/components/layout/ViewSwitcher';
-import { isPrimaryAppView, type PrimaryAppView, getAdjacentPrimaryView } from '@/lib/app-navigation';
+import { isPrimaryAppView, type PrimaryAppView } from '@/lib/app-navigation';
 import { useTranslation } from 'react-i18next';
 
 const appWindow = getCurrentWebviewWindow()
@@ -108,7 +108,6 @@ export function TitleBar() {
           <ViewSwitcher
             activeView={activePrimaryView}
             onSelect={(view) => setView(view)}
-            onCycle={(delta) => setView(getAdjacentPrimaryView(activePrimaryView, delta))}
           />
         </div>
       </div>
