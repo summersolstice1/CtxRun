@@ -2,7 +2,7 @@ import { FileNode } from '@/types/context';
 import { AIModelConfig } from '@/types/model';
 import { getLanguageInfo } from '@/lib/langs';
 
-export interface LanguageStat {
+interface LanguageStat {
   name: string;
   count: number;
   size: number;
@@ -10,14 +10,14 @@ export interface LanguageStat {
   percentage: number;
 }
 
-export interface ModelCostStat {
+interface ModelCostStat {
   modelId: string;
   modelName: string;
   limit: number;
   cost: number;
 }
 
-export interface AnalyticsData {
+interface AnalyticsData {
   languages: LanguageStat[];
   topFiles: FileNode[];
   modelCosts: ModelCostStat[];

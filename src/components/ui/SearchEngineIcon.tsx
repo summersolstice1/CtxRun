@@ -4,7 +4,7 @@ import { BsBing } from "react-icons/bs";
 import { Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';
+type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';
 
 interface SearchEngineIconProps {
   engine: SearchEngineType | string;

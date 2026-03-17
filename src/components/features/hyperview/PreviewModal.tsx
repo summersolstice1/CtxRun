@@ -2,7 +2,11 @@ import { useEffect } from 'react';
 import { usePreviewStore } from '@/store/usePreviewStore';
 import { X, FileText } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ImageRenderer, MediaRenderer, CodeRenderer, MarkdownRenderer, BinaryRenderer } from './renderers';
+import { ImageRenderer } from './renderers/ImageRenderer';
+import { MediaRenderer } from './renderers/MediaRenderer';
+import { CodeRenderer } from './renderers/CodeRenderer';
+import { MarkdownRenderer } from './renderers/MarkdownRenderer';
+import { BinaryRenderer } from './renderers/BinaryRenderer';
 import { FileMeta } from '@/types/hyperview';
 
 export function PreviewModal() {

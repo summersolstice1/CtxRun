@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 const DEFAULT_LINK_CLASSNAME =
   'font-medium underline decoration-dotted underline-offset-4 text-primary hover:text-primary/80 transition-colors';
 
-export interface MarkdownContentProps extends HTMLAttributes<HTMLDivElement> {
+interface MarkdownContentProps extends HTMLAttributes<HTMLDivElement> {
   content: string;
   linkClassName?: string;
   inlineCodeClassName?: string;

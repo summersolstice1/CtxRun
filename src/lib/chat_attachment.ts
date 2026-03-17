@@ -55,7 +55,7 @@ interface ParseOptions {
   existingBytes: number;
 }
 
-export interface ParseAttachmentResult {
+interface ParseAttachmentResult {
   items: ChatAttachment[];
   errors: ChatAttachmentError[];
 }

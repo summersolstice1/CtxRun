@@ -19,7 +19,7 @@ export const PRIMARY_APP_VIEWS = [
 
 export type PrimaryAppView = (typeof PRIMARY_APP_VIEWS)[number];
 
-export interface AppNavigationItem {
+interface AppNavigationItem {
   id: PrimaryAppView;
   hotkey: number;
   icon: LucideIcon;
@@ -40,7 +40,7 @@ export function isPrimaryAppView(view: string): view is PrimaryAppView {
   return PRIMARY_APP_VIEWS.includes(view as PrimaryAppView);
 }
 
-export function getPrimaryViewIndex(view: PrimaryAppView): number {
+function getPrimaryViewIndex(view: PrimaryAppView): number {
   return PRIMARY_APP_VIEWS.indexOf(view);
 }
 

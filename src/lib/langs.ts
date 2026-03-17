@@ -3,7 +3,7 @@
  * 用于文件扩展名到语言名称/颜色的映射
  */
 
-export interface LanguageInfo {
+interface LanguageInfo {
   name: string;
   color: string; // Tailwind CSS class
   monacoLanguage?: string; // Monaco Editor language identifier
@@ -107,12 +107,4 @@ export function getLanguageInfo(filePath: string): LanguageInfo {
  */
 export function getMonacoLanguage(filePath: string): string {
   return getLanguageInfo(filePath).monacoLanguage || 'plaintext';
-}
-
-/**
- * 获取所有支持的语言映射
- * @returns 语言映射对象的副本
- */
-export function getLanguageMap(): typeof LANGUAGE_MAP {
-  return { ...LANGUAGE_MAP };
 }

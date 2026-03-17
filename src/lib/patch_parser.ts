@@ -1,11 +1,5 @@
 import { FilePatch, PatchOperation } from '@/components/features/patch/patch_types';
 
-export interface ApplyResult {
-  modified: string;
-  success: boolean;
-  errors: string[];
-}
-
 export function parseMultiFilePatch(text: string): FilePatch[] {
   const filePatches: FilePatch[] = [];
 
@@ -60,77 +54,4 @@ function parseOperations(content: string): PatchOperation[] {
     });
   }
   return ops;
-}
-
-export function applyPatches(originalCode: string, operations: PatchOperation[]): ApplyResult {
-  let currentCode = originalCode;
-  const errors: string[] = [];
-
-  for (const op of operations) {
-    const searchBlock = op.originalBlock;
-    const replaceBlock = op.modifiedBlock;
-
-    if (currentCode.includes(searchBlock)) {
-      currentCode = currentCode.replace(searchBlock, replaceBlock);
-      continue;
-    }
-
-    const normalizedCode = currentCode.replace(/\r\n/g, '\n');
-    const normalizedSearch = searchBlock.replace(/\r\n/g, '\n');
-    if (normalizedCode.includes(normalizedSearch)) {
-       currentCode = normalizedCode.replace(normalizedSearch, replaceBlock);
-       continue;
-    }
-
-    const matchResult = fuzzyReplace(currentCode, searchBlock, replaceBlock);
-    if (matchResult.success) {
-        currentCode = matchResult.newCode;
-    } else {
-        errors.push(`Could not locate block:\n${searchBlock.substring(0, 50)}...`);
-    }
-  }
-
-  return {
-    modified: currentCode,
-    success: errors.length === 0,
-    errors
-  };
-}
-
-function fuzzyReplace(source: string, search: string, replacement: string): { success: boolean, newCode: string } {
-    const sourceMap: number[] = [];
-    let sourceStream = '';
-
-    for (let i = 0; i < source.length; i++) {
-        const char = source[i];
-        if (!/\s/.test(char)) {
-            sourceStream += char;
-            sourceMap.push(i);
-        }
-    }
-
-    const searchStream = search.replace(/\s/g, '');
-
-    if (searchStream.length === 0) return { success: false, newCode: source };
-
-    const streamIndex = sourceStream.indexOf(searchStream);
-
-    if (streamIndex === -1) {
-        return { success: false, newCode: source };
-    }
-
-    const originalStartIndex = sourceMap[streamIndex];
-
-    const lastCharIndexInStream = streamIndex + searchStream.length - 1;
-
-    const originalEndIndex = sourceMap[lastCharIndexInStream] + 1;
-
-    let finalEndIndex = originalEndIndex;
-    while (finalEndIndex < source.length && /[ \t]/.test(source[finalEndIndex])) {
-        finalEndIndex++;
-    }
-
-    const newCode = source.slice(0, originalStartIndex) + replacement + source.slice(finalEndIndex);
-
-    return { success: true, newCode };
 }

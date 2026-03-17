@@ -35,7 +35,7 @@ export function calculateIdealTreeWidth(nodes: FileNode[]): number {
 }
 
 // 扁平化节点接口
-export interface FlatNode {
+interface FlatNode {
   node: FileNode;
   depth: number;
   hasChildren: boolean;

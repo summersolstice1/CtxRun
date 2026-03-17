@@ -9,7 +9,7 @@ import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
 import { useContextStore } from './useContextStore';
 
-export type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner' | 'settings';
+type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner' | 'settings';
 export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';
@@ -68,7 +68,7 @@ export interface RefinerySettings {
   keepPinned: boolean;
 }
 
-export const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
+const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
   enabled: false,
   strategy: 'count',
   days: 30,
@@ -76,7 +76,7 @@ export const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
   keepPinned: true,
 };
 
-export type WindowDestroyDelay = number;
+type WindowDestroyDelay = number;
 
 const MAX_RECENT_PROJECT_ROOTS = 5;
 

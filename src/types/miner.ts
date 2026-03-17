@@ -71,7 +71,7 @@ export interface WebSearchItem {
   host: string;
 }
 
-export interface WebSearchDebugItem {
+interface WebSearchDebugItem {
   title: string;
   url: string;
   snippet: string;

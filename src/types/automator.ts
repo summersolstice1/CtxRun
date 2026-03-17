@@ -146,12 +146,3 @@ export interface Workflow {
   flowNodes?: any[];
   flowEdges?: any[];
 }
-
-export const DEFAULT_WORKFLOW: Workflow = {
-  id: 'default',
-  name: 'New Workflow',
-  actions: [],
-  repeatCount: 1,
-  flowNodes: [],
-  flowEdges: []
-};

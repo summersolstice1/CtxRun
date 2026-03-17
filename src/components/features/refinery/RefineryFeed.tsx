@@ -200,8 +200,8 @@ export function RefineryFeed() {
   );
 }
 
-// 导出 FeedCard 供 BundleCard 使用，增加 extraBadge 和 className 参数
-export function FeedCard({
+// FeedCard 作为组件引用传给 BundleCard 使用，增加 extraBadge 和 className 参数
+function FeedCard({
   item,
   isActive,
   onClick,

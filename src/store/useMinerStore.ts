@@ -20,7 +20,7 @@ const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-miner|';
 let listenersInitInFlight = false;
 
 // 默认配置
-export const DEFAULT_MINER_CONFIG: MinerConfig = {
+const DEFAULT_MINER_CONFIG: MinerConfig = {
   url: 'https://react.dev/reference/react/',
   matchPrefix: 'https://react.dev/reference/react/',
   maxDepth: 2,

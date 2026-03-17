@@ -45,9 +45,3 @@ export interface SpotlightItem {
   // 3. 增加剪贴板特有字段
   isImage?: boolean;
 }
-
-export interface SpotlightState {
-  mode: SpotlightMode;
-  query: string;
-  chatInput: string;
-}

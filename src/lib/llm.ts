@@ -84,14 +84,14 @@ export interface ChatCompletionResult {
   };
 }
 
-export interface ChatCompletionOptions {
+interface ChatCompletionOptions {
   tools?: ChatToolDefinition[];
   toolChoice?: 'auto' | 'none' | { type: 'function'; function: { name: string } };
   temperature?: number;
   maxTokens?: number;
 }
 
-export interface ChatCompletionStreamCallbacks {
+interface ChatCompletionStreamCallbacks {
   onContentDelta?: (delta: string) => void;
   onReasoningDelta?: (delta: string) => void;
 }
@@ -317,41 +317,6 @@ function emitCompletionToStreamCallbacks(
   if (completion.content) {
     callbacks.onContentDelta?.(completion.content);
   }
-}
-
-export async function createChatCompletion(
-  messages: ChatRequestMessage[],
-  config: AIProviderConfig,
-  options: ChatCompletionOptions = {}
-): Promise<ChatCompletionResult> {
-  if (!config.apiKey) {
-    throw new Error("API Key not configured. Please go to Settings.");
-  }
-
-  const body = buildChatRequestBody(messages, config, options, false);
-
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const responseText = await response.text();
-  if (!response.ok) {
-    throw new Error(`API Error ${response.status}: ${responseText}`);
-  }
-
-  let payload: unknown;
-  try {
-    payload = JSON.parse(responseText);
-  } catch {
-    throw new Error("Invalid JSON response from chat completion API.");
-  }
-
-  return parseChatCompletionPayload(payload);
 }
 
 export async function streamChatCompletionWithTools(

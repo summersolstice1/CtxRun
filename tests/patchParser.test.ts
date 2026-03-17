@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyPatches, parseMultiFilePatch } from '@/lib/patch_parser';
+import { parseMultiFilePatch } from '@/lib/patch_parser';
 
 describe('patch parser', () => {
   it('parses patch without file headers into current_file bucket', () => {
@@ -50,51 +50,5 @@ console.log("a", a);
 
     expect(aPatch?.operations).toHaveLength(2);
     expect(bPatch?.operations).toHaveLength(1);
-  });
-
-  it('applyPatches replaces exact match blocks', () => {
-    const source = 'const value = 1;\nconsole.log(value);\n';
-    const result = applyPatches(source, [
-      { originalBlock: 'const value = 1;', modifiedBlock: 'const value = 2;' },
-    ]);
-
-    expect(result.success).toBe(true);
-    expect(result.errors).toEqual([]);
-    expect(result.modified).toContain('const value = 2;');
-  });
-
-  it('applyPatches supports newline normalization between CRLF and LF', () => {
-    const source = 'line1\r\nline2\r\n';
-    const result = applyPatches(source, [
-      { originalBlock: 'line1\nline2\n', modifiedBlock: 'line1\nchanged\n' },
-    ]);
-
-    expect(result.success).toBe(true);
-    expect(result.modified).toContain('changed');
-  });
-
-  it('applyPatches can fuzzy replace when whitespace differs', () => {
-    const source = 'function test() {\n  const x = 1;    \n}\n';
-    const result = applyPatches(source, [
-      {
-        originalBlock: 'function test(){const x=1;}',
-        modifiedBlock: 'function test() {\n  const x = 2;\n}',
-      },
-    ]);
-
-    expect(result.success).toBe(true);
-    expect(result.modified).toContain('const x = 2;');
-  });
-
-  it('applyPatches reports errors when block is missing', () => {
-    const source = 'alpha\nbeta\n';
-    const result = applyPatches(source, [
-      { originalBlock: 'gamma', modifiedBlock: 'delta' },
-    ]);
-
-    expect(result.success).toBe(false);
-    expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('Could not locate block');
-    expect(result.modified).toBe(source);
   });
 });
