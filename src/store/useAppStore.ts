@@ -89,7 +89,6 @@ function buildRecentProjectRoots(current: string[], path: string | null): string
 
 interface AppState {
   currentView: AppView;
-  isSidebarOpen: boolean;
   isMonitorOpen: boolean;
   isPromptSidebarOpen: boolean;
   isContextSidebarOpen: boolean;
@@ -123,7 +122,6 @@ interface AppState {
   setView: (view: AppView) => void;
   setProjectRoot: (path: string | null) => void;
   clearProjectRoot: () => void;
-  toggleSidebar: () => void;
   setMonitorOpen: (open: boolean) => void;
   setPromptSidebarOpen: (open: boolean) => void;
   setContextSidebarOpen: (open: boolean) => void;
@@ -148,7 +146,6 @@ export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
       currentView: 'prompts',
-      isSidebarOpen: true,
       isMonitorOpen: false,
       isPromptSidebarOpen: true,
       isContextSidebarOpen: true,
@@ -213,7 +210,6 @@ export const useAppStore = create<AppState>()(
           void contextState.setProjectRoot(null);
         }
       },
-      toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
       setMonitorOpen: (open) => set({ isMonitorOpen: open }),
       setPromptSidebarOpen: (open) => set({ isPromptSidebarOpen: open }),
       setContextSidebarOpen: (open) => set({ isContextSidebarOpen: open }),
@@ -366,7 +362,6 @@ export const useAppStore = create<AppState>()(
         recentProjectRoots: state.recentProjectRoots,
         spotlightShortcut: state.spotlightShortcut,
         automatorShortcut: state.automatorShortcut,
-        isSidebarOpen: state.isSidebarOpen,
         isPromptSidebarOpen: state.isPromptSidebarOpen,
         isContextSidebarOpen: state.isContextSidebarOpen,
         contextSidebarWidth: state.contextSidebarWidth,

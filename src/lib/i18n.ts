@@ -546,6 +546,13 @@ const translations = {
       outputHint: "Uses the current workspace as the output directory.",
       rescan: "Rescan"
     },
+    topbar: {
+      openSwitcher: "Open module switcher",
+      closeSwitcher: "Close module switcher",
+      dragHint: "Drag from center or click a module",
+      openSettings: "Open settings",
+      backToModule: "Back to {{module}}"
+    },
     common: {
       highRiskWarning: "High risk action. Please review carefully.",
       selectFolder: "Select folder",
@@ -1246,6 +1253,13 @@ const translations = {
       sharedHint: "该工作区会被文件整合、Git、知识抓取和命令执行共同使用。",
       outputHint: "输出目录跟随当前工作区。",
       rescan: "重新扫描"
+    },
+    topbar: {
+      openSwitcher: "打开模块切换",
+      closeSwitcher: "关闭模块切换",
+      dragHint: "从中心拖动或直接点击模块",
+      openSettings: "打开设置",
+      backToModule: "返回 {{module}}"
     },
     common: {
       highRiskWarning: "高风险操作，请仔细审查！",
