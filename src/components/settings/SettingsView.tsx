@@ -41,8 +41,6 @@ export function SettingsView() {
     setSpotlightShortcut,
     automatorShortcut,
     setAutomatorShortcut,
-    restReminder,
-    setRestReminder,
     windowDestroyDelay,
     setWindowDestroyDelay,
     spotlightAppearance,
@@ -67,8 +65,6 @@ export function SettingsView() {
       state.setSpotlightShortcut,
       state.automatorShortcut,
       state.setAutomatorShortcut,
-      state.restReminder,
-      state.setRestReminder,
       state.windowDestroyDelay,
       state.setWindowDestroyDelay,
       state.spotlightAppearance,
@@ -127,8 +123,6 @@ export function SettingsView() {
             setAutomatorShortcut={setAutomatorShortcut}
             spotlightAppearance={spotlightAppearance}
             setSpotlightAppearance={setSpotlightAppearance}
-            restReminder={restReminder}
-            setRestReminder={setRestReminder}
             windowDestroyDelay={windowDestroyDelay}
             setWindowDestroyDelay={setWindowDestroyDelay}
             formatDuration={formatDuration}

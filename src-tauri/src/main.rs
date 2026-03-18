@@ -27,7 +27,6 @@ mod agent_tools;
 mod apps;
 mod error;
 mod monitor;
-mod scheduler;
 mod shortcuts;
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -218,7 +217,6 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _argv, _cwd| {
             ensure_main_window(app);
@@ -280,15 +278,10 @@ fn main() {
             monitor::diagnose_network,
             monitor::get_ai_context,
             ctxrun_hyperview::get_file_meta,
-            scheduler::update_reminder_config,
         ])
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
-            app.manage(scheduler::ReminderState(std::sync::Mutex::new(
-                scheduler::ReminderConfig::default(),
-            )));
-            scheduler::start_background_task(app.handle().clone());
 
             match db::init_db(app.handle()) {
                 Ok(conn) => {

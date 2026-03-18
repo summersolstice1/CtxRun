@@ -22,7 +22,6 @@ tauri-plugin-dialog = "2"
 tauri-plugin-http = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-os = "2"
-tauri-plugin-notification = "2"
 tauri-plugin-single-instance = { version = "2" }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin = "2"
@@ -105,7 +104,6 @@ tauri-plugin-dialog = { workspace = true }
 tauri-plugin-http = { workspace = true }
 tauri-plugin-clipboard-manager = { workspace = true }
 tauri-plugin-os = { workspace = true }
-tauri-plugin-notification = { workspace = true }
 sysinfo = "0.37"
 git2 = { workspace = true }
 chrono = "0.4"

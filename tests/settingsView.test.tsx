@@ -27,8 +27,6 @@ const { invokeMock, useAppStoreMock, appStoreState } = vi.hoisted(() => {
     setSpotlightShortcut: vi.fn(),
     automatorShortcut: 'Alt+F1',
     setAutomatorShortcut: vi.fn(),
-    restReminder: { enabled: false, intervalMinutes: 45 },
-    setRestReminder: vi.fn(),
     windowDestroyDelay: 0,
     setWindowDestroyDelay: vi.fn(),
     spotlightAppearance: { width: 640, defaultHeight: 400, maxChatHeight: 600 },

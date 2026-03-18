@@ -62,7 +62,6 @@
       ]
     },
     "core:app:allow-identifier",
-    "notification:default",
 
     "ctxrun-plugin-automator:allow-execute-workflow",
     "ctxrun-plugin-automator:allow-execute-workflow-graph",

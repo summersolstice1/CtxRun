@@ -1,7 +1,6 @@
 import { useEffect, Suspense, lazy } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
-import { invoke } from '@tauri-apps/api/core';
 import { Loader2 } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { TitleBar } from "@/components/layout/TitleBar";
@@ -22,14 +21,13 @@ const SystemMonitorModal = lazy(() => import('@/components/features/monitor/Syst
 const appWindow = getCurrentWebviewWindow()
 
 function App() {
-  const [currentView, theme, setTheme, syncModels, lastUpdated, restReminder] = useAppStore(
+  const [currentView, theme, setTheme, syncModels, lastUpdated] = useAppStore(
     useShallow((state) => [
       state.currentView,
       state.theme,
       state.setTheme,
       state.syncModels,
       state.lastUpdated,
-      state.restReminder,
     ])
   );
   const { t } = useTranslation();
@@ -101,15 +99,6 @@ function App() {
         void syncModels();
     }
   }, [lastUpdated, syncModels]);
-
-  useEffect(() => {
-    void invoke('update_reminder_config', {
-      enabled: restReminder.enabled,
-      intervalMinutes: restReminder.intervalMinutes
-    }).catch((err) => {
-      console.error('[App] Failed to update reminder config:', err);
-    });
-  }, [restReminder.enabled, restReminder.intervalMinutes]);
 
   return (
     <>

@@ -364,12 +364,11 @@ describe('useAppStore setTheme', () => {
     errorSpy.mockRestore();
   });
 
-  it('merges search, refinery, and reminder settings', async () => {
+  it('merges search, refinery, spotlight appearance, and window settings', async () => {
     const useAppStore = await importFreshAppStore();
 
     useAppStore.getState().setSearchSettings({ defaultEngine: 'bing' });
     useAppStore.getState().setRefinerySettings({ strategy: 'both', maxCount: 1234 });
-    useAppStore.getState().setRestReminder({ enabled: true, intervalMinutes: 30 });
     useAppStore.getState().setSpotlightAppearance({ width: 700 });
     useAppStore.getState().setWindowDestroyDelay(120);
 
@@ -377,7 +376,6 @@ describe('useAppStore setTheme', () => {
     expect(state.searchSettings.defaultEngine).toBe('bing');
     expect(state.refinerySettings.strategy).toBe('both');
     expect(state.refinerySettings.maxCount).toBe(1234);
-    expect(state.restReminder).toEqual({ enabled: true, intervalMinutes: 30 });
     expect(state.spotlightAppearance.width).toBe(700);
     expect(state.windowDestroyDelay).toBe(120);
   });

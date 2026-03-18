@@ -55,11 +55,6 @@ export interface SpotlightAppearance {
   maxChatHeight: number;
 }
 
-export interface RestReminderConfig {
-  enabled: boolean;
-  intervalMinutes: number;
-}
-
 export interface RefinerySettings {
   enabled: boolean;
   strategy: 'time' | 'count' | 'both';
@@ -99,7 +94,6 @@ interface AppState {
   spotlightShortcut: string;
   automatorShortcut: string;
   globalIgnore: IgnoreConfig;
-  restReminder: RestReminderConfig;
   windowDestroyDelay: WindowDestroyDelay;
 
   // Global project root - shared across all features (Context, Patch, Git Diff)
@@ -132,7 +126,6 @@ interface AppState {
   setAIConfig: (config: Partial<AIProviderConfig>) => void;
   setSpotlightShortcut: (shortcut: string) => void;
   setAutomatorShortcut: (shortcut: string) => void;
-  setRestReminder: (config: Partial<RestReminderConfig>) => void;
   setWindowDestroyDelay: (seconds: number) => void;
   setSearchSettings: (config: Partial<AppState['searchSettings']>) => void;
   setRefinerySettings: (config: Partial<RefinerySettings>) => void;
@@ -157,10 +150,6 @@ export const useAppStore = create<AppState>()(
       aiConfig: DEFAULT_AI_CONFIG,
       savedProviderSettings: DEFAULT_PROVIDER_SETTINGS,
       globalIgnore: DEFAULT_GLOBAL_IGNORE,
-      restReminder: {
-        enabled: false,
-        intervalMinutes: 45
-      },
       windowDestroyDelay: 0,
       projectRoot: null,
       recentProjectRoots: [],
@@ -234,9 +223,6 @@ export const useAppStore = create<AppState>()(
           console.error('[AppStore] Failed to refresh shortcuts after automator update:', err);
         });
       },
-      setRestReminder: (config) => set((state) => ({
-        restReminder: { ...state.restReminder, ...config }
-      })),
       setWindowDestroyDelay: (seconds) => set({ windowDestroyDelay: seconds }),
       setAIConfig: (config) => set((state) => {
         const newConfig = { ...state.aiConfig, ...config };
@@ -372,7 +358,6 @@ export const useAppStore = create<AppState>()(
         aiConfig: state.aiConfig,
         savedProviderSettings: state.savedProviderSettings,
         spotlightAppearance: state.spotlightAppearance,
-        restReminder: state.restReminder,
         windowDestroyDelay: state.windowDestroyDelay,
         searchSettings: state.searchSettings,
         refinerySettings: state.refinerySettings
