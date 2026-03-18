@@ -1,24 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import {
   APP_NAVIGATION_ITEMS,
-  getAdjacentPrimaryView,
-  getPrimaryViewByHotkey,
   isEditableTarget,
 } from '@/lib/app-navigation';
 
 describe('app navigation helpers', () => {
-  it('cycles primary views in both directions', () => {
-    expect(getAdjacentPrimaryView('prompts', -1)).toBe('miner');
-    expect(getAdjacentPrimaryView('miner', 1)).toBe('prompts');
-    expect(getAdjacentPrimaryView('patch', 2)).toBe('automator');
-  });
-
-  it('maps configured hotkeys to views', () => {
-    for (const item of APP_NAVIGATION_ITEMS) {
-      expect(getPrimaryViewByHotkey(item.hotkey)).toBe(item.id);
-    }
-
-    expect(getPrimaryViewByHotkey(9)).toBeNull();
+  it('keeps the radial module order stable', () => {
+    expect(APP_NAVIGATION_ITEMS.map((item) => item.id)).toEqual([
+      'prompts',
+      'context',
+      'patch',
+      'refinery',
+      'automator',
+      'miner',
+    ]);
   });
 
   it('skips editable targets when deciding whether to handle shortcuts', () => {

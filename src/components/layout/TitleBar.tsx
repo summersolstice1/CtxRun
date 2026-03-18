@@ -108,6 +108,7 @@ export function TitleBar() {
           <ViewSwitcher
             activeView={activePrimaryView}
             onSelect={(view) => setView(view)}
+            enableHoldShortcut={isPrimaryAppView(currentView)}
           />
         </div>
       </div>

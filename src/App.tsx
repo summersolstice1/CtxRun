@@ -1,4 +1,4 @@
-import { useEffect, useRef, Suspense, lazy } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
@@ -10,13 +10,6 @@ import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
 import { useTranslation } from 'react-i18next';
 import { PreviewModal } from "@/components/features/hyperview";
 import { applyThemeToDocument } from '@/lib/theme';
-import {
-  getAdjacentPrimaryView,
-  getPrimaryViewByHotkey,
-  isEditableTarget,
-  isPrimaryAppView,
-  type PrimaryAppView,
-} from '@/lib/app-navigation';
 const PromptView = lazy(() => import('@/components/features/prompts/PromptView').then(module => ({ default: module.PromptView })));
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
 const PatchView = lazy(() => import('@/components/features/patch/PatchView').then(module => ({ default: module.PatchView })));
@@ -29,7 +22,7 @@ const SystemMonitorModal = lazy(() => import('@/components/features/monitor/Syst
 const appWindow = getCurrentWebviewWindow()
 
 function App() {
-  const [currentView, theme, setTheme, syncModels, lastUpdated, restReminder, setView] = useAppStore(
+  const [currentView, theme, setTheme, syncModels, lastUpdated, restReminder] = useAppStore(
     useShallow((state) => [
       state.currentView,
       state.theme,
@@ -37,17 +30,9 @@ function App() {
       state.syncModels,
       state.lastUpdated,
       state.restReminder,
-      state.setView
     ])
   );
   const { t } = useTranslation();
-  const lastPrimaryViewRef = useRef<PrimaryAppView>('prompts');
-
-  useEffect(() => {
-    if (isPrimaryAppView(currentView)) {
-      lastPrimaryViewRef.current = currentView;
-    }
-  }, [currentView]);
 
   useEffect(() => {
     applyThemeToDocument(theme);
@@ -92,35 +77,12 @@ function App() {
 
     const handleKeyDown = (e: KeyboardEvent) => {
         const key = e.key.toLowerCase();
-        const isMac = navigator.platform.includes('Mac');
 
         if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
             e.preventDefault();
         }
         if ((e.ctrlKey || e.metaKey) && key === 'f') {
             e.preventDefault();
-        }
-
-        if (isEditableTarget(e.target)) {
-          return;
-        }
-
-        if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
-          const hotkey = Number.parseInt(key, 10);
-          const nextView = Number.isNaN(hotkey) ? null : getPrimaryViewByHotkey(hotkey);
-
-          if (nextView) {
-            e.preventDefault();
-            setView(nextView);
-            return;
-          }
-        }
-
-        const cycleModifierPressed = isMac ? e.metaKey : e.ctrlKey;
-        if (cycleModifierPressed && e.key === 'Tab') {
-          e.preventDefault();
-          const baseView = isPrimaryAppView(currentView) ? currentView : lastPrimaryViewRef.current;
-          setView(getAdjacentPrimaryView(baseView, e.shiftKey ? -1 : 1));
         }
     };
 
@@ -131,7 +93,7 @@ function App() {
       document.removeEventListener('contextmenu', handleContextMenu);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [currentView, setView]);
+  }, []);
 
   useEffect(() => {
     const ONE_DAY = 24 * 60 * 60 * 1000;

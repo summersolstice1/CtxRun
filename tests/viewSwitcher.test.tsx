@@ -1,7 +1,11 @@
 import React from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ViewSwitcher, getViewSwitcherGeometry } from '@/components/layout/ViewSwitcher';
+import {
+  ViewSwitcher,
+  getViewSwitcherGeometry,
+  resolveViewSwitcherSelection,
+} from '@/components/layout/ViewSwitcher';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -23,29 +27,28 @@ vi.mock('@spaceymonk/react-radial-menu', () => ({
     children,
     data,
     onItemClick,
-    onMouseEnter,
-    onMouseLeave,
     className,
   }: {
     children: React.ReactNode;
     data?: string;
     onItemClick?: (event: React.MouseEvent<HTMLButtonElement>, index: number, data?: string) => void;
-    onMouseEnter?: React.MouseEventHandler<HTMLButtonElement>;
-    onMouseLeave?: React.MouseEventHandler<HTMLButtonElement>;
     className?: string;
   }) => (
     <button
       type="button"
       data-testid={`menu-item-${data}`}
       className={className}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
       onClick={(event) => onItemClick?.(event, 0, data)}
     >
       {children}
     </button>
   ),
 }));
+
+function setViewport(width: number, height: number) {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, writable: true, value: width });
+  Object.defineProperty(window, 'innerHeight', { configurable: true, writable: true, value: height });
+}
 
 describe('getViewSwitcherGeometry', () => {
   it('derives switcher geometry from the configured module count', () => {
@@ -63,9 +66,25 @@ describe('getViewSwitcherGeometry', () => {
   });
 });
 
+describe('resolveViewSwitcherSelection', () => {
+  it('maps pointer direction to the expected module sector', () => {
+    const viewport = { width: 1200, height: 800 };
+
+    expect(resolveViewSwitcherSelection({ x: 600, y: 160 }, viewport)).toBe('prompts');
+    expect(resolveViewSwitcherSelection({ x: 780, y: 260 }, viewport)).toBe('context');
+    expect(resolveViewSwitcherSelection({ x: 780, y: 540 }, viewport)).toBe('patch');
+    expect(resolveViewSwitcherSelection({ x: 600, y: 660 }, viewport)).toBe('refinery');
+    expect(resolveViewSwitcherSelection({ x: 420, y: 540 }, viewport)).toBe('automator');
+    expect(resolveViewSwitcherSelection({ x: 420, y: 260 }, viewport)).toBe('miner');
+    expect(resolveViewSwitcherSelection({ x: 600, y: 400 }, viewport)).toBeNull();
+  });
+});
+
 describe('ViewSwitcher', () => {
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
+    setViewport(1200, 800);
   });
 
   it('opens and closes the overlay from the trigger and backdrop', () => {
@@ -96,6 +115,41 @@ describe('ViewSwitcher', () => {
     expect(screen.queryByTestId('radial-menu')).not.toBeNull();
 
     fireEvent.keyDown(window, { key: 'Escape' });
+    expect(screen.queryByTestId('radial-menu')).toBeNull();
+  });
+
+  it('opens on alt hold and switches on alt release', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<ViewSwitcher activeView="prompts" onSelect={onSelect} enableHoldShortcut />);
+
+    fireEvent.keyDown(window, { key: 'Alt' });
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+
+    expect(screen.queryByTestId('radial-menu')).not.toBeNull();
+
+    fireEvent.mouseMove(window, { clientX: 780, clientY: 260 });
+    fireEvent.keyUp(window, { key: 'Alt' });
+
+    expect(onSelect).toHaveBeenCalledWith('context');
+    expect(screen.queryByTestId('radial-menu')).toBeNull();
+  });
+
+  it('cancels the hold flow when alt is used as a chord modifier', () => {
+    vi.useFakeTimers();
+    const onSelect = vi.fn();
+    render(<ViewSwitcher activeView="prompts" onSelect={onSelect} enableHoldShortcut />);
+
+    fireEvent.keyDown(window, { key: 'Alt', altKey: true });
+    fireEvent.keyDown(window, { key: '1', altKey: true });
+    act(() => {
+      vi.advanceTimersByTime(120);
+    });
+    fireEvent.keyUp(window, { key: 'Alt' });
+
+    expect(onSelect).not.toHaveBeenCalled();
     expect(screen.queryByTestId('radial-menu')).toBeNull();
   });
 });
