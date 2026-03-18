@@ -320,6 +320,7 @@ export const useContextStore = create<ContextState>()(
         expandedIds: state.expandedIds,
         isIgnoreSyncActive: state.isIgnoreSyncActive,
       }),
+      skipHydration: true,
     }
   )
 );

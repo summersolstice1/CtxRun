@@ -70,23 +70,19 @@ export const useAutomatorStore = create<AutomatorState>()(
   persist(
     (set, get) => ({
       // Initial state with one default workflow
-      workflows: [createDefaultWorkflow('Default Workflow')],
-      activeWorkflowId: '',
+      ...(() => {
+        const defaultWorkflow = createDefaultWorkflow('Default Workflow');
+        return {
+          workflows: [defaultWorkflow],
+          activeWorkflowId: defaultWorkflow.id,
+        };
+      })(),
 
       isRunning: false,
       currentLoop: 0,
       currentStepIndex: -1,
       isPicking: false,
       _unlistenFns: [],
-
-      // Initialize activeWorkflowId if empty
-      ...((() => {
-        const state = get();
-        if (!state?.activeWorkflowId && state?.workflows?.length > 0) {
-          return { activeWorkflowId: state.workflows[0].id };
-        }
-        return {};
-      })()),
 
       // Workflow CRUD
       createWorkflow: (name) => {
@@ -299,6 +295,7 @@ export const useAutomatorStore = create<AutomatorState>()(
           }
         }
       },
+      skipHydration: true,
     }
   )
 );

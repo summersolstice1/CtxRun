@@ -7,6 +7,8 @@ const {
   existsMock,
   readDirMock,
   removeMock,
+  renameMock,
+  copyFileMock,
 } = vi.hoisted(() => ({
   readTextFileMock: vi.fn(),
   writeTextFileMock: vi.fn(),
@@ -14,6 +16,8 @@ const {
   existsMock: vi.fn(),
   readDirMock: vi.fn(),
   removeMock: vi.fn(),
+  renameMock: vi.fn(),
+  copyFileMock: vi.fn(),
 }));
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
@@ -23,6 +27,8 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   exists: existsMock,
   readDir: readDirMock,
   remove: removeMock,
+  rename: renameMock,
+  copyFile: copyFileMock,
   BaseDirectory: { AppLocalData: 'AppLocalData' },
 }));
 
@@ -42,6 +48,8 @@ describe('fileStorage', () => {
     existsMock.mockReset();
     readDirMock.mockReset();
     removeMock.mockReset();
+    renameMock.mockReset();
+    copyFileMock.mockReset();
   });
 
   it('getItem returns null when file does not exist', async () => {
@@ -53,28 +61,56 @@ describe('fileStorage', () => {
     expect(readTextFileMock).not.toHaveBeenCalled();
   });
 
-  it('setItem creates base dir when missing and writes json file', async () => {
+  it('setItem writes to a temp file and renames it into place', async () => {
     existsMock.mockResolvedValue(false);
     writeTextFileMock.mockResolvedValue(undefined);
-    mkdirMock.mockResolvedValue(undefined);
+    renameMock.mockResolvedValue(undefined);
     const fileStorage = await importFreshStorage();
 
     await fileStorage.setItem('app-config', '{"theme":"dark"}');
 
-    expect(mkdirMock).toHaveBeenCalledWith(
-      '',
-      expect.objectContaining({ baseDir: 'AppLocalData', recursive: true })
-    );
     expect(writeTextFileMock).toHaveBeenCalledWith(
-      'app-config.json',
+      'app-config.json.tmp',
       '{"theme":"dark"}',
       expect.objectContaining({ baseDir: 'AppLocalData' })
+    );
+    expect(renameMock).toHaveBeenCalledWith(
+      'app-config.json.tmp',
+      'app-config.json',
+      expect.objectContaining({
+        oldPathBaseDir: 'AppLocalData',
+        newPathBaseDir: 'AppLocalData',
+      })
+    );
+    expect(copyFileMock).not.toHaveBeenCalled();
+  });
+
+  it('setItem keeps a backup when overwriting an existing file', async () => {
+    existsMock.mockResolvedValue(true);
+    writeTextFileMock.mockResolvedValue(undefined);
+    copyFileMock.mockResolvedValue(undefined);
+    renameMock.mockResolvedValue(undefined);
+    const fileStorage = await importFreshStorage();
+
+    await fileStorage.setItem('app-config', '{"theme":"light"}');
+
+    expect(copyFileMock).toHaveBeenCalledWith(
+      'app-config.json',
+      'app-config.json.bak',
+      expect.objectContaining({
+        fromPathBaseDir: 'AppLocalData',
+        toPathBaseDir: 'AppLocalData',
+      })
     );
   });
 
   it('removeItem removes only when target file exists', async () => {
     existsMock
       .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(false)
       .mockResolvedValueOnce(false);
     removeMock.mockResolvedValue(undefined);
     const fileStorage = await importFreshStorage();
@@ -107,8 +143,10 @@ describe('fileStorage', () => {
     existsMock
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(true);
     writeTextFileMock.mockResolvedValue(undefined);
+    renameMock.mockResolvedValue(undefined);
     readTextFileMock.mockResolvedValue('{"name":"Pack"}');
     removeMock.mockResolvedValue(undefined);
     const fileStorage = await importFreshStorage();
@@ -118,7 +156,7 @@ describe('fileStorage', () => {
     await fileStorage.packs.removePack('demo.json');
 
     expect(writeTextFileMock).toHaveBeenCalledWith(
-      'packs/demo.json',
+      'packs/demo.json.tmp',
       '{"name":"Pack"}',
       expect.objectContaining({ baseDir: 'AppLocalData' })
     );
@@ -127,5 +165,37 @@ describe('fileStorage', () => {
       'packs/demo.json',
       expect.objectContaining({ baseDir: 'AppLocalData' })
     );
+  });
+
+  it('getItem falls back to backup when primary content is corrupted', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    existsMock
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+    readTextFileMock
+      .mockResolvedValueOnce('{invalid')
+      .mockResolvedValueOnce('{"theme":"backup"}');
+    writeTextFileMock.mockResolvedValue(undefined);
+    renameMock.mockResolvedValue(undefined);
+    const fileStorage = await importFreshStorage();
+
+    const result = await fileStorage.getItem('app-config');
+
+    expect(result).toBe('{"theme":"backup"}');
+    expect(writeTextFileMock).toHaveBeenCalledWith(
+      'app-config.json.tmp',
+      '{"theme":"backup"}',
+      expect.objectContaining({ baseDir: 'AppLocalData' })
+    );
+    expect(renameMock).toHaveBeenCalledWith(
+      'app-config.json.tmp',
+      'app-config.json',
+      expect.objectContaining({
+        oldPathBaseDir: 'AppLocalData',
+        newPathBaseDir: 'AppLocalData',
+      })
+    );
+    errorSpy.mockRestore();
   });
 });

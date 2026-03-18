@@ -362,6 +362,7 @@ export const useAppStore = create<AppState>()(
         searchSettings: state.searchSettings,
         refinerySettings: state.refinerySettings
       }),
+      skipHydration: true,
     }
   )
 );

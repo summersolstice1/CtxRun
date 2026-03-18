@@ -373,6 +373,7 @@ export const usePromptStore = create<PromptState>()(
         activeCategory: state.activeCategory,
         migrationVersion: state.migrationVersion
       }),
+      skipHydration: true,
     }
   )
 );

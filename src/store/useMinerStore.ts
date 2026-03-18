@@ -172,6 +172,7 @@ export const useMinerStore = create<MinerState>()(
       storage: createJSONStorage(() => fileStorage),
       // 只需要持久化用户的配置习惯，不需要持久化正在运行的日志和状态
       partialize: (state) => ({ config: state.config }),
+      skipHydration: true,
     }
   )
 );

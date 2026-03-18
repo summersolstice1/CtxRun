@@ -5,62 +5,175 @@ import {
   exists,
   readDir,
   remove,
+  rename,
+  copyFile,
   BaseDirectory
 } from '@tauri-apps/plugin-fs';
 
 const BASE_DIR_OPT = { baseDir: BaseDirectory.AppLocalData };
 const PACKS_SUBDIR = 'packs';
+const TEMP_SUFFIX = '.tmp';
+const BACKUP_SUFFIX = '.bak';
+const writeQueues = new Map<string, Promise<void>>();
+
+function logStorageError(action: string, fileName: string, err: unknown) {
+  console.error(`[fileStorage] Failed to ${action} '${fileName}':`, err);
+}
+
+async function hasFile(path: string): Promise<boolean> {
+  try {
+    return await exists(path, BASE_DIR_OPT);
+  } catch {
+    return false;
+  }
+}
+
+function isValidJsonContent(content: string): boolean {
+  if (!content.trim()) {
+    return false;
+  }
+
+  try {
+    JSON.parse(content);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readValidatedJsonFile(fileName: string): Promise<string | null> {
+  if (!(await hasFile(fileName))) {
+    return null;
+  }
+
+  try {
+    const content = await readTextFile(fileName, BASE_DIR_OPT);
+    if (!isValidJsonContent(content)) {
+      logStorageError('parse', fileName, new Error('Invalid JSON content'));
+      return null;
+    }
+    return content;
+  } catch (err) {
+    logStorageError('read', fileName, err);
+    return null;
+  }
+}
+
+async function atomicWriteTextFile(
+  fileName: string,
+  value: string,
+  options?: { skipBackupCopy?: boolean }
+): Promise<void> {
+  const tempFileName = `${fileName}${TEMP_SUFFIX}`;
+  const backupFileName = `${fileName}${BACKUP_SUFFIX}`;
+
+  try {
+    await writeTextFile(tempFileName, value, BASE_DIR_OPT);
+
+    if (!options?.skipBackupCopy && (await hasFile(fileName))) {
+      await copyFile(fileName, backupFileName, {
+        fromPathBaseDir: BaseDirectory.AppLocalData,
+        toPathBaseDir: BaseDirectory.AppLocalData,
+      });
+    }
+
+    await rename(tempFileName, fileName, {
+      oldPathBaseDir: BaseDirectory.AppLocalData,
+      newPathBaseDir: BaseDirectory.AppLocalData,
+    });
+  } catch (err) {
+    if (await hasFile(tempFileName)) {
+      await remove(tempFileName, BASE_DIR_OPT).catch(() => {});
+    }
+    throw err;
+  }
+}
+
+function enqueueWrite(fileName: string, task: () => Promise<void>): Promise<void> {
+  const previous = writeQueues.get(fileName) ?? Promise.resolve();
+  const next = previous
+    .catch(() => {})
+    .then(task)
+    .finally(() => {
+      if (writeQueues.get(fileName) === next) {
+        writeQueues.delete(fileName);
+      }
+    });
+
+  writeQueues.set(fileName, next);
+  return next;
+}
 
 export const fileStorage = {
   getItem: async (name: string): Promise<string | null> => {
     const fileName = `${name}.json`;
     try {
-      const fileExists = await exists(fileName, BASE_DIR_OPT);
-      if (!fileExists) return null;
+      const primaryContent = await readValidatedJsonFile(fileName);
+      if (primaryContent !== null) {
+        return primaryContent;
+      }
 
-      return await readTextFile(fileName, BASE_DIR_OPT);
+      const backupContent = await readValidatedJsonFile(`${fileName}${BACKUP_SUFFIX}`);
+      if (backupContent !== null) {
+        await atomicWriteTextFile(fileName, backupContent, { skipBackupCopy: true }).catch((err) => {
+          logStorageError('restore backup to primary', fileName, err);
+        });
+        return backupContent;
+      }
     } catch (err) {
-      return null;
+      logStorageError('load', fileName, err);
     }
+
+    return null;
   },
 
   setItem: async (name: string, value: string): Promise<void> => {
     const fileName = `${name}.json`;
     try {
-      const rootExists = await exists('', BASE_DIR_OPT);
-      if (!rootExists) {
-         await mkdir('', { ...BASE_DIR_OPT, recursive: true });
-      }
-
-      await writeTextFile(fileName, value, BASE_DIR_OPT);
+      await enqueueWrite(fileName, async () => {
+        await atomicWriteTextFile(fileName, value);
+      });
     } catch (err) {
+      logStorageError('write', fileName, err);
     }
   },
 
   removeItem: async (name: string): Promise<void> => {
     const fileName = `${name}.json`;
     try {
-      if (await exists(fileName, BASE_DIR_OPT)) {
+      if (await hasFile(fileName)) {
         await remove(fileName, BASE_DIR_OPT);
       }
+      const tempFileName = `${fileName}${TEMP_SUFFIX}`;
+      const backupFileName = `${fileName}${BACKUP_SUFFIX}`;
+      if (await hasFile(tempFileName)) {
+        await remove(tempFileName, BASE_DIR_OPT);
+      }
+      if (await hasFile(backupFileName)) {
+        await remove(backupFileName, BASE_DIR_OPT);
+      }
     } catch (err) {
+      logStorageError('remove', fileName, err);
     }
   },
 
   packs: {
     ensureDir: async () => {
       try {
-        if (!(await exists(PACKS_SUBDIR, BASE_DIR_OPT))) {
+        if (!(await hasFile(PACKS_SUBDIR))) {
           await mkdir(PACKS_SUBDIR, { ...BASE_DIR_OPT, recursive: true });
         }
       } catch (e) {
+        logStorageError('ensure directory', PACKS_SUBDIR, e);
       }
     },
 
     savePack: async (filename: string, content: string) => {
       try {
         await fileStorage.packs.ensureDir();
-        await writeTextFile(`${PACKS_SUBDIR}/${filename}`, content, BASE_DIR_OPT);
+        await enqueueWrite(`${PACKS_SUBDIR}/${filename}`, async () => {
+          await atomicWriteTextFile(`${PACKS_SUBDIR}/${filename}`, content);
+        });
       } catch (e) {
         throw e;
       }
@@ -69,11 +182,12 @@ export const fileStorage = {
     readPack: async (filename: string): Promise<string | null> => {
       try {
         const filePath = `${PACKS_SUBDIR}/${filename}`;
-        if (await exists(filePath, BASE_DIR_OPT)) {
+        if (await hasFile(filePath)) {
           return await readTextFile(filePath, BASE_DIR_OPT);
         }
         return null;
       } catch (e) {
+        logStorageError('read', `${PACKS_SUBDIR}/${filename}`, e);
         return null;
       }
     },
@@ -93,10 +207,11 @@ export const fileStorage = {
     removePack: async (filename: string) => {
       try {
         const filePath = `${PACKS_SUBDIR}/${filename}`;
-        if(await exists(filePath, BASE_DIR_OPT)) {
+        if(await hasFile(filePath)) {
             await remove(filePath, BASE_DIR_OPT);
         }
       } catch (e) {
+        logStorageError('remove', `${PACKS_SUBDIR}/${filename}`, e);
       }
     }
   }

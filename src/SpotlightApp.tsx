@@ -6,7 +6,6 @@ import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { message } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
-import { useShallow } from 'zustand/react/shallow';
 
 import { useAppStore, AppTheme } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
@@ -329,9 +328,8 @@ function SpotlightContent() {
 }
 
 export default function SpotlightApp() {
-  const [setTheme, theme] = useAppStore(
-    useShallow((state) => [state.setTheme, state.theme])
-  );
+  const initialTheme = useAppStore((state) => state.theme);
+  const [theme, setTheme] = useState<AppTheme>(initialTheme);
   const fetchChatTemplates = usePromptStore((state) => state.fetchChatTemplates);
 
   useEffect(() => {
@@ -345,6 +343,7 @@ export default function SpotlightApp() {
           await useAppStore.persist.rehydrate();
           await useContextStore.persist.rehydrate();
           await fetchChatTemplates();
+          setTheme(useAppStore.getState().theme);
           await appWindow.setFocus();
         } catch (err) {
           console.error('Failed to rehydrate spotlight state on focus:', err);
@@ -353,7 +352,7 @@ export default function SpotlightApp() {
     });
 
     const themeUnlisten = listen<AppTheme>('theme-changed', (event) => {
-        setTheme(event.payload, true);
+        setTheme(event.payload);
     });
 
     return () => {
