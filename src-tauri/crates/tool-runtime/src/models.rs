@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ToolAnnotations {
     pub title: Option<String>,
@@ -9,18 +9,6 @@ pub struct ToolAnnotations {
     pub destructive_hint: bool,
     pub idempotent_hint: bool,
     pub open_world_hint: bool,
-}
-
-impl Default for ToolAnnotations {
-    fn default() -> Self {
-        Self {
-            title: None,
-            read_only_hint: false,
-            destructive_hint: false,
-            idempotent_hint: false,
-            open_world_hint: false,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

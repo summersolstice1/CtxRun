@@ -25,6 +25,7 @@ pub struct RefineryStatistics {
     pub favorites: u32,
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn get_refinery_history(
     state: State<DbState>,
@@ -62,11 +63,9 @@ pub fn get_refinery_history(
         }
     }
 
-    if let Some(k) = kind_filter {
-        if k == "text" || k == "image" {
-            sql.push_str(" AND kind = ?");
-            params.push(Box::new(k));
-        }
+    if let Some(k) = kind_filter && (k == "text" || k == "image") {
+        sql.push_str(" AND kind = ?");
+        params.push(Box::new(k));
     }
 
     if pinned_only {
@@ -216,11 +215,9 @@ fn delete_items_internal(conn: &rusqlite::Connection, ids: &[String]) -> Result<
                 let content: String = row.get(1)?;
                 Ok((kind, content))
             })?;
-            for r in rows {
-                if let Ok((kind, content)) = r {
-                    if kind == "image" {
-                        files_to_delete.push(content);
-                    }
+            for (kind, content) in rows.flatten() {
+                if kind == "image" {
+                    files_to_delete.push(content);
                 }
             }
         }
@@ -496,10 +493,8 @@ pub async fn spotlight_paste<R: Runtime>(
         if let Some(path) = content {
             copy_refinery_image(path).await?;
         }
-    } else {
-        if let Some(text) = content {
-            copy_refinery_text(text).await?;
-        }
+    } else if let Some(text) = content {
+        copy_refinery_text(text).await?;
     }
 
     tauri::async_runtime::spawn(async move {

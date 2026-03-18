@@ -59,38 +59,37 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
                     let mut current = element.clone();
                     let mut window_title = None;
 
-                    if let Ok(walker) = automation.get_control_view_walker() {
-                        if let Ok(root) = automation.get_root_element() {
-                            for _ in 0..PATH_ASCEND_LIMIT {
-                                let c_name = current.get_name().unwrap_or_default();
-                                let c_role = format!(
-                                    "{:?}",
-                                    current.get_control_type().unwrap_or(ControlType::Custom)
-                                );
-                                let c_class = current.get_classname().unwrap_or_default();
+                    if let Ok(walker) = automation.get_control_view_walker()
+                        && let Ok(root) = automation.get_root_element()
+                    {
+                        for _ in 0..PATH_ASCEND_LIMIT {
+                            let c_name = current.get_name().unwrap_or_default();
+                            let c_role = format!(
+                                "{:?}",
+                                current.get_control_type().unwrap_or(ControlType::Custom)
+                            );
+                            let c_class = current.get_classname().unwrap_or_default();
 
-                                path.push(UIElementNode {
-                                    name: c_name.clone(),
-                                    role: c_role.clone(),
-                                    class_name: c_class,
-                                });
+                            path.push(UIElementNode {
+                                name: c_name.clone(),
+                                role: c_role.clone(),
+                                class_name: c_class,
+                            });
 
-                                if c_role == "Window"
-                                    && window_title.is_none()
-                                    && !c_name.is_empty()
-                                {
-                                    window_title = Some(c_name);
-                                }
+                            if c_role == "Window"
+                                && window_title.is_none()
+                                && !c_name.is_empty()
+                            {
+                                window_title = Some(c_name);
+                            }
 
-                                if let Ok(parent) = walker.get_parent(&current) {
-                                    if automation.compare_elements(&parent, &root).unwrap_or(false)
-                                    {
-                                        break;
-                                    }
-                                    current = parent;
-                                } else {
+                            if let Ok(parent) = walker.get_parent(&current) {
+                                if automation.compare_elements(&parent, &root).unwrap_or(false) {
                                     break;
                                 }
+                                current = parent;
+                            } else {
+                                break;
                             }
                         }
                     }
@@ -198,12 +197,10 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                 thread::sleep(Duration::from_millis(50));
                 if let Ok(element) =
                     automation.element_from_point(Point::new(*fallback_x, *fallback_y))
+                    && let Ok(current_name) = element.get_name()
+                    && current_name == *name
                 {
-                    if let Ok(current_name) = element.get_name() {
-                        if current_name == *name {
-                            return Ok((*fallback_x, *fallback_y));
-                        }
-                    }
+                    return Ok((*fallback_x, *fallback_y));
                 }
 
                 let expected_win_name = window_title.clone().unwrap_or_else(|| {
@@ -217,52 +214,52 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                 let mut found_element = None;
                 let max_attempts = WINDOW_RESOLVE_RETRIES;
 
-                if let Ok(root) = automation.get_root_element() {
-                    if let Ok(walker) = automation.get_control_view_walker() {
-                        for attempt in 1..=max_attempts {
-                            let mut target_window = None;
+                if let Ok(root) = automation.get_root_element()
+                    && let Ok(walker) = automation.get_control_view_walker()
+                {
+                    for attempt in 1..=max_attempts {
+                        let mut target_window = None;
 
-                            if !expected_win_name.is_empty() {
-                                if let Ok(mut child) = walker.get_first_child(&root) {
-                                    loop {
-                                        let w_name = child.get_name().unwrap_or_default();
-                                        if !w_name.is_empty()
-                                            && (w_name.contains(&expected_win_name)
-                                                || expected_win_name.contains(&w_name))
-                                        {
-                                            target_window = Some(child.clone());
-                                            break;
-                                        }
-                                        if let Ok(next) = walker.get_next_sibling(&child) {
-                                            child = next;
-                                        } else {
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-
-                            if target_window.is_none() {
-                                if let Ok(element_at_point) = automation
-                                    .element_from_point(Point::new(*fallback_x, *fallback_y))
+                        if !expected_win_name.is_empty()
+                            && let Ok(mut child) = walker.get_first_child(&root)
+                        {
+                            loop {
+                                let w_name = child.get_name().unwrap_or_default();
+                                if !w_name.is_empty()
+                                    && (w_name.contains(&expected_win_name)
+                                        || expected_win_name.contains(&w_name))
                                 {
-                                    let mut curr = element_at_point;
-                                    for _ in 0..PATH_ASCEND_LIMIT {
-                                        if let Ok(parent) = walker.get_parent(&curr) {
-                                            if automation
-                                                .compare_elements(&parent, &root)
-                                                .unwrap_or(false)
-                                            {
-                                                target_window = Some(curr.clone());
-                                                break;
-                                            }
-                                            curr = parent;
-                                        } else {
-                                            break;
-                                        }
-                                    }
+                                    target_window = Some(child.clone());
+                                    break;
+                                }
+                                if let Ok(next) = walker.get_next_sibling(&child) {
+                                    child = next;
+                                } else {
+                                    break;
                                 }
                             }
+                        }
+
+                        if target_window.is_none()
+                            && let Ok(element_at_point) = automation
+                                .element_from_point(Point::new(*fallback_x, *fallback_y))
+                        {
+                            let mut curr = element_at_point;
+                            for _ in 0..PATH_ASCEND_LIMIT {
+                                if let Ok(parent) = walker.get_parent(&curr) {
+                                    if automation
+                                        .compare_elements(&parent, &root)
+                                        .unwrap_or(false)
+                                    {
+                                        target_window = Some(curr.clone());
+                                        break;
+                                    }
+                                    curr = parent;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
 
                             if let Some(win) = target_window {
                                 let matcher = automation
@@ -310,15 +307,15 @@ pub fn resolve_target_to_coords(target: &ActionTarget) -> Result<(i32, i32)> {
                             if attempt < max_attempts {
                                 thread::sleep(Duration::from_millis(800));
                             }
-                        }
                     }
                 }
 
                 if let Some(elem) = found_element {
-                    if let Ok(Some(point)) = elem.get_clickable_point() {
-                        if point.get_x() > 0 && point.get_y() > 0 {
-                            return Ok((point.get_x(), point.get_y()));
-                        }
+                    if let Ok(Some(point)) = elem.get_clickable_point()
+                        && point.get_x() > 0
+                        && point.get_y() > 0
+                    {
+                        return Ok((point.get_x(), point.get_y()));
                     }
                     if let Ok(rect) = elem.get_bounding_rectangle() {
                         let cx = rect.get_left() + (rect.get_width() / 2);

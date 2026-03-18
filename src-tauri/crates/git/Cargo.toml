@@ -5,6 +5,9 @@ edition = "2024"
 description = "Git operations and export plugin for CtxRun"
 links = "ctxrun-plugin-git" 
 
+[package.metadata.cargo-machete]
+ignored = ["tauri-plugin"]
+
 [dependencies]
 tauri = { workspace = true }
 serde = { workspace = true }

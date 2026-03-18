@@ -12,6 +12,12 @@ pub struct AutomatorState {
     pub is_running: Arc<AtomicBool>,
 }
 
+impl Default for AutomatorState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AutomatorState {
     pub fn new() -> Self {
         Self {
@@ -79,9 +85,7 @@ fn collect_selector_candidates(primary: Option<&str>, extras: Option<&[String]>)
 }
 
 fn timeout_per_candidate(timeout_ms: Option<u64>, candidate_count: usize) -> Option<u64> {
-    let Some(total_ms) = timeout_ms else {
-        return None;
-    };
+    let total_ms = timeout_ms?;
     if total_ms == 0 {
         return None;
     }
@@ -401,7 +405,7 @@ async fn try_browser_assert(
 fn should_fallback_to_physical_key_in_web_mode(key: &str) -> bool {
     let normalized_parts: Vec<String> = key
         .split('+')
-        .map(|part| normalize_shortcut_part(part))
+        .map(normalize_shortcut_part)
         .filter(|part| !part.is_empty())
         .collect();
 
@@ -501,16 +505,14 @@ async fn execute_smart_action(enigo: &mut Enigo, action: &AutomatorAction) -> bo
                 .await;
             }
 
-            if !handled {
-                if let Some(t) = target {
-                    let (x, y) = resolve_coords_with_timeout(t).await;
-                    if x == 0 && y == 0 {
-                        return false;
-                    }
-                    let _ = enigo.move_mouse(x, y, Coordinate::Abs);
-                    tokio::time::sleep(Duration::from_millis(100)).await;
-                    let _ = enigo.button(map_button(button), Direction::Click);
+            if !handled && let Some(t) = target {
+                let (x, y) = resolve_coords_with_timeout(t).await;
+                if x == 0 && y == 0 {
+                    return false;
                 }
+                let _ = enigo.move_mouse(x, y, Coordinate::Abs);
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                let _ = enigo.button(map_button(button), Direction::Click);
             }
 
             true
@@ -889,10 +891,8 @@ fn execute_key_combination(enigo: &mut Enigo, key_combo: &str) {
     if let Some(k) = main_key {
         let _ = enigo.key(k, Direction::Click);
     } else if modifiers.is_empty() {
-    } else {
-        if let Some(m) = modifiers.first() {
-            let _ = enigo.key(*m, Direction::Click);
-        }
+    } else if let Some(m) = modifiers.first() {
+        let _ = enigo.key(*m, Direction::Click);
     }
     for m in modifiers.iter().rev() {
         let _ = enigo.key(*m, Direction::Release);

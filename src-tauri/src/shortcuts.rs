@@ -5,7 +5,6 @@ use std::sync::Mutex;
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
-use ctxrun_plugin_automator;
 #[derive(Deserialize, Debug)]
 struct AppConfigStore {
     state: AppConfigState,
@@ -41,16 +40,14 @@ impl ShortcutManager {
 
         let mut spotlight_key = "Alt+S".to_string();
         let mut automator_key = "Alt+F1".to_string();
-        if config_path.exists() {
-            if let Ok(content) = fs::read_to_string(config_path) {
-                if let Ok(config) = serde_json::from_str::<AppConfigStore>(&content) {
-                    if !config.state.spotlight_shortcut.is_empty() {
-                        spotlight_key = config.state.spotlight_shortcut;
-                    }
-                    if !config.state.automator_shortcut.is_empty() {
-                        automator_key = config.state.automator_shortcut;
-                    }
-                }
+        if config_path.exists() && let Ok(content) = fs::read_to_string(config_path)
+            && let Ok(config) = serde_json::from_str::<AppConfigStore>(&content)
+        {
+            if !config.state.spotlight_shortcut.is_empty() {
+                spotlight_key = config.state.spotlight_shortcut;
+            }
+            if !config.state.automator_shortcut.is_empty() {
+                automator_key = config.state.automator_shortcut;
             }
         }
 

@@ -5,6 +5,9 @@ edition = "2024"
 description = "Automator plugin for CtxRun"
 links = "ctxrun-plugin-automator"
 
+[package.metadata.cargo-machete]
+ignored = ["tauri-plugin"]
+
 [dependencies]
 tauri = { workspace = true }
 serde = { workspace = true }
@@ -13,9 +16,7 @@ tokio = { workspace = true }
 futures = { workspace = true }
 enigo = { workspace = true }
 xcap = "0.8"
-image = { workspace = true }
 thiserror = { workspace = true }
-which = { workspace = true }
 regex = { workspace = true }
 
 chromiumoxide = "0.9.1"

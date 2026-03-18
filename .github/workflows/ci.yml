@@ -50,8 +50,17 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install cargo-machete
+        uses: taiki-e/install-action@cargo-machete
+
       - name: Install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Lint Rust workspace
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Check unused Rust dependencies
+        run: cargo machete --with-metadata --skip-target-dir
 
       - name: Run centralized Rust tests
         run: cargo test -p ctxrun-workspace-tests -p ctxrun-db -p ctxrun-plugin-context -p ctxrun-plugin-git -p ctxrun-plugin-refinery

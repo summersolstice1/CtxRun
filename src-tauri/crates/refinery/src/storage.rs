@@ -9,7 +9,7 @@ use tauri::{AppHandle, Manager, Runtime};
 use uuid::Uuid;
 use xxhash_rust::xxh3::xxh3_64;
 
-use super::models::{RefineryKind, RefineryMetadata};
+use super::models::{ClipboardCapture, RefineryMetadata};
 use crate::error::Result;
 
 const IMAGE_FOLDER: &str = "refinery_images";
@@ -66,18 +66,18 @@ pub fn save_image_to_disk<R: Runtime>(
     Ok((file_path_str, hash))
 }
 
-pub fn capture_clipboard_item(
-    conn: &Connection,
-    kind: RefineryKind,
-    content: Option<String>,
-    hash: String,
-    preview: Option<String>,
-    source_app: Option<String>,
-    url: Option<String>,
-    size_info: Option<String>,
-    metadata: RefineryMetadata,
-) -> Result<(bool, String)> {
+pub fn capture_clipboard_item(conn: &Connection, item: ClipboardCapture) -> Result<(bool, String)> {
     let now = Utc::now().timestamp_millis();
+    let ClipboardCapture {
+        kind,
+        content,
+        hash,
+        preview,
+        source_app,
+        url,
+        size_info,
+        metadata,
+    } = item;
 
     let existing_id: Option<String> = conn.query_row(
         "SELECT id FROM refinery_history WHERE content_hash = ? ORDER BY updated_at DESC LIMIT 1",

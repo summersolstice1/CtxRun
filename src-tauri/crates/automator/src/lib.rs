@@ -134,35 +134,35 @@ pub fn toggle<R: Runtime>(app: &AppHandle<R>) {
     if let Ok(app_dir) = app.path().app_local_data_dir() {
         let config_path = app_dir.join("automator-config.json");
 
-        if let Ok(content) = fs::read_to_string(config_path) {
-            if let Ok(store_data) = serde_json::from_str::<AutomatorStoreRoot>(&content) {
-                let mut persisted = store_data.state;
-                let selected_workflow = persisted
-                    .active_workflow
-                    .take()
-                    .or_else(|| {
-                        persisted
-                            .active_workflow_id
-                            .as_deref()
-                            .and_then(|active_id| {
-                                persisted
-                                    .workflows
-                                    .iter()
-                                    .find(|w| w.id == active_id)
-                                    .cloned()
-                            })
-                    })
-                    .or_else(|| persisted.workflows.first().cloned());
+        if let Ok(content) = fs::read_to_string(config_path)
+            && let Ok(store_data) = serde_json::from_str::<AutomatorStoreRoot>(&content)
+        {
+            let mut persisted = store_data.state;
+            let selected_workflow = persisted
+                .active_workflow
+                .take()
+                .or_else(|| {
+                    persisted
+                        .active_workflow_id
+                        .as_deref()
+                        .and_then(|active_id| {
+                            persisted
+                                .workflows
+                                .iter()
+                                .find(|w| w.id == active_id)
+                                .cloned()
+                        })
+                })
+                .or_else(|| persisted.workflows.first().cloned());
 
-                if let Some(workflow) = selected_workflow {
-                    state.is_running.store(true, Ordering::SeqCst);
-                    let _ = app.emit("automator:status", true);
+            if let Some(workflow) = selected_workflow {
+                state.is_running.store(true, Ordering::SeqCst);
+                let _ = app.emit("automator:status", true);
 
-                    if let Some(graph) = workflow_to_graph(&workflow) {
-                        engine::run_graph_task(app.clone(), graph, state.is_running.clone());
-                    } else {
-                        engine::run_workflow_task(app.clone(), workflow, state.is_running.clone());
-                    }
+                if let Some(graph) = workflow_to_graph(&workflow) {
+                    engine::run_graph_task(app.clone(), graph, state.is_running.clone());
+                } else {
+                    engine::run_workflow_task(app.clone(), workflow, state.is_running.clone());
                 }
             }
         }

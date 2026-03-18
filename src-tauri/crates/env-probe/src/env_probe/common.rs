@@ -49,7 +49,7 @@ pub fn run_command(bin: &str, args: &[&str]) -> crate::error::Result<String> {
         None => {
             let _ = child.kill();
             let _ = child.wait();
-            return Err(format!("Time Out").into());
+            return Err("Time Out".to_string());
         }
     };
 
@@ -63,10 +63,7 @@ pub fn run_command(bin: &str, args: &[&str]) -> crate::error::Result<String> {
             Ok(stdout)
         }
     } else {
-        Err(String::from_utf8_lossy(&output.stderr)
-            .trim()
-            .to_string()
-            .into())
+        Err(String::from_utf8_lossy(&output.stderr).trim().to_string())
     }
 }
 
@@ -104,7 +101,7 @@ pub fn generic_probe(
 ) -> crate::env_probe::ToolInfo {
     let path = locate_binary(bin);
 
-    let version = if let Some(_) = path {
+    let version = if path.is_some() {
         match run_command(bin, args) {
             Ok(out) => find_version(&out, version_regex),
             Err(e) => {

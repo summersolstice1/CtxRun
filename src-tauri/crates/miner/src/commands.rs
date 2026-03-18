@@ -15,6 +15,12 @@ pub struct MinerState {
     pub is_running: Arc<AtomicBool>,
 }
 
+impl Default for MinerState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MinerState {
     pub fn new() -> Self {
         Self {

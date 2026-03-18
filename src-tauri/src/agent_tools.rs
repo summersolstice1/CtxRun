@@ -297,12 +297,10 @@ pub fn agent_read_local_file(
     let total_bytes = metadata.len();
 
     let start_line = request.start_line.unwrap_or(1).max(1);
-    if let Some(end_line) = request.end_line {
-        if end_line < start_line {
-            return Err(AppError::Message(
-                "endLine must be greater than or equal to startLine.".to_string(),
-            ));
-        }
+    if let Some(end_line) = request.end_line && end_line < start_line {
+        return Err(AppError::Message(
+            "endLine must be greater than or equal to startLine.".to_string(),
+        ));
     }
 
     let max_bytes = clamp_usize(
@@ -329,10 +327,8 @@ pub fn agent_read_local_file(
             continue;
         }
 
-        if let Some(limit) = request.end_line {
-            if current_line > limit {
-                break;
-            }
+        if let Some(limit) = request.end_line && current_line > limit {
+            break;
         }
 
         let rendered = format!("{}\n", line);

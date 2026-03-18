@@ -498,43 +498,50 @@ fn build_raw_items_preview(items: &[SearchEvalItem]) -> Vec<WebSearchDebugItem> 
 }
 
 fn build_debug_info(
-    request: &NormalizedSearchRequest,
-    engine: &str,
-    payload: &SearchEvalPayload,
-    blocked: bool,
-    raw_items_count: u32,
-    filtered_items_count: u32,
-    raw_items_preview: Vec<WebSearchDebugItem>,
-    mut notes: Vec<String>,
+    params: BuildDebugInfoParams<'_>,
 ) -> Option<WebSearchDebugInfo> {
-    if !request.debug {
+    if !params.request.debug {
         return None;
     }
 
+    let mut notes = params.notes;
     notes.retain(|note| !note.trim().is_empty());
 
     Some(WebSearchDebugInfo {
         enabled: true,
-        attempted_engines: vec![engine.to_string()],
+        attempted_engines: vec![params.engine.to_string()],
         fallback_reason: None,
-        page_url: payload.page_url.clone(),
-        ready_state: payload.ready_state.clone(),
-        result_heading_count: payload.result_heading_count,
-        anchor_count: payload.anchor_count,
-        blocked_hint: Some(blocked),
-        raw_items_count,
-        filtered_items_count,
-        raw_items_preview,
-        body_text_sample: payload
+        page_url: params.payload.page_url.clone(),
+        ready_state: params.payload.ready_state.clone(),
+        result_heading_count: params.payload.result_heading_count,
+        anchor_count: params.payload.anchor_count,
+        blocked_hint: Some(params.blocked),
+        raw_items_count: params.raw_items_count,
+        filtered_items_count: params.filtered_items_count,
+        raw_items_preview: params.raw_items_preview,
+        body_text_sample: params
+            .payload
             .body_sample
             .as_deref()
             .map(|value| truncate_and_compact(value, DEBUG_SAMPLE_TEXT_CHARS)),
-        search_root_html_sample: payload
+        search_root_html_sample: params
+            .payload
             .search_root_html_sample
             .as_deref()
             .map(|value| truncate_chars(value, DEBUG_SAMPLE_HTML_CHARS)),
         notes,
     })
+}
+
+struct BuildDebugInfoParams<'a> {
+    request: &'a NormalizedSearchRequest,
+    engine: &'a str,
+    payload: &'a SearchEvalPayload,
+    blocked: bool,
+    raw_items_count: u32,
+    filtered_items_count: u32,
+    raw_items_preview: Vec<WebSearchDebugItem>,
+    notes: Vec<String>,
 }
 
 fn push_unique_warning(warnings: &mut Vec<String>, message: impl Into<String>) {
@@ -546,51 +553,56 @@ fn push_unique_warning(warnings: &mut Vec<String>, message: impl Into<String>) {
 
 fn apply_parallel_metadata(
     result: &mut WebSearchResult,
-    request: &NormalizedSearchRequest,
-    consent_warning: Option<&String>,
-    stealth_notes: &[String],
-    attempted_engines: &[&str],
-    summary_notes: &[String],
-    failure_notes: &[String],
-    fallback_reason: Option<String>,
+    params: ParallelMetadataParams<'_>,
 ) {
-    if request.anti_bot_mode {
+    if params.request.anti_bot_mode {
         push_unique_warning(
             &mut result.warnings,
             "Anti-bot mode enabled (external debug browser + persistent profile + stealth patches).",
         );
     }
-    if let Some(warning) = consent_warning {
+    if let Some(warning) = params.consent_warning {
         push_unique_warning(&mut result.warnings, warning.clone());
     }
-    for note in failure_notes {
+    for note in params.failure_notes {
         push_unique_warning(&mut result.warnings, note.clone());
     }
 
     if let Some(debug) = result.debug.as_mut() {
-        debug.attempted_engines = attempted_engines
+        debug.attempted_engines = params
+            .attempted_engines
             .iter()
             .map(|engine| (*engine).to_string())
             .collect();
-        debug.fallback_reason = fallback_reason;
+        debug.fallback_reason = params.fallback_reason;
         debug.notes.push(
             "Parallel execution mode enabled (Google + Bing + DuckDuckGo + Brave).".to_string(),
         );
-        for note in summary_notes {
+        for note in params.summary_notes {
             debug.notes.push(note.clone());
         }
-        for note in failure_notes {
+        for note in params.failure_notes {
             debug.notes.push(note.clone());
         }
-        if consent_warning.is_some() {
+        if params.consent_warning.is_some() {
             debug
                 .notes
                 .push("Google CONSENT cookie injection failed.".to_string());
         }
-        for note in stealth_notes {
+        for note in params.stealth_notes {
             debug.notes.push(note.clone());
         }
     }
+}
+
+struct ParallelMetadataParams<'a> {
+    request: &'a NormalizedSearchRequest,
+    consent_warning: Option<&'a String>,
+    stealth_notes: &'a [String],
+    attempted_engines: &'a [&'a str],
+    summary_notes: &'a [String],
+    failure_notes: &'a [String],
+    fallback_reason: Option<String>,
 }
 
 fn apply_google_verification_metadata(
@@ -1052,16 +1064,16 @@ async fn run_search_with_script(
         requires_human_verification: None,
         verification_engine: None,
         verification_url: None,
-        debug: build_debug_info(
+        debug: build_debug_info(BuildDebugInfoParams {
             request,
             engine,
-            &parsed_payload,
+            payload: &parsed_payload,
             blocked,
             raw_items_count,
             filtered_items_count,
             raw_items_preview,
-            debug_notes,
-        ),
+            notes: debug_notes,
+        }),
     })
 }
 
@@ -1291,13 +1303,15 @@ pub async fn search_web(request: WebSearchRequest) -> Result<WebSearchResult> {
 
         apply_parallel_metadata(
             &mut selected,
-            &normalized,
-            consent_warning.as_ref(),
-            &stealth_notes,
-            &attempted_engines,
-            &summary_notes,
-            &failure_notes,
-            fallback_reason,
+            ParallelMetadataParams {
+                request: &normalized,
+                consent_warning: consent_warning.as_ref(),
+                stealth_notes: &stealth_notes,
+                attempted_engines: &attempted_engines,
+                summary_notes: &summary_notes,
+                failure_notes: &failure_notes,
+                fallback_reason,
+            },
         );
 
         if google_blocked {

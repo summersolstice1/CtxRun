@@ -243,14 +243,12 @@ impl CrawlManager {
         let task = tokio::spawn(async move {
             let run_result =
                 run_crawl_task_with_sink(config, stop_flag_task.clone(), Some(event_sink)).await;
-            if let Err(err) = run_result {
-                if let Ok(mut status) = state_for_fail.lock() {
-                    status.running = false;
-                    status.finished_at = Some(Utc::now().to_rfc3339());
-                    status.error_count = status.error_count.saturating_add(1);
-                    status.last_error = Some(err.to_string());
-                    status.last_stage = Some("Error".to_string());
-                }
+            if let Err(err) = run_result && let Ok(mut status) = state_for_fail.lock() {
+                status.running = false;
+                status.finished_at = Some(Utc::now().to_rfc3339());
+                status.error_count = status.error_count.saturating_add(1);
+                status.last_error = Some(err.to_string());
+                status.last_stage = Some("Error".to_string());
             }
 
             if let Ok(mut runtime) = runtime_for_cleanup.lock() {
@@ -274,16 +272,12 @@ impl CrawlManager {
     fn stop_crawl(&self) -> CrawlStatusSnapshot {
         self.refresh_runtime();
 
-        if let Ok(runtime) = self.runtime.lock() {
-            if let Some(flag) = &runtime.stop_flag {
-                flag.store(false, Ordering::SeqCst);
-            }
+        if let Ok(runtime) = self.runtime.lock() && let Some(flag) = &runtime.stop_flag {
+            flag.store(false, Ordering::SeqCst);
         }
 
-        if let Ok(mut status) = self.state.lock() {
-            if status.running {
-                status.last_stage = Some("Stopping".to_string());
-            }
+        if let Ok(mut status) = self.state.lock() && status.running {
+            status.last_stage = Some("Stopping".to_string());
         }
 
         self.snapshot()

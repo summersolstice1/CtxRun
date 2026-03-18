@@ -4,6 +4,9 @@ version = "2.0.0"
 edition = "2024"
 links = "ctxrun-plugin-context"
 
+[package.metadata.cargo-machete]
+ignored = ["tauri-plugin"]
+
 [dependencies]
 tauri = { workspace = true }
 ctxrun-db = { workspace = true }

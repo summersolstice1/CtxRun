@@ -56,6 +56,7 @@ fn insert_prompt(
     .expect("insert prompt");
 }
 
+#[allow(clippy::too_many_arguments)]
 fn insert_prompt_row(
     conn: &Connection,
     id: &str,

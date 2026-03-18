@@ -39,7 +39,7 @@ pub async fn open_app(path: String, state: State<'_, DbState>) -> crate::error::
     #[cfg(target_os = "windows")]
     {
         std::process::Command::new("cmd")
-            .args(&["/C", "start", "", &path])
+            .args(["/C", "start", "", &path])
             .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .spawn()
             .map_err(|e| format!("Failed to launch: {}", e))?;
@@ -140,7 +140,7 @@ fn scan_system() -> Vec<AppEntry> {
                     let path = entry.path();
                     let path_str = path.to_string_lossy().to_lowercase();
 
-                    if path.extension().map_or(false, |ext| ext == "lnk") {
+                    if path.extension().is_some_and(|ext| ext == "lnk") {
                         let in_ignored_dir = ignored_dir_names.iter().any(|&d| {
                             let pattern = format!("\\{}", d.to_lowercase());
                             path_str.contains(&pattern)

@@ -53,14 +53,12 @@ pub fn probe_npm_packages(project_root: Option<String>) -> Vec<ToolInfo> {
         let dep_pkg_path = node_modules.join(&dep).join("package.json");
         let mut installed_version = "Not Found".to_string();
 
-        if dep_pkg_path.exists() {
-            if let Ok(dep_content) = fs::read_to_string(&dep_pkg_path) {
-                if let Ok(dep_json) = serde_json::from_str::<Value>(&dep_content) {
-                    if let Some(v) = dep_json["version"].as_str() {
-                        installed_version = v.to_string();
-                    }
-                }
-            }
+        if dep_pkg_path.exists()
+            && let Ok(dep_content) = fs::read_to_string(&dep_pkg_path)
+            && let Ok(dep_json) = serde_json::from_str::<Value>(&dep_content)
+            && let Some(v) = dep_json["version"].as_str()
+        {
+            installed_version = v.to_string();
         }
 
         results.push(ToolInfo {

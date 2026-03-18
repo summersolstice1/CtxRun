@@ -14,7 +14,7 @@ use tauri::{AppHandle, Emitter, Manager, Runtime};
 use tokio::sync::mpsc;
 use x_win::{get_active_window, get_browser_url};
 
-use super::models::{RefineryKind, RefineryMetadata};
+use super::models::{ClipboardCapture, RefineryKind, RefineryMetadata};
 use super::storage::{capture_clipboard_item, hash_content, save_image_to_disk};
 use ctxrun_db::DbState;
 
@@ -70,10 +70,8 @@ impl ClipboardHandler for RefineryListener {
         let active_window = get_active_window().ok();
         let app_name = active_window.as_ref().map(|w| w.info.exec_name.clone());
 
-        if let Some(ref name) = app_name {
-            if self.is_self_app(name) {
-                return;
-            }
+        if let Some(ref name) = app_name && self.is_self_app(name) {
+            return;
         }
 
         let url = active_window.as_ref().and_then(|w| get_browser_url(w).ok());
@@ -86,16 +84,15 @@ impl ClipboardHandler for RefineryListener {
             }
         };
 
-        if ctx.has(ContentFormat::Files) {
-            if let Ok(paths) = ctx.get_files() {
-                if !paths.is_empty() {
-                    let _ = self.tx.try_send(ClipboardPayload::Files {
-                        paths,
-                        source_app: app_name,
-                    });
-                    return;
-                }
-            }
+        if ctx.has(ContentFormat::Files)
+            && let Ok(paths) = ctx.get_files()
+            && !paths.is_empty()
+        {
+            let _ = self.tx.try_send(ClipboardPayload::Files {
+                paths,
+                source_app: app_name,
+            });
+            return;
         }
 
         let has_image = ctx.has(ContentFormat::Image);
@@ -224,16 +221,16 @@ impl<R: Runtime> RefineryProcessor<R> {
             image_path: None,
         };
 
-        self.write_to_db(
-            RefineryKind::Text,
-            Some(content),
+        self.write_to_db(ClipboardCapture {
+            kind: RefineryKind::Text,
+            content: Some(content),
             hash,
-            Some(preview),
+            preview: Some(preview),
             source_app,
             url,
-            Some(size_info),
+            size_info: Some(size_info),
             metadata,
-        );
+        });
     }
 
     fn handle_files(&mut self, paths: Vec<String>, source_app: Option<String>) {
@@ -269,16 +266,16 @@ impl<R: Runtime> RefineryProcessor<R> {
             image_path: None,
         };
 
-        self.write_to_db(
-            RefineryKind::Text,
-            Some(content),
+        self.write_to_db(ClipboardCapture {
+            kind: RefineryKind::Text,
+            content: Some(content),
             hash,
-            Some(preview),
+            preview: Some(preview),
             source_app,
-            None,
-            Some(size_info),
+            url: None,
+            size_info: Some(size_info),
             metadata,
-        );
+        });
     }
 
     fn handle_image(
@@ -309,16 +306,16 @@ impl<R: Runtime> RefineryProcessor<R> {
                     image_path: None,
                 };
 
-                self.write_to_db(
-                    RefineryKind::Image,
-                    Some(file_path),
+                self.write_to_db(ClipboardCapture {
+                    kind: RefineryKind::Image,
+                    content: Some(file_path),
                     hash,
-                    Some("[Image]".into()),
+                    preview: Some("[Image]".into()),
                     source_app,
                     url,
-                    Some(size_info),
+                    size_info: Some(size_info),
                     metadata,
-                );
+                });
             }
             Err(e) => eprintln!("[Refinery] Image save failed: {}", e),
         }
@@ -364,47 +361,35 @@ impl<R: Runtime> RefineryProcessor<R> {
                     image_path: Some(file_path),
                 };
 
-                self.write_to_db(
-                    RefineryKind::Mixed,
-                    Some(text),
-                    combined_hash,
+                self.write_to_db(ClipboardCapture {
+                    kind: RefineryKind::Mixed,
+                    content: Some(text),
+                    hash: combined_hash,
                     preview,
                     source_app,
                     url,
-                    Some(size_info),
+                    size_info: Some(size_info),
                     metadata,
-                );
+                });
             }
             Err(_) => self.handle_text(text, source_app, url),
         }
     }
 
-    fn write_to_db(
-        &self,
-        kind: RefineryKind,
-        content: Option<String>,
-        hash: String,
-        preview: Option<String>,
-        source_app: Option<String>,
-        url: Option<String>,
-        size_info: Option<String>,
-        metadata: RefineryMetadata,
-    ) {
+    fn write_to_db(&self, item: ClipboardCapture) {
         let state = self.app.state::<DbState>();
-        if let Ok(conn) = state.conn.lock() {
-            if let Ok((is_new, id)) = capture_clipboard_item(
-                &conn, kind, content, hash, preview, source_app, url, size_info, metadata,
-            ) {
-                let event_name = if is_new {
-                    "refinery:create"
-                } else {
-                    "refinery:update"
-                };
-                let _ = self.app.emit(event_name, &id);
+        if let Ok(conn) = state.conn.lock()
+            && let Ok((is_new, id)) = capture_clipboard_item(&conn, item)
+        {
+            let event_name = if is_new {
+                "refinery:create"
+            } else {
+                "refinery:update"
+            };
+            let _ = self.app.emit(event_name, &id);
 
-                if let Some(ref sender) = self.cleanup_sender {
-                    let _ = sender.blocking_send(());
-                }
+            if let Some(ref sender) = self.cleanup_sender {
+                let _ = sender.blocking_send(());
             }
         }
     }

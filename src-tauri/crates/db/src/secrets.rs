@@ -82,10 +82,8 @@ pub fn get_all_ignored_values_internal(
     let rows = stmt.query_map([], |row| row.get::<_, String>(0))?;
 
     let mut set = std::collections::HashSet::new();
-    for r in rows {
-        if let Ok(val) = r {
-            set.insert(val);
-        }
+    for val in rows.flatten() {
+        set.insert(val);
     }
     Ok(set)
 }

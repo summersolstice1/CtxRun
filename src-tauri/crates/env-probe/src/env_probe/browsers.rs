@@ -45,7 +45,7 @@ const BROWSERS: &[BrowserConfig] = &[
 ];
 
 pub fn probe_browsers() -> Vec<ToolInfo> {
-    BROWSERS.par_iter().map(|b| check_browser(b)).collect()
+    BROWSERS.par_iter().map(check_browser).collect()
 }
 
 fn check_browser(cfg: &BrowserConfig) -> ToolInfo {

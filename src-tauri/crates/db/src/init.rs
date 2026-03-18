@@ -17,15 +17,12 @@ fn column_exists(conn: &Connection, table: &str, column: &str) -> bool {
         Err(_) => return false,
     };
 
-    let exists = stmt
-        .query_map([], |row| {
-            let name: String = row.get(1)?;
-            Ok(name)
-        })
-        .map(|iter| iter.flatten().any(|name| name == column))
-        .unwrap_or(false);
-
-    exists
+    stmt.query_map([], |row| {
+        let name: String = row.get(1)?;
+        Ok(name)
+    })
+    .map(|iter| iter.flatten().any(|name| name == column))
+    .unwrap_or(false)
 }
 
 fn migrate_legacy_columns(conn: &Connection) -> crate::error::Result<()> {

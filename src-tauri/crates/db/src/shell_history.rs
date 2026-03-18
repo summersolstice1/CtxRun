@@ -97,10 +97,7 @@ pub fn search_shell_history(
         FROM shell_history WHERE ",
     );
 
-    let mut where_clauses = Vec::new();
-    for _ in 0..keywords.len() {
-        where_clauses.push("command LIKE ?");
-    }
+    let where_clauses = vec!["command LIKE ?"; keywords.len()];
     sql.push_str(&where_clauses.join(" AND "));
     sql.push_str(" ORDER BY score DESC, timestamp DESC LIMIT ?");
 

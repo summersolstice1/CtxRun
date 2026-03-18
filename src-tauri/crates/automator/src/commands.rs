@@ -75,7 +75,7 @@ pub async fn execute_workflow_graph<R: Runtime>(
 
 #[tauri::command]
 pub async fn get_element_under_cursor() -> Result<PickedElement> {
-    tauri::async_runtime::spawn_blocking(|| crate::inspector::get_element_under_cursor_impl())
+    tauri::async_runtime::spawn_blocking(crate::inspector::get_element_under_cursor_impl)
         .await
         .map_err(|e| AutomatorError::JoinError(e.to_string()))?
 }

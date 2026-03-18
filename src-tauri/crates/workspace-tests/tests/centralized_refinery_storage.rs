@@ -1,7 +1,7 @@
 use std::{thread, time::Duration};
 
 use ctxrun_plugin_refinery::{
-    models::{RefineryKind, RefineryMetadata},
+    models::{ClipboardCapture, RefineryKind, RefineryMetadata},
     storage::{capture_clipboard_item, create_manual_note_db, hash_content, update_note_db},
 };
 use rusqlite::{Connection, params};
@@ -62,14 +62,16 @@ fn centralized_refinery_capture_clipboard_deduplicates_by_hash() {
     let hash = hash_content(b"clipboard-value");
     let (created1, id1) = capture_clipboard_item(
         &conn,
-        RefineryKind::Text,
-        Some("clipboard-value".to_string()),
-        hash.clone(),
-        Some("clipboard-value".to_string()),
-        Some("Editor".to_string()),
-        None,
-        Some("15 chars".to_string()),
-        default_metadata(),
+        ClipboardCapture {
+            kind: RefineryKind::Text,
+            content: Some("clipboard-value".to_string()),
+            hash: hash.clone(),
+            preview: Some("clipboard-value".to_string()),
+            source_app: Some("Editor".to_string()),
+            url: None,
+            size_info: Some("15 chars".to_string()),
+            metadata: default_metadata(),
+        },
     )
     .expect("first capture should succeed");
     assert!(created1);
@@ -79,14 +81,16 @@ fn centralized_refinery_capture_clipboard_deduplicates_by_hash() {
 
     let (created2, id2) = capture_clipboard_item(
         &conn,
-        RefineryKind::Text,
-        Some("clipboard-value".to_string()),
-        hash,
-        Some("clipboard-value".to_string()),
-        Some("Browser".to_string()),
-        Some("https://example.com".to_string()),
-        Some("15 chars".to_string()),
-        default_metadata(),
+        ClipboardCapture {
+            kind: RefineryKind::Text,
+            content: Some("clipboard-value".to_string()),
+            hash,
+            preview: Some("clipboard-value".to_string()),
+            source_app: Some("Browser".to_string()),
+            url: Some("https://example.com".to_string()),
+            size_info: Some("15 chars".to_string()),
+            metadata: default_metadata(),
+        },
     )
     .expect("duplicate capture should succeed");
 

@@ -29,37 +29,33 @@ pub fn probe_sdks() -> HashMap<String, Vec<String>> {
     if let Ok(root) = android_home {
         let mut android_info = Vec::new();
         let build_tools = std::path::Path::new(&root).join("build-tools");
-        if build_tools.exists() {
-            if let Ok(entries) = std::fs::read_dir(build_tools) {
-                let mut versions: Vec<String> = entries
-                    .filter_map(|e| e.ok())
-                    .map(|e| e.file_name().to_string_lossy().to_string())
-                    .filter(|n| n.chars().next().map_or(false, |c| c.is_numeric()))
-                    .collect();
-                versions.sort();
-                if !versions.is_empty() {
-                    android_info.push(format!("Build Tools: {}", versions.join(", ")));
-                }
+        if build_tools.exists() && let Ok(entries) = std::fs::read_dir(build_tools) {
+            let mut versions: Vec<String> = entries
+                .filter_map(|e| e.ok())
+                .map(|e| e.file_name().to_string_lossy().to_string())
+                .filter(|n| n.chars().next().is_some_and(|c| c.is_numeric()))
+                .collect();
+            versions.sort();
+            if !versions.is_empty() {
+                android_info.push(format!("Build Tools: {}", versions.join(", ")));
             }
         }
 
         let platforms = std::path::Path::new(&root).join("platforms");
-        if platforms.exists() {
-            if let Ok(entries) = std::fs::read_dir(platforms) {
-                let mut levels: Vec<String> = entries
-                    .filter_map(|e| e.ok())
-                    .map(|e| e.file_name().to_string_lossy().to_string())
-                    .filter(|n| n.starts_with("android-"))
-                    .map(|n| n.replace("android-", ""))
-                    .collect();
-                levels.sort_by(|a, b| {
-                    a.parse::<u32>()
-                        .unwrap_or(0)
-                        .cmp(&b.parse::<u32>().unwrap_or(0))
-                });
-                if !levels.is_empty() {
-                    android_info.push(format!("API Levels: {}", levels.join(", ")));
-                }
+        if platforms.exists() && let Ok(entries) = std::fs::read_dir(platforms) {
+            let mut levels: Vec<String> = entries
+                .filter_map(|e| e.ok())
+                .map(|e| e.file_name().to_string_lossy().to_string())
+                .filter(|n| n.starts_with("android-"))
+                .map(|n| n.replace("android-", ""))
+                .collect();
+            levels.sort_by(|a, b| {
+                a.parse::<u32>()
+                    .unwrap_or(0)
+                    .cmp(&b.parse::<u32>().unwrap_or(0))
+            });
+            if !levels.is_empty() {
+                android_info.push(format!("API Levels: {}", levels.join(", ")));
             }
         }
 

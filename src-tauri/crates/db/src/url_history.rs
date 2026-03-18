@@ -44,41 +44,36 @@ pub async fn record_url_visit(
 
     let url_clone = url.clone();
     tauri::async_runtime::spawn(async move {
-        if let Some(c) = TITLE_FETCH_CLIENT.as_ref() {
-            if let Ok(resp) = c
+        if let Some(c) = TITLE_FETCH_CLIENT.as_ref()
+            && let Ok(resp) = c
                 .get(&url_clone)
                 .header("Range", "bytes=0-16384") // Only request the first 16KB
                 .send()
                 .await
+        {
+            // A successful range request returns 206 Partial Content
+            if (resp.status().is_success()
+                || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT)
+                && let Ok(text) = resp.text().await
+                && let Some(caps) = TITLE_REGEX.captures(&text)
+                && let Some(title_match) = caps.get(1)
             {
-                // A successful range request returns 206 Partial Content
-                if resp.status().is_success()
-                    || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT
-                {
-                    if let Ok(text) = resp.text().await {
-                        if let Some(caps) = TITLE_REGEX.captures(&text) {
-                            if let Some(title_match) = caps.get(1) {
-                                let raw_title = title_match.as_str().trim();
-                                let clean_title = raw_title
-                                    .replace('\n', " ")
-                                    .replace('\r', "")
-                                    .trim()
-                                    .to_string();
+                let raw_title = title_match.as_str().trim();
+                let clean_title = raw_title
+                    .replace('\n', " ")
+                    .replace('\r', "")
+                    .trim()
+                    .to_string();
 
-                                if !clean_title.is_empty() {
-                                    if let Ok(app_dir) = app_handle.path().app_local_data_dir()
-                                    {
-                                        let db_path = app_dir.join("prompts.db");
-                                        if let Ok(conn) = Connection::open(db_path) {
-                                            let _ = conn.execute(
-                                                "UPDATE url_history SET title = ?1 WHERE url = ?2 AND (title IS NULL OR title = '')",
-                                                params![clean_title, url_clone],
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                if !clean_title.is_empty()
+                    && let Ok(app_dir) = app_handle.path().app_local_data_dir()
+                {
+                    let db_path = app_dir.join("prompts.db");
+                    if let Ok(conn) = Connection::open(db_path) {
+                        let _ = conn.execute(
+                            "UPDATE url_history SET title = ?1 WHERE url = ?2 AND (title IS NULL OR title = '')",
+                            params![clean_title, url_clone],
+                        );
                     }
                 }
             }

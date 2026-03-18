@@ -54,12 +54,10 @@ fn validate_target_url(raw: &str) -> Result<()> {
         ));
     }
 
-    if let Ok(ip) = host.parse::<IpAddr>() {
-        if is_blocked_ip(ip) {
-            return Err(MinerError::SystemError(
-                "Private or loopback IP targets are not allowed.".into(),
-            ));
-        }
+    if let Ok(ip) = host.parse::<IpAddr>() && is_blocked_ip(ip) {
+        return Err(MinerError::SystemError(
+            "Private or loopback IP targets are not allowed.".into(),
+        ));
     }
 
     Ok(())

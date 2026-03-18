@@ -20,7 +20,7 @@ pub struct ToolInfo {
     pub description: Option<String>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Default, Serialize, Clone)]
 pub struct EnvReport {
     pub system: Option<HashMap<String, String>>,
     pub binaries: Vec<ToolInfo>,
@@ -33,24 +33,6 @@ pub struct EnvReport {
     pub managers: Vec<ToolInfo>,
     pub utilities: Vec<ToolInfo>,
     pub npm_packages: Vec<ToolInfo>,
-}
-
-impl Default for EnvReport {
-    fn default() -> Self {
-        Self {
-            system: None,
-            binaries: Vec::new(),
-            browsers: Vec::new(),
-            ides: Vec::new(),
-            languages: Vec::new(),
-            sdks: HashMap::new(),
-            virtualization: Vec::new(),
-            databases: Vec::new(),
-            managers: Vec::new(),
-            utilities: Vec::new(),
-            npm_packages: Vec::new(),
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq)]

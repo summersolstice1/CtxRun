@@ -46,35 +46,35 @@ impl ProjectScanner for NodeScanner {
     fn parse_dependencies(&self, root: &str) -> HashMap<String, String> {
         let mut d = HashMap::new();
         let path = Path::new(root).join("package.json");
-        if let Ok(content) = std::fs::read_to_string(&path) {
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-                let whitelist = [
-                    "react",
-                    "vue",
-                    "next",
-                    "nuxt",
-                    "vite",
-                    "webpack",
-                    "typescript",
-                    "tailwindcss",
-                    "electron",
-                    "tauri",
-                    "express",
-                    "nestjs",
-                    "react-native",
-                ];
-                let mut process = |field: &str| {
-                    if let Some(obj) = json[field].as_object() {
-                        for (k, v) in obj {
-                            if whitelist.contains(&k.as_str()) || k.starts_with("@tauri-apps") {
-                                d.insert(k.clone(), v.as_str().unwrap_or("").to_string());
-                            }
+        if let Ok(content) = std::fs::read_to_string(&path)
+            && let Ok(json) = serde_json::from_str::<serde_json::Value>(&content)
+        {
+            let whitelist = [
+                "react",
+                "vue",
+                "next",
+                "nuxt",
+                "vite",
+                "webpack",
+                "typescript",
+                "tailwindcss",
+                "electron",
+                "tauri",
+                "express",
+                "nestjs",
+                "react-native",
+            ];
+            let mut process = |field: &str| {
+                if let Some(obj) = json[field].as_object() {
+                    for (k, v) in obj {
+                        if whitelist.contains(&k.as_str()) || k.starts_with("@tauri-apps") {
+                            d.insert(k.clone(), v.as_str().unwrap_or("").to_string());
                         }
                     }
-                };
-                process("dependencies");
-                process("devDependencies");
-            }
+                }
+            };
+            process("dependencies");
+            process("devDependencies");
         }
         d
     }
@@ -171,7 +171,7 @@ impl ProjectScanner for JavaScanner {
         {
             for cap in GRADLE_RE.captures_iter(&content) {
                 let full_name = &cap[2];
-                let simple_name = full_name.split('.').last().unwrap_or(full_name);
+                let simple_name = full_name.split('.').next_back().unwrap_or(full_name);
                 deps.insert(simple_name.to_string(), "Detected".into());
             }
         }
@@ -248,7 +248,7 @@ impl ProjectScanner for GoScanner {
                 "gin", "echo", "fiber", "gorm", "sqlx", "cobra", "viper", "protobuf", "grpc",
             ];
             for cap in GO_MOD_RE.captures_iter(&content) {
-                let name = cap[1].split('/').last().unwrap_or(&cap[1]);
+                let name = cap[1].split('/').next_back().unwrap_or(&cap[1]);
                 if whitelist.contains(&name) {
                     deps.insert(name.to_string(), cap[2].to_string());
                 }
@@ -288,10 +288,10 @@ impl ProjectScanner for DotNetScanner {
         let p = Path::new(root);
         if let Ok(entries) = std::fs::read_dir(p) {
             for entry in entries.flatten() {
-                if let Some(name) = entry.file_name().to_str() {
-                    if name.ends_with(".csproj") || name.ends_with(".sln") {
-                        return true;
-                    }
+                if let Some(name) = entry.file_name().to_str()
+                    && (name.ends_with(".csproj") || name.ends_with(".sln"))
+                {
+                    return true;
                 }
             }
         }

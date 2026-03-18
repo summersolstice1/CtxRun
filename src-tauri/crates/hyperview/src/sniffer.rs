@@ -41,7 +41,7 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
     let path = Path::new(path_str);
 
     if !path.exists() {
-        return Err("File not found".to_string().into());
+        return Err("File not found".to_string());
     }
 
     let metadata = std::fs::metadata(path).map_err(|e| e.to_string())?;
@@ -88,10 +88,8 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
             } else if mime_type.starts_with("text/") {
                 p_type = PreviewType::Code;
             }
-        } else {
-            if mime.starts_with("text/") {
-                p_type = PreviewType::Code;
-            }
+        } else if mime.starts_with("text/") {
+            p_type = PreviewType::Code;
         }
     }
 

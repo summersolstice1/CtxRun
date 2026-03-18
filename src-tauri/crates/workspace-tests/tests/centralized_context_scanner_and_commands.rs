@@ -241,6 +241,7 @@ fn centralized_context_commands_has_ignore_files_and_protocol_filtering() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+#[allow(clippy::await_holding_lock)]
 async fn centralized_context_commands_scan_project_tree_async_returns_locked_nodes() {
     let _guard = scanner_test_lock().lock().expect("lock scanner tests");
     let root = temp_root("context-command-scan");

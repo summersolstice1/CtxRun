@@ -110,14 +110,14 @@ fn build_markdown(
             .iter()
             .map(|t| {
                 if t.version == "Not Found" {
-                    format!("{}", t.name)
+                    t.name.to_string()
                 } else {
                     format!("{} {}", t.name, t.version)
                 }
             })
             .collect();
         md.push_str(&tool_strs.join(", "));
-        md.push_str("\n");
+        md.push('\n');
     }
 
     if !deps.is_empty() {

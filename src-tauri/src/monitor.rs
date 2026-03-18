@@ -295,7 +295,7 @@ pub fn kill_process(
 
     #[cfg(target_os = "windows")]
     let output = Command::new("taskkill")
-        .args(&["/F", "/PID", &pid.to_string()])
+        .args(["/F", "/PID", &pid.to_string()])
         .output();
 
     #[cfg(not(target_os = "windows"))]
@@ -544,10 +544,10 @@ pub async fn get_env_info(
                 || env_probe::binaries::probe_by_category("Binaries"),
                 || {
                     rayon::join(
-                        || env_probe::browsers::probe_browsers(),
+                        env_probe::browsers::probe_browsers,
                         || {
                             rayon::join(
-                                || env_probe::ides::probe_ides(),
+                                env_probe::ides::probe_ides,
                                 || {
                                     rayon::join(
                                         || env_probe::binaries::probe_by_category("Languages"),
@@ -667,9 +667,10 @@ pub async fn diagnose_network() -> Vec<NetDiagResult> {
             match resp {
                 Ok(r) => {
                     let status_code = r.status().as_u16();
-                    let status = if status_code >= 200 && status_code < 400 {
-                        if duration < 500 { "Success" } else { "Slow" }
-                    } else if status_code == 403 || status_code == 401 {
+                    let status = if (200..400).contains(&status_code)
+                        || status_code == 403
+                        || status_code == 401
+                    {
                         if duration < 500 { "Success" } else { "Slow" }
                     } else {
                         "Fail"
@@ -689,7 +690,7 @@ pub async fn diagnose_network() -> Vec<NetDiagResult> {
                         Ok(r) => {
                             let duration_retry = start_retry.elapsed().as_millis();
                             let status_code = r.status().as_u16();
-                            let status = if status_code >= 200 && status_code < 400 {
+                            let status = if (200..400).contains(&status_code) {
                                 if duration_retry < 800 {
                                     "Success"
                                 } else {

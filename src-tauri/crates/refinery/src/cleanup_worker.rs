@@ -60,21 +60,19 @@ impl CleanupWorker {
 
         match config.strategy.as_str() {
             "count" => {
-                if let Some(max_count) = config.max_count {
-                    if let Err(e) =
+                if let Some(max_count) = config.max_count
+                    && let Err(e) =
                         super::commands::execute_count_cleanup(app, max_count, config.keep_pinned)
-                    {
-                        eprintln!("[Refinery Cleanup] Count cleanup failed: {}", e);
-                    }
+                {
+                    eprintln!("[Refinery Cleanup] Count cleanup failed: {}", e);
                 }
             }
             "time" => {
-                if let Some(days) = config.days {
-                    if let Err(e) =
+                if let Some(days) = config.days
+                    && let Err(e) =
                         super::commands::execute_time_cleanup(app, days, config.keep_pinned)
-                    {
-                        eprintln!("[Refinery Cleanup] Time cleanup failed: {}", e);
-                    }
+                {
+                    eprintln!("[Refinery Cleanup] Time cleanup failed: {}", e);
                 }
             }
             "both" => {
@@ -86,11 +84,8 @@ impl CleanupWorker {
                     false
                 };
 
-                if !count_triggered {
-                    if let Some(days) = config.days {
-                        let _ =
-                            super::commands::execute_time_cleanup(app, days, config.keep_pinned);
-                    }
+                if !count_triggered && let Some(days) = config.days {
+                    let _ = super::commands::execute_time_cleanup(app, days, config.keep_pinned);
                 }
             }
             _ => {}

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub enum RefineryKind {
@@ -10,12 +11,12 @@ pub enum RefineryKind {
     Mixed,
 }
 
-impl ToString for RefineryKind {
-    fn to_string(&self) -> String {
+impl fmt::Display for RefineryKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RefineryKind::Text => "text".to_string(),
-            RefineryKind::Image => "image".to_string(),
-            RefineryKind::Mixed => "mixed".to_string(),
+            RefineryKind::Text => f.write_str("text"),
+            RefineryKind::Image => f.write_str("image"),
+            RefineryKind::Mixed => f.write_str("mixed"),
         }
     }
 }
@@ -27,6 +28,18 @@ pub struct RefineryMetadata {
     pub format: Option<String>,
     pub tokens: Option<usize>,
     pub image_path: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ClipboardCapture {
+    pub kind: RefineryKind,
+    pub content: Option<String>,
+    pub hash: String,
+    pub preview: Option<String>,
+    pub source_app: Option<String>,
+    pub url: Option<String>,
+    pub size_info: Option<String>,
+    pub metadata: RefineryMetadata,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

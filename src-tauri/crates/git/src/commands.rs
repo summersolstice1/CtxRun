@@ -80,14 +80,12 @@ fn read_blob_content(repo: &Repository, id: git2::Oid, max_size: usize) -> (Stri
 }
 
 fn read_file_content(full_path: &Path, max_size: usize) -> (String, bool, bool) {
-    if let Ok(meta) = std::fs::metadata(full_path) {
-        if meta.len() > max_size as u64 {
-            return (
-                format!("[File Too Large: {} bytes]", meta.len()),
-                false,
-                true,
-            );
-        }
+    if let Ok(meta) = std::fs::metadata(full_path) && meta.len() > max_size as u64 {
+        return (
+            format!("[File Too Large: {} bytes]", meta.len()),
+            false,
+            true,
+        );
     }
 
     match std::fs::read(full_path) {
@@ -186,12 +184,10 @@ pub fn get_git_diff(
                         let full_path = Path::new(&project_path).join(&item.path);
                         read_file_content(&full_path, MAX_SIZE)
                     }
+                } else if let Some(r) = repo_ref {
+                    read_blob_content(r, item.new_oid, MAX_SIZE)
                 } else {
-                    if let Some(r) = repo_ref {
-                        read_blob_content(r, item.new_oid, MAX_SIZE)
-                    } else {
-                        (String::new(), false, false)
-                    }
+                    (String::new(), false, false)
                 };
 
                 GitDiffFile {

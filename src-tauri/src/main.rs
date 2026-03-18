@@ -52,11 +52,8 @@ fn ensure_main_window(app: &AppHandle) {
             .resizable(true)
             .visible(true);
 
-            match window_builder.build() {
-                Ok(w) => {
-                    let _ = w.set_focus();
-                }
-                Err(_) => {}
+            if let Ok(w) = window_builder.build() {
+                let _ = w.set_focus();
             }
         }
     }
@@ -316,26 +313,25 @@ fn main() {
                 })
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .on_menu_event(|_app, event| match event.id().as_ref() {
-                    "quit" => {
+                .on_menu_event(|_app, event| {
+                    if event.id().as_ref() == "quit" {
                         std::process::exit(0);
                     }
-                    _ => {}
                 })
-                .on_tray_icon_event(|tray, event| match event {
-                    TrayIconEvent::Click {
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
                         button: MouseButton::Left,
                         ..
-                    } => {
+                    } = event
+                    {
                         ensure_main_window(tray.app_handle());
                     }
-                    _ => {}
                 })
                 .build(app)?;
             Ok(())
         })
-        .on_window_event(|window, event| match event {
-            WindowEvent::CloseRequested { api, .. } => {
+        .on_window_event(|window, event| {
+            if let WindowEvent::CloseRequested { api, .. } = event {
                 let label = window.label();
 
                 if label == "main" {
@@ -348,14 +344,12 @@ fn main() {
                     let _ = window.hide();
                 }
             }
-            _ => {}
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_app_handle, event| match event {
-            RunEvent::ExitRequested { api, .. } => {
+        .run(|_app_handle, event| {
+            if let RunEvent::ExitRequested { api, .. } = event {
                 api.prevent_exit();
             }
-            _ => {}
         });
 }

@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
+    "lint:rust": "cargo clippy --manifest-path src-tauri/Cargo.toml --workspace --all-targets -- -D warnings",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "deadcode": "knip --reporter compact",
+    "deadcode:rust": "cargo machete --with-metadata --skip-target-dir src-tauri",
     "preview": "vite preview",
     "tauri": "tauri"
   },

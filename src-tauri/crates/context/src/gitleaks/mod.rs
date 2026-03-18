@@ -39,7 +39,7 @@ pub struct SecretMatch {
     pub snippet_start_line: usize, // 片段起始行
 }
 
-static RULES: Lazy<&'static [Rule]> = Lazy::new(|| get_all_rules());
+static RULES: Lazy<&'static [Rule]> = Lazy::new(get_all_rules);
 
 pub fn scan_text(text: &str) -> Vec<SecretMatch> {
     let rules = *RULES;

@@ -163,17 +163,16 @@ impl MinerDriver {
             }
         }
 
-        if let Some(mut task) = self.handler_task.take() {
-            if tokio::time::timeout(
+        if let Some(mut task) = self.handler_task.take()
+            && tokio::time::timeout(
                 Duration::from_secs(HANDLER_SHUTDOWN_TIMEOUT_SECS),
                 &mut task,
             )
             .await
             .is_err()
-            {
-                task.abort();
-                let _ = task.await;
-            }
+        {
+            task.abort();
+            let _ = task.await;
         }
     }
 }
