@@ -77,13 +77,13 @@ fn check_browser(cfg: &BrowserConfig) -> ToolInfo {
 
     #[cfg(target_os = "linux")]
     {
-        if !cfg.linux_bin.is_empty() {
-            if let Some(p) = common::locate_binary(cfg.linux_bin) {
-                path = Some(p);
+        if !cfg.linux_bin.is_empty()
+            && let Some(p) = common::locate_binary(cfg.linux_bin)
+        {
+            path = Some(p);
 
-                if let Ok(out) = common::run_command(cfg.linux_bin, &["--version"]) {
-                    version = common::find_version(&out, None);
-                }
+            if let Ok(out) = common::run_command(cfg.linux_bin, &["--version"]) {
+                version = common::find_version(&out, None);
             }
         }
     }

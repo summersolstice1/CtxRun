@@ -62,7 +62,7 @@ uuid = { version = "1.19", features = ["v4"] }
 ctxrun-db = { path = "crates/db" }
 
 # git
-git2 = "0.19"
+git2 = { version = "0.19", features = ["vendored-libgit2", "vendored-openssl"] }
 similar = "2.6"
 thiserror = "2.0"
 
