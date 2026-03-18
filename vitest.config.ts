@@ -15,7 +15,20 @@ export default defineConfig({
     restoreMocks: true,
     coverage: {
       provider: 'v8',
-      include: ['src/lib/**/*.{ts,tsx}', 'src/store/**/*.{ts,tsx}'],
+      include: [
+        'src/App.tsx',
+        'src/lib/**/*.{ts,tsx}',
+        'src/store/**/*.{ts,tsx}',
+        'src/components/layout/TitleBar.tsx',
+        'src/components/layout/WorkspaceSwitcher.tsx',
+        'src/components/layout/ViewSwitcher.tsx',
+        'src/components/settings/SettingsNav.tsx',
+        'src/components/settings/SettingsUi.tsx',
+        'src/components/settings/SettingsView.tsx',
+        'src/components/settings/sections/GeneralSection.tsx',
+        'src/components/settings/sections/SearchWorkspaceSection.tsx',
+        'src/components/ui/ShortcutInput.tsx',
+      ],
       exclude: [
         'src/vite-env.d.ts',
         'src/main.tsx',
