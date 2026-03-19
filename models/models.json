@@ -16,10 +16,18 @@
     "color": "bg-green-600"
   },
   {
-    "id": "Minimax-m2.7",
+    "id": "Gemini-3.1-pro-preview",
+    "name": "Gemini 3.1 Pro",
+    "provider": "Google",
+    "contextLimit": 1000000,
+    "inputPricePerMillion": 2.00,
+    "color": "bg-blue-600"
+  },
+  {
+    "id": "Minimax-M2.7",
     "name": "minimax m2.7",
     "provider": "Minimax",
-    "contextLimit": 200000,
+    "contextLimit": 204800,
     "inputPricePerMillion": 0.30,
     "color": "bg-green-500"
   },
@@ -28,16 +36,8 @@
     "name": "GLM 5",
     "provider": "ZhipuAI",
     "contextLimit": 200000,
-    "inputPricePerMillion": 0.58,
+    "inputPricePerMillion": 0.72,
     "color": "bg-blue-400"
-  },
-  {
-    "id": "Gemini-3.1-pro-preview",
-    "name": "Gemini 3.1 Pro",
-    "provider": "Google",
-    "contextLimit": 1048576,
-    "inputPricePerMillion": 2.00,
-    "color": "bg-blue-600"
   },
   {
     "id": "gemini-3-flash-preview",
