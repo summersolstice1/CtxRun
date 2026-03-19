@@ -13,6 +13,8 @@ export interface SecretMatch {
   line_number: number;
   snippet: string;
   snippet_start_line: number;
+  file_path?: string;
+  file_name?: string;
 }
 
 interface ScanResultDialogProps {
@@ -70,6 +72,8 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
     const maskedPart = 'X'.repeat(Math.min(s.length - 8, 24)); 
     return `${visiblePart}${maskedPart}${s.length > 32 ? '...' : ''}`;
   };
+
+  const getDisplayName = (item: SecretMatch) => item.file_name || item.file_path || item.kind.toString();
 
   const handleConfirm = async () => {
     if (ignorePermanently) {
@@ -205,20 +209,28 @@ export function ScanResultDialog({ isOpen, results, onConfirm, onCancel }: ScanR
                             
                             <div className="flex flex-col flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                                        <AlertTriangle size={12} className="text-orange-500" />
-                                        {item.kind}
-                                    </span>
-                                    <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">
-                                        Line {item.line_number}
-                                    </span>
-                                </div>
-                            </div>
-                            
-                            <span className={cn(
-                                "text-[10px] px-1.5 py-0.5 rounded font-mono uppercase shrink-0",
-                                item.risk_level === 'High' ? "bg-red-500/10 text-red-500" : "bg-yellow-500/10 text-yellow-500"
-                            )}>
+                                     <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                         <AlertTriangle size={12} className="text-orange-500" />
+                                         {getDisplayName(item)}
+                                     </span>
+                                     <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-mono">
+                                         Line {item.line_number}
+                                     </span>
+                                 </div>
+                                 {(item.file_name || item.file_path) && (
+                                   <div className="text-[10px] text-muted-foreground font-mono truncate" title={item.file_path || item.file_name}>
+                                     {item.file_path}
+                                   </div>
+                                 )}
+                             </div>
+                             
+                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-mono shrink-0">
+                                 {item.kind}
+                             </span>
+                             <span className={cn(
+                                 "text-[10px] px-1.5 py-0.5 rounded font-mono uppercase shrink-0",
+                                 item.risk_level === 'High' ? "bg-red-500/10 text-red-500" : "bg-yellow-500/10 text-yellow-500"
+                             )}>
                                 {isSelected ? t('context.willRedact') : t('context.keepRaw')}
                             </span>
                         </div>

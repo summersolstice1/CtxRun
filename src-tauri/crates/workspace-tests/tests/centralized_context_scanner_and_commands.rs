@@ -303,6 +303,29 @@ async fn centralized_context_commands_scan_for_secrets_filters_ignored_values() 
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn centralized_context_commands_scan_for_secrets_enriches_file_metadata() {
+    let db_state = make_db_state();
+    let secret = "sk-Z9y8X7w6V5u4T3s2Z9y8X7w6V5u4T3s2Z9y8X7w6V5u4T3s2";
+    let content = format!(
+        "<project_context>\n<source_files>\n<file path=\"src/demo.ts\">\nconst safe = 1;\nconst token = \"{secret}\";\n</file>\n</source_files>\n</project_context>\n"
+    );
+
+    let matches = commands::scan_for_secrets(state_of(&db_state), content)
+        .await
+        .expect("scan for secrets");
+
+    let hit = matches
+        .iter()
+        .find(|m| m.value == secret)
+        .expect("detected matches should include the expected secret value");
+
+    assert_eq!(hit.file_path.as_deref(), Some("src/demo.ts"));
+    assert_eq!(hit.file_name.as_deref(), Some("demo.ts"));
+    assert_eq!(hit.line_number, 2);
+    assert_eq!(hit.snippet_start_line, 1);
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn centralized_context_commands_calculate_stats_and_content_roundtrip() {
     let root = temp_root("context-content");
     let file = root.join("main.ts");
