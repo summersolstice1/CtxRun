@@ -10,6 +10,42 @@ const NAV_BUTTON_SPRING = {
   mass: 1,
 };
 
+export type SettingsContentWidth = 'form' | 'wide' | 'document' | 'full';
+
+const SETTINGS_CONTENT_CLASS_MAP: Record<SettingsContentWidth, string> = {
+  form: 'w-full max-w-[1040px] mr-auto',
+  wide: 'w-full max-w-[1280px] mr-auto',
+  document: 'w-full max-w-4xl mx-auto',
+  full: 'w-full',
+};
+
+export const SETTINGS_LAYOUT = {
+  pageGrid: 'grid grid-cols-1 gap-4 lg:grid-cols-12',
+  optionGrid: 'grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(180px,1fr))]',
+} as const;
+
+interface SettingsSurfaceProps {
+  children: ReactNode;
+  className?: string;
+}
+
+export function getSettingsContentClass(width: SettingsContentWidth) {
+  return SETTINGS_CONTENT_CLASS_MAP[width];
+}
+
+export function SettingsSurface({ children, className }: SettingsSurfaceProps) {
+  return (
+    <section
+      className={cn(
+        'rounded-2xl border border-border/60 bg-secondary/[0.04] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] sm:p-6',
+        className,
+      )}
+    >
+      {children}
+    </section>
+  );
+}
+
 interface SelectableCardProps {
   active: boolean;
   onClick: () => void;

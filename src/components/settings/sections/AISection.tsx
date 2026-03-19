@@ -1,7 +1,11 @@
 import type { KeyboardEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Check, Edit3 } from 'lucide-react';
+import { Check, Edit3, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import {
+  SETTINGS_LAYOUT,
+  SettingsSurface,
+} from '@/components/settings/SettingsUi';
 import { cn } from '@/lib/utils';
 import type { AIProviderConfig, AIProviderSetting } from '@/types/model';
 
@@ -19,128 +23,164 @@ export function AISection({
   renameAIProvider,
 }: AISectionProps) {
   const { t } = useTranslation();
-  const [isRenaming, setIsRenaming] = useState(false);
+  const [renamingProviderId, setRenamingProviderId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
   const renameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isRenaming && renameInputRef.current) {
+    if (renamingProviderId && renameInputRef.current) {
       renameInputRef.current.focus();
+      renameInputRef.current.select();
     }
-  }, [isRenaming]);
+  }, [renamingProviderId]);
 
   const handleRenameSubmit = () => {
     const nextName = renameValue.trim();
-    if (nextName) {
-      renameAIProvider(aiConfig.providerId, nextName);
+    if (nextName && renamingProviderId) {
+      renameAIProvider(renamingProviderId, nextName);
     }
-    setIsRenaming(false);
+    setRenamingProviderId(null);
+    setRenameValue('');
+  };
+
+  const handleRenameCancel = () => {
+    setRenamingProviderId(null);
+    setRenameValue('');
   };
 
   const handleRenameKeyDown = (event: KeyboardEvent) => {
     if (event.key === 'Enter') {
+      event.preventDefault();
       handleRenameSubmit();
     }
     if (event.key === 'Escape') {
-      setIsRenaming(false);
+      event.preventDefault();
+      handleRenameCancel();
     }
   };
 
+  const beginRename = (providerName: string) => {
+    setRenameValue(providerName);
+    setRenamingProviderId(providerName);
+  };
+
+  const handleProviderSelect = (providerName: string) => {
+    if (renamingProviderId) {
+      handleRenameCancel();
+    }
+    setAIConfig({ providerId: providerName });
+  };
+
   return (
-    <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-200">
+    <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-200">
       <div>
         <h3 className="text-sm font-medium text-foreground">{t('settings.aiTitle')}</h3>
         <p className="text-xs text-muted-foreground mt-1">{t('settings.aiDesc')}</p>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            {t('settings.provider')}
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {Object.keys(savedProviderSettings).map((providerName) => {
-              const isActive = aiConfig.providerId === providerName;
+      <div className={SETTINGS_LAYOUT.pageGrid}>
+        <SettingsSurface className="space-y-4 lg:col-span-12">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              {t('settings.provider')}
+            </label>
+            <div className={SETTINGS_LAYOUT.optionGrid}>
+              {Object.keys(savedProviderSettings).map((providerName) => {
+                const isActive = aiConfig.providerId === providerName;
+                const isRenaming = renamingProviderId === providerName;
 
-              if (isActive && isRenaming) {
-                return (
-                  <div key={providerName} className="relative">
-                    <input
-                      ref={renameInputRef}
-                      className="w-full py-2 px-3 rounded-md text-sm border border-primary bg-background outline-none font-medium shadow-sm"
-                      value={renameValue}
-                      onChange={(event) => setRenameValue(event.target.value)}
-                      onBlur={handleRenameSubmit}
-                      onKeyDown={handleRenameKeyDown}
-                    />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none">
-                      <Check size={14} />
+                if (isRenaming) {
+                  return (
+                    <div
+                      key={providerName}
+                      className="flex min-h-[72px] items-center gap-3 rounded-xl border border-primary bg-primary/10 px-4 py-3 shadow-[0_10px_30px_rgba(59,130,246,0.08)]"
+                    >
+                      <input
+                        ref={renameInputRef}
+                        className="min-w-0 flex-1 bg-transparent text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground/40"
+                        value={renameValue}
+                        onChange={(event) => setRenameValue(event.target.value)}
+                        onKeyDown={handleRenameKeyDown}
+                        placeholder={providerName}
+                      />
+                      <div className="flex shrink-0 items-center gap-1">
+                        <button
+                          onClick={handleRenameSubmit}
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-green-500 transition-colors hover:bg-green-500/10"
+                          title="Confirm"
+                        >
+                          <Check size={16} />
+                        </button>
+                        <button
+                          onClick={handleRenameCancel}
+                          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground"
+                          title="Cancel"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              }
+                  );
+                }
 
-              return (
-                <button
-                  key={providerName}
-                  onClick={() => setAIConfig({ providerId: providerName })}
-                  className={cn(
-                    'group relative py-2 px-3 rounded-md text-sm border transition-all capitalize flex items-center justify-center gap-2',
-                    isActive
-                      ? 'bg-primary/10 border-primary text-primary font-medium shadow-sm'
-                      : 'bg-secondary/30 border-border text-muted-foreground hover:bg-secondary/50',
-                  )}
-                  onDoubleClick={() => {
-                    if (isActive) {
-                      setRenameValue(providerName);
-                      setIsRenaming(true);
-                    }
-                  }}
-                >
-                  <span className="truncate">{providerName}</span>
+                return (
+                  <button
+                    key={providerName}
+                    onClick={() => handleProviderSelect(providerName)}
+                    className={cn(
+                      'group relative flex min-h-[72px] items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm capitalize transition-all',
+                      isActive
+                        ? 'border-primary bg-primary/10 text-primary shadow-[0_10px_30px_rgba(59,130,246,0.08)]'
+                        : 'border-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50',
+                    )}
+                    onDoubleClick={() => {
+                      if (isActive) {
+                        beginRename(providerName);
+                      }
+                    }}
+                  >
+                    <span className="truncate font-medium">{providerName}</span>
 
-                  {isActive && (
-                    <span
+                    {isActive && (
+                      <span
                       onClick={(event) => {
                         event.stopPropagation();
-                        setRenameValue(providerName);
-                        setIsRenaming(true);
+                        beginRename(providerName);
                       }}
-                      className="opacity-50 hover:opacity-100 hover:bg-background/50 p-0.5 rounded transition-all cursor-pointer"
+                      className="cursor-pointer rounded p-0.5 opacity-50 transition-all hover:bg-background/50 hover:opacity-100"
                       title={t('common.rename')}
-                    >
-                      <Edit3 size={12} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                      >
+                        <Edit3 size={12} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="pt-1 text-[10px] text-muted-foreground/60">{t('common.renameHelp')}</p>
           </div>
-          <p className="text-[10px] text-muted-foreground/60 text-right pt-1">
-            {t('common.renameHelp')}
-          </p>
-        </div>
+        </SettingsSurface>
 
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <SettingsSurface className="space-y-4 lg:col-span-7">
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
             {t('settings.apiKey')}
           </label>
           <input
             type="password"
-            className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/30 font-mono"
+            className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-3 text-sm font-mono outline-none transition-all placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
             placeholder="sk-..."
             value={aiConfig.apiKey}
             onChange={(event) => setAIConfig({ apiKey: event.target.value })}
           />
           <p className="text-[10px] text-muted-foreground/60">{t('settings.apiKeyTip')}</p>
-        </div>
+        </SettingsSurface>
 
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+        <SettingsSurface className="space-y-4 lg:col-span-5">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {t('settings.temp')}
             </label>
-            <span className="font-mono text-sm text-foreground">
+            <span className="text-sm font-mono text-foreground">
               {aiConfig.temperature.toFixed(1)}
             </span>
           </div>
@@ -149,41 +189,40 @@ export function AISection({
             min="0"
             max="1"
             step="0.1"
-            className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+            className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-secondary accent-primary"
             value={aiConfig.temperature}
             onChange={(event) =>
               setAIConfig({ temperature: Number.parseFloat(event.target.value) })
             }
           />
           <p className="text-[10px] text-muted-foreground/60">{t('settings.tempTip')}</p>
-        </div>
+        </SettingsSurface>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {t('settings.baseUrl')}
-            </label>
-            <input
-              type="text"
-              className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/30"
-              placeholder={t('settings.baseUrlPlaceholder')}
-              value={aiConfig.baseUrl || ''}
-              onChange={(event) => setAIConfig({ baseUrl: event.target.value })}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-              {t('settings.modelId')}
-            </label>
-            <input
-              type="text"
-              className="w-full bg-secondary/30 border border-border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 transition-all placeholder:text-muted-foreground/30"
-              placeholder={aiConfig.providerId === 'deepseek' ? 'deepseek-chat' : 'gpt-4o'}
-              value={aiConfig.modelId}
-              onChange={(event) => setAIConfig({ modelId: event.target.value })}
-            />
-          </div>
-        </div>
+        <SettingsSurface className="space-y-4 lg:col-span-7">
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {t('settings.baseUrl')}
+          </label>
+          <input
+            type="text"
+            className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-3 text-sm outline-none transition-all placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+            placeholder={t('settings.baseUrlPlaceholder')}
+            value={aiConfig.baseUrl || ''}
+            onChange={(event) => setAIConfig({ baseUrl: event.target.value })}
+          />
+        </SettingsSurface>
+
+        <SettingsSurface className="space-y-4 lg:col-span-5">
+          <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            {t('settings.modelId')}
+          </label>
+          <input
+            type="text"
+            className="w-full rounded-xl border border-border bg-secondary/30 px-3 py-3 text-sm outline-none transition-all placeholder:text-muted-foreground/30 focus:border-primary/50 focus:ring-2 focus:ring-primary/20"
+            placeholder={aiConfig.providerId === 'deepseek' ? 'deepseek-chat' : 'gpt-4o'}
+            value={aiConfig.modelId}
+            onChange={(event) => setAIConfig({ modelId: event.target.value })}
+          />
+        </SettingsSurface>
       </div>
     </div>
   );

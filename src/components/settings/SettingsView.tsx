@@ -7,7 +7,11 @@ import { useAppStore } from '@/store/useAppStore';
 import { AboutSection } from '@/components/settings/AboutSection';
 import { PromptLibraryManager } from '@/components/settings/PromptLibraryManager';
 import { SettingsNav } from '@/components/settings/SettingsNav';
-import { SettingsIcon } from '@/components/settings/SettingsUi';
+import {
+  getSettingsContentClass,
+  SettingsIcon,
+  type SettingsContentWidth,
+} from '@/components/settings/SettingsUi';
 import type { SettingsSection } from '@/components/settings/types';
 import { AISection } from '@/components/settings/sections/AISection';
 import { DataMaintenanceSection } from '@/components/settings/sections/DataMaintenanceSection';
@@ -21,6 +25,16 @@ const CONTENT_VARIANTS = {
   exit: { opacity: 0, x: -8, scale: 0.995 },
 };
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
+
+const SETTINGS_SECTION_WIDTH: Record<SettingsSection, SettingsContentWidth> = {
+  general: 'form',
+  searchWorkspace: 'wide',
+  library: 'wide',
+  ai: 'form',
+  data: 'form',
+  security: 'wide',
+  about: 'full',
+};
 
 export function SettingsView() {
   const [activeSection, setActiveSection] = useState<SettingsSection>('general');
@@ -188,9 +202,11 @@ export function SettingsView() {
               animate="animate"
               exit="exit"
               transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              className="h-full w-full overflow-y-auto custom-scrollbar p-6"
+              className="h-full w-full overflow-y-auto custom-scrollbar px-5 py-5 sm:px-6 sm:py-6 lg:px-8 lg:py-7"
             >
-              {renderSection()}
+              <div className={`h-full ${getSettingsContentClass(SETTINGS_SECTION_WIDTH[activeSection])}`}>
+                {renderSection()}
+              </div>
             </motion.div>
           </AnimatePresence>
         </div>
