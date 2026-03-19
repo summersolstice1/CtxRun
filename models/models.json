@@ -8,12 +8,20 @@
     "color": "bg-orange-600"
   },
   {
-    "id": "GPT-5-2",
-    "name": "GPT-5.2",
+    "id": "GPT-5-4",
+    "name": "GPT-5.4",
     "provider": "OpenAI",
-    "contextLimit": 400000,
-    "inputPricePerMillion": 1.75,
+    "contextLimit": 1050000,
+    "inputPricePerMillion": 2.50,
     "color": "bg-green-600"
+  },
+  {
+    "id": "Minimax-m2.7",
+    "name": "minimax m2.7",
+    "provider": "Minimax",
+    "contextLimit": 200000,
+    "inputPricePerMillion": 0.30,
+    "color": "bg-green-500"
   },
   {
     "id": "GLM-5",
@@ -24,8 +32,8 @@
     "color": "bg-blue-400"
   },
   {
-    "id": "Gemini-3-pro-preview",
-    "name": "Gemini 3 Pro",
+    "id": "Gemini-3.1-pro-preview",
+    "name": "Gemini 3.1 Pro",
     "provider": "Google",
     "contextLimit": 1048576,
     "inputPricePerMillion": 2.00,
@@ -40,11 +48,11 @@
     "color": "bg-green-500"
   },
   {
-    "id": "Grok-4-1",
-    "name": "Grok 4.1",
+    "id": "Grok-4.20",
+    "name": "Grok 4.20",
     "provider": "xAI",
     "contextLimit": 2000000,
-    "inputPricePerMillion": 0.20,
+    "inputPricePerMillion": 2.00,
     "color": "bg-gray-900"
   },
   {
@@ -53,14 +61,6 @@
     "provider": "Moonshot",
     "contextLimit": 262144,
     "inputPricePerMillion": 0.60,
-    "color": "bg-green-500"
-  },
-  {
-    "id": "GPT-5.1",
-    "name": "GPT-5.1",
-    "provider": "OpenAI",
-    "contextLimit": 400000,
-    "inputPricePerMillion": 1.25,
     "color": "bg-green-600"
   },
   {
@@ -72,11 +72,11 @@
     "color": "bg-purple-600"
   },
   {
-    "id": "ERNIE-5.0",
-    "name": "ERNIE 5.0",
-    "provider": "Baidu",
-    "contextLimit": 128000,
-    "inputPricePerMillion": 0.84,
+    "id": "GPT‑5.3‑Codex",
+    "name": "GPT 5.3 Codex",
+    "provider": "OpenAI",
+    "contextLimit": 400000,
+    "inputPricePerMillion": 1.75,
     "color": "bg-indigo-600"
   }
 ]
