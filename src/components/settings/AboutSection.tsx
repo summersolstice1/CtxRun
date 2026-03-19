@@ -130,7 +130,8 @@ export function AboutSection() {
               <div className="px-8 py-10 max-w-4xl mx-auto">
                   <MarkdownContent
                     content={content}
-                    className="text-[0.95rem] leading-7"
+                    variant="github"
+                    className="text-[0.95rem]"
                     linkClassName="font-semibold text-primary hover:text-primary/80"
                     onOpenLink={openAboutLink}
                   />

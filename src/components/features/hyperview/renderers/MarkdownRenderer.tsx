@@ -32,7 +32,8 @@ export function MarkdownRenderer({ meta }: { meta: FileMeta }) {
     <div className="h-full w-full overflow-y-auto custom-scrollbar bg-background">
       <MarkdownContent
         content={content}
-        className="max-w-4xl mx-auto p-8 text-sm leading-relaxed"
+        variant="github"
+        className="mx-auto max-w-4xl p-8 text-sm"
       />
     </div>
   );

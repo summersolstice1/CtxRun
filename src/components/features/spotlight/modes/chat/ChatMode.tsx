@@ -236,6 +236,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
               <div className="mt-2 pl-2 border-l-2 border-purple-500/20 text-xs text-muted-foreground/80 leading-relaxed opacity-80 reasoning-body">
                 <MarkdownContent
                   content={msg.reasoning}
+                  variant="chat"
                   linkClassName="text-purple-300 hover:text-purple-200"
                   onOpenLink={openExternalLink}
                   showExternalIndicator
@@ -246,6 +247,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
           )}
           <MarkdownContent
             content={msg.content || (isStreamingLast && !msg.reasoning ? "..." : "")}
+            variant="chat"
             linkClassName="text-purple-300 hover:text-purple-200"
             onOpenLink={openExternalLink}
             showExternalIndicator

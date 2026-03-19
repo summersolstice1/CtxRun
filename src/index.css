@@ -199,3 +199,271 @@ input[type=number] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+.ctx-markdown {
+  --markdown-bg: transparent;
+  --markdown-fg: 222 17% 92%;
+  --markdown-muted: 222 10% 66%;
+  --markdown-border: 225 10% 24%;
+  --markdown-accent: 213 93% 68%;
+  --markdown-accent-hover: 213 93% 74%;
+  --markdown-inline-code-bg: 220 14% 18%;
+  --markdown-pre-bg: 222 23% 12%;
+  --markdown-pre-border: 225 12% 22%;
+  --markdown-quote-border: 220 13% 34%;
+  --markdown-table-header-bg: 220 18% 16%;
+  --markdown-table-row-even: 220 18% 13%;
+  color: hsl(var(--markdown-fg));
+  background: transparent;
+}
+
+.light .ctx-markdown {
+  --markdown-fg: 215 20% 15%;
+  --markdown-muted: 215 9% 38%;
+  --markdown-border: 214 18% 85%;
+  --markdown-accent: 212 92% 45%;
+  --markdown-accent-hover: 212 92% 38%;
+  --markdown-inline-code-bg: 210 20% 95%;
+  --markdown-pre-bg: 210 33% 98%;
+  --markdown-pre-border: 214 18% 85%;
+  --markdown-quote-border: 214 14% 76%;
+  --markdown-table-header-bg: 210 33% 98%;
+  --markdown-table-row-even: 210 25% 98%;
+}
+
+.ctx-markdown[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+.ctx-markdown[data-theme="light"] {
+  color-scheme: light;
+}
+
+.ctx-markdown.markdown-body {
+  color: hsl(var(--markdown-fg));
+  background-color: transparent;
+  font-size: 16px;
+}
+
+.ctx-markdown.markdown-body>*:first-child {
+  margin-top: 0 !important;
+}
+
+.ctx-markdown.markdown-body>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+.ctx-markdown.markdown-body h1,
+.ctx-markdown.markdown-body h2,
+.ctx-markdown.markdown-body h3,
+.ctx-markdown.markdown-body h4,
+.ctx-markdown.markdown-body h5,
+.ctx-markdown.markdown-body h6,
+.ctx-markdown.markdown-body p,
+.ctx-markdown.markdown-body li,
+.ctx-markdown.markdown-body blockquote,
+.ctx-markdown.markdown-body td,
+.ctx-markdown.markdown-body th {
+  color: hsl(var(--markdown-fg));
+}
+
+.ctx-markdown.markdown-body ul,
+.ctx-markdown.markdown-body ol {
+  padding-left: 2em;
+}
+
+.ctx-markdown.markdown-body ul {
+  list-style: disc;
+}
+
+.ctx-markdown.markdown-body ul ul {
+  list-style: circle;
+}
+
+.ctx-markdown.markdown-body ul ul ul {
+  list-style: square;
+}
+
+.ctx-markdown.markdown-body ol {
+  list-style: decimal;
+}
+
+.ctx-markdown.markdown-body ol ol {
+  list-style: lower-alpha;
+}
+
+.ctx-markdown.markdown-body ol ol ol {
+  list-style: lower-roman;
+}
+
+.ctx-markdown.markdown-body li::marker {
+  color: hsl(var(--markdown-fg));
+}
+
+.ctx-markdown.markdown-body h1,
+.ctx-markdown.markdown-body h2 {
+  border-bottom-color: hsl(var(--markdown-border));
+}
+
+.ctx-markdown.markdown-body .ctx-markdown-heading-anchor {
+  margin-left: 0.35rem;
+  color: hsl(var(--markdown-accent));
+  font-weight: 400;
+  opacity: 0;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.ctx-markdown.markdown-body h1:hover .ctx-markdown-heading-anchor,
+.ctx-markdown.markdown-body h2:hover .ctx-markdown-heading-anchor,
+.ctx-markdown.markdown-body h3:hover .ctx-markdown-heading-anchor,
+.ctx-markdown.markdown-body h4:hover .ctx-markdown-heading-anchor,
+.ctx-markdown.markdown-body h5:hover .ctx-markdown-heading-anchor,
+.ctx-markdown.markdown-body h6:hover .ctx-markdown-heading-anchor,
+.ctx-markdown.markdown-body .ctx-markdown-heading-anchor:focus {
+  opacity: 1;
+}
+
+.ctx-markdown.markdown-body hr {
+  background-color: hsl(var(--markdown-border));
+}
+
+.ctx-markdown.markdown-body a,
+.ctx-markdown-link {
+  color: hsl(var(--markdown-accent));
+  text-decoration: none;
+}
+
+.ctx-markdown.markdown-body a:hover,
+.ctx-markdown-link:hover {
+  color: hsl(var(--markdown-accent-hover));
+  text-decoration: underline;
+}
+
+.ctx-markdown-link-indicator {
+  margin-left: 0.25rem;
+  font-size: 0.72em;
+  opacity: 0.75;
+}
+
+.ctx-markdown-inline-code,
+.ctx-markdown.markdown-body code:not(pre code) {
+  background: hsl(var(--markdown-inline-code-bg));
+  border-radius: 6px;
+  color: inherit;
+  font-size: 85%;
+  padding: 0.2em 0.4em;
+}
+
+.ctx-markdown.markdown-body pre {
+  background: transparent;
+}
+
+.ctx-code-block-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--markdown-border)) transparent;
+}
+
+.ctx-code-block-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ctx-code-block-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--markdown-border));
+  border-radius: 9999px;
+}
+
+.ctx-markdown.markdown-body blockquote {
+  border-left-color: hsl(var(--markdown-quote-border));
+  color: hsl(var(--markdown-muted));
+}
+
+.ctx-markdown-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ctx-markdown.markdown-body ul.contains-task-list,
+.ctx-markdown.markdown-body ol.contains-task-list {
+  padding-left: 0;
+  list-style: none;
+}
+
+.ctx-markdown.markdown-body .task-list-item {
+  list-style: none;
+}
+
+.ctx-markdown.markdown-body table {
+  display: table;
+  width: 100%;
+}
+
+.ctx-markdown.markdown-body table th,
+.ctx-markdown.markdown-body table td {
+  border-color: hsl(var(--markdown-border));
+}
+
+.ctx-markdown.markdown-body table tr {
+  background-color: transparent;
+  border-top-color: hsl(var(--markdown-border));
+}
+
+.ctx-markdown.markdown-body table tr:nth-child(2n) {
+  background-color: hsl(var(--markdown-table-row-even));
+}
+
+.ctx-markdown.markdown-body table thead tr {
+  background-color: hsl(var(--markdown-table-header-bg));
+}
+
+.ctx-markdown-image {
+  border-radius: 8px;
+}
+
+.ctx-markdown-task-checkbox {
+  margin-right: 0.5rem;
+}
+
+.ctx-markdown.markdown-body details {
+  margin: 1rem 0;
+}
+
+.ctx-markdown.markdown-body summary {
+  cursor: pointer;
+}
+
+.ctx-markdown.markdown-body kbd {
+  background-color: hsl(var(--markdown-pre-bg));
+  border: 1px solid hsl(var(--markdown-border));
+  border-radius: 6px;
+  box-shadow: inset 0 -1px 0 hsl(var(--markdown-border));
+  color: hsl(var(--markdown-fg));
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.2rem 0.35rem;
+  vertical-align: middle;
+}
+
+.ctx-markdown--chat.markdown-body {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.ctx-markdown--chat.markdown-body .ctx-markdown-heading-anchor {
+  display: none;
+}
+
+.ctx-markdown--chat.markdown-body h1 {
+  font-size: 1.5em;
+}
+
+.ctx-markdown--chat.markdown-body h2 {
+  font-size: 1.25em;
+}
+
+.ctx-markdown--chat.markdown-body h3 {
+  font-size: 1.1em;
+}
