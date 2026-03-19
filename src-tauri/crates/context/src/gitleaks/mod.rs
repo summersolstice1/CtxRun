@@ -3,6 +3,7 @@ use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use regex::Regex;
 use serde::Serialize;
+use std::path::Path;
 use std::str;
 
 pub mod allowlist;
@@ -37,6 +38,10 @@ pub struct SecretMatch {
     pub line_number: usize,        // 行号
     pub snippet: String,           // 代码片段
     pub snippet_start_line: usize, // 片段起始行
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub file_name: Option<String>,
 }
 
 static RULES: Lazy<&'static [Rule]> = Lazy::new(get_all_rules);
@@ -103,10 +108,28 @@ fn enrich_context(full_text: &str, m: &mut SecretMatch) {
     let prefix = &full_text[..m.index];
     m.utf16_index = prefix.encode_utf16().count();
 
-    let match_line_num = prefix.bytes().filter(|&b| b == b'\n').count() + 1;
+    let (file_content_start, file_path) = match find_enclosing_file(full_text, m.index) {
+        Some((path, content_start)) => {
+            m.file_name = Path::new(&path)
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string());
+            m.file_path = Some(path);
+            (content_start, m.file_path.clone())
+        }
+        None => (0, None),
+    };
+
+    let match_line_num = full_text[file_content_start..m.index]
+        .bytes()
+        .filter(|&b| b == b'\n')
+        .count()
+        + 1;
     m.line_number = match_line_num;
 
-    let match_line_start = prefix.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let match_line_start = full_text[file_content_start..m.index]
+        .rfind('\n')
+        .map(|i| file_content_start + i + 1)
+        .unwrap_or(file_content_start);
 
     let mut snippet_start = match_line_start;
     let mut lines_back = 0;
@@ -121,7 +144,7 @@ fn enrich_context(full_text: &str, m: &mut SecretMatch) {
             .unwrap_or(0);
         lines_back += 1;
     }
-    m.snippet_start_line = match_line_num - lines_back;
+    m.snippet_start_line = match_line_num.saturating_sub(lines_back).max(1);
 
     let match_end = m.index + m.value.len();
     let mut snippet_end = match_end;
@@ -135,6 +158,35 @@ fn enrich_context(full_text: &str, m: &mut SecretMatch) {
     }
 
     m.snippet = full_text[snippet_start..snippet_end].trim_end().to_string();
+
+    if file_path.is_none() {
+        m.file_name = None;
+        m.file_path = None;
+    }
+}
+
+fn find_enclosing_file(full_text: &str, match_index: usize) -> Option<(String, usize)> {
+    let marker = "<file path=\"";
+    let mut search_end = match_index.min(full_text.len());
+
+    while let Some(start) = full_text[..search_end].rfind(marker) {
+        let path_start = start + marker.len();
+        let path_end = path_start + full_text[path_start..].find('"')?;
+        let line_end = start + full_text[start..].find('\n')?;
+        let content_start = line_end + 1;
+        let close_start = full_text[content_start..]
+            .find("</file>")
+            .map(|offset| content_start + offset)
+            .unwrap_or(full_text.len());
+
+        if match_index >= content_start && match_index < close_start {
+            return Some((full_text[path_start..path_end].to_string(), content_start));
+        }
+
+        search_end = start;
+    }
+
+    None
 }
 
 fn scan_fragment(
@@ -177,6 +229,8 @@ fn scan_fragment(
                 line_number: 0,
                 snippet: String::new(),
                 snippet_start_line: 0,
+                file_path: None,
+                file_name: None,
             });
         }
     }
