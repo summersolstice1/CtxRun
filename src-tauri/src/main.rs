@@ -224,6 +224,7 @@ fn main() {
         .plugin(ctxrun_plugin_refinery::init())
         .plugin(ctxrun_plugin_miner::init())
         .plugin(ctxrun_plugin_tool_runtime::init())
+        .plugin(ctxrun_plugin_exec_runtime::init())
         .register_uri_scheme_protocol(
             "preview",
             ctxrun_hyperview::protocol::preview_protocol_handler,

@@ -99,6 +99,11 @@
     "ctxrun-plugin-miner:allow-start-mining",
     "ctxrun-plugin-miner:allow-stop-mining",
     "ctxrun-plugin-miner:allow-extract-single-page",
-    "ctxrun-plugin-miner:allow-search-web"
+    "ctxrun-plugin-miner:allow-search-web",
+    "ctxrun-plugin-exec-runtime:allow-request-exec",
+    "ctxrun-plugin-exec-runtime:allow-approve-exec",
+    "ctxrun-plugin-exec-runtime:allow-write-exec",
+    "ctxrun-plugin-exec-runtime:allow-resize-exec",
+    "ctxrun-plugin-exec-runtime:allow-terminate-exec"
   ]
 }

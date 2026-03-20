@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-terminate-exec"
+description = "Enables the terminate_exec command without any pre-configured scope."
+commands.allow = ["terminate_exec"]
+
+[[permission]]
+identifier = "deny-terminate-exec"
+description = "Denies the terminate_exec command without any pre-configured scope."
+commands.deny = ["terminate_exec"]

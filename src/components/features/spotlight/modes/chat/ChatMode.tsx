@@ -1,16 +1,17 @@
 import { useState, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkles, ChevronDown, Brain, Check, Copy, FileText, Loader2, Wrench, CheckCircle2, AlertCircle, Clock3 } from 'lucide-react';
+import { Sparkles, ChevronDown, Brain, Check, Copy, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useCollapsedItems } from '@/lib/hooks';
 import { CHAT_ATTACHMENT_COLLAPSE_THRESHOLD } from '@/lib/chat_attachment';
 import { useAppStore } from '@/store/useAppStore';
+import { ExecSessionCard } from '@/components/features/spotlight/exec/ExecSessionCard';
+import { AssistantTraceTimeline } from '@/components/features/spotlight/trace/AssistantTraceTimeline';
+import { ToolCallInlineBlock } from '@/components/features/spotlight/trace/ToolCallInlineBlock';
 import { MarkdownContent } from '@/components/ui/MarkdownContent';
-import { ChatMessage, ChatToolCallTrace } from '@/lib/llm';
+import { ChatMessage } from '@/lib/llm';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { open } from '@tauri-apps/plugin-shell';
-
-const TOOL_TIMELINE_VISIBLE_RECENT = 3;
 
 function normalizeExternalHttpUrl(href: unknown): string | null {
   if (typeof href !== 'string') return null;
@@ -38,14 +39,6 @@ function openExternalLink(href: unknown): void {
   });
 }
 
-function formatToolDuration(durationMs?: number): string | null {
-  if (durationMs === undefined || !Number.isFinite(durationMs)) return null;
-  if (durationMs < 1000) return `${Math.max(0, Math.round(durationMs))}ms`;
-  const seconds = durationMs / 1000;
-  if (seconds < 10) return `${seconds.toFixed(1)}s`;
-  return `${Math.round(seconds)}s`;
-}
-
 function sortToolCallsByStartedAt<T extends { startedAt: number; id: string }>(calls: T[]): T[] {
   return [...calls].sort((left, right) => {
     if (left.startedAt === right.startedAt) {
@@ -53,41 +46,6 @@ function sortToolCallsByStartedAt<T extends { startedAt: number; id: string }>(c
     }
     return left.startedAt - right.startedAt;
   });
-}
-
-function buildToolTimelineSummary(call: ChatToolCallTrace, toolNoOutputLabel: string): string {
-  if (call.status === 'running') {
-    return call.argumentsPreview || '';
-  }
-  if (call.resultPreview) {
-    return call.resultPreview;
-  }
-  if (call.status === 'success') {
-    return toolNoOutputLabel;
-  }
-  return '';
-}
-
-function buildCollapsedToolTimeline(calls: ChatToolCallTrace[]): {
-  visibleCalls: ChatToolCallTrace[];
-  hiddenCount: number;
-} {
-  if (calls.length <= TOOL_TIMELINE_VISIBLE_RECENT) {
-    return {
-      visibleCalls: calls,
-      hiddenCount: 0,
-    };
-  }
-
-  const recentCalls = calls.slice(-TOOL_TIMELINE_VISIBLE_RECENT);
-  const recentIds = new Set(recentCalls.map((call) => call.id));
-  const runningCalls = calls.filter((call) => call.status === 'running' && !recentIds.has(call.id));
-  const visibleCalls = sortToolCallsByStartedAt([...runningCalls, ...recentCalls]);
-
-  return {
-    visibleCalls,
-    hiddenCount: Math.max(0, calls.length - visibleCalls.length),
-  };
 }
 
 function MessageCopyMenu({ content }: { content: string }) {
@@ -137,13 +95,9 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   const hasUserAttachments = userAttachments.length > 0;
   const assistantToolCalls = msg.role === 'assistant' ? (msg.toolCalls ?? []) : [];
   const hasAssistantToolCalls = assistantToolCalls.length > 0;
-  const runningToolCallCount = assistantToolCalls.filter((call) => call.status === 'running').length;
   const orderedToolCalls = sortToolCallsByStartedAt(assistantToolCalls);
-  const [showAllToolCalls, setShowAllToolCalls] = useState(false);
-  const collapsedToolTimeline = buildCollapsedToolTimeline(orderedToolCalls);
-  const visibleToolCalls = showAllToolCalls ? orderedToolCalls : collapsedToolTimeline.visibleCalls;
-  const hiddenToolCallCount = showAllToolCalls ? 0 : collapsedToolTimeline.hiddenCount;
-  const shouldCollapseToolCalls = orderedToolCalls.length > TOOL_TIMELINE_VISIBLE_RECENT;
+  const assistantTrace = msg.role === 'assistant' ? (msg.assistantTrace ?? []) : [];
+  const hasAssistantTrace = assistantTrace.length > 0;
   const {
     expanded: showAllUserAttachments,
     setExpanded: setShowAllUserAttachments,
@@ -234,16 +188,35 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
                 <ChevronDown size={12} className="group-open/reasoning:rotate-180 transition-transform duration-200" />
               </summary>
               <div className="mt-2 pl-2 border-l-2 border-purple-500/20 text-xs text-muted-foreground/80 leading-relaxed opacity-80 reasoning-body">
-                <MarkdownContent
-                  content={msg.reasoning}
-                  variant="chat"
-                  linkClassName="text-purple-300 hover:text-purple-200"
-                  onOpenLink={openExternalLink}
-                  showExternalIndicator
-                />
+                {hasAssistantTrace ? (
+                  <AssistantTraceTimeline
+                    trace={assistantTrace}
+                    toolCalls={orderedToolCalls}
+                    onOpenLink={openExternalLink}
+                  />
+                ) : (
+                  <MarkdownContent
+                    content={msg.reasoning}
+                    variant="chat"
+                    linkClassName="text-purple-300 hover:text-purple-200"
+                    onOpenLink={openExternalLink}
+                    showExternalIndicator
+                  />
+                )}
                 {isStreamingLast && !msg.content && <span className="inline-block w-1.5 h-3 ml-1 bg-purple-500/50 align-middle animate-pulse" />}
               </div>
             </details>
+          )}
+          {!msg.reasoning && hasAssistantToolCalls && (
+            <div className="mb-3 space-y-2">
+              {orderedToolCalls.map((call) =>
+                call.name === 'shell_command' ? (
+                  <ExecSessionCard key={call.id} toolCallId={call.id} />
+                ) : (
+                  <ToolCallInlineBlock key={call.id} call={call} />
+                )
+              )}
+            </div>
           )}
           <MarkdownContent
             content={msg.content || (isStreamingLast && !msg.reasoning ? "..." : "")}
@@ -252,87 +225,6 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
             onOpenLink={openExternalLink}
             showExternalIndicator
           />
-
-          {hasAssistantToolCalls && (
-            <div className="mt-2 pt-2 border-t border-border/40">
-              <div className="mb-1.5 flex items-center gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60">
-                <Wrench size={12} />
-                <span>{t('spotlight.toolCalls')} ({assistantToolCalls.length})</span>
-                {runningToolCallCount > 0 && (
-                  <span className="text-[10px] normal-case text-amber-400/90">
-                    {runningToolCallCount} {t('spotlight.toolRunning')}
-                  </span>
-                )}
-                {shouldCollapseToolCalls && (
-                  <button
-                    type="button"
-                    onClick={() => setShowAllToolCalls((current) => !current)}
-                    className="ml-auto text-[10px] normal-case text-purple-300/90 hover:text-purple-200 transition-colors"
-                  >
-                    {showAllToolCalls
-                      ? t('spotlight.toolShowLess')
-                      : t('spotlight.toolShowMore', { count: hiddenToolCallCount })}
-                  </button>
-                )}
-              </div>
-              <div className="space-y-1.5">
-                {visibleToolCalls.map((call) => {
-                  const isRunning = call.status === 'running';
-                  const isSuccess = call.status === 'success';
-                  const statusLabel = isRunning
-                    ? t('spotlight.toolRunning')
-                    : isSuccess
-                      ? t('spotlight.toolCompleted')
-                      : t('spotlight.toolFailed');
-                  const durationLabel = formatToolDuration(call.durationMs);
-                  const summary = buildToolTimelineSummary(call, t('spotlight.toolNoOutput'));
-                  const warningCount = call.warnings?.length ?? 0;
-                  const timelineTitle = [
-                    `${call.name} · ${statusLabel}${durationLabel ? ` · ${durationLabel}` : ''}`,
-                    call.argumentsPreview ? `${t('spotlight.toolArgs')}: ${call.argumentsPreview}` : '',
-                    summary ? `${t('spotlight.toolOutput')}: ${summary}` : '',
-                    warningCount > 0 ? `${t('spotlight.toolWarnings')}: ${call.warnings?.join(' · ')}` : '',
-                  ].filter(Boolean).join('\n');
-
-                  return (
-                    <div
-                      key={call.id}
-                      className="rounded-md border border-border/50 bg-background/35 px-2.5 py-1.5 text-[11px]"
-                      title={timelineTitle}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        {isRunning ? (
-                          <Loader2 size={12} className="text-amber-400 animate-spin" />
-                        ) : isSuccess ? (
-                          <CheckCircle2 size={12} className="text-emerald-400" />
-                        ) : (
-                          <AlertCircle size={12} className="text-rose-400" />
-                        )}
-                        <code className="font-mono text-foreground/90 shrink-0">{call.name}</code>
-                        <span className="text-[10px] text-muted-foreground/70 shrink-0">{statusLabel}</span>
-                        {durationLabel && (
-                          <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1 shrink-0">
-                            <Clock3 size={10} />
-                            <span>{durationLabel}</span>
-                          </span>
-                        )}
-                        {warningCount > 0 && (
-                          <span className="text-[10px] text-amber-400/90 shrink-0">
-                            ⚠ {warningCount}
-                          </span>
-                        )}
-                        {summary && (
-                          <span className="ml-1 min-w-0 flex-1 truncate text-muted-foreground/85">
-                            {summary}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </>
       </div>
     </div>
@@ -342,6 +234,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
   return prevProps.msg.content === nextProps.msg.content &&
     prevProps.msg.reasoning === nextProps.msg.reasoning &&
     prevProps.msg.toolCalls === nextProps.msg.toolCalls &&
+    prevProps.msg.assistantTrace === nextProps.msg.assistantTrace &&
     prevProps.msg.attachments === nextProps.msg.attachments &&
     prevProps.isStreaming === nextProps.isStreaming;
 });

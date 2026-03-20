@@ -7,6 +7,7 @@ export interface ChatMessage {
   reasoning?: string;
   attachments?: ChatMessageAttachment[];
   toolCalls?: ChatToolCallTrace[];
+  assistantTrace?: ChatAssistantTraceItem[];
 }
 
 export interface ChatToolCallTrace {
@@ -20,6 +21,18 @@ export interface ChatToolCallTrace {
   finishedAt?: number;
   durationMs?: number;
 }
+
+export type ChatAssistantTraceItem =
+  | {
+      id: string;
+      type: 'reasoning';
+      content: string;
+    }
+  | {
+      id: string;
+      type: 'tool';
+      toolCallId: string;
+    };
 
 export type ChatMessageContent = string | ChatContentPart[];
 

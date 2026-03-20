@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage, ChatToolCallTrace } from '@/lib/llm';
+import { ChatAssistantTraceItem, ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage, ChatToolCallTrace } from '@/lib/llm';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from '../core/SpotlightContext';
 import { assembleChatPrompt } from '@/lib/template';
@@ -154,7 +154,46 @@ function safeStringify(input: unknown): string {
   }
 }
 
+function pickStringField(input: Record<string, unknown>, key: string): string {
+  const value = input[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function formatToolPreviewFromParsed(name: string, parsed: Record<string, unknown>): string {
+  switch (name) {
+    case 'shell_command':
+      return pickStringField(parsed, 'command');
+    case 'fs.read_file':
+      return pickStringField(parsed, 'path');
+    case 'fs.list_directory':
+      return pickStringField(parsed, 'path') || '.';
+    case 'fs.search_files': {
+      const query = pickStringField(parsed, 'query');
+      const path = pickStringField(parsed, 'path');
+      if (query && path) return `${query} in ${path}`;
+      return query || path;
+    }
+    case 'web.search':
+      return pickStringField(parsed, 'query');
+    case 'web.extract_page':
+      return pickStringField(parsed, 'url');
+    default:
+      return '';
+  }
+}
+
 function toolArgumentsPreview(info: AgentToolCallInfo): string | undefined {
+  if (info.argumentsParsed && typeof info.argumentsParsed === 'object' && !Array.isArray(info.argumentsParsed)) {
+    const preview = formatToolPreviewFromParsed(
+      info.name,
+      info.argumentsParsed as Record<string, unknown>,
+    );
+    const compactPreview = compactSingleLine(preview, 260);
+    if (compactPreview) {
+      return compactPreview;
+    }
+  }
+
   const fromParsed =
     info.argumentsParsed === undefined || info.argumentsParsed === null
       ? ''
@@ -194,6 +233,52 @@ function summarizeToolResult(result: AgentToolExecutionResult): {
   };
 }
 
+function createReasoningTraceItem(content: string): ChatAssistantTraceItem {
+  return {
+    id: `trace-r-${Math.random().toString(36).slice(2, 10)}`,
+    type: 'reasoning',
+    content,
+  };
+}
+
+function appendReasoningToTrace(
+  trace: ChatAssistantTraceItem[] | undefined,
+  reasoningDelta: string,
+): ChatAssistantTraceItem[] {
+  if (!reasoningDelta) {
+    return trace ?? [];
+  }
+
+  const current = [...(trace ?? [])];
+  const last = current[current.length - 1];
+  if (last?.type === 'reasoning') {
+    current[current.length - 1] = {
+      ...last,
+      content: `${last.content}${reasoningDelta}`,
+    };
+    return current;
+  }
+
+  current.push(createReasoningTraceItem(reasoningDelta));
+  return current;
+}
+
+function appendToolToTrace(
+  trace: ChatAssistantTraceItem[] | undefined,
+  toolCallId: string,
+): ChatAssistantTraceItem[] {
+  const current = [...(trace ?? [])];
+  if (current.some((item) => item.type === 'tool' && item.toolCallId === toolCallId)) {
+    return current;
+  }
+  current.push({
+    id: `trace-t-${toolCallId}`,
+    type: 'tool',
+    toolCallId,
+  });
+  return current;
+}
+
 export function useSpotlightChat() {
   const {
     chatInput,
@@ -224,7 +309,8 @@ export function useSpotlightChat() {
         updated[updated.length - 1] = {
           ...lastMsg,
           content: lastMsg.content + content,
-          reasoning: (lastMsg.reasoning || "") + reasoning
+          reasoning: (lastMsg.reasoning || "") + reasoning,
+          assistantTrace: appendReasoningToTrace(lastMsg.assistantTrace, reasoning),
         };
       }
       return updated;
@@ -256,6 +342,10 @@ export function useSpotlightChat() {
         updated[lastIndex] = {
           ...lastMessage,
           toolCalls: nextToolCalls,
+          assistantTrace:
+            existingIndex >= 0
+              ? lastMessage.assistantTrace
+              : appendToolToTrace(lastMessage.assistantTrace, toolCallId),
         };
         return updated;
       });
@@ -308,7 +398,7 @@ export function useSpotlightChat() {
     setMessages(prev => [
       ...prev,
       { role: 'user', content: userDisplayContent, attachments: userDisplayAttachments },
-      { role: 'assistant', content: '', reasoning: '', toolCalls: [] }
+      { role: 'assistant', content: '', reasoning: '', toolCalls: [], assistantTrace: [] }
     ]);
     setIsStreaming(true);
     setChatInput('');
@@ -323,7 +413,7 @@ export function useSpotlightChat() {
         config: freshConfig,
         toolPolicy: {
           mode: 'allowList',
-          toolNames: ['fs.list_directory', 'fs.search_files', 'fs.read_file', 'web.search', 'web.extract_page'],
+          toolNames: ['fs.list_directory', 'fs.search_files', 'fs.read_file', 'web.search', 'web.extract_page', 'shell_command'],
         },
         callbacks: {
           onAssistantDelta: (contentDelta) => {
@@ -334,6 +424,7 @@ export function useSpotlightChat() {
             append('', reasoningDelta);
           },
           onToolStart: (info) => {
+            flushFinal();
             const startedAt = Date.now();
             const argumentsPreview = toolArgumentsPreview(info);
             upsertLastAssistantToolCall(info.id, (existing) => ({

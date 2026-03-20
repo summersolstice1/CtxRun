@@ -1117,6 +1117,7 @@ dependencies = [
  "ctxrun-hyperview",
  "ctxrun-plugin-automator",
  "ctxrun-plugin-context",
+ "ctxrun-plugin-exec-runtime",
  "ctxrun-plugin-git",
  "ctxrun-plugin-miner",
  "ctxrun-plugin-refinery",
@@ -1232,6 +1233,22 @@ dependencies = [
  "tauri-plugin",
  "thiserror 2.0.17",
  "tiktoken-rs",
+]
+
+[[package]]
+name = "ctxrun-plugin-exec-runtime"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "regex",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.17",
+ "tokio",
+ "uuid",
+ "windows 0.61.3",
 ]
 
 [[package]]

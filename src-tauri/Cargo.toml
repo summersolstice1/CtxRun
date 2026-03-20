@@ -91,6 +91,7 @@ ctxrun-plugin-git = { path = "crates/git" }
 ctxrun-plugin-refinery = { path = "crates/refinery" }
 ctxrun-plugin-miner = { path = "crates/miner" }
 ctxrun-plugin-tool-runtime = { path = "crates/tool-runtime" }
+ctxrun-plugin-exec-runtime = { path = "crates/exec-runtime" }
 
 ctxrun-db = { workspace = true }
 ctxrun-env-probe = { workspace = true }

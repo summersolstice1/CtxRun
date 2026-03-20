@@ -1,5 +1,6 @@
 import { AgentToolRegistry } from './registry';
 import { runAgentTurn } from './runtime';
+import { registerExecTools } from './tools/exec';
 import { registerFsTools } from './tools/fs';
 import { registerWebTools } from './tools/web';
 import { AgentRunOptions, AgentRunResult } from './types';
@@ -12,6 +13,7 @@ function getDefaultRegistry(): AgentToolRegistry {
   const registry = new AgentToolRegistry();
   registerFsTools(registry);
   registerWebTools(registry);
+  registerExecTools(registry);
   defaultRegistry = registry;
   return registry;
 }

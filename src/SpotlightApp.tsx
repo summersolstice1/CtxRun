@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { parseVariables } from '@/lib/template';
 import { executeCommand } from '@/lib/command_executor';
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
+import { ExecApprovalSheet } from '@/components/features/spotlight/exec/ExecApprovalSheet';
+import { useExecStore } from '@/store/useExecStore';
 
 import { SpotlightProvider, useSpotlight } from '@/components/features/spotlight/core/SpotlightContext';
 import { SpotlightLayout } from '@/components/features/spotlight/core/SpotlightLayout';
@@ -46,8 +48,13 @@ function SpotlightContent() {
 
   const search = useSpotlightSearch(t);
   const chat = useSpotlightChat();
+  const initExecListeners = useExecStore((state) => state.initListeners);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void initExecListeners();
+  }, [initExecListeners]);
 
   useEffect(() => {
     const unlisten = appWindow.onFocusChanged(({ payload: isFocused }) => {
@@ -367,6 +374,7 @@ export default function SpotlightApp() {
         <SpotlightContent />
       </SpotlightProvider>
       <GlobalConfirmDialog />
+      <ExecApprovalSheet />
     </div>
   );
 }
