@@ -60,6 +60,16 @@ pub enum ExecOutputStream {
     Stderr,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecExitReason {
+    ExitZero,
+    ExitNonZero,
+    TimedOut,
+    UserTerminated,
+    WaitError,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ExecApprovalPayload {
@@ -82,6 +92,8 @@ pub struct ExecSessionSnapshot {
     pub state: ExecSessionState,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub exit_code: Option<i32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub exit_reason: Option<ExecExitReason>,
     pub stdout_preview: String,
     pub stderr_preview: String,
     pub started_at_ms: u64,
@@ -148,6 +160,7 @@ pub struct ExecExitEvent {
     pub tool_call_id: Option<String>,
     pub state: ExecSessionState,
     pub exit_code: i32,
+    pub exit_reason: ExecExitReason,
     pub stdout_preview: String,
     pub stderr_preview: String,
     pub duration_ms: u64,

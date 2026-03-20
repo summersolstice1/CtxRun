@@ -33,6 +33,20 @@ pub struct SafetyAssessment {
     pub prefix_rule: Option<Vec<String>>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum PowershellParseStatus {
+    Ok,
+    Unsupported,
+    ParseErrors,
+    ParseFailed,
+}
+
+#[derive(Debug, Clone)]
+struct PowershellParseResult {
+    status: PowershellParseStatus,
+    commands: Vec<Vec<String>>,
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum SafetyError {
     #[error("workspaceRoot is required.")]
@@ -69,12 +83,52 @@ pub fn assess_command(
         });
     }
 
-    let parsed_commands = parse_powershell_script(trimmed).unwrap_or_default();
+    let parse_result = parse_powershell_script(trimmed);
+    let parsed_commands = parse_result.commands.clone();
     if parsed_commands.is_empty() {
+        if let Some(fallback_words) = try_parse_simple_command_words(trimmed) {
+            if is_blocked_command(&fallback_words) {
+                return Ok(SafetyAssessment {
+                    decision: SafetyDecision::Blocked,
+                    reason: "Blocked because the command maps to a dangerous cmdlet or shell launcher.".to_string(),
+                    risk: ExecRiskLevel::High,
+                    workdir,
+                    parsed_commands: vec![fallback_words],
+                    prefix_rule: None,
+                });
+            }
+
+            if is_safe_read_only_command(&fallback_words) {
+                return Ok(SafetyAssessment {
+                    decision: SafetyDecision::SafeAuto,
+                    reason: "Simple read-only command matched the fallback safelist after PowerShell parsing was inconclusive.".to_string(),
+                    risk: ExecRiskLevel::Low,
+                    workdir,
+                    parsed_commands: vec![fallback_words],
+                    prefix_rule: None,
+                });
+            }
+        }
+
+        let (reason, risk) = match parse_result.status {
+            PowershellParseStatus::ParseErrors => (
+                "PowerShell parser reported syntax issues, so explicit approval is required.".to_string(),
+                ExecRiskLevel::High,
+            ),
+            PowershellParseStatus::Unsupported => (
+                "Command uses PowerShell features the auto-approver cannot fully analyze, so explicit approval is required.".to_string(),
+                ExecRiskLevel::Medium,
+            ),
+            PowershellParseStatus::ParseFailed | PowershellParseStatus::Ok => (
+                "PowerShell parser could not classify this command safely, so explicit approval is required.".to_string(),
+                ExecRiskLevel::High,
+            ),
+        };
+
         return Ok(SafetyAssessment {
             decision: SafetyDecision::ApprovalRequired,
-            reason: "PowerShell syntax is unsupported for auto-approval, so explicit approval is required.".to_string(),
-            risk: ExecRiskLevel::High,
+            reason,
+            risk,
             workdir,
             parsed_commands,
             prefix_rule: None,
@@ -129,11 +183,57 @@ fn resolve_workdir(workspace_root: &str, workdir: Option<&str>) -> Result<PathBu
     let canonical = std::fs::canonicalize(&target)
         .map_err(|_| SafetyError::MissingWorkdir(target.display().to_string()))?;
 
-    if !canonical.starts_with(&root) {
+    if !path_is_within_workspace(&canonical, &root) {
         return Err(SafetyError::WorkdirOutsideWorkspace);
     }
 
     Ok(canonical)
+}
+
+fn path_is_within_workspace(path: &Path, root: &Path) -> bool {
+    let candidate = normalized_path_components(path);
+    let workspace = normalized_path_components(root);
+    candidate.len() >= workspace.len()
+        && candidate
+            .iter()
+            .zip(workspace.iter())
+            .all(|(candidate, workspace)| candidate == workspace)
+}
+
+fn normalized_path_components(path: &Path) -> Vec<String> {
+    normalize_path_for_comparison(path)
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().to_string())
+        .map(|component| {
+            #[cfg(target_os = "windows")]
+            {
+                component.to_ascii_lowercase()
+            }
+            #[cfg(not(target_os = "windows"))]
+            {
+                component
+            }
+        })
+        .collect()
+}
+
+fn normalize_path_for_comparison(path: &Path) -> PathBuf {
+    #[cfg(target_os = "windows")]
+    {
+        let raw = path.to_string_lossy();
+        if let Some(rest) = raw.strip_prefix(r"\\?\UNC\") {
+            return PathBuf::from(format!(r"\\{}", rest));
+        }
+        if let Some(rest) = raw.strip_prefix(r"\\?\") {
+            return PathBuf::from(rest);
+        }
+        PathBuf::from(raw.into_owned())
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        path.to_path_buf()
+    }
 }
 
 fn looks_blocked_raw(command: &str) -> bool {
@@ -156,7 +256,7 @@ fn looks_blocked_raw(command: &str) -> bool {
     redirect.is_match(command)
 }
 
-fn parse_powershell_script(script: &str) -> Option<Vec<Vec<String>>> {
+fn parse_powershell_script(script: &str) -> PowershellParseResult {
     let encoded_script = encode_utf16_base64(script);
     let encoded_parser_script = encode_utf16_base64(POWERSHELL_PARSER_SCRIPT);
 
@@ -172,16 +272,50 @@ fn parse_powershell_script(script: &str) -> Option<Vec<Vec<String>>> {
     #[cfg(target_os = "windows")]
     command.creation_flags(CREATE_NO_WINDOW.0);
 
-    let output = command.output().ok()?;
+    let output = match command.output() {
+        Ok(output) => output,
+        Err(_) => {
+            return PowershellParseResult {
+                status: PowershellParseStatus::ParseFailed,
+                commands: Vec::new(),
+            };
+        }
+    };
 
     if !output.status.success() {
-        return None;
+        return PowershellParseResult {
+            status: PowershellParseStatus::ParseFailed,
+            commands: Vec::new(),
+        };
     }
 
-    let parsed = serde_json::from_slice::<PowershellParserOutput>(&output.stdout).ok()?;
+    let parsed = match serde_json::from_slice::<PowershellParserOutput>(&output.stdout) {
+        Ok(parsed) => parsed,
+        Err(_) => {
+            return PowershellParseResult {
+                status: PowershellParseStatus::ParseFailed,
+                commands: Vec::new(),
+            };
+        }
+    };
+
     match parsed.status.as_str() {
-        "ok" => parsed.commands.filter(|commands| !commands.is_empty()),
-        _ => None,
+        "ok" => PowershellParseResult {
+            status: PowershellParseStatus::Ok,
+            commands: parsed.commands.unwrap_or_default(),
+        },
+        "unsupported" => PowershellParseResult {
+            status: PowershellParseStatus::Unsupported,
+            commands: Vec::new(),
+        },
+        "parse_errors" => PowershellParseResult {
+            status: PowershellParseStatus::ParseErrors,
+            commands: Vec::new(),
+        },
+        _ => PowershellParseResult {
+            status: PowershellParseStatus::ParseFailed,
+            commands: Vec::new(),
+        },
     }
 }
 
@@ -191,6 +325,56 @@ fn encode_utf16_base64(script: &str) -> String {
         utf16.extend_from_slice(&unit.to_le_bytes());
     }
     BASE64_STANDARD.encode(utf16)
+}
+
+fn try_parse_simple_command_words(script: &str) -> Option<Vec<String>> {
+    if script
+        .chars()
+        .any(|ch| matches!(ch, '|' | ';' | '&' | '>' | '<' | '$' | '`' | '(' | ')' | '{' | '}' | '[' | ']'))
+    {
+        return None;
+    }
+
+    let mut words = Vec::new();
+    let mut current = String::new();
+    let mut quote: Option<char> = None;
+
+    for ch in script.chars() {
+        match quote {
+            Some(active_quote) => {
+                if ch == active_quote {
+                    quote = None;
+                } else {
+                    current.push(ch);
+                }
+            }
+            None => match ch {
+                '\'' | '"' => {
+                    quote = Some(ch);
+                }
+                ch if ch.is_whitespace() => {
+                    if !current.is_empty() {
+                        words.push(std::mem::take(&mut current));
+                    }
+                }
+                _ => current.push(ch),
+            },
+        }
+    }
+
+    if quote.is_some() {
+        return None;
+    }
+
+    if !current.is_empty() {
+        words.push(current);
+    }
+
+    if words.is_empty() {
+        None
+    } else {
+        Some(words)
+    }
 }
 
 fn is_safe_read_only_command(words: &[String]) -> bool {
@@ -210,6 +394,8 @@ fn is_safe_read_only_command(words: &[String]) -> bool {
         "resolve-path" | "rvpa" => true,
         "select-object" | "select" => true,
         "get-item" => true,
+        "get-date" | "date" => true,
+        "hostname" | "whoami" => true,
         "git" => is_safe_git_command(words),
         "rg" => is_safe_ripgrep(words),
         _ => false,

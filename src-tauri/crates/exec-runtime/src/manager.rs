@@ -13,8 +13,8 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 use crate::models::{
-    ExecCommandRequest, ExecExitEvent, ExecOutputEvent, ExecOutputStream, ExecRequestResponse,
-    ExecRequestStatus, ExecSessionSnapshot, ExecSessionState,
+    ExecCommandRequest, ExecExitEvent, ExecExitReason, ExecOutputEvent, ExecOutputStream,
+    ExecRequestResponse, ExecRequestStatus, ExecSessionSnapshot, ExecSessionState,
 };
 use crate::safety::{SafetyDecision, assess_command};
 
@@ -25,6 +25,9 @@ use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 
 const EXEC_OUTPUT_PREVIEW_CHARS: usize = 16_000;
 const DEFAULT_TIMEOUT_MS: u64 = 120_000;
+const EXIT_CODE_TERMINATED: i32 = -2;
+const EXIT_CODE_TIMED_OUT: i32 = -3;
+const EXIT_CODE_WAIT_ERROR: i32 = -4;
 const POWERSHELL_EXEC_WRAPPER: &str = r#"
 $utf8 = [System.Text.UTF8Encoding]::new($false)
 [Console]::InputEncoding = $utf8
@@ -64,6 +67,7 @@ struct SessionHandle {
     stderr_preview: Arc<Mutex<String>>,
     state: Arc<Mutex<ExecSessionState>>,
     terminate_requested: AtomicBool,
+    timed_out: AtomicBool,
     started_at: Instant,
     started_at_ms: u64,
 }
@@ -77,6 +81,7 @@ impl SessionHandle {
             workdir: self.workdir.clone(),
             state: *self.state.lock().await,
             exit_code,
+            exit_reason: None,
             stdout_preview: self.stdout_preview.lock().await.clone(),
             stderr_preview: self.stderr_preview.lock().await.clone(),
             started_at_ms: self.started_at_ms,
@@ -259,6 +264,7 @@ impl ExecRuntime {
             stderr_preview: Arc::new(Mutex::new(String::new())),
             state: Arc::new(Mutex::new(ExecSessionState::Running)),
             terminate_requested: AtomicBool::new(false),
+            timed_out: AtomicBool::new(false),
             started_at: Instant::now(),
             started_at_ms,
         });
@@ -340,29 +346,69 @@ fn spawn_wait_task<R: Runtime>(
     timeout_ms: Option<u64>,
 ) {
     tauri::async_runtime::spawn(async move {
+        enum WaitOutcome {
+            ExitStatus(i32),
+            WaitError,
+            TimedOut,
+        }
+
         let timeout = Duration::from_millis(timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS));
-        let exit_code = match tokio::time::timeout(timeout, async {
+        let outcome = match tokio::time::timeout(timeout, async {
             let mut child = handle.child.lock().await;
             child.wait().await
         })
         .await
         {
-            Ok(Ok(status)) => status.code().unwrap_or(-1),
-            Ok(Err(_)) => -1,
+            Ok(Ok(status)) => WaitOutcome::ExitStatus(status.code().unwrap_or(-1)),
+            Ok(Err(_)) => WaitOutcome::WaitError,
             Err(_) => {
                 handle.terminate_requested.store(true, Ordering::SeqCst);
-                let mut child = handle.child.lock().await;
-                let _ = child.kill().await;
-                -1
+                handle.timed_out.store(true, Ordering::SeqCst);
+                if let Some(pid) = handle.pid {
+                    let _ = kill_process_tree(pid).await;
+                } else {
+                    let mut child = handle.child.lock().await;
+                    let _ = child.kill().await;
+                }
+                WaitOutcome::TimedOut
             }
         };
 
-        let next_state = if handle.terminate_requested.load(Ordering::SeqCst) {
-            ExecSessionState::Terminated
-        } else if exit_code == 0 {
-            ExecSessionState::Completed
+        let (next_state, exit_code, exit_reason) = if handle.timed_out.load(Ordering::SeqCst) {
+            (
+                ExecSessionState::Failed,
+                EXIT_CODE_TIMED_OUT,
+                ExecExitReason::TimedOut,
+            )
+        } else if handle.terminate_requested.load(Ordering::SeqCst) {
+            (
+                ExecSessionState::Terminated,
+                EXIT_CODE_TERMINATED,
+                ExecExitReason::UserTerminated,
+            )
         } else {
-            ExecSessionState::Failed
+            match outcome {
+                WaitOutcome::ExitStatus(0) => (
+                    ExecSessionState::Completed,
+                    0,
+                    ExecExitReason::ExitZero,
+                ),
+                WaitOutcome::ExitStatus(code) => (
+                    ExecSessionState::Failed,
+                    code,
+                    ExecExitReason::ExitNonZero,
+                ),
+                WaitOutcome::WaitError => (
+                    ExecSessionState::Failed,
+                    EXIT_CODE_WAIT_ERROR,
+                    ExecExitReason::WaitError,
+                ),
+                WaitOutcome::TimedOut => (
+                    ExecSessionState::Failed,
+                    EXIT_CODE_TIMED_OUT,
+                    ExecExitReason::TimedOut,
+                ),
+            }
         };
         *handle.state.lock().await = next_state;
 
@@ -376,6 +422,7 @@ fn spawn_wait_task<R: Runtime>(
                 tool_call_id: handle.tool_call_id.clone(),
                 state: next_state,
                 exit_code,
+                exit_reason,
                 stdout_preview,
                 stderr_preview,
                 duration_ms: handle.started_at.elapsed().as_millis() as u64,

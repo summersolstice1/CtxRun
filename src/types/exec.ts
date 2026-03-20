@@ -5,6 +5,7 @@ export type ExecRiskLevel = 'low' | 'medium' | 'high';
 export type ExecSessionState = 'running' | 'completed' | 'failed' | 'terminated';
 export type ExecOutputStream = 'stdout' | 'stderr';
 export type ExecApprovalDecision = 'once' | 'session' | 'prefix_rule';
+export type ExecExitReason = 'exit_zero' | 'exit_non_zero' | 'timed_out' | 'user_terminated' | 'wait_error';
 
 export interface ExecApprovalRejectOutcome {
   decision: 'reject';
@@ -36,6 +37,7 @@ export interface ExecSessionSnapshot {
   workdir: string;
   state: ExecSessionState;
   exitCode?: number;
+  exitReason?: ExecExitReason;
   stdoutPreview: string;
   stderrPreview: string;
   startedAtMs: number;
@@ -47,26 +49,6 @@ export interface ExecRequestResponse {
   session?: ExecSessionSnapshot;
   approval?: ExecApprovalPayload;
   message?: string;
-}
-
-export interface ExecApprovalRequest {
-  request: ExecCommandRequest;
-  decision: ExecApprovalDecision;
-}
-
-export interface ExecWriteRequest {
-  sessionId: string;
-  input: string;
-}
-
-export interface ExecResizeRequest {
-  sessionId: string;
-  cols: number;
-  rows: number;
-}
-
-export interface ExecTerminateRequest {
-  sessionId: string;
 }
 
 export interface ExecOutputEvent {
@@ -87,6 +69,7 @@ export interface ExecExitEvent {
   toolCallId?: string;
   state: ExecSessionState;
   exitCode: number;
+  exitReason: ExecExitReason;
   stdoutPreview: string;
   stderrPreview: string;
   durationMs: number;

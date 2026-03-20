@@ -30,7 +30,7 @@ function polarToCartesian(radius: number, angle: number) {
   };
 }
 
-export interface ViewportSize {
+interface ViewportSize {
   width: number;
   height: number;
 }
