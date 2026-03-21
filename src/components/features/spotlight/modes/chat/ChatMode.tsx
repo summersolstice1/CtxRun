@@ -211,7 +211,7 @@ const ChatMessageItem = memo(({ msg, idx, isStreaming, messagesLength }: ChatMes
             <div className="mb-3 space-y-2">
               {orderedToolCalls.map((call) =>
                 call.name === 'shell_command' ? (
-                  <ExecSessionCard key={call.id} toolCallId={call.id} />
+                  <ExecSessionCard key={call.id} toolCallId={call.id} call={call} />
                 ) : (
                   <ToolCallInlineBlock key={call.id} call={call} />
                 )

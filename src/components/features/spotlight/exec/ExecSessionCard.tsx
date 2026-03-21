@@ -1,11 +1,13 @@
-import { AlertTriangle, ChevronDown, Loader2, Square, SquareTerminal } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Loader2, ShieldAlert, Square, SquareTerminal } from 'lucide-react';
 import { useExecStore } from '@/store/useExecStore';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { formatExecStateLabel } from '@/lib/exec/format';
+import { ChatToolCallTrace } from '@/lib/llm';
 
 interface ExecSessionCardProps {
   toolCallId: string;
+  call?: ChatToolCallTrace;
 }
 
 function formatDuration(durationMs?: number): string | null {
@@ -18,33 +20,70 @@ function formatDuration(durationMs?: number): string | null {
   return `${minutes}m ${remainder}s`;
 }
 
-export function ExecSessionCard({ toolCallId }: ExecSessionCardProps) {
+function isBlockedPreview(value?: string): boolean {
+  if (!value) return false;
+  return /\bblocked\b|拦截|阻止/.test(value.toLowerCase());
+}
+
+export function ExecSessionCard({ toolCallId, call }: ExecSessionCardProps) {
   const { t } = useTranslation();
   const sessionId = useExecStore((state) => state.toolCallToSessionId[toolCallId]);
   const session = useExecStore((state) => (sessionId ? state.sessions[sessionId] : undefined));
+  const pending = useExecStore((state) => state.pendingByToolCallId[toolCallId]);
   const terminateSession = useExecStore((state) => state.terminateSession);
 
-  if (!session) {
+  if (!session && !pending && !call) {
     return null;
   }
 
-  const isRunning = session.state === 'running';
-  const isFailed = session.state === 'failed';
-  const isTerminated = session.state === 'terminated';
-  const output = (session.combinedOutput || [session.stdout.trim(), session.stderr.trim()].filter(Boolean).join('\n')).trim();
-  const duration = formatDuration(session.durationMs);
-  const blockTone = isRunning
+  const fallbackCommand = pending?.command || call?.argumentsPreview || call?.name || '';
+  const fallbackOutput = [pending?.reason, call?.resultPreview, call?.warnings?.join('\n')]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .join('\n')
+    .trim();
+  const isPendingApproval = !session && Boolean(pending);
+  const isFallbackRunning = !session && !isPendingApproval && call?.status === 'running';
+  const isBlocked = !session && !isPendingApproval && call?.status === 'error' && isBlockedPreview(call.resultPreview);
+  const isRunning = session?.state === 'running';
+  const isFailed = session
+    ? session.state === 'failed'
+    : !isPendingApproval && !isBlocked && call?.status === 'error';
+  const isTerminated = session?.state === 'terminated';
+  const output = session
+    ? (session.combinedOutput || [session.stdout.trim(), session.stderr.trim()].filter(Boolean).join('\n')).trim()
+    : fallbackOutput;
+  const duration = formatDuration(session?.durationMs ?? call?.durationMs);
+  const blockTone = isRunning || isFallbackRunning || isPendingApproval
     ? 'border-amber-500/20 bg-amber-500/5'
-    : isFailed || isTerminated
-      ? 'border-rose-500/20 bg-rose-500/5'
-      : 'border-border/50 bg-background/35';
+    : isBlocked
+      ? 'border-orange-500/20 bg-orange-500/5'
+      : isFailed || isTerminated
+        ? 'border-rose-500/20 bg-rose-500/5'
+        : 'border-border/50 bg-background/35';
+  const statusLabel = isPendingApproval
+    ? t('spotlight.execApprovalRequired')
+    : isBlocked
+      ? t('spotlight.execBlocked')
+      : session
+        ? formatExecStateLabel(t, session.state)
+        : isFallbackRunning
+          ? t('spotlight.toolRunning')
+          : call?.status === 'success'
+            ? t('spotlight.toolCompleted')
+            : t('spotlight.toolFailed');
+  const command = session?.command || fallbackCommand;
+  const workdir = session?.workdir || pending?.workdir;
 
   return (
     <details className={cn('group overflow-hidden rounded-xl border text-xs', blockTone)}>
       <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2 marker:hidden">
         <ChevronDown size={14} className="shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
-        {isRunning ? (
+        {isPendingApproval ? (
+          <ShieldAlert size={12} className="shrink-0 text-amber-300" />
+        ) : isRunning || isFallbackRunning ? (
           <Loader2 size={12} className="shrink-0 animate-spin text-amber-400" />
+        ) : isBlocked ? (
+          <AlertTriangle size={12} className="shrink-0 text-orange-300" />
         ) : isFailed || isTerminated ? (
           <AlertTriangle size={12} className="shrink-0 text-rose-400" />
         ) : (
@@ -54,26 +93,28 @@ export function ExecSessionCard({ toolCallId }: ExecSessionCardProps) {
           {t('spotlight.toolInlineShell')}
         </span>
         <code className="min-w-0 flex-1 truncate font-mono text-[12px] text-foreground/90">
-          {session.command}
+          {command}
         </code>
         <span
           className={cn(
             'shrink-0 text-[10px] uppercase tracking-wide',
-            isRunning
+            isPendingApproval || isRunning || isFallbackRunning
               ? 'text-amber-300'
-              : isFailed || isTerminated
+              : isBlocked
+                ? 'text-orange-300'
+                : isFailed || isTerminated
                 ? 'text-rose-300'
                 : 'text-emerald-300',
           )}
         >
-          {formatExecStateLabel(t, session.state)}
+          {statusLabel}
         </span>
         {duration && (
           <span className="shrink-0 text-[10px] text-muted-foreground/70">
             {duration}
           </span>
         )}
-        {isRunning && (
+        {session && isRunning && (
           <button
             type="button"
             onClick={(event) => {
@@ -95,9 +136,20 @@ export function ExecSessionCard({ toolCallId }: ExecSessionCardProps) {
             {t('spotlight.toolInlineCommand')}
           </div>
           <code className="block whitespace-pre-wrap break-all rounded-lg bg-black/20 px-2.5 py-2 font-mono text-[11px] leading-5 text-foreground/90">
-            $ {session.command}
+            $ {command}
           </code>
         </div>
+
+        {workdir && (
+          <div>
+            <div className="mb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/70">
+              {t('spotlight.execWorkingDirectory')}
+            </div>
+            <code className="block whitespace-pre-wrap break-all rounded-lg bg-black/20 px-2.5 py-2 font-mono text-[11px] leading-5 text-foreground/90">
+              {workdir}
+            </code>
+          </div>
+        )}
 
         {output && (
           <div>
@@ -111,7 +163,7 @@ export function ExecSessionCard({ toolCallId }: ExecSessionCardProps) {
         )}
 
         <div className="flex flex-wrap items-center gap-2">
-          {typeof session.exitCode === 'number' && (
+          {typeof session?.exitCode === 'number' && (
             <span className="text-[10px] text-muted-foreground/70">
               exit {session.exitCode}
             </span>

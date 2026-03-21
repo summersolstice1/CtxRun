@@ -40,7 +40,7 @@ export function AssistantTraceTimeline({
         }
 
         return toolCall.name === 'shell_command' ? (
-          <ExecSessionCard key={item.id} toolCallId={toolCall.id} />
+          <ExecSessionCard key={item.id} toolCallId={toolCall.id} call={toolCall} />
         ) : (
           <ToolCallInlineBlock key={item.id} call={toolCall} />
         );

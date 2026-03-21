@@ -75,7 +75,7 @@ pub fn assess_command(
     if looks_blocked_raw(trimmed) {
         return Ok(SafetyAssessment {
             decision: SafetyDecision::Blocked,
-            reason: "Blocked because the command includes file/process mutation or shell redirection.".to_string(),
+            reason: "Blocked because the command includes a dangerous process or shell launcher.".to_string(),
             risk: ExecRiskLevel::High,
             workdir,
             parsed_commands: Vec::new(),
@@ -238,22 +238,14 @@ fn normalize_path_for_comparison(path: &Path) -> PathBuf {
 
 fn looks_blocked_raw(command: &str) -> bool {
     static BLOCKED_PATTERN: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
-    static REDIRECTION_PATTERN: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
     let blocked = BLOCKED_PATTERN.get_or_init(|| {
         Regex::new(
-            r"(?i)\b(remove-item|ri|del|erase|rd|rmdir|set-content|add-content|out-file|new-item|copy-item|move-item|rename-item|start-process|stop-process|invoke-item|ii|cmd|bash|sh)\b",
+            r"(?i)\b(start-process|stop-process|invoke-item|ii|cmd|bash|sh)\b",
         )
         .expect("valid blocked regex")
     });
-    if blocked.is_match(command) {
-        return true;
-    }
-
-    let redirect = REDIRECTION_PATTERN.get_or_init(|| {
-        Regex::new(r"(?m)(^|[^-])>>?").expect("valid redirect regex")
-    });
-    redirect.is_match(command)
+    blocked.is_match(command)
 }
 
 fn parse_powershell_script(script: &str) -> PowershellParseResult {
@@ -468,15 +460,7 @@ fn is_blocked_command(words: &[String]) -> bool {
     let command = normalize_name(&words[0]);
     if matches!(
         command.as_str(),
-        "set-content"
-            | "add-content"
-            | "out-file"
-            | "new-item"
-            | "remove-item"
-            | "move-item"
-            | "copy-item"
-            | "rename-item"
-            | "start-process"
+        "start-process"
             | "stop-process"
             | "invoke-item"
             | "ii"
@@ -526,6 +510,76 @@ fn normalize_name(value: &str) -> String {
         .trim_matches(|ch| ch == '(' || ch == ')')
         .trim_start_matches('-')
         .to_ascii_lowercase()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs, path::PathBuf};
+
+    use super::{SafetyDecision, assess_command};
+
+    struct TestWorkspace {
+        root: PathBuf,
+    }
+
+    impl TestWorkspace {
+        fn new() -> Self {
+            let root = std::env::temp_dir().join(format!(
+                "ctxrun-exec-runtime-safety-{}",
+                uuid::Uuid::new_v4()
+            ));
+            fs::create_dir_all(&root).expect("create temp workspace");
+            Self { root }
+        }
+
+        fn root_str(&self) -> String {
+            self.root.display().to_string()
+        }
+    }
+
+    impl Drop for TestWorkspace {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.root);
+        }
+    }
+
+    #[test]
+    fn set_content_requires_approval_instead_of_blocking() {
+        let workspace = TestWorkspace::new();
+        let assessment =
+            assess_command("Set-Content notes.txt hello", &workspace.root_str(), None)
+                .expect("assess command");
+
+        assert_eq!(assessment.decision, SafetyDecision::ApprovalRequired);
+    }
+
+    #[test]
+    fn new_item_requires_approval_instead_of_blocking() {
+        let workspace = TestWorkspace::new();
+        let assessment = assess_command("New-Item notes.txt", &workspace.root_str(), None)
+            .expect("assess command");
+
+        assert_eq!(assessment.decision, SafetyDecision::ApprovalRequired);
+    }
+
+    #[test]
+    fn redirection_requires_approval_instead_of_blocking() {
+        let workspace = TestWorkspace::new();
+        let assessment = assess_command("\"hello\" > notes.txt", &workspace.root_str(), None)
+            .expect("assess command");
+
+        assert_eq!(assessment.decision, SafetyDecision::ApprovalRequired);
+    }
+
+    #[test]
+    fn start_process_stays_blocked() {
+        let workspace = TestWorkspace::new();
+        let assessment =
+            assess_command("Start-Process notepad", &workspace.root_str(), None)
+                .expect("assess command");
+
+        assert_eq!(assessment.decision, SafetyDecision::Blocked);
+    }
 }
 
 #[derive(Debug, Deserialize)]

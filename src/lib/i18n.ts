@@ -532,6 +532,7 @@ const translations = {
       execAllowOnce: "Allow once",
       execAllowSession: "Allow this session",
       execAllowPrefix: "Allow by prefix",
+      execBlocked: "Blocked",
       execStateTerminated: "Terminated"
     },
     actions: {
@@ -1269,6 +1270,7 @@ const translations = {
       execAllowOnce: "允许一次",
       execAllowSession: "本会话允许",
       execAllowPrefix: "按前缀允许",
+      execBlocked: "已拦截",
       execStateTerminated: "已终止"
     },
     actions: {
