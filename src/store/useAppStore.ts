@@ -5,6 +5,13 @@ import { IgnoreConfig, DEFAULT_GLOBAL_IGNORE } from '@/types/context';
 import { emit } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { AIModelConfig, AIProviderConfig, AIProviderSetting, DEFAULT_AI_CONFIG, DEFAULT_PROVIDER_SETTINGS } from '@/types/model';
+import {
+  broadcastAISettingsSync,
+  broadcastLanguageSync,
+  broadcastProjectRootSync,
+  broadcastSearchSettingsSync,
+  broadcastSpotlightAppearanceSync,
+} from '@/lib/appStoreEvents';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
 import { useContextStore } from './useContextStore';
@@ -163,9 +170,12 @@ export const useAppStore = create<AppState>()(
         customUrl: 'https://search.bilibili.com/all?keyword=%s'
       },
       refinerySettings: DEFAULT_REFINERY_SETTINGS,
-      setSpotlightAppearance: (config) => set((state) => ({
-        spotlightAppearance: { ...state.spotlightAppearance, ...config }
-      })),
+      setSpotlightAppearance: (config) => {
+        set((state) => ({
+          spotlightAppearance: { ...state.spotlightAppearance, ...config }
+        }));
+        broadcastSpotlightAppearanceSync(useAppStore.getState().spotlightAppearance);
+      },
       setView: (view) => set({ currentView: view }),
       setProjectRoot: (path) => {
         const normalizedPath = path?.trim() || null;
@@ -190,6 +200,12 @@ export const useAppStore = create<AppState>()(
         if (contextState.projectRoot !== normalizedPath) {
           void contextState.setProjectRoot(normalizedPath);
         }
+
+        const nextState = useAppStore.getState();
+        broadcastProjectRootSync({
+          projectRoot: nextState.projectRoot,
+          recentProjectRoots: nextState.recentProjectRoots,
+        });
       },
       clearProjectRoot: () => {
         set((state) => (state.projectRoot === null ? state : { projectRoot: null }));
@@ -198,6 +214,12 @@ export const useAppStore = create<AppState>()(
         if (contextState.projectRoot !== null) {
           void contextState.setProjectRoot(null);
         }
+
+        const nextState = useAppStore.getState();
+        broadcastProjectRootSync({
+          projectRoot: nextState.projectRoot,
+          recentProjectRoots: nextState.recentProjectRoots,
+        });
       },
       setMonitorOpen: (open) => set({ isMonitorOpen: open }),
       setPromptSidebarOpen: (open) => set({ isPromptSidebarOpen: open }),
@@ -224,45 +246,56 @@ export const useAppStore = create<AppState>()(
         });
       },
       setWindowDestroyDelay: (seconds) => set({ windowDestroyDelay: seconds }),
-      setAIConfig: (config) => set((state) => {
-        const newConfig = { ...state.aiConfig, ...config };
-        const currentProviderId = newConfig.providerId;
+      setAIConfig: (config) => {
+        set((state) => {
+          const newConfig = { ...state.aiConfig, ...config };
+          const currentProviderId = newConfig.providerId;
 
-        if (config.providerId && config.providerId !== state.aiConfig.providerId) {
-            const saved = state.savedProviderSettings[config.providerId] || DEFAULT_PROVIDER_SETTINGS[config.providerId] || {
-                apiKey: '',
-                baseUrl: '',
-                modelId: '',
-                temperature: 0.7
-            };
+          if (config.providerId && config.providerId !== state.aiConfig.providerId) {
+              const saved = state.savedProviderSettings[config.providerId] || DEFAULT_PROVIDER_SETTINGS[config.providerId] || {
+                  apiKey: '',
+                  baseUrl: '',
+                  modelId: '',
+                  temperature: 0.7
+              };
 
-            return {
-                aiConfig: {
-                    ...newConfig,
-                    apiKey: saved.apiKey,
-                    baseUrl: saved.baseUrl,
-                    modelId: saved.modelId,
-                    temperature: saved.temperature
-                }
-            };
-        }
+              return {
+                  aiConfig: {
+                      ...newConfig,
+                      apiKey: saved.apiKey,
+                      baseUrl: saved.baseUrl,
+                      modelId: saved.modelId,
+                      temperature: saved.temperature
+                  }
+              };
+          }
 
-        const newSavedSettings = { ...state.savedProviderSettings };
-        newSavedSettings[currentProviderId] = {
-            apiKey: newConfig.apiKey,
-            baseUrl: newConfig.baseUrl,
-            modelId: newConfig.modelId,
-            temperature: newConfig.temperature
-        };
+          const newSavedSettings = { ...state.savedProviderSettings };
+          newSavedSettings[currentProviderId] = {
+              apiKey: newConfig.apiKey,
+              baseUrl: newConfig.baseUrl,
+              modelId: newConfig.modelId,
+              temperature: newConfig.temperature
+          };
 
-        return {
-          aiConfig: newConfig,
-          savedProviderSettings: newSavedSettings
-        };
-      }),
-      setSearchSettings: (config) => set((state) => ({
-        searchSettings: { ...state.searchSettings, ...config }
-      })),
+          return {
+            aiConfig: newConfig,
+            savedProviderSettings: newSavedSettings
+          };
+        });
+
+        const nextState = useAppStore.getState();
+        broadcastAISettingsSync({
+          aiConfig: nextState.aiConfig,
+          savedProviderSettings: nextState.savedProviderSettings,
+        });
+      },
+      setSearchSettings: (config) => {
+        set((state) => ({
+          searchSettings: { ...state.searchSettings, ...config }
+        }));
+        broadcastSearchSettingsSync(useAppStore.getState().searchSettings);
+      },
       setRefinerySettings: (config) => set((state) => ({
         refinerySettings: { ...state.refinerySettings, ...config }
       })),
@@ -270,6 +303,7 @@ export const useAppStore = create<AppState>()(
         set({ language });
         // Also update i18next language
         i18n.changeLanguage(language);
+        broadcastLanguageSync({ language });
       },
       updateGlobalIgnore: (type, action, value) => set((state) => {
         const currentList = state.globalIgnore[type];
@@ -301,32 +335,40 @@ export const useAppStore = create<AppState>()(
 
       resetModels: () => set({ models: DEFAULT_MODELS }),
 
-      renameAIProvider: (oldName, newName) => set((state) => {
-        if (!newName.trim() || newName === oldName || state.savedProviderSettings[newName]) {
-            return state;
-        }
+      renameAIProvider: (oldName, newName) => {
+        set((state) => {
+          if (!newName.trim() || newName === oldName || state.savedProviderSettings[newName]) {
+              return state;
+          }
 
-        const currentSettings = { ...state.savedProviderSettings };
-        const settingData = currentSettings[oldName];
+          const currentSettings = { ...state.savedProviderSettings };
+          const settingData = currentSettings[oldName];
 
-        if (!settingData) return state;
+          if (!settingData) return state;
 
-        delete currentSettings[oldName];
-        currentSettings[newName] = settingData;
+          delete currentSettings[oldName];
+          currentSettings[newName] = settingData;
 
-        let newActiveId = state.aiConfig.providerId;
-        if (newActiveId === oldName) {
-            newActiveId = newName;
-        }
+          let newActiveId = state.aiConfig.providerId;
+          if (newActiveId === oldName) {
+              newActiveId = newName;
+          }
 
-        return {
-            savedProviderSettings: currentSettings,
-            aiConfig: {
-                ...state.aiConfig,
-                providerId: newActiveId
-            }
-        };
-      }),
+          return {
+              savedProviderSettings: currentSettings,
+              aiConfig: {
+                  ...state.aiConfig,
+                  providerId: newActiveId
+              }
+          };
+        });
+
+        const nextState = useAppStore.getState();
+        broadcastAISettingsSync({
+          aiConfig: nextState.aiConfig,
+          savedProviderSettings: nextState.savedProviderSettings,
+        });
+      },
     }),
     {
       name: 'app-config',

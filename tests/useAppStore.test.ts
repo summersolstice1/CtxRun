@@ -201,6 +201,31 @@ describe('useAppStore setTheme', () => {
       modelId: 'gpt-custom',
       temperature: 0.9,
     });
+
+    await Promise.resolve();
+    expect(emitMock).toHaveBeenCalledWith('app-store:ai-settings-changed', {
+      aiConfig: {
+        providerId: 'openai',
+        apiKey: 'new-open-key',
+        baseUrl: 'https://proxy.example/v1',
+        modelId: 'gpt-custom',
+        temperature: 0.9,
+      },
+      savedProviderSettings: {
+        deepseek: {
+          apiKey: 'deepseek-key',
+          baseUrl: 'https://api.deepseek.com',
+          modelId: 'deepseek-chat',
+          temperature: 0.7,
+        },
+        openai: {
+          apiKey: 'new-open-key',
+          baseUrl: 'https://proxy.example/v1',
+          modelId: 'gpt-custom',
+          temperature: 0.9,
+        },
+      },
+    });
   });
 
   it('setAIConfig falls back to default values when switching to unknown provider', async () => {
@@ -248,6 +273,30 @@ describe('useAppStore setTheme', () => {
     expect(useAppStore.getState().savedProviderSettings.deepseek).toBeUndefined();
     expect(useAppStore.getState().savedProviderSettings['deepseek-new']).toBeDefined();
     expect(useAppStore.getState().aiConfig.providerId).toBe('deepseek-new');
+    await Promise.resolve();
+    expect(emitMock).toHaveBeenCalledWith('app-store:ai-settings-changed', {
+      aiConfig: {
+        providerId: 'deepseek-new',
+        apiKey: '',
+        baseUrl: 'https://api.deepseek.com',
+        modelId: 'deepseek-chat',
+        temperature: 0.7,
+      },
+      savedProviderSettings: {
+        openai: {
+          apiKey: 'open-key',
+          baseUrl: 'https://api.openai.com/v1',
+          modelId: 'gpt-4o',
+          temperature: 0.7,
+        },
+        'deepseek-new': {
+          apiKey: 'deep-key',
+          baseUrl: 'https://api.deepseek.com',
+          modelId: 'deepseek-chat',
+          temperature: 0.7,
+        },
+      },
+    });
 
     const snapshot = useAppStore.getState().savedProviderSettings;
     useAppStore.getState().renameAIProvider('deepseek-new', 'deepseek-new');
@@ -367,16 +416,38 @@ describe('useAppStore setTheme', () => {
   it('merges search, refinery, spotlight appearance, and window settings', async () => {
     const useAppStore = await importFreshAppStore();
 
+    useAppStore.getState().setProjectRoot('/workspace-a');
     useAppStore.getState().setSearchSettings({ defaultEngine: 'bing' });
     useAppStore.getState().setRefinerySettings({ strategy: 'both', maxCount: 1234 });
     useAppStore.getState().setSpotlightAppearance({ width: 700 });
     useAppStore.getState().setWindowDestroyDelay(120);
+    useAppStore.getState().setLanguage('en');
 
     const state = useAppStore.getState();
+    expect(state.projectRoot).toBe('/workspace-a');
     expect(state.searchSettings.defaultEngine).toBe('bing');
     expect(state.refinerySettings.strategy).toBe('both');
     expect(state.refinerySettings.maxCount).toBe(1234);
     expect(state.spotlightAppearance.width).toBe(700);
     expect(state.windowDestroyDelay).toBe(120);
+    expect(state.language).toBe('en');
+
+    await Promise.resolve();
+    expect(emitMock).toHaveBeenCalledWith('app-store:project-root-changed', {
+      projectRoot: '/workspace-a',
+      recentProjectRoots: ['/workspace-a'],
+    });
+    expect(emitMock).toHaveBeenCalledWith('app-store:search-settings-changed', {
+      defaultEngine: 'bing',
+      customUrl: 'https://search.bilibili.com/all?keyword=%s',
+    });
+    expect(emitMock).toHaveBeenCalledWith('app-store:spotlight-appearance-changed', {
+      width: 700,
+      defaultHeight: 400,
+      maxChatHeight: 600,
+    });
+    expect(emitMock).toHaveBeenCalledWith('app-store:language-changed', {
+      language: 'en',
+    });
   });
 });

@@ -8,6 +8,7 @@ import { useAppStore, AppTheme } from "@/store/useAppStore";
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
 import { useTranslation } from 'react-i18next';
 import { PreviewModal } from "@/components/features/hyperview";
+import { useCrossWindowAppStoreSync } from '@/lib/hooks/useCrossWindowAppStoreSync';
 import { applyThemeToDocument } from '@/lib/theme';
 const PromptView = lazy(() => import('@/components/features/prompts/PromptView').then(module => ({ default: module.PromptView })));
 const ContextView = lazy(() => import('@/components/features/context/ContextView').then(module => ({ default: module.ContextView })));
@@ -21,6 +22,8 @@ const SystemMonitorModal = lazy(() => import('@/components/features/monitor/Syst
 const appWindow = getCurrentWebviewWindow()
 
 function App() {
+  useCrossWindowAppStoreSync();
+
   const [currentView, theme, setTheme, syncModels, lastUpdated] = useAppStore(
     useShallow((state) => [
       state.currentView,

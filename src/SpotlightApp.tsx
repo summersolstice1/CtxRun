@@ -16,6 +16,7 @@ import { executeCommand } from '@/lib/command_executor';
 import { GlobalConfirmDialog } from "@/components/ui/GlobalConfirmDialog";
 import { ExecApprovalSheet } from '@/components/features/spotlight/exec/ExecApprovalSheet';
 import { useExecStore } from '@/store/useExecStore';
+import { useCrossWindowAppStoreSync } from '@/lib/hooks/useCrossWindowAppStoreSync';
 
 import { SpotlightProvider, useSpotlight } from '@/components/features/spotlight/core/SpotlightContext';
 import { SpotlightLayout } from '@/components/features/spotlight/core/SpotlightLayout';
@@ -335,6 +336,8 @@ function SpotlightContent() {
 }
 
 export default function SpotlightApp() {
+  useCrossWindowAppStoreSync();
+
   const initialTheme = useAppStore((state) => state.theme);
   const [theme, setTheme] = useState<AppTheme>(initialTheme);
   const fetchChatTemplates = usePromptStore((state) => state.fetchChatTemplates);
@@ -347,13 +350,10 @@ export default function SpotlightApp() {
     const unlistenPromise = appWindow.onFocusChanged(async ({ payload: isFocused }) => {
       if (isFocused) {
         try {
-          await useAppStore.persist.rehydrate();
-          await useContextStore.persist.rehydrate();
           await fetchChatTemplates();
-          setTheme(useAppStore.getState().theme);
           await appWindow.setFocus();
         } catch (err) {
-          console.error('Failed to rehydrate spotlight state on focus:', err);
+          console.error('Failed to refresh spotlight state on focus:', err);
         }
       }
     });
