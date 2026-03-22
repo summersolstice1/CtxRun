@@ -127,4 +127,26 @@ describe('SettingsView', () => {
     fireEvent.click(screen.getByTestId('settings-nav-about'));
     await waitFor(() => expect(screen.getByText('about-section')).toBeTruthy());
   });
+
+  it('renders the remaining sections and logs cleanup config failures', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    invokeMock.mockRejectedValueOnce(new Error('cleanup failed'));
+
+    render(<SettingsView />);
+
+    fireEvent.click(screen.getByTestId('settings-nav-searchWorkspace'));
+    await waitFor(() => expect(screen.getByText('search-workspace-section')).toBeTruthy());
+
+    fireEvent.click(screen.getByTestId('settings-nav-library'));
+    await waitFor(() => expect(screen.getByText('library-section')).toBeTruthy());
+
+    fireEvent.click(screen.getByTestId('settings-nav-data'));
+    await waitFor(() => expect(screen.getByText('data-maintenance-section')).toBeTruthy());
+
+    fireEvent.click(screen.getByTestId('settings-nav-security'));
+    await waitFor(() => expect(screen.getByText('security-section')).toBeTruthy());
+
+    await waitFor(() => expect(errorSpy).toHaveBeenCalled());
+    errorSpy.mockRestore();
+  });
 });

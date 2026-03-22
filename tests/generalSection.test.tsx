@@ -68,4 +68,29 @@ describe('GeneralSection', () => {
       expect(props.setSpotlightShortcut).toHaveBeenCalledWith('Ctrl+Shift+K');
     });
   });
+
+  it('supports black theme and layout sliders', () => {
+    render(
+      <GeneralSection
+        {...props}
+        theme="black"
+        language="en"
+        spotlightAppearance={{ width: 700, defaultHeight: 420, maxChatHeight: 650 }}
+        windowDestroyDelay={90}
+      />
+    );
+
+    fireEvent.click(screen.getByText('settings.themeDark').closest('button')!);
+    expect(props.setTheme).toHaveBeenCalledWith('dark');
+
+    fireEvent.click(screen.getByText('settings.langZh').closest('button')!);
+    expect(props.setLanguage).toHaveBeenCalledWith('zh');
+
+    const sliders = screen.getAllByRole('slider');
+    fireEvent.change(sliders[1], { target: { value: '460' } });
+    expect(props.setSpotlightAppearance).toHaveBeenCalledWith({ defaultHeight: 460 });
+
+    fireEvent.change(sliders[2], { target: { value: '700' } });
+    expect(props.setSpotlightAppearance).toHaveBeenCalledWith({ maxChatHeight: 700 });
+  });
 });
