@@ -224,19 +224,17 @@ fn scan_system() -> Vec<AppEntry> {
         }
 
         for dir in all_dirs {
-            if Path::new(dir).exists() {
-                if let Ok(entries) = std::fs::read_dir(dir) {
-                    for entry in entries.flatten() {
-                        let path = entry.path();
-                        if path.extension().map_or(false, |ext| ext == "desktop") {
-                            let name = path.file_stem().unwrap().to_string_lossy().to_string();
-                            apps.push(AppEntry {
-                                name,
-                                path: path.to_string_lossy().to_string(),
-                                icon: None,
-                                usage_count: 0,
-                            });
-                        }
+            if Path::new(dir).exists() && let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if path.extension().is_some_and(|ext| ext == "desktop") {
+                        let name = path.file_stem().unwrap().to_string_lossy().to_string();
+                        apps.push(AppEntry {
+                            name,
+                            path: path.to_string_lossy().to_string(),
+                            icon: None,
+                            usage_count: 0,
+                        });
                     }
                 }
             }

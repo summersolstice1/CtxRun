@@ -128,10 +128,8 @@ fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool
     #[cfg(not(target_os = "windows"))]
     {
         let _ = _sys;
-        if let Some(uid) = process.user_id() {
-            if uid.to_string() == "0" {
-                return true;
-            }
+        if let Some(uid) = process.user_id() && uid.to_string() == "0" {
+            return true;
         }
     }
 
@@ -300,7 +298,7 @@ pub fn kill_process(
 
     #[cfg(not(target_os = "windows"))]
     let output = Command::new("kill")
-        .args(&["-9", &pid.to_string()])
+        .args(["-9", &pid.to_string()])
         .output();
 
     match output {
