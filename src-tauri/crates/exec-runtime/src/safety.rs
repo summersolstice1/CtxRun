@@ -203,15 +203,15 @@ fn path_is_within_workspace(path: &Path, root: &Path) -> bool {
 fn normalized_path_components(path: &Path) -> Vec<String> {
     normalize_path_for_comparison(path)
         .components()
-        .map(|component| component.as_os_str().to_string_lossy().to_string())
         .map(|component| {
+            let component = component.as_os_str().to_string_lossy();
             #[cfg(target_os = "windows")]
             {
                 component.to_ascii_lowercase()
             }
             #[cfg(not(target_os = "windows"))]
             {
-                component
+                component.to_string()
             }
         })
         .collect()

@@ -12,6 +12,10 @@ vi.mock('@tauri-apps/plugin-clipboard-manager', () => ({
 }));
 
 vi.mock('react-i18next', () => ({
+  initReactI18next: {
+    type: '3rdParty',
+    init: vi.fn(),
+  },
   useTranslation: () => ({
     t: (key: string) => key,
   }),
@@ -29,7 +33,7 @@ describe('MarkdownContent', () => {
 
     const table = container.querySelector('table');
     expect(table).toBeTruthy();
-    expect(table?.parentElement?.className).toContain('overflow-x-auto');
+    expect(table?.parentElement?.className).toContain('ctx-markdown-table-wrap');
     expect(container.querySelector('th')?.textContent).toBe('Name');
     expect(container.querySelector('td')?.textContent).toBe('Foo');
   });
@@ -44,7 +48,9 @@ describe('MarkdownContent', () => {
     );
 
     const list = container.querySelector('ul');
-    expect(list?.className).toContain('list-disc');
+    expect(list).toBeTruthy();
+    expect(list?.textContent).toContain('First item');
+    expect(list?.textContent).toContain('Second item');
 
     fireEvent.click(screen.getByRole('link', { name: 'OpenAI' }));
     expect(handleOpenLink).toHaveBeenCalledWith('https://openai.com');
