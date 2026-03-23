@@ -228,7 +228,7 @@
     "id": "tldr-en-linux-daemon-0",
     "type": "command",
     "title": "daemon - Run a command as a daemon",
-    "content": "daemon --name=\"{{name}}\" {{command}}",
+    "content": "daemon {{[-n|--name]}} \"{{name}}\" {{command}}",
     "group": "Linux Ops",
     "description": "daemon: Turns other processes into daemons. (Run a command as a daemon)",
     "tags": [
@@ -243,7 +243,7 @@
     "id": "tldr-en-linux-daemon-1",
     "type": "command",
     "title": "daemon - Run a command as a daemon which will restart if the command crashes",
-    "content": "daemon --name=\"{{name}}\" {{[-r|--respawn]}} {{command}}",
+    "content": "daemon {{[-n|--name]}} \"{{name}}\" {{[-r|--respawn]}} {{command}}",
     "group": "Linux Ops",
     "description": "daemon: Turns other processes into daemons. (Run a command as a daemon which will restart if the command crashes)",
     "tags": [
@@ -258,7 +258,7 @@
     "id": "tldr-en-linux-daemon-2",
     "type": "command",
     "title": "daemon - Run a command as a daemon which will restart if it crashes, with two attempts every 10 seconds",
-    "content": "daemon --name=\"{{name}}\" {{[-r|--respawn]}} --attempts=2 --delay=10 {{command}}",
+    "content": "daemon {{[-n|--name]}} \"{{name}}\" {{[-r|--respawn]}} {{[-A|--attempts]}} 2 {{[-L|--delay]}} 10 {{command}}",
     "group": "Linux Ops",
     "description": "daemon: Turns other processes into daemons. (Run a command as a daemon which will restart if it crashes, with two attempts every 10 seconds)",
     "tags": [
@@ -273,7 +273,7 @@
     "id": "tldr-en-linux-daemon-3",
     "type": "command",
     "title": "daemon - Run a command as a daemon, writing logs to a specific file",
-    "content": "daemon --name=\"{{name}}\" --errlog={{path/to/file.log}} {{command}}",
+    "content": "daemon {{[-n|--name]}} \"{{name}}\" {{[-l|--errlog]}} {{path/to/file.log}} {{command}}",
     "group": "Linux Ops",
     "description": "daemon: Turns other processes into daemons. (Run a command as a daemon, writing logs to a specific file)",
     "tags": [
@@ -288,7 +288,7 @@
     "id": "tldr-en-linux-daemon-4",
     "type": "command",
     "title": "daemon - Kill a daemon (SIGTERM)",
-    "content": "daemon --name=\"{{name}}\" --stop",
+    "content": "daemon {{[-n|--name]}} \"{{name}}\" --stop",
     "group": "Linux Ops",
     "description": "daemon: Turns other processes into daemons. (Kill a daemon (SIGTERM))",
     "tags": [
@@ -11387,10 +11387,10 @@
   {
     "id": "tldr-en-linux-pdbedit-0",
     "type": "command",
-    "title": "pdbedit - List all Samba users (use verbose flag to show their settings)",
-    "content": "sudo pdbedit --list --verbose",
+    "title": "pdbedit - List all Samba users",
+    "content": "sudo pdbedit {{[-L|--list]}}",
     "group": "Linux Ops",
-    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (List all Samba users (use verbose flag to show their settings))",
+    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (List all Samba users)",
     "tags": [
       "linux",
       "pdbedit",
@@ -11402,10 +11402,10 @@
   {
     "id": "tldr-en-linux-pdbedit-1",
     "type": "command",
-    "title": "pdbedit - Add an existing Unix user to Samba (will prompt for password)",
-    "content": "sudo pdbedit --user {{username}} --create",
+    "title": "pdbedit - List all Samba users and their settings",
+    "content": "sudo pdbedit {{[-L|--list]}} {{[-v|--verbose]}}",
     "group": "Linux Ops",
-    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (Add an existing Unix user to Samba (will prompt for password))",
+    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (List all Samba users and their settings)",
     "tags": [
       "linux",
       "pdbedit",
@@ -11417,10 +11417,10 @@
   {
     "id": "tldr-en-linux-pdbedit-2",
     "type": "command",
-    "title": "pdbedit - Remove a Samba user",
-    "content": "sudo pdbedit --user {{username}} --delete",
+    "title": "pdbedit - Add an existing Unix user to Samba (will prompt for password)",
+    "content": "sudo pdbedit {{[-u|--user]}} {{username}} {{[-a|--create]}}",
     "group": "Linux Ops",
-    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (Remove a Samba user)",
+    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (Add an existing Unix user to Samba (will prompt for password))",
     "tags": [
       "linux",
       "pdbedit",
@@ -11432,8 +11432,23 @@
   {
     "id": "tldr-en-linux-pdbedit-3",
     "type": "command",
+    "title": "pdbedit - Remove a Samba user",
+    "content": "sudo pdbedit {{[-u|--user]}} {{username}} {{[-x|--delete]}}",
+    "group": "Linux Ops",
+    "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (Remove a Samba user)",
+    "tags": [
+      "linux",
+      "pdbedit",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pdbedit-4",
+    "type": "command",
     "title": "pdbedit - Reset a Samba user's failed password counter",
-    "content": "sudo pdbedit --user {{username}} --bad-password-count-reset",
+    "content": "sudo pdbedit {{[-u|--user]}} {{username}} {{[-z|--bad-password-count-reset]}}",
     "group": "Linux Ops",
     "description": "pdbedit: Edit the Samba user database. For simple user add/remove/password, you can also use `smbpasswd`. (Reset a Samba user's failed password counter)",
     "tags": [
@@ -40095,6 +40110,36 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-gst-launch-1.0-v4l2src-0",
+    "type": "command",
+    "title": "gst-launch-1.0-v4l2src - View video in a window",
+    "content": "gst-launch-1.0 v4l2src device={{/dev/video0}} ! autovideosink",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-v4l2src: Read frames from a Video4Linux2 device. (View video in a window)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-v4l2src",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-v4l2src-1",
+    "type": "command",
+    "title": "gst-launch-1.0-v4l2src - Create a PipeWire node out of a v4l2 device",
+    "content": "gst-launch-1.0 v4l2src device={{/dev/video0}} ! videoconvert ! pipewiresink mode=provide stream-properties=\"properties,media.class=Video/Source\" client-name=\"{{Virtual Camera}}\"",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-v4l2src: Read frames from a Video4Linux2 device. (Create a PipeWire node out of a v4l2 device)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-v4l2src",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-acountry-0",
     "type": "command",
     "title": "acountry - Print a country where an IPv4 address or host is located",
@@ -40878,7 +40923,7 @@
     "id": "tldr-en-linux-steamos-update-0",
     "type": "command",
     "title": "steamos-update - Update the operating system",
-    "content": "steamos-update",
+    "content": "sudo steamos-update",
     "group": "Linux Ops",
     "description": "steamos-update: Update SteamOS. (Update the operating system)",
     "tags": [
@@ -40893,7 +40938,7 @@
     "id": "tldr-en-linux-steamos-update-1",
     "type": "command",
     "title": "steamos-update - Check if there is an update available",
-    "content": "steamos-update check",
+    "content": "sudo steamos-update check",
     "group": "Linux Ops",
     "description": "steamos-update: Update SteamOS. (Check if there is an update available)",
     "tags": [
@@ -40974,6 +41019,36 @@
     "tags": [
       "linux",
       "euse",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-json-dump-0",
+    "type": "command",
+    "title": "spa-json-dump - Convert a SPA JSON file to standard JSON",
+    "content": "spa-json-dump {{path/to/file.conf}}",
+    "group": "Linux Ops",
+    "description": "spa-json-dump: Convert a SPA JSON file to standard JSON. (Convert a SPA JSON file to standard JSON)",
+    "tags": [
+      "linux",
+      "spa-json-dump",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-spa-json-dump-1",
+    "type": "command",
+    "title": "spa-json-dump - Convert SPA JSON from `stdin` to standard JSON",
+    "content": "echo \"{{spa_json_string}}\" | spa-json-dump",
+    "group": "Linux Ops",
+    "description": "spa-json-dump: Convert a SPA JSON file to standard JSON. (Convert SPA JSON from `stdin` to standard JSON)",
+    "tags": [
+      "linux",
+      "spa-json-dump",
       "tldr",
       "en"
     ],
@@ -45021,6 +45096,21 @@
     "content": "<:>blist<Enter>",
     "group": "Linux Ops",
     "description": "zathura: A Vim-like modal document viewer, with an integrated command-line. Make sure a backend is installed (poppler, PostScript, or DjVu). (List bookmarks)",
+    "tags": [
+      "linux",
+      "zathura",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-zathura-7",
+    "type": "command",
+    "title": "zathura - Follow links",
+    "content": "<f>{{link_number}}<Enter>",
+    "group": "Linux Ops",
+    "description": "zathura: A Vim-like modal document viewer, with an integrated command-line. Make sure a backend is installed (poppler, PostScript, or DjVu). (Follow links)",
     "tags": [
       "linux",
       "zathura",
@@ -57557,10 +57647,10 @@
   {
     "id": "tldr-en-linux-wpctl-7",
     "type": "command",
-    "title": "wpctl - Mute/Unmute a sink (1 is mute, 0 is unmute)",
-    "content": "wpctl set-mute {{id}} {{1|0|toggle}}",
+    "title": "wpctl - Mute/Unmute the default audio sink or source (1 is mute, 0 is unmute)",
+    "content": "wpctl set-mute @DEFAULT_{{SINK|SOURCE}}@ {{1|0|toggle}}",
     "group": "Linux Ops",
-    "description": "wpctl: Manage WirePlumber, a session and policy manager for PipeWire. Note: You can use the special name `@DEFAULT_SINK@` in place of `id` to operate on the default sink. (Mute/Unmute a sink (1 is mute, 0 is unmute))",
+    "description": "wpctl: Manage WirePlumber, a session and policy manager for PipeWire. Note: You can use the special name `@DEFAULT_SINK@` in place of `id` to operate on the default sink. (Mute/Unmute the default audio sink or source (1 is mute, 0 is unmute))",
     "tags": [
       "linux",
       "wpctl",
@@ -60594,6 +60684,36 @@
     "tags": [
       "linux",
       "mhwd",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-v4l2loopback-ctl-0",
+    "type": "command",
+    "title": "v4l2loopback-ctl - List all available loopback devices",
+    "content": "sudo v4l2loopback-ctl list",
+    "group": "Linux Ops",
+    "description": "v4l2loopback-ctl: Control Video4Linux2 loopback devices. (List all available loopback devices)",
+    "tags": [
+      "linux",
+      "v4l2loopback-ctl",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-v4l2loopback-ctl-1",
+    "type": "command",
+    "title": "v4l2loopback-ctl - Add a loopback device",
+    "content": "sudo v4l2loopback-ctl add",
+    "group": "Linux Ops",
+    "description": "v4l2loopback-ctl: Control Video4Linux2 loopback devices. (Add a loopback device)",
+    "tags": [
+      "linux",
+      "v4l2loopback-ctl",
       "tldr",
       "en"
     ],
@@ -71439,111 +71559,6 @@
     "tags": [
       "linux",
       "phar",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-0",
-    "type": "command",
-    "title": "smbclient - Connect to a share (user will be prompted for password; `exit` to quit the session)",
-    "content": "smbclient {{//server/share}}",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (Connect to a share (user will be prompted for password; `exit` to quit the session))",
-    "tags": [
-      "linux",
-      "smbclient",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-1",
-    "type": "command",
-    "title": "smbclient - Connect with a different username",
-    "content": "smbclient {{//server/share}} --user {{username}}",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (Connect with a different username)",
-    "tags": [
-      "linux",
-      "smbclient",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-2",
-    "type": "command",
-    "title": "smbclient - Connect with a different workgroup",
-    "content": "smbclient {{//server/share}} --workgroup {{domain}} --user {{username}}",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (Connect with a different workgroup)",
-    "tags": [
-      "linux",
-      "smbclient",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-3",
-    "type": "command",
-    "title": "smbclient - Connect with a username and password",
-    "content": "smbclient {{//server/share}} --user {{username%password}}",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (Connect with a username and password)",
-    "tags": [
-      "linux",
-      "smbclient",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-4",
-    "type": "command",
-    "title": "smbclient - Download a file from the server",
-    "content": "smbclient {{//server/share}} --directory {{path/to/directory}} --command \"get {{file.txt}}\"",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (Download a file from the server)",
-    "tags": [
-      "linux",
-      "smbclient",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-5",
-    "type": "command",
-    "title": "smbclient - Upload a file to the server",
-    "content": "smbclient {{//server/share}} --directory {{path/to/directory}} --command \"put {{file.txt}}\"",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (Upload a file to the server)",
-    "tags": [
-      "linux",
-      "smbclient",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-smbclient-6",
-    "type": "command",
-    "title": "smbclient - List the shares from a server anonymously",
-    "content": "smbclient --list={{server}} --no-pass",
-    "group": "Linux Ops",
-    "description": "smbclient: FTP-like client to access SMB/CIFS resources on servers. (List the shares from a server anonymously)",
-    "tags": [
-      "linux",
-      "smbclient",
       "tldr",
       "en"
     ],
@@ -87420,6 +87435,96 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-0",
+    "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Listen to the default microphone",
+    "content": "gst-launch-1.0 pipewiresrc ! autoaudiosink",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Listen to the default microphone)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-1",
+    "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Specify node to record and view video in a window",
+    "content": "gst-launch-1.0 pipewiresrc target-object={{node_name}} ! autovideosink",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Specify node to record and view video in a window)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-2",
+    "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Record video into a file",
+    "content": "gst-launch-1.0 {{[-e|--eos-on-shutdown]}} pipewiresrc ! videoconvert ! {{x264enc}} ! {{h264parse}} ! {{matroskamux}} ! filesink location={{path/to/file.mkv}}",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Record video into a file)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-3",
+    "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Record audio into a file",
+    "content": "gst-launch-1.0 {{[-e|--eos-on-shutdown]}} pipewiresrc ! {{opusenc}} ! {{oggmux}} ! filesink location={{path/to/file.ogg}}",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Record audio into a file)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-4",
+    "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Record the monitor of a device",
+    "content": "gst-launch-1.0 pipewiresrc target-object={{node_name}} stream-properties=props,stream.capture.sink=true ! {{audioconvert ! fakesink}}",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Record the monitor of a device)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-5",
+    "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Multiplex audio and video into a file",
+    "content": "gst-launch-1.0 {{[-e|--eos-on-shutdown]}} pipewiresrc do-timestamp=true ! videoconvert ! {{x264enc}} ! {{h264parse}} ! {{mux}}. pipewiresrc do-timestamp=true ! {{opusenc}} ! {{mux}}. {{matroskamux}} name={{mux}} ! filesink location={{path/to/file.mkv}}",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Multiplex audio and video into a file)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-abbr-0",
     "type": "command",
     "title": "abbr - Add a new abbreviation",
@@ -91757,10 +91862,10 @@
   {
     "id": "tldr-en-linux-hyprpaper-0",
     "type": "command",
-    "title": "hyprpaper - Start the hyprpaper service",
+    "title": "hyprpaper - Start the `hyprpaper` daemon",
     "content": "hyprpaper",
     "group": "Linux Ops",
-    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Start the hyprpaper service)",
+    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Start the `hyprpaper` daemon)",
     "tags": [
       "linux",
       "hyprpaper",
@@ -91772,10 +91877,10 @@
   {
     "id": "tldr-en-linux-hyprpaper-1",
     "type": "command",
-    "title": "hyprpaper - Preload a wallpaper",
-    "content": "hyprctl hyprpaper preload \"{{path/to/image.png}}\"",
+    "title": "hyprpaper - Change the wallpaper for a specific monitor",
+    "content": "hyprctl hyprpaper wallpaper \"{{monitor}},{{path/to/image.png}}\"",
     "group": "Linux Ops",
-    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Preload a wallpaper)",
+    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Change the wallpaper for a specific monitor)",
     "tags": [
       "linux",
       "hyprpaper",
@@ -91787,55 +91892,10 @@
   {
     "id": "tldr-en-linux-hyprpaper-2",
     "type": "command",
-    "title": "hyprpaper - Switch wallpaper to a different preloaded image",
-    "content": "hyprctl hyprpaper wallpaper \"{{monitor}},{{path/to/image.png}}\"",
+    "title": "hyprpaper - Change the default wallpaper for all unspecified monitors and set its fit mode",
+    "content": "hyprctl hyprpaper wallpaper \",{{path/to/image.png}},{{contain|cover|tile|fill}}\"",
     "group": "Linux Ops",
-    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Switch wallpaper to a different preloaded image)",
-    "tags": [
-      "linux",
-      "hyprpaper",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-hyprpaper-3",
-    "type": "command",
-    "title": "hyprpaper - Preload a wallpaper, set that wallpaper, then unload all unused wallpapers",
-    "content": "hyprctl hyprpaper reload \"{{monitor}},{{path/to/image.png}}\"",
-    "group": "Linux Ops",
-    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Preload a wallpaper, set that wallpaper, then unload all unused wallpapers)",
-    "tags": [
-      "linux",
-      "hyprpaper",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-hyprpaper-4",
-    "type": "command",
-    "title": "hyprpaper - List the wallpapers that are currently preloaded (useful for dynamically preloading and unloading)",
-    "content": "hyprctl hyprpaper listloaded",
-    "group": "Linux Ops",
-    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (List the wallpapers that are currently preloaded (useful for dynamically preloading and unloading))",
-    "tags": [
-      "linux",
-      "hyprpaper",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-hyprpaper-5",
-    "type": "command",
-    "title": "hyprpaper - List the active wallpapers hyprpaper is displaying, along with their associated monitor",
-    "content": "hyprctl hyprpaper listactive",
-    "group": "Linux Ops",
-    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (List the active wallpapers hyprpaper is displaying, along with their associated monitor)",
+    "description": "hyprpaper: Wallpaper utility for Hyprland with the ability to dynamically change wallpapers. Controlled by the config file `~/.config/hypr/hyprpaper.conf`. (Change the default wallpaper for all unspecified monitors and set its fit mode)",
     "tags": [
       "linux",
       "hyprpaper",
@@ -95823,7 +95883,7 @@
     "id": "tldr-en-linux-systemctl-6",
     "type": "command",
     "title": "systemctl - List all service/socket/automount units filtering by running/failed state",
-    "content": "systemctl list-units {{[-t|--type]}} {{service|socket|automount}} --state {{failed|running}}",
+    "content": "systemctl list-units {{[-t|--type]}} {{service|socket|automount|...}} --state {{failed|running}}",
     "group": "Linux Ops",
     "description": "systemctl: Control the systemd system and service manager. Some subcommands such as `disable`, `status`, `reboot` etc. have their own usage documentation. (List all service/socket/automount units filtering by running/failed state)",
     "tags": [
@@ -110271,6 +110331,21 @@
     "content": "sudo ip {{[l|link]}} {{[s|set]}} {{ethX}} promisc {{on|off}}",
     "group": "Linux Ops",
     "description": "ip-link: Manage network interfaces. (Set the promisc mode status of a device)",
+    "tags": [
+      "linux",
+      "ip-link",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-ip-link-7",
+    "type": "command",
+    "title": "ip-link - Delete a device",
+    "content": "sudo ip {{[l|link]}} {{[d|delete]}} {{ethX}}",
+    "group": "Linux Ops",
+    "description": "ip-link: Manage network interfaces. (Delete a device)",
     "tags": [
       "linux",
       "ip-link",

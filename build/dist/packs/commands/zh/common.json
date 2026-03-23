@@ -4443,7 +4443,7 @@
     "id": "tldr-zh-common-git-check-attr-0",
     "type": "command",
     "title": "git-check-attr - 检查文件的所有属性状态",
-    "content": "git check-attr --all {{路径/到/文件}}",
+    "content": "git check-attr {{[-a|--all]}} {{路径/到/文件}}",
     "group": "通用工具 (Common)",
     "description": "git-check-attr: 检查每个路径的文件属性状态（未指定/已设置/未设置）。 (检查文件的所有属性状态)",
     "tags": [
@@ -4473,7 +4473,7 @@
     "id": "tldr-zh-common-git-check-attr-2",
     "type": "command",
     "title": "git-check-attr - 查看指定文件的所有属性值",
-    "content": "git check-attr --all {{路径/到/文件1 路径/到/文件2 ...}}",
+    "content": "git check-attr {{[-a|--all]}} {{路径/到/文件1 路径/到/文件2 ...}}",
     "group": "通用工具 (Common)",
     "description": "git-check-attr: 检查每个路径的文件属性状态（未指定/已设置/未设置）。 (查看指定文件的所有属性值)",
     "tags": [
@@ -9933,7 +9933,7 @@
     "id": "tldr-zh-common-fc-list-2",
     "type": "command",
     "title": "fc-list - 返回系统中已安装字体的数量",
-    "content": "fc-list | wc -l",
+    "content": "fc-list | wc {{[-l|--lines]}}",
     "group": "通用工具 (Common)",
     "description": "fc-list: 列出系统上安装的可用字体。 (返回系统中已安装字体的数量)",
     "tags": [
@@ -17283,7 +17283,7 @@
     "id": "tldr-zh-common-jbang-1",
     "type": "command",
     "title": "jbang - 初始化一个 Java 类（用于脚本编写）",
-    "content": "jbang init --template={{cli}} {{路径/到/文件.java}}",
+    "content": "jbang init {{[-t|--template]}}={{cli}} {{路径/到/文件.java}}",
     "group": "通用工具 (Common)",
     "description": "jbang: 简便地创建、编辑和运行仅包含源代码的自包含 Java 程序。 另请参阅：`java`。 (初始化一个 Java 类（用于脚本编写）)",
     "tags": [
@@ -17298,7 +17298,7 @@
     "id": "tldr-zh-common-jbang-2",
     "type": "command",
     "title": "jbang - 使用 `jshell` 在 REPL 编辑器中探索和使用脚本及其任何依赖项",
-    "content": "jbang run --interactive",
+    "content": "jbang run {{[-i|--interactive]}}",
     "group": "通用工具 (Common)",
     "description": "jbang: 简便地创建、编辑和运行仅包含源代码的自包含 Java 程序。 另请参阅：`java`。 (使用 `jshell` 在 REPL 编辑器中探索和使用脚本及其任何依赖项)",
     "tags": [
@@ -26343,7 +26343,7 @@
     "id": "tldr-zh-common-git-cola-3",
     "type": "command",
     "title": "git-cola - 打开指定路径的 Git 仓库",
-    "content": "git cola --repo {{路径/到/git仓库}}",
+    "content": "git cola {{[-r|--repo]}} {{路径/到/git仓库}}",
     "group": "通用工具 (Common)",
     "description": "git-cola: 功能强大且界面直观的 Git 图形化界面工具。 (打开指定路径的 Git 仓库)",
     "tags": [
@@ -26358,7 +26358,7 @@
     "id": "tldr-zh-common-git-cola-4",
     "type": "command",
     "title": "git-cola - 在状态组件中应用路径过滤器",
-    "content": "git cola --status-filter {{过滤器}}",
+    "content": "git cola {{[-s|--status-filter]}} {{过滤器}}",
     "group": "通用工具 (Common)",
     "description": "git-cola: 功能强大且界面直观的 Git 图形化界面工具。 (在状态组件中应用路径过滤器)",
     "tags": [
@@ -40638,7 +40638,7 @@
     "id": "tldr-zh-common-docker-container-rm-3",
     "type": "command",
     "title": "docker-container-rm - 显示帮助",
-    "content": "docker {{[rm|container rm]}} {{[-h|--help]}}",
+    "content": "docker {{[rm|container rm]}} --help",
     "group": "通用工具 (Common)",
     "description": "docker-container-rm: 移除容器。 (显示帮助)",
     "tags": [
@@ -49908,7 +49908,7 @@
     "id": "tldr-zh-common-git-count-objects-1",
     "type": "command",
     "title": "git-count-objects - 统计所有对象并以易读格式显示总磁盘使用量（如KB/MB）",
-    "content": "git count-objects --human-readable",
+    "content": "git count-objects {{[-H|--human-readable]}}",
     "group": "通用工具 (Common)",
     "description": "git-count-objects: 统计未打包对象数量及其磁盘占用情况。 (统计所有对象并以易读格式显示总磁盘使用量（如KB/MB）)",
     "tags": [
@@ -49923,7 +49923,7 @@
     "id": "tldr-zh-common-git-count-objects-2",
     "type": "command",
     "title": "git-count-objects - 显示详细统计信息（包括对象类型细分）",
-    "content": "git count-objects --verbose",
+    "content": "git count-objects {{[-v|--verbose]}}",
     "group": "通用工具 (Common)",
     "description": "git-count-objects: 统计未打包对象数量及其磁盘占用情况。 (显示详细统计信息（包括对象类型细分）)",
     "tags": [
@@ -49938,7 +49938,7 @@
     "id": "tldr-zh-common-git-count-objects-3",
     "type": "command",
     "title": "git-count-objects - 以易读格式显示详细统计信息",
-    "content": "git count-objects --human-readable --verbose",
+    "content": "git count-objects {{[-H|--human-readable]}} {{[-v|--verbose]}}",
     "group": "通用工具 (Common)",
     "description": "git-count-objects: 统计未打包对象数量及其磁盘占用情况。 (以易读格式显示详细统计信息)",
     "tags": [

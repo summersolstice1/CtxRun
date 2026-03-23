@@ -7788,7 +7788,7 @@
     "id": "tldr-zh-linux-lsb_release-0",
     "type": "command",
     "title": "lsb_release - 打印所有可用信息",
-    "content": "lsb_release -a",
+    "content": "lsb_release {{[-a|--all]}}",
     "group": "Linux 运维",
     "description": "lsb_release: 提供某些 LSB（Linux 标准库）和特定于发行版的信息。 (打印所有可用信息)",
     "tags": [
@@ -7803,7 +7803,7 @@
     "id": "tldr-zh-linux-lsb_release-1",
     "type": "command",
     "title": "lsb_release - 打印操作系统的描述（通常是全名）",
-    "content": "lsb_release -d",
+    "content": "lsb_release {{[-d|--description]}}",
     "group": "Linux 运维",
     "description": "lsb_release: 提供某些 LSB（Linux 标准库）和特定于发行版的信息。 (打印操作系统的描述（通常是全名）)",
     "tags": [
@@ -7818,7 +7818,7 @@
     "id": "tldr-zh-linux-lsb_release-2",
     "type": "command",
     "title": "lsb_release - 仅打印操作系统名称 (ID)，隐藏字段名称",
-    "content": "lsb_release -i -s",
+    "content": "lsb_release {{[-is|--id --short]}}",
     "group": "Linux 运维",
     "description": "lsb_release: 提供某些 LSB（Linux 标准库）和特定于发行版的信息。 (仅打印操作系统名称 (ID)，隐藏字段名称)",
     "tags": [
@@ -7833,7 +7833,7 @@
     "id": "tldr-zh-linux-lsb_release-3",
     "type": "command",
     "title": "lsb_release - 打印发行版的版本号和代号，隐藏字段名称",
-    "content": "lsb_release -rcs",
+    "content": "lsb_release {{[-rcs|--release --codename --short]}}",
     "group": "Linux 运维",
     "description": "lsb_release: 提供某些 LSB（Linux 标准库）和特定于发行版的信息。 (打印发行版的版本号和代号，隐藏字段名称)",
     "tags": [
@@ -11283,7 +11283,7 @@
     "id": "tldr-zh-linux-grub-mkconfig-1",
     "type": "command",
     "title": "grub-mkconfig - 生成配置文件",
-    "content": "sudo grub-mkconfig --output={{/boot/grub/grub.cfg}}",
+    "content": "sudo grub-mkconfig {{[-o|--output]}} {{/boot/grub/grub.cfg}}",
     "group": "Linux 运维",
     "description": "grub-mkconfig: 生成GRUB配置文件。 (生成配置文件)",
     "tags": [
@@ -11298,7 +11298,7 @@
     "id": "tldr-zh-linux-grub-mkconfig-2",
     "type": "command",
     "title": "grub-mkconfig - 打印帮助页面",
-    "content": "grub-mkconfig --help",
+    "content": "grub-mkconfig {{[-h|--help]}}",
     "group": "Linux 运维",
     "description": "grub-mkconfig: 生成GRUB配置文件。 (打印帮助页面)",
     "tags": [
