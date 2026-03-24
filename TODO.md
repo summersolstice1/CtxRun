@@ -465,3 +465,470 @@ CtxRun should eventually support the following top-level experience:
 - tool and MCP actions have visible approvals and results
 - secrets are stored in OS-backed secure storage
 - the AI module becomes an extensible runtime, not a hardcoded chat helper
+
+## Supplemental Direction - Architecture First, Frontend-Heavy AI
+
+This section adds product-direction guidance on top of the roadmap above.
+
+The main strategic recommendation is:
+
+- CtxRun should not evolve into a generic "AI toolbox" with many unrelated pages.
+- CtxRun should evolve into a desktop-native developer action layer.
+- Architecture should be prioritized before new AI features.
+- AI should feel frontend-native, even when trusted execution stays in Tauri/Rust.
+
+In practice, this means:
+
+- the user should experience AI through a fast, inspectable, multi-surface frontend runtime
+- the backend should remain the trusted control plane for execution, secrets, approvals, and long-lived integrations
+- every existing module should become part of one capability graph instead of remaining a standalone feature island
+
+## Product Thesis
+
+CtxRun already has the seeds of a differentiated product:
+
+- `Context Forge` can collect and package local project state
+- `Spotlight` is a high-frequency entry point
+- `Patch Weaver` can turn AI output into code changes
+- `Refinery` can provide recent user context
+- `Automator` can perform actions in software and browsers
+- `Model Miner` can ingest external web knowledge
+
+These are not six separate products.
+
+They should converge into one loop:
+
+1. capture context
+2. decide with AI
+3. act with approval
+4. show result as a reusable artifact
+
+The long-term position should be:
+
+- not "another chat UI"
+- not "another launcher with AI attached"
+- not "another coding agent clone"
+- but a local-first developer operating layer that can observe, reason, and act across workspace, desktop, browser, and system tools
+
+## Why AI Should Be Frontend-Heavy
+
+The product should be AI-heavy in the frontend for UX reasons, not for trust reasons.
+
+Frontend should own:
+
+- conversation/session composition
+- event rendering and interaction
+- capability discovery UI
+- skill selection and inspection
+- context preview, trimming, and explainability
+- turn history, artifacts, and replay UX
+- latency masking, streaming, optimistic rendering, and resumability
+- cross-surface entry points such as Spotlight, patch review, and side drawers
+
+Backend should own:
+
+- secret storage
+- approval enforcement
+- dangerous command execution
+- MCP process lifecycle
+- browser and desktop automation runtimes
+- OS integration
+- durable local persistence where trust boundaries matter
+
+The rule should be:
+
+- AI experience in frontend
+- AI power boundaries in backend
+
+This is important because the product risk is not that AI is "too frontend".
+The real risk is that AI becomes invisible backend machinery with poor UX and weak inspectability.
+
+## Architectural Position
+
+Recommended boundary:
+
+- frontend is the orchestration shell and interaction runtime
+- backend is the capability host and trusted execution layer
+
+Avoid these two extremes:
+
+- a purely frontend agent loop with security-sensitive logic leaking into UI state
+- a backend-dominant agent runtime that turns the frontend into a thin terminal
+
+Recommended split by responsibility:
+
+### Frontend Responsibilities
+
+- maintain session state and render a structured turn timeline
+- assemble user-visible context bundles before model calls
+- select and enable skills for a turn
+- expose tool provenance and approval state clearly
+- let users inspect what was injected, what was called, and what changed
+- support multiple AI surfaces backed by one runtime model
+- preserve interaction speed and continuity even when backend calls are slow
+
+### Backend Responsibilities
+
+- execute approved actions
+- resolve secret-backed provider settings
+- host MCP servers and connection state
+- provide trusted capability metadata
+- persist durable runtime configuration
+- emit structured events that frontend can render without guessing
+- protect the system from unsafe or malformed tool execution
+
+## Strategic Product Direction
+
+The next stage should prioritize integration over expansion.
+
+Do not primarily ship more standalone modules.
+Instead, make current modules composable inside one AI runtime.
+
+High-confidence product bets:
+
+### 1. Spotlight becomes the primary AI entry point
+
+`Spotlight` should become the universal invocation surface for:
+
+- ask
+- search
+- patch
+- run
+- inspect
+- automate
+- reopen recent context/artifacts
+
+The user should not have to decide first which page or feature to open.
+
+### 2. Skills become the packaging layer for expertise
+
+Skills should be more important than prompt templates.
+
+They should package:
+
+- instructions
+- context rules
+- capability dependencies
+- UI affordances
+- safety expectations
+- reusable workflows
+
+Prompt Verse should gradually become one source of skill content, not a parallel primitive forever.
+
+### 3. Patch, Context, Miner, and Refinery become context channels
+
+These modules should feed the AI runtime as structured inputs:
+
+- workspace context
+- diffs and pending edits
+- clipboard history
+- scraped external knowledge
+- saved project memory
+
+This is more valuable than keeping them as isolated tools with separate mental models.
+
+### 4. Automator becomes an action backend, not only a standalone automation page
+
+Automator is strategically important because it gives CtxRun real-world action ability.
+
+It should eventually serve three roles:
+
+- explicit user-authored workflows
+- AI-suggested multi-step actions with approval
+- skill-backed action primitives for specialized tasks
+
+### 5. MCP should be treated as ecosystem expansion, not first identity
+
+MCP matters because it standardizes external capability access.
+But MCP should not become the product story by itself.
+
+The story should remain:
+
+- CtxRun gives developers a local-first AI operating layer
+- MCP is one of the ways capabilities enter that layer
+
+## Recommended Internal Model
+
+The system should gradually converge on a model like:
+
+- `Surface`
+- `Session`
+- `Turn`
+- `ContextItem`
+- `Capability`
+- `Action`
+- `Artifact`
+- `Approval`
+- `Event`
+
+Suggested meanings:
+
+- `Surface`: Spotlight, full chat, patch view, automator assistant panel, future inline widgets
+- `Session`: one continuous user interaction state shared across surfaces when appropriate
+- `Turn`: one user intent and its execution lifecycle
+- `ContextItem`: files, diffs, clipboard items, web content, memory notes, skill injections
+- `Capability`: builtin tool, skill capability, MCP tool, plugin-provided action
+- `Action`: an invoked operation with approval, status, and output
+- `Artifact`: durable outputs such as patch sets, summaries, workflows, notes, extracted docs
+- `Approval`: explicit permission decision tied to a concrete pending action
+- `Event`: structured runtime emission rendered directly in UI
+
+This model should be expressed first in shared TypeScript types for UI velocity, then mirrored in Rust where trust or persistence requires it.
+
+## Frontend Architecture Priorities
+
+If AI is frontend-heavy, the frontend needs a stronger internal architecture than a simple page-store pattern.
+
+Recommended priorities:
+
+### Priority A - Unified AI Session Store
+
+Create a dedicated session domain instead of spreading AI state across feature-local hooks and stores.
+
+It should own:
+
+- sessions
+- turns
+- structured events
+- pending approvals
+- active capabilities
+- selected skills
+- context attachments
+- artifacts generated during a turn
+- model/provider metadata needed for rendering
+
+### Priority B - Structured Turn Timeline
+
+Do not render AI interactions as plain alternating chat bubbles only.
+
+The UI should be able to represent:
+
+- assistant output
+- tool start
+- tool approval required
+- tool approved
+- tool finished
+- MCP server connected/disconnected
+- skill injected
+- patch generated
+- patch applied
+- workflow suggested
+- workflow executed
+- failure with actionable recovery
+
+This timeline is a product advantage, not just an implementation detail.
+
+### Priority C - Capability Explorer and Invocation UI
+
+Users should be able to inspect available capabilities before or during a turn.
+
+Needed UI surfaces:
+
+- capability list
+- source/provenance
+- risk level
+- whether approval is needed
+- which skill or MCP server introduced it
+- whether it is disabled, missing, or unhealthy
+
+### Priority D - Context Composer
+
+Before a model call, the user should be able to understand what context is being sent.
+
+The composer should show:
+
+- attached files
+- inferred diffs
+- clipboard items
+- mined pages
+- memory notes
+- injected skills
+- estimated token cost
+- what was dropped due to budget
+
+### Priority E - Artifact-Centric UX
+
+Important outputs should survive beyond the transient answer bubble.
+
+First-class artifacts should include:
+
+- patch proposals
+- workflow drafts
+- summaries
+- extracted docs
+- reusable context bundles
+- reusable skill invocation presets
+
+## Backend Architecture Priorities
+
+Even with a frontend-heavy AI product, backend architecture still comes first because it defines safety and scalability.
+
+Recommended priorities:
+
+### Priority 1 - Capability Host
+
+Backend should expose a stable capability inventory to the frontend.
+
+This host should provide:
+
+- canonical capability ids
+- capability source type
+- execution requirements
+- approval metadata
+- health/status
+- dependency information
+- machine-readable schema
+
+### Priority 2 - Approval Kernel
+
+Approval logic should not be duplicated across feature modules.
+
+One approval subsystem should govern:
+
+- exec runtime
+- patch application
+- automator execution
+- MCP tool calls
+- future plugin actions
+
+### Priority 3 - Secret and Identity Boundary
+
+All provider keys, OAuth tokens, and other sensitive runtime values should stay out of normal frontend persistence.
+
+Frontend may request capability use.
+Frontend should not own the source of truth for secrets.
+
+### Priority 4 - Event Emitter Contract
+
+Backend should emit a stable event stream that the frontend can directly render.
+
+This should reduce frontend guesswork and avoid ad hoc state reconstruction.
+
+### Priority 5 - Long-Lived Runtime Managers
+
+Long-running or stateful subsystems should be centralized in backend managers:
+
+- MCP connection manager
+- browser automation manager
+- desktop automation state
+- indexing/mining workers
+- background context collectors where applicable
+
+## How Existing Features Should Converge
+
+### Spotlight
+
+Move from:
+
+- search window plus lightweight chat
+
+Toward:
+
+- command center for AI-assisted action
+
+### Prompt Verse
+
+Move from:
+
+- library of prompts and commands
+
+Toward:
+
+- authoring and distribution layer for skills, snippets, and reusable invocation presets
+
+### Patch Weaver
+
+Move from:
+
+- patch apply and diff utility
+
+Toward:
+
+- primary artifact review surface for coding actions
+
+### Refinery
+
+Move from:
+
+- clipboard history
+
+Toward:
+
+- passive short-term memory channel that can be intentionally attached to turns
+
+### Model Miner
+
+Move from:
+
+- standalone web extraction
+
+Toward:
+
+- external knowledge ingestion capability available from any AI surface
+
+### Automator
+
+Move from:
+
+- standalone workflow designer/executor
+
+Toward:
+
+- action graph runtime that AI can invoke safely with explicit approval and visible state
+
+## Near-Term Roadmap Adjustment
+
+The existing roadmap phases remain valid.
+However, execution emphasis should be adjusted as follows:
+
+### First
+
+- finish the capability and approval foundations
+- define the frontend session and event model
+- make AI interaction inspectable before making it more autonomous
+
+### Second
+
+- ship explicit skills with strong UI visibility
+- unify context composition across Spotlight, patch, miner, and clipboard flows
+- make artifacts durable and revisitable
+
+### Third
+
+- add MCP as a backend-managed expansion path
+- expose MCP tools in the same frontend capability UI
+- make dependency status visible before invocation failure
+
+### Fourth
+
+- let Automator participate in agentic flows
+- support AI-suggested workflows and step previews
+- keep the user in a review-and-approve loop
+
+## Product Non-Goals for This Direction
+
+To stay focused, avoid overcommitting to these too early:
+
+- a general-purpose web SaaS control plane
+- multi-user enterprise collaboration as a primary roadmap driver
+- autonomous background agents acting without clear visibility
+- a plugin marketplace before capability quality and trust UX are strong
+- full parity with Codex/OpenHands style backend protocol surfaces
+
+## Success Criteria for This Strategy
+
+This supplemental direction is working if the product starts to feel like:
+
+- one AI runtime with multiple surfaces, not many unrelated tools
+- one approval system, not per-feature confirmation logic
+- one capability model, not hardcoded tool lists scattered through the app
+- one context graph, not separate feature-local attachments
+- one artifact flow, not disposable chat output
+
+From the user perspective, the product should feel:
+
+- faster to enter
+- easier to trust
+- easier to inspect
+- easier to reuse
+- harder to outgrow
