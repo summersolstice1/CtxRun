@@ -19,12 +19,18 @@ export function SystemMonitorModal() {
   );
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const isNetworkTab = activeTab === 'network';
 
   if (!isMonitorOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 p-4">
-      <div className="w-full max-w-[950px] h-[650px] max-h-[90vh] bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div
+        className={cn(
+          "w-full max-h-[90vh] bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200",
+          isNetworkTab ? "max-w-[1220px] h-[760px]" : "max-w-[950px] h-[650px]"
+        )}
+      >
 
         {/* Header */}
         <div className="h-14 px-6 border-b border-border flex items-center justify-between bg-secondary/10 shrink-0 select-none">

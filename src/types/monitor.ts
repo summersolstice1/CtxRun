@@ -22,13 +22,48 @@ export interface PortInfo {
   is_system: boolean;
 }
 
-export interface NetDiagResult {
+export type NetworkHealthStatus = 'healthy' | 'degraded' | 'offline';
+
+export interface NetworkProbeResult {
   id: string;
   name: string;
+  category: string;
   url: string;
-  status: 'Success' | 'Fail' | 'Slow';
-  latency: number;
-  status_code: number;
+  host: string;
+  status: NetworkHealthStatus;
+  dns_ms: number | null;
+  tcp_ms: number | null;
+  http_ms: number | null;
+  total_ms: number | null;
+  status_code: number | null;
+  ip_addresses: string[];
+  observations: string[];
+}
+
+export interface NetworkPingStats {
+  target: string;
+  status: NetworkHealthStatus;
+  sent: number;
+  received: number;
+  loss_percent: number;
+  min_ms: number | null;
+  avg_ms: number | null;
+  max_ms: number | null;
+  jitter_ms: number | null;
+}
+
+export interface NetworkDiagnosticsSummary {
+  overall_status: NetworkHealthStatus;
+  healthy_count: number;
+  degraded_count: number;
+  offline_count: number;
+  issue_codes: string[];
+}
+
+export interface NetworkDiagnosticsReport {
+  summary: NetworkDiagnosticsSummary;
+  ping: NetworkPingStats | null;
+  probes: NetworkProbeResult[];
 }
 
 export interface ToolInfo {

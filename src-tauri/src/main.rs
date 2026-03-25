@@ -273,7 +273,8 @@ fn main() {
             monitor::kill_process,
             monitor::check_file_locks,
             monitor::get_env_info,
-            monitor::diagnose_network,
+            ctxrun_env_probe::env_probe::network::diagnose_network,
+            ctxrun_env_probe::env_probe::network::probe_network_target,
             monitor::get_ai_context,
             ctxrun_hyperview::get_file_meta,
         ])

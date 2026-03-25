@@ -5,6 +5,7 @@ pub mod binaries;
 pub mod browsers;
 pub mod common;
 pub mod ides;
+pub mod network;
 pub mod npm;
 pub mod scan_logic;
 pub mod scanners;
