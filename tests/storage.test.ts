@@ -69,13 +69,15 @@ describe('fileStorage', () => {
 
     await fileStorage.setItem('app-config', '{"theme":"dark"}');
 
+    const tempPath = writeTextFileMock.mock.calls[0]?.[0];
+    expect(tempPath).toMatch(/^app-config\.json\.[a-z0-9-]+\.tmp$/);
     expect(writeTextFileMock).toHaveBeenCalledWith(
-      'app-config.json.tmp',
+      tempPath,
       '{"theme":"dark"}',
       expect.objectContaining({ baseDir: 'AppLocalData' })
     );
     expect(renameMock).toHaveBeenCalledWith(
-      'app-config.json.tmp',
+      tempPath,
       'app-config.json',
       expect.objectContaining({
         oldPathBaseDir: 'AppLocalData',
@@ -155,8 +157,10 @@ describe('fileStorage', () => {
     const content = await fileStorage.packs.readPack('demo.json');
     await fileStorage.packs.removePack('demo.json');
 
+    const tempPath = writeTextFileMock.mock.calls[0]?.[0];
+    expect(tempPath).toMatch(/^packs\/demo\.json\.[a-z0-9-]+\.tmp$/);
     expect(writeTextFileMock).toHaveBeenCalledWith(
-      'packs/demo.json.tmp',
+      tempPath,
       '{"name":"Pack"}',
       expect.objectContaining({ baseDir: 'AppLocalData' })
     );
@@ -182,14 +186,16 @@ describe('fileStorage', () => {
 
     const result = await fileStorage.getItem('app-config');
 
+    const tempPath = writeTextFileMock.mock.calls[0]?.[0];
+    expect(tempPath).toMatch(/^app-config\.json\.[a-z0-9-]+\.tmp$/);
     expect(result).toBe('{"theme":"backup"}');
     expect(writeTextFileMock).toHaveBeenCalledWith(
-      'app-config.json.tmp',
+      tempPath,
       '{"theme":"backup"}',
       expect.objectContaining({ baseDir: 'AppLocalData' })
     );
     expect(renameMock).toHaveBeenCalledWith(
-      'app-config.json.tmp',
+      tempPath,
       'app-config.json',
       expect.objectContaining({
         oldPathBaseDir: 'AppLocalData',

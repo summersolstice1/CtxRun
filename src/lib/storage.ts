@@ -14,6 +14,7 @@ const BASE_DIR_OPT = { baseDir: BaseDirectory.AppLocalData };
 const PACKS_SUBDIR = 'packs';
 const TEMP_SUFFIX = '.tmp';
 const BACKUP_SUFFIX = '.bak';
+const WRITE_SESSION_TAG = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 const writeQueues = new Map<string, Promise<void>>();
 
 function logStorageError(action: string, fileName: string, err: unknown) {
@@ -41,6 +42,16 @@ function isValidJsonContent(content: string): boolean {
   }
 }
 
+function buildTempFileName(fileName: string): string {
+  // Multiple windows persist the same stores concurrently, so a shared temp name
+  // causes one window to rename away the other's temp file on Windows.
+  return `${fileName}.${WRITE_SESSION_TAG}${TEMP_SUFFIX}`;
+}
+
+function buildLegacyTempFileName(fileName: string): string {
+  return `${fileName}${TEMP_SUFFIX}`;
+}
+
 async function readValidatedJsonFile(fileName: string): Promise<string | null> {
   if (!(await hasFile(fileName))) {
     return null;
@@ -64,7 +75,7 @@ async function atomicWriteTextFile(
   value: string,
   options?: { skipBackupCopy?: boolean }
 ): Promise<void> {
-  const tempFileName = `${fileName}${TEMP_SUFFIX}`;
+  const tempFileName = buildTempFileName(fileName);
   const backupFileName = `${fileName}${BACKUP_SUFFIX}`;
 
   try {
@@ -144,10 +155,15 @@ export const fileStorage = {
       if (await hasFile(fileName)) {
         await remove(fileName, BASE_DIR_OPT);
       }
-      const tempFileName = `${fileName}${TEMP_SUFFIX}`;
       const backupFileName = `${fileName}${BACKUP_SUFFIX}`;
-      if (await hasFile(tempFileName)) {
-        await remove(tempFileName, BASE_DIR_OPT);
+      const tempFileNames = [
+        buildLegacyTempFileName(fileName),
+        buildTempFileName(fileName),
+      ];
+      for (const tempFileName of new Set(tempFileNames)) {
+        if (await hasFile(tempFileName)) {
+          await remove(tempFileName, BASE_DIR_OPT);
+        }
       }
       if (await hasFile(backupFileName)) {
         await remove(backupFileName, BASE_DIR_OPT);

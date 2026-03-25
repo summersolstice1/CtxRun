@@ -109,6 +109,15 @@ interface ChatCompletionStreamCallbacks {
   onReasoningDelta?: (delta: string) => void;
 }
 
+interface ChatCompletionRequestError {
+  status: number;
+  text: string;
+}
+
+type ChatCompletionRequestResult =
+  | { response: Response; error?: never }
+  | { error: ChatCompletionRequestError; response?: never };
+
 function normalizeAssistantContent(content: unknown): string {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -332,6 +341,69 @@ function emitCompletionToStreamCallbacks(
   }
 }
 
+async function requestChatCompletion(
+  messages: ChatRequestMessage[],
+  config: AIProviderConfig,
+  options: ChatCompletionOptions,
+  stream: boolean
+): Promise<Response> {
+  const body = buildChatRequestBody(messages, config, options, stream);
+  return fetch(`${config.baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${config.apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+async function unwrapChatCompletionResponse(response: Response): Promise<ChatCompletionRequestResult> {
+  if (response.ok) {
+    return { response };
+  }
+
+  return {
+    error: {
+      status: response.status,
+      text: await response.text(),
+    },
+  };
+}
+
+function extractChatCompletionErrorMessage(text: string): string {
+  try {
+    const payload = JSON.parse(text) as {
+      message?: unknown;
+      error?: {
+        message?: unknown;
+      };
+    };
+    if (typeof payload.error?.message === 'string' && payload.error.message.trim()) {
+      return payload.error.message;
+    }
+    if (typeof payload.message === 'string' && payload.message.trim()) {
+      return payload.message;
+    }
+  } catch {
+    // Ignore invalid JSON and fall back to the raw text.
+  }
+
+  return text;
+}
+
+function shouldRetryWithoutStreaming(error: ChatCompletionRequestError): boolean {
+  const normalized = extractChatCompletionErrorMessage(error.text).toLowerCase();
+  if (!normalized.includes('stream')) {
+    return false;
+  }
+
+  return error.status === 501
+    || normalized.includes('not implemented')
+    || normalized.includes('not supported')
+    || normalized.includes('unsupported');
+}
+
 export async function streamChatCompletionWithTools(
   messages: ChatRequestMessage[],
   config: AIProviderConfig,
@@ -342,20 +414,24 @@ export async function streamChatCompletionWithTools(
     throw new Error("API Key not configured. Please go to Settings.");
   }
 
-  const body = buildChatRequestBody(messages, config, options, true);
-  const response = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${config.apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
+  let responseResult = await unwrapChatCompletionResponse(
+    await requestChatCompletion(messages, config, options, true)
+  );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error ${response.status}: ${errorText}`);
+  if (responseResult.error) {
+    if (!shouldRetryWithoutStreaming(responseResult.error)) {
+      throw new Error(`API Error ${responseResult.error.status}: ${responseResult.error.text}`);
+    }
+
+    responseResult = await unwrapChatCompletionResponse(
+      await requestChatCompletion(messages, config, options, false)
+    );
+    if (responseResult.error) {
+      throw new Error(`API Error ${responseResult.error.status}: ${responseResult.error.text}`);
+    }
   }
+
+  const response = responseResult.response;
 
   if (!response.body) {
     const fallbackText = await response.text();
