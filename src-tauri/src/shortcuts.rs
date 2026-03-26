@@ -40,7 +40,8 @@ impl ShortcutManager {
 
         let mut spotlight_key = "Alt+S".to_string();
         let mut automator_key = "Alt+F1".to_string();
-        if config_path.exists() && let Ok(content) = fs::read_to_string(config_path)
+        if config_path.exists()
+            && let Ok(content) = fs::read_to_string(config_path)
             && let Ok(config) = serde_json::from_str::<AppConfigStore>(&content)
         {
             if !config.state.spotlight_shortcut.is_empty() {

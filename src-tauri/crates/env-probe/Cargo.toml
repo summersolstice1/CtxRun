@@ -16,3 +16,4 @@ reqwest = { workspace = true }
 tokio = { workspace = true }
 sysinfo = "0.37"
 wait-timeout = "0.2"
+ctxrun-process-utils = { workspace = true }

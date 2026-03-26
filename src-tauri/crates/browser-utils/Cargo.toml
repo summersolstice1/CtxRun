@@ -8,3 +8,4 @@ description = "Shared browser detection utility for CtxRun"
 # 跨平台依赖：Linux 用 which 查找，Windows 作为兜底
 which = "8.0"
 thiserror = { workspace = true }
+ctxrun-process-utils = { workspace = true }

@@ -6,11 +6,11 @@ use std::time::Duration;
 
 use futures::FutureExt;
 use futures::future::BoxFuture;
+use ctxrun_process_utils::new_tokio_background_command;
 use serde::Deserialize;
 use serde_json::{Value, json};
 use tokio::fs;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command;
 use tokio::time::timeout;
 
 use crate::models::{ToolAnnotations, ToolSpec};
@@ -520,7 +520,7 @@ async fn run_rg_search(
     search_path: &Path,
     limit: usize,
 ) -> Result<(Vec<String>, bool), ToolRuntimeError> {
-    let mut command = Command::new("rg");
+    let mut command = new_tokio_background_command("rg");
     command
         .arg("--files-with-matches")
         .arg("--sortr=modified")

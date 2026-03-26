@@ -79,6 +79,7 @@ ctxrun-browser-utils = { path = "crates/browser-utils" }
 ctxrun-env-probe = { path = "crates/env-probe" }
 # Hyperview preview utilities
 ctxrun-hyperview = { path = "crates/hyperview" }
+ctxrun-process-utils = { path = "crates/process-utils" }
 
 [build-dependencies]
 tauri-build = { workspace = true }
@@ -96,6 +97,7 @@ ctxrun-plugin-exec-runtime = { path = "crates/exec-runtime" }
 ctxrun-db = { workspace = true }
 ctxrun-env-probe = { workspace = true }
 ctxrun-hyperview = { workspace = true }
+ctxrun-process-utils = { workspace = true }
 
 tauri-plugin-single-instance = { workspace = true }
 serde_json = "1.0"

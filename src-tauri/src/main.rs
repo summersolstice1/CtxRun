@@ -4,12 +4,10 @@
 )]
 
 use std::fs;
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use ctxrun_process_utils::{new_background_command, new_detached_command};
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::window::Color;
 use tauri::{
@@ -19,8 +17,6 @@ use tauri::{
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
 };
 use tokio::time::sleep;
-#[cfg(target_os = "windows")]
-use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 
 use ctxrun_db as db;
 mod agent_tools;
@@ -140,10 +136,8 @@ async fn check_python_env() -> crate::error::Result<String> {
         #[cfg(not(target_os = "windows"))]
         let bin = "python3";
 
-        let mut cmd = Command::new(bin);
+        let mut cmd = new_background_command(bin);
         cmd.arg("--version");
-        #[cfg(target_os = "windows")]
-        cmd.creation_flags(CREATE_NO_WINDOW.0);
         let output = cmd.output().map_err(|_| "Not Found".to_string())?;
 
         if output.status.success() {
@@ -180,16 +174,15 @@ fn open_folder_in_file_manager(path: String) -> crate::error::Result<()> {
 
     #[cfg(target_os = "windows")]
     {
-        Command::new("explorer")
+        new_detached_command("explorer")
             .arg(&path)
-            .creation_flags(CREATE_NO_WINDOW.0)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {e}"))?;
     }
 
     #[cfg(target_os = "macos")]
     {
-        Command::new("open")
+        std::process::Command::new("open")
             .arg(&path)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {e}"))?;
@@ -197,7 +190,7 @@ fn open_folder_in_file_manager(path: String) -> crate::error::Result<()> {
 
     #[cfg(target_os = "linux")]
     {
-        Command::new("xdg-open")
+        std::process::Command::new("xdg-open")
             .arg(&path)
             .spawn()
             .map_err(|e| format!("Failed to open folder: {e}"))?;

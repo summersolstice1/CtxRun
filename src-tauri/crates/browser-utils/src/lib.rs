@@ -2,6 +2,8 @@ use std::net::TcpStream;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use ctxrun_process_utils::{new_background_command, new_detached_command};
+
 pub mod error;
 pub use error::{BrowserUtilsError, Result};
 
@@ -185,8 +187,6 @@ pub fn launch_debug_browser(
     url: Option<String>,
     use_temp_profile: bool,
 ) -> Result<()> {
-    use std::process::Command;
-
     if is_debug_port_available(port) {
         return Ok(());
     }
@@ -195,7 +195,7 @@ pub fn launch_debug_browser(
         BrowserUtilsError::Message(format!("Browser {:?} not found", browser_type))
     })?;
 
-    let mut cmd = Command::new(exe_path);
+    let mut cmd = new_detached_command(exe_path);
     cmd.arg(format!("--remote-debugging-port={}", port));
     cmd.arg("--no-first-run");
     cmd.arg("--no-default-browser-check");
@@ -214,13 +214,6 @@ pub fn launch_debug_browser(
     }
 
     cmd.arg(url.unwrap_or_else(|| "about:blank".into()));
-
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        const DETACHED_PROCESS: u32 = 0x00000008;
-        cmd.creation_flags(DETACHED_PROCESS);
-    }
 
     cmd.spawn().map_err(BrowserUtilsError::Io)?;
 
@@ -245,7 +238,7 @@ pub fn is_browser_running(browser_type: BrowserType) -> bool {
     let name = browser_process_name(browser_type);
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("tasklist")
+        new_background_command("tasklist")
             .args(["/FI", &format!("IMAGENAME eq {}", name), "/NH"])
             .output()
             .map(|o| String::from_utf8_lossy(&o.stdout).contains(name))
@@ -253,7 +246,7 @@ pub fn is_browser_running(browser_type: BrowserType) -> bool {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        std::process::Command::new("pgrep")
+        new_background_command("pgrep")
             .arg("-x")
             .arg(name)
             .output()
@@ -267,7 +260,7 @@ pub fn kill_browser_processes(browser_type: BrowserType) -> Result<()> {
     let name = browser_process_name(browser_type);
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("taskkill")
+        new_background_command("taskkill")
             .args(["/F", "/IM", name])
             .output()
             .map_err(|e| BrowserUtilsError::Message(format!("Failed to kill browser: {}", e)))?;
@@ -275,7 +268,7 @@ pub fn kill_browser_processes(browser_type: BrowserType) -> Result<()> {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        std::process::Command::new("pkill")
+        new_background_command("pkill")
             .arg(name)
             .output()
             .map_err(|e| BrowserUtilsError::Message(format!("Failed to kill browser: {}", e)))?;

@@ -1,18 +1,12 @@
 use std::path::{Path, PathBuf};
-use std::process::Command;
-
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use ctxrun_process_utils::new_background_command;
 use regex::Regex;
 use serde::Deserialize;
 
 use crate::models::ExecRiskLevel;
-
-#[cfg(target_os = "windows")]
-use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 
 const POWERSHELL_PARSER_SCRIPT: &str = include_str!("powershell_parser.ps1");
 
@@ -252,17 +246,15 @@ fn parse_powershell_script(script: &str) -> PowershellParseResult {
     let encoded_script = encode_utf16_base64(script);
     let encoded_parser_script = encode_utf16_base64(POWERSHELL_PARSER_SCRIPT);
 
-    let mut command = Command::new("powershell.exe");
+    let mut command = new_background_command("powershell.exe");
     command.args([
-            "-NoLogo",
-            "-NoProfile",
-            "-NonInteractive",
-            "-EncodedCommand",
-            &encoded_parser_script,
-        ]);
+        "-NoLogo",
+        "-NoProfile",
+        "-NonInteractive",
+        "-EncodedCommand",
+        &encoded_parser_script,
+    ]);
     command.env("CTXRUN_POWERSHELL_PAYLOAD", encoded_script);
-    #[cfg(target_os = "windows")]
-    command.creation_flags(CREATE_NO_WINDOW.0);
 
     let output = match command.output() {
         Ok(output) => output,

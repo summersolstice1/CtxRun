@@ -1,0 +1,11 @@
+[package]
+name = "ctxrun-process-utils"
+version = "0.1.0"
+edition = "2024"
+description = "Shared backend process helpers for CtxRun"
+
+[features]
+tokio = ["dep:tokio"]
+
+[dependencies]
+tokio = { version = "1", features = ["process"], optional = true }

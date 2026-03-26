@@ -1,12 +1,10 @@
 use ctxrun_db::{AppEntry, DbState};
+use ctxrun_process_utils::new_background_command;
 use std::path::Path;
 use tauri::State;
 
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
-
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
 /// 启动浏览器并开启调试端口（用于 CDP 自动化）
 #[tauri::command]
@@ -38,9 +36,8 @@ pub async fn refresh_apps(state: State<'_, DbState>) -> crate::error::Result<Str
 pub async fn open_app(path: String, state: State<'_, DbState>) -> crate::error::Result<()> {
     #[cfg(target_os = "windows")]
     {
-        std::process::Command::new("cmd")
+        new_background_command("cmd")
             .args(["/C", "start", "", &path])
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW
             .spawn()
             .map_err(|e| format!("Failed to launch: {}", e))?;
     }
@@ -224,7 +221,9 @@ fn scan_system() -> Vec<AppEntry> {
         }
 
         for dir in all_dirs {
-            if Path::new(dir).exists() && let Ok(entries) = std::fs::read_dir(dir) {
+            if Path::new(dir).exists()
+                && let Ok(entries) = std::fs::read_dir(dir)
+            {
                 for entry in entries.flatten() {
                     let path = entry.path();
                     if path.extension().is_some_and(|ext| ext == "desktop") {

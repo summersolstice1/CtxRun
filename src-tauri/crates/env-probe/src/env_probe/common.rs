@@ -1,26 +1,12 @@
 use regex::Regex;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::time::Duration;
 use wait_timeout::ChildExt;
 use which::which;
 
+pub(crate) use ctxrun_process_utils::new_background_command as new_command;
+
 const TIMEOUT_SECS: u64 = 8;
-
-pub(crate) fn new_command(bin: &str) -> Command {
-    let mut command = Command::new(bin);
-    apply_windows_no_window(&mut command);
-    command
-}
-
-pub(crate) fn apply_windows_no_window(command: &mut Command) {
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        command.creation_flags(CREATE_NO_WINDOW);
-    }
-}
 
 pub fn run_command(bin: &str, args: &[&str]) -> crate::error::Result<String> {
     #[cfg(target_os = "windows")]

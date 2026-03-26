@@ -6,9 +6,10 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use ctxrun_process_utils::{new_background_command, new_tokio_background_command};
 use tauri::{AppHandle, Emitter, Runtime};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
-use tokio::process::{Child, ChildStdin, Command};
+use tokio::process::{Child, ChildStdin};
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -17,11 +18,6 @@ use crate::models::{
     ExecRequestResponse, ExecRequestStatus, ExecSessionSnapshot, ExecSessionState,
 };
 use crate::safety::{SafetyDecision, assess_command};
-
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-#[cfg(target_os = "windows")]
-use windows::Win32::System::Threading::CREATE_NO_WINDOW;
 
 const EXEC_OUTPUT_PREVIEW_CHARS: usize = 16_000;
 const DEFAULT_TIMEOUT_MS: u64 = 120_000;
@@ -229,7 +225,7 @@ impl ExecRuntime {
         let encoded_wrapper = encode_utf16_base64(POWERSHELL_EXEC_WRAPPER);
         let encoded_payload = encode_utf16_base64(&command_text);
 
-        let mut command = Command::new("powershell.exe");
+        let mut command = new_tokio_background_command("powershell.exe");
         command.args([
             "-NoLogo",
             "-NoProfile",
@@ -242,8 +238,6 @@ impl ExecRuntime {
         command.stdin(Stdio::piped());
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
-        #[cfg(target_os = "windows")]
-        command.creation_flags(CREATE_NO_WINDOW.0);
 
         let mut child = command.spawn()?;
         let pid = child.id();
@@ -472,9 +466,8 @@ fn now_ms() -> u64 {
 #[cfg(target_os = "windows")]
 async fn kill_process_tree(pid: u32) -> Result<(), ExecRuntimeError> {
     let status = tauri::async_runtime::spawn_blocking(move || {
-        let mut command = std::process::Command::new("taskkill.exe");
+        let mut command = new_background_command("taskkill.exe");
         command.args(["/PID", &pid.to_string(), "/T", "/F"]);
-        command.creation_flags(CREATE_NO_WINDOW.0);
         command.status()
     })
     .await
@@ -493,7 +486,7 @@ async fn kill_process_tree(pid: u32) -> Result<(), ExecRuntimeError> {
 #[cfg(not(target_os = "windows"))]
 async fn kill_process_tree(pid: u32) -> Result<(), ExecRuntimeError> {
     let status = tauri::async_runtime::spawn_blocking(move || {
-        std::process::Command::new("kill")
+        new_background_command("kill")
             .args(["-TERM", &pid.to_string()])
             .status()
     })

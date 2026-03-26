@@ -1,10 +1,10 @@
+use ctxrun_process_utils::new_background_command;
 use listeners::{Protocol, get_all};
 use rayon::prelude::*;
 use serde::Serialize;
 use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::path::Path;
-use std::process::Command;
 use std::sync::{Arc, Mutex};
 use sysinfo::{
     CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind,
@@ -118,7 +118,9 @@ fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool
     #[cfg(not(target_os = "windows"))]
     {
         let _ = _sys;
-        if let Some(uid) = process.user_id() && uid.to_string() == "0" {
+        if let Some(uid) = process.user_id()
+            && uid.to_string() == "0"
+        {
             return true;
         }
     }
@@ -282,12 +284,12 @@ pub fn kill_process(
     }
 
     #[cfg(target_os = "windows")]
-    let output = Command::new("taskkill")
+    let output = new_background_command("taskkill")
         .args(["/F", "/PID", &pid.to_string()])
         .output();
 
     #[cfg(not(target_os = "windows"))]
-    let output = Command::new("kill")
+    let output = new_background_command("kill")
         .args(["-9", &pid.to_string()])
         .output();
 
@@ -342,7 +344,7 @@ pub fn check_file_locks(
 
     #[cfg(not(target_os = "windows"))]
     {
-        let mut cmd = Command::new("lsof");
+        let mut cmd = new_background_command("lsof");
 
         if is_dir {
             cmd.arg("+D");
@@ -531,47 +533,39 @@ pub async fn get_env_info(
             rayon::join(
                 || env_probe::binaries::probe_by_category("Binaries"),
                 || {
-                    rayon::join(
-                        env_probe::browsers::probe_browsers,
-                        || {
+                    rayon::join(env_probe::browsers::probe_browsers, || {
+                        rayon::join(env_probe::ides::probe_ides, || {
                             rayon::join(
-                                env_probe::ides::probe_ides,
+                                || env_probe::binaries::probe_by_category("Languages"),
                                 || {
                                     rayon::join(
-                                        || env_probe::binaries::probe_by_category("Languages"),
+                                        || env_probe::binaries::probe_by_category("Virtualization"),
                                         || {
                                             rayon::join(
                                                 || {
                                                     env_probe::binaries::probe_by_category(
-                                                        "Virtualization",
+                                                        "Utilities",
                                                     )
                                                 },
                                                 || {
                                                     rayon::join(
                                                         || {
                                                             env_probe::binaries::probe_by_category(
-                                                                "Utilities",
+                                                                "Managers",
                                                             )
                                                         },
                                                         || {
                                                             rayon::join(
                                                                 || {
-                                                                    env_probe::binaries::probe_by_category("Managers")
+                                                                    env_probe::npm::probe_npm_packages(project_path.clone())
                                                                 },
                                                                 || {
                                                                     rayon::join(
                                                                         || {
-                                                                            env_probe::npm::probe_npm_packages(project_path.clone())
+                                                                            env_probe::binaries::probe_by_category("Databases")
                                                                         },
                                                                         || {
-                                                                            rayon::join(
-                                                                                || {
-                                                                                    env_probe::binaries::probe_by_category("Databases")
-                                                                                },
-                                                                                || {
-                                                                                    env_probe::sdks::probe_sdks()
-                                                                                },
-                                                                            )
+                                                                            env_probe::sdks::probe_sdks()
                                                                         },
                                                                     )
                                                                 },
@@ -584,8 +578,8 @@ pub async fn get_env_info(
                                     )
                                 },
                             )
-                        },
-                    )
+                        })
+                    })
                 },
             )
         },
@@ -616,4 +610,3 @@ pub async fn get_ai_context(project_path: String) -> crate::error::Result<AiCont
 
     Ok(report)
 }
-
