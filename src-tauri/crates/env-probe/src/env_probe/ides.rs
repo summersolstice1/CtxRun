@@ -60,7 +60,9 @@ pub fn probe_ides() -> Vec<ToolInfo> {
 fn check_ide(cfg: &IdeConfig) -> ToolInfo {
     let mut info = common::generic_probe(cfg.name, cfg.bin, &["--version"], None);
 
-    if cfg.name == "Xcode" && let Ok(out) = common::run_command("xcodebuild", &["-version"]) {
+    if cfg.name == "Xcode"
+        && let Ok(out) = common::run_command("xcodebuild", &["-version"])
+    {
         let ver = common::find_version(&out, None);
         if !ver.is_empty() {
             info.version = ver;

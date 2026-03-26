@@ -7,6 +7,8 @@ use std::time::{Duration, Instant};
 use tokio::net::{TcpStream, lookup_host};
 use tokio::time::timeout;
 
+use crate::env_probe::common::new_command;
+
 const HTTP_TIMEOUT: Duration = Duration::from_secs(6);
 const TCP_TIMEOUT: Duration = Duration::from_secs(3);
 const DEFAULT_PING_TARGET: &str = "1.1.1.1";
@@ -315,9 +317,8 @@ async fn probe_request(client: Client, request: ProbeRequest) -> NetworkProbeRes
             }
 
             let total_ms = total_start.elapsed().as_millis();
-            let status = if !reachable {
-                NetworkHealthStatus::Degraded
-            } else if dns_ms >= 500
+            let status = if !reachable
+                || dns_ms >= 500
                 || tcp_ms.unwrap_or_default() >= 500
                 || http_ms >= 1_200
                 || total_ms >= 1_500
@@ -397,7 +398,8 @@ fn normalize_probe_request(raw_url: &str) -> crate::error::Result<ProbeRequest> 
 }
 
 fn sanitize_probe_identifier(value: &str) -> String {
-    value.chars()
+    value
+        .chars()
         .map(|ch| {
             if ch.is_ascii_alphanumeric() {
                 ch.to_ascii_lowercase()
@@ -426,7 +428,10 @@ fn summarize_report(
         .count();
 
     let mut issue_codes = Vec::new();
-    if probes.iter().all(|probe| probe.status == NetworkHealthStatus::Offline) {
+    if probes
+        .iter()
+        .all(|probe| probe.status == NetworkHealthStatus::Offline)
+    {
         issue_codes.push("network_unreachable".to_string());
     }
     if probes
@@ -504,16 +509,7 @@ fn run_ping_probe(target: &str) -> Option<NetworkPingStats> {
 
 #[cfg(target_os = "windows")]
 fn run_powershell_ping_probe(target: &str) -> Option<NetworkPingStats> {
-    let command = format!(
-        "$r = Test-Connection -TargetName '{target}' -Count {count} -ErrorAction SilentlyContinue | Select-Object Address,Latency,Status; $r | ConvertTo-Json -Compress",
-        target = target,
-        count = PING_ATTEMPTS
-    );
-
-    let output = Command::new("powershell")
-        .args(["-NoProfile", "-Command", &command])
-        .output()
-        .ok()?;
+    let output = powershell_ping_command(target).output().ok()?;
     if !output.status.success() {
         return None;
     }
@@ -529,36 +525,41 @@ fn run_powershell_ping_probe(target: &str) -> Option<NetworkPingStats> {
     let samples = rows
         .iter()
         .filter_map(|row| row.get("Latency"))
-        .filter_map(|latency| latency.as_f64().or_else(|| latency.as_i64().map(|v| v as f64)))
+        .filter_map(|latency| {
+            latency
+                .as_f64()
+                .or_else(|| latency.as_i64().map(|v| v as f64))
+        })
         .collect::<Vec<_>>();
 
     Some(build_ping_stats(target, PING_ATTEMPTS, samples))
 }
 
+#[cfg(target_os = "windows")]
+fn powershell_ping_command(target: &str) -> Command {
+    let command = format!(
+        "$r = Test-Connection -TargetName '{target}' -Count {count} -ErrorAction SilentlyContinue | Select-Object Address,Latency,Status; $r | ConvertTo-Json -Compress",
+        target = target,
+        count = PING_ATTEMPTS
+    );
+
+    let mut command_process = new_command("powershell");
+    command_process.args(["-NoProfile", "-NonInteractive", "-Command", &command]);
+    command_process
+}
+
 fn ping_command(target: &str) -> Command {
     #[cfg(target_os = "windows")]
     {
-        let mut command = Command::new("ping");
-        command.args([
-            "-n",
-            &PING_ATTEMPTS.to_string(),
-            "-w",
-            "1000",
-            target,
-        ]);
+        let mut command = new_command("ping");
+        command.args(["-n", &PING_ATTEMPTS.to_string(), "-w", "1000", target]);
         command
     }
 
     #[cfg(not(target_os = "windows"))]
     {
-        let mut command = Command::new("ping");
-        command.args([
-            "-c",
-            &PING_ATTEMPTS.to_string(),
-            "-W",
-            "1",
-            target,
-        ]);
+        let mut command = new_command("ping");
+        command.args(["-c", &PING_ATTEMPTS.to_string(), "-W", "1", target]);
         command
     }
 }
@@ -566,12 +567,20 @@ fn ping_command(target: &str) -> Command {
 fn parse_ping_output(target: &str, output: &str) -> Option<NetworkPingStats> {
     let packet_regexes = [
         Regex::new(r"Sent = (\d+), Received = (\d+), Lost = (\d+) \(([\d.]+)% loss\)").ok()?,
-        Regex::new(r"(\d+) packets transmitted, (\d+) (?:packets )?received, .*?([\d.]+)% packet loss")
-            .ok()?,
+        Regex::new(
+            r"(\d+) packets transmitted, (\d+) (?:packets )?received, .*?([\d.]+)% packet loss",
+        )
+        .ok()?,
     ];
     let rtt_regexes = [
-        Regex::new(r"Minimum = ([\d.]+)ms, Maximum = ([\d.]+)ms, Average = ([\d.]+)ms").ok()?,
-        Regex::new(r"min/avg/max(?:/mdev)? = ([\d.]+)/([\d.]+)/([\d.]+)").ok()?,
+        (
+            Regex::new(r"Minimum = ([\d.]+)ms, Maximum = ([\d.]+)ms, Average = ([\d.]+)ms").ok()?,
+            [1, 3, 2],
+        ),
+        (
+            Regex::new(r"min/avg/max(?:/(?:mdev|stddev))? = ([\d.]+)/([\d.]+)/([\d.]+)").ok()?,
+            [1, 2, 3],
+        ),
     ];
     let sample_regex = Regex::new(r"time[=<] ?([\d.]+) ?ms").ok()?;
 
@@ -606,11 +615,17 @@ fn parse_ping_output(target: &str, output: &str) -> Option<NetworkPingStats> {
     let mut min_ms = None;
     let mut avg_ms = None;
     let mut max_ms = None;
-    for regex in &rtt_regexes {
+    for (regex, [min_index, avg_index, max_index]) in &rtt_regexes {
         if let Some(captures) = regex.captures(output) {
-            min_ms = captures.get(1).and_then(|value| value.as_str().parse().ok());
-            avg_ms = captures.get(2).and_then(|value| value.as_str().parse().ok());
-            max_ms = captures.get(3).and_then(|value| value.as_str().parse().ok());
+            min_ms = captures
+                .get(*min_index)
+                .and_then(|value| value.as_str().parse().ok());
+            avg_ms = captures
+                .get(*avg_index)
+                .and_then(|value| value.as_str().parse().ok());
+            max_ms = captures
+                .get(*max_index)
+                .and_then(|value| value.as_str().parse().ok());
             break;
         }
     }
@@ -689,5 +704,100 @@ fn ping_status(received: u32, loss_percent: f64, avg_ms: Option<f64>) -> Network
         NetworkHealthStatus::Degraded
     } else {
         NetworkHealthStatus::Healthy
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{NetworkHealthStatus, normalize_probe_request, parse_ping_output, ping_command};
+
+    #[cfg(target_os = "windows")]
+    use super::powershell_ping_command;
+
+    #[test]
+    fn normalize_probe_request_adds_https_for_host_only_targets() {
+        let request = normalize_probe_request("registry.npmmirror.com/-/ping")
+            .expect("host-only targets should be normalized");
+
+        assert_eq!(request.id, "custom-registry-npmmirror-com");
+        assert_eq!(request.name, "registry.npmmirror.com");
+        assert_eq!(request.category, "custom");
+        assert_eq!(request.url, "https://registry.npmmirror.com/-/ping");
+    }
+
+    #[test]
+    fn parse_ping_output_supports_windows_ping_reports() {
+        let output = r#"Pinging 1.1.1.1 with 32 bytes of data:
+Reply from 1.1.1.1: bytes=32 time=18ms TTL=57
+Reply from 1.1.1.1: bytes=32 time=21ms TTL=57
+Reply from 1.1.1.1: bytes=32 time=19ms TTL=57
+Reply from 1.1.1.1: bytes=32 time=20ms TTL=57
+
+Ping statistics for 1.1.1.1:
+    Packets: Sent = 4, Received = 4, Lost = 0 (0% loss),
+Approximate round trip times in milli-seconds:
+    Minimum = 18ms, Maximum = 21ms, Average = 19ms"#;
+
+        let stats = parse_ping_output("1.1.1.1", output).expect("windows ping output should parse");
+
+        assert_eq!(stats.status, NetworkHealthStatus::Healthy);
+        assert_eq!(stats.sent, 4);
+        assert_eq!(stats.received, 4);
+        assert_eq!(stats.loss_percent, 0.0);
+        assert_eq!(stats.min_ms, Some(18.0));
+        assert_eq!(stats.avg_ms, Some(19.0));
+        assert_eq!(stats.max_ms, Some(21.0));
+    }
+
+    #[test]
+    fn parse_ping_output_supports_unix_ping_reports() {
+        let output = r#"PING 1.1.1.1 (1.1.1.1): 56 data bytes
+64 bytes from 1.1.1.1: icmp_seq=0 ttl=57 time=12.4 ms
+64 bytes from 1.1.1.1: icmp_seq=1 ttl=57 time=18.6 ms
+64 bytes from 1.1.1.1: icmp_seq=2 ttl=57 time=15.0 ms
+64 bytes from 1.1.1.1: icmp_seq=3 ttl=57 time=19.8 ms
+
+--- 1.1.1.1 ping statistics ---
+4 packets transmitted, 4 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 12.4/16.5/19.8/2.8 ms"#;
+
+        let stats = parse_ping_output("1.1.1.1", output).expect("unix ping output should parse");
+
+        assert_eq!(stats.status, NetworkHealthStatus::Healthy);
+        assert_eq!(stats.sent, 4);
+        assert_eq!(stats.received, 4);
+        assert_eq!(stats.loss_percent, 0.0);
+        assert_eq!(stats.min_ms, Some(12.4));
+        assert_eq!(stats.avg_ms, Some(16.5));
+        assert_eq!(stats.max_ms, Some(19.8));
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn windows_ping_commands_are_built_through_the_background_command_path() {
+        let ping = ping_command("1.1.1.1");
+        let ping_program = ping.get_program().to_string_lossy().to_string();
+        let ping_args = ping
+            .get_args()
+            .map(|arg| arg.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert_eq!(ping_program, "ping");
+        assert_eq!(ping_args, vec!["-n", "6", "-w", "1000", "1.1.1.1"]);
+
+        let powershell = powershell_ping_command("1.1.1.1");
+        let powershell_program = powershell.get_program().to_string_lossy().to_string();
+        let powershell_args = powershell
+            .get_args()
+            .map(|arg| arg.to_string_lossy().to_string())
+            .collect::<Vec<_>>();
+
+        assert_eq!(powershell_program, "powershell");
+        assert_eq!(
+            &powershell_args[..3],
+            ["-NoProfile", "-NonInteractive", "-Command"]
+        );
+        assert!(powershell_args[3].contains("Test-Connection"));
+        assert!(powershell_args[3].contains("1.1.1.1"));
     }
 }

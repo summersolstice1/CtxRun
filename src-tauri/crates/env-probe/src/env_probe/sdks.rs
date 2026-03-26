@@ -29,7 +29,9 @@ pub fn probe_sdks() -> HashMap<String, Vec<String>> {
     if let Ok(root) = android_home {
         let mut android_info = Vec::new();
         let build_tools = std::path::Path::new(&root).join("build-tools");
-        if build_tools.exists() && let Ok(entries) = std::fs::read_dir(build_tools) {
+        if build_tools.exists()
+            && let Ok(entries) = std::fs::read_dir(build_tools)
+        {
             let mut versions: Vec<String> = entries
                 .filter_map(|e| e.ok())
                 .map(|e| e.file_name().to_string_lossy().to_string())
@@ -42,7 +44,9 @@ pub fn probe_sdks() -> HashMap<String, Vec<String>> {
         }
 
         let platforms = std::path::Path::new(&root).join("platforms");
-        if platforms.exists() && let Ok(entries) = std::fs::read_dir(platforms) {
+        if platforms.exists()
+            && let Ok(entries) = std::fs::read_dir(platforms)
+        {
             let mut levels: Vec<String> = entries
                 .filter_map(|e| e.ok())
                 .map(|e| e.file_name().to_string_lossy().to_string())
