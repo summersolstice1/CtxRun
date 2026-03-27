@@ -38,24 +38,6 @@ struct LanguageSyncPayload {
     language: String,
 }
 
-struct TrayLanguageState {
-    language: Mutex<String>,
-}
-
-impl TrayLanguageState {
-    fn new(default_language: &str) -> Self {
-        Self {
-            language: Mutex::new(normalize_tray_language(default_language).to_string()),
-        }
-    }
-
-    fn set(&self, language: &str) {
-        if let Ok(mut current_language) = self.language.lock() {
-            *current_language = normalize_tray_language(language).to_string();
-        }
-    }
-}
-
 struct TrayMenuTexts {
     quit: &'static str,
 }
@@ -347,7 +329,6 @@ fn main() {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
             let initial_language = load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
-            app.manage(TrayLanguageState::new(&initial_language));
 
             match db::init_db(app.handle()) {
                 Ok(conn) => {
@@ -378,8 +359,6 @@ fn main() {
                     }
                 };
 
-                let tray_language_state = language_listener_handle.state::<TrayLanguageState>();
-                tray_language_state.set(&payload.language);
                 refresh_tray_menu(&language_listener_handle, &payload.language);
             });
 

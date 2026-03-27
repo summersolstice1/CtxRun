@@ -18,7 +18,7 @@ export interface SpeedTestSnapshot {
   serverLocation: string | null;
 }
 
-export interface SpeedTestResult extends SpeedTestSnapshot {
+interface SpeedTestResult extends SpeedTestSnapshot {
   returnCode: number;
 }
 

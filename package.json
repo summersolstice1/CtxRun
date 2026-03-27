@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "deadcode": "knip --reporter compact",
+    "deadcode": "knip --use-tsconfig-files --reporter compact",
     "deadcode:rust": "cargo machete --with-metadata --skip-target-dir src-tauri",
     "preview": "vite preview",
     "tauri": "tauri"
