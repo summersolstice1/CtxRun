@@ -110,7 +110,7 @@ fn centralized_context_scanner_filter_ignored_file_visible_locked() {
         .find(|n| n.name == "keep.rs")
         .expect("keep node should be present");
     assert_eq!(keep.is_locked, None);
-    assert!(keep.is_selected);
+    assert!(!keep.is_selected);
 
     let _ = fs::remove_dir_all(root);
 }
