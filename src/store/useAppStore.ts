@@ -377,6 +377,7 @@ export const useAppStore = create<AppState>()(
         // Sync language to i18next after rehydration
         if (state?.language) {
           i18n.changeLanguage(state.language);
+          broadcastLanguageSync({ language: state.language });
         }
         // Keep context store in sync after persisted app root is restored.
         if (state?.projectRoot) {

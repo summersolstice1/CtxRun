@@ -1,22 +1,9 @@
-use serde::Deserialize;
 use std::collections::HashMap;
-use std::fs;
 use std::sync::Mutex;
 use tauri::{AppHandle, Manager, Runtime};
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
-#[derive(Deserialize, Debug)]
-struct AppConfigStore {
-    state: AppConfigState,
-}
-
-#[derive(Deserialize, Debug)]
-struct AppConfigState {
-    #[serde(rename = "spotlightShortcut")]
-    spotlight_shortcut: String,
-    #[serde(rename = "automatorShortcut")]
-    automator_shortcut: String,
-}
+use crate::app_config::load_app_config_state;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum ShortcutAction {
     ToggleSpotlight,
@@ -35,20 +22,23 @@ impl ShortcutManager {
     }
 
     pub fn refresh<R: Runtime>(&self, app: &AppHandle<R>) {
-        let app_dir = app.path().app_local_data_dir().unwrap();
-        let config_path = app_dir.join("app-config.json");
-
         let mut spotlight_key = "Alt+S".to_string();
         let mut automator_key = "Alt+F1".to_string();
-        if config_path.exists()
-            && let Ok(content) = fs::read_to_string(config_path)
-            && let Ok(config) = serde_json::from_str::<AppConfigStore>(&content)
-        {
-            if !config.state.spotlight_shortcut.is_empty() {
-                spotlight_key = config.state.spotlight_shortcut;
+
+        if let Some(config) = load_app_config_state(app) {
+            if let Some(configured_spotlight_key) = config
+                .spotlight_shortcut
+                .map(|key| key.trim().to_string())
+                .filter(|key| !key.is_empty())
+            {
+                spotlight_key = configured_spotlight_key;
             }
-            if !config.state.automator_shortcut.is_empty() {
-                automator_key = config.state.automator_shortcut;
+            if let Some(configured_automator_key) = config
+                .automator_shortcut
+                .map(|key| key.trim().to_string())
+                .filter(|key| !key.is_empty())
+            {
+                automator_key = configured_automator_key;
             }
         }
 

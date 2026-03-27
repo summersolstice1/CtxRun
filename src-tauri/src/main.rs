@@ -7,18 +7,21 @@ use std::fs;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
+use crate::app_config::load_app_language;
 use ctxrun_process_utils::{new_background_command, new_detached_command};
+use serde::Deserialize;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::window::Color;
 use tauri::{
-    AppHandle, Manager, RunEvent, State, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
-    WindowEvent,
+    AppHandle, Listener, Manager, RunEvent, State, WebviewUrl, WebviewWindow,
+    WebviewWindowBuilder, WindowEvent, Wry,
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
 };
 use tokio::time::sleep;
 
 use ctxrun_db as db;
+mod app_config;
 mod agent_tools;
 mod apps;
 mod error;
@@ -26,6 +29,75 @@ mod monitor;
 mod shortcuts;
 
 const MAIN_WINDOW_LABEL: &str = "main";
+const TRAY_ID: &str = "main";
+const TRAY_QUIT_MENU_ID: &str = "tray_quit";
+const LANGUAGE_SYNC_EVENT: &str = "app-store:language-changed";
+
+#[derive(Debug, Deserialize)]
+struct LanguageSyncPayload {
+    language: String,
+}
+
+struct TrayLanguageState {
+    language: Mutex<String>,
+}
+
+impl TrayLanguageState {
+    fn new(default_language: &str) -> Self {
+        Self {
+            language: Mutex::new(normalize_tray_language(default_language).to_string()),
+        }
+    }
+
+    fn set(&self, language: &str) {
+        if let Ok(mut current_language) = self.language.lock() {
+            *current_language = normalize_tray_language(language).to_string();
+        }
+    }
+}
+
+struct TrayMenuTexts {
+    quit: &'static str,
+}
+
+fn normalize_tray_language(language: &str) -> &'static str {
+    let normalized = language.trim().to_ascii_lowercase();
+    if normalized == "en" || normalized.starts_with("en-") || normalized.starts_with("en_") {
+        "en"
+    } else {
+        "zh"
+    }
+}
+
+fn tray_menu_texts(language: &str) -> TrayMenuTexts {
+    match normalize_tray_language(language) {
+        "en" => TrayMenuTexts { quit: "Quit" },
+        _ => TrayMenuTexts { quit: "退出" },
+    }
+}
+
+fn create_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<Wry>> {
+    let texts = tray_menu_texts(language);
+    let quit_item = MenuItem::with_id(app, TRAY_QUIT_MENU_ID, texts.quit, true, None::<&str>)?;
+    Menu::with_items(app, &[&quit_item])
+}
+
+fn refresh_tray_menu(app: &AppHandle, language: &str) {
+    let Some(tray) = app.tray_by_id(TRAY_ID) else {
+        return;
+    };
+
+    match create_tray_menu(app, language) {
+        Ok(menu) => {
+            if let Err(err) = tray.set_menu(Some(menu)) {
+                eprintln!("[Tray] Failed to refresh tray menu: {err}");
+            }
+        }
+        Err(err) => {
+            eprintln!("[Tray] Failed to rebuild tray menu: {err}");
+        }
+    }
+}
 
 fn ensure_main_window(app: &AppHandle) {
     match app.get_webview_window(MAIN_WINDOW_LABEL) {
@@ -274,6 +346,8 @@ fn main() {
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
+            let initial_language = load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
+            app.manage(TrayLanguageState::new(&initial_language));
 
             match db::init_db(app.handle()) {
                 Ok(conn) => {
@@ -293,11 +367,25 @@ fn main() {
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
 
-            let quit_i = MenuItem::with_id(app, "quit", "退出/Quit", true, None::<&str>)?;
+            let app_handle = app.handle().clone();
+            let language_listener_handle = app_handle.clone();
+            app.listen(LANGUAGE_SYNC_EVENT, move |event| {
+                let payload = match serde_json::from_str::<LanguageSyncPayload>(event.payload()) {
+                    Ok(payload) => payload,
+                    Err(err) => {
+                        eprintln!("[Tray] Failed to parse language sync event: {err}");
+                        return;
+                    }
+                };
 
-            let menu = Menu::with_items(app, &[&quit_i])?;
+                let tray_language_state = language_listener_handle.state::<TrayLanguageState>();
+                tray_language_state.set(&payload.language);
+                refresh_tray_menu(&language_listener_handle, &payload.language);
+            });
 
-            let _tray = TrayIconBuilder::new()
+            let menu = create_tray_menu(&app_handle, &initial_language)?;
+
+            let _tray = TrayIconBuilder::with_id(TRAY_ID)
                 .icon(if let Some(icon) = app.default_window_icon() {
                     icon.clone()
                 } else {
@@ -309,7 +397,7 @@ fn main() {
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|_app, event| {
-                    if event.id().as_ref() == "quit" {
+                    if event.id().as_ref() == TRAY_QUIT_MENU_ID {
                         std::process::exit(0);
                     }
                 })
