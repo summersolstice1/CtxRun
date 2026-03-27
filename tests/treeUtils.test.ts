@@ -45,4 +45,52 @@ describe('tree utils', () => {
     expect(expanded.find((x) => x.node.id === 'nested')?.depth).toBe(1);
     expect(expanded.find((x) => x.node.id === 'f2')?.depth).toBe(2);
   });
+
+  it('flattenTree derives checked and partial display state from descendants', () => {
+    const tree: FileNode[] = [
+      {
+        id: 'root',
+        name: 'root',
+        path: '/root',
+        kind: 'dir',
+        isSelected: false,
+        children: [
+          {
+            id: 'checked-dir',
+            name: 'checked-dir',
+            path: '/root/checked-dir',
+            kind: 'dir',
+            isSelected: false,
+            children: [fileNode('checked-leaf', 'checked.ts')],
+          },
+          {
+            id: 'mixed-dir',
+            name: 'mixed-dir',
+            path: '/root/mixed-dir',
+            kind: 'dir',
+            isSelected: false,
+            children: [
+              fileNode('mixed-on', 'mixed-on.ts'),
+              { ...fileNode('mixed-off', 'mixed-off.ts'), isSelected: false },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const flat = flattenTree(tree, ['root', 'checked-dir', 'mixed-dir']);
+
+    expect(flat.find((x) => x.node.id === 'checked-dir')).toMatchObject({
+      displaySelected: true,
+      displayPartial: false,
+    });
+    expect(flat.find((x) => x.node.id === 'mixed-dir')).toMatchObject({
+      displaySelected: false,
+      displayPartial: true,
+    });
+    expect(flat.find((x) => x.node.id === 'root')).toMatchObject({
+      displaySelected: false,
+      displayPartial: true,
+    });
+  });
 });

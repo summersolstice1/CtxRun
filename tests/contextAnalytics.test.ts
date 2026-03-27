@@ -21,7 +21,7 @@ function fileNode(
 }
 
 describe('context analytics', () => {
-  it('analyzes selected files, language stats, top files and model costs', () => {
+  it('analyzes selected files, language stats, full hot-file list and model costs', () => {
     const nodes: FileNode[] = [
       {
         id: 'root',
@@ -32,6 +32,10 @@ describe('context analytics', () => {
         children: [
           fileNode('ts', 'index.ts', 100, true),
           fileNode('js', 'helper.js', 50, true),
+          fileNode('tiny', 'tiny.txt', 10, true),
+          fileNode('bigger', 'bigger.go', 80, true),
+          fileNode('mid', 'mid.py', 60, true),
+          fileNode('small', 'small.json', 20, true),
           fileNode('skip', 'ignore.md', 999, false),
           {
             id: 'nested',
@@ -64,13 +68,13 @@ describe('context analytics', () => {
 
     const data = analyzeContext(nodes, 2_500_000, models);
 
-    expect(data.topFiles.map((f) => f.id)).toEqual(['ts', 'js', 'other']);
+    expect(data.topFiles.map((f) => f.id)).toEqual(['ts', 'bigger', 'mid', 'js', 'other', 'small', 'tiny']);
 
     const langNames = data.languages.map((l) => l.name);
     expect(langNames).toEqual(expect.arrayContaining(['TypeScript', 'JavaScript', 'Other']));
-    expect(data.languages.find((l) => l.name === 'TypeScript')?.percentage).toBe(50);
-    expect(data.languages.find((l) => l.name === 'JavaScript')?.percentage).toBe(25);
-    expect(data.languages.find((l) => l.name === 'Other')?.percentage).toBe(25);
+    expect(data.languages.find((l) => l.name === 'TypeScript')?.percentage).toBe(27);
+    expect(data.languages.find((l) => l.name === 'JavaScript')?.percentage).toBe(13.5);
+    expect(data.languages.find((l) => l.name === 'Other')?.percentage).toBe(13.5);
     expect(data.languages.find((l) => l.name === 'Other')?.color).toBe('bg-slate-500');
 
     expect(data.modelCosts).toEqual([

@@ -72,9 +72,7 @@ export function analyzeContext(
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 
-  const topFiles = [...files]
-    .sort((a, b) => (b.size || 0) - (a.size || 0))
-    .slice(0, 5);
+  const topFiles = files.sort((a, b) => (b.size || 0) - (a.size || 0));
 
   const millions = totalTokens / 1_000_000;
   const modelCosts: ModelCostStat[] = models.map(model => ({

@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, cloneElement } from 'react';
+import { useMemo, useState, useEffect, cloneElement, memo, type CSSProperties } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
 const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
 import { useContextStore } from '@/store/useContextStore';
 import { useTranslation } from 'react-i18next';
 import { NumberTicker } from '@/components/ui/NumberTicker';
+import { Virtuoso } from 'react-virtuoso';
 
 interface TokenDashboardProps {
   stats?: any;
@@ -24,6 +25,61 @@ interface TokenDashboardProps {
   isGenerating: boolean;
   isActive: boolean;
 }
+
+const HOT_FILE_LIST_MAX_HEIGHT = 360;
+const HOT_FILE_VIRTUALIZE_THRESHOLD = 50;
+
+const HotFileRow = memo(function HotFileRow({
+  file,
+  index,
+  sizeLabel,
+  removeTitle,
+  onRemove,
+  style,
+}: {
+  file: FileNode;
+  index: number;
+  sizeLabel: string;
+  removeTitle: string;
+  onRemove: (id: string) => void;
+  style?: CSSProperties;
+}) {
+  return (
+    <div style={style} className="pb-1 last:pb-0">
+      <div
+        className="group/item grid grid-cols-[5ch,minmax(0,1fr),max-content] items-center gap-x-3 text-xs px-1.5 py-1.5 rounded-md hover:bg-secondary/50 transition-colors cursor-default"
+      >
+         <span className="w-[5ch] shrink-0 text-right font-mono tabular-nums text-muted-foreground opacity-70">
+           {index + 1}.
+         </span>
+
+         <span className="min-w-0 flex-1 truncate text-foreground font-medium" title={file.path}>
+           {file.name}
+         </span>
+
+         <div
+           className="shrink-0 grid items-center justify-items-end [grid-template-areas:'stack']"
+           style={{ width: `${Math.max(sizeLabel.length + 0.5, 4)}ch` }}
+         >
+           <span className="[grid-area:stack] whitespace-nowrap font-mono tabular-nums text-muted-foreground transition-opacity duration-150 group-hover/item:opacity-0 group-hover/item:pointer-events-none">
+             {sizeLabel}
+           </span>
+
+           <button
+             onClick={(e) => {
+                 e.stopPropagation();
+                 onRemove(file.id);
+             }}
+             className="[grid-area:stack] flex items-center justify-end whitespace-nowrap text-muted-foreground opacity-0 pointer-events-none transition-opacity duration-150 hover:text-destructive group-hover/item:opacity-100 group-hover/item:pointer-events-auto"
+             title={removeTitle}
+           >
+             <X size={14} />
+           </button>
+         </div>
+      </div>
+    </div>
+  );
+});
 
 export function TokenDashboard({
   fileTree,
@@ -106,6 +162,9 @@ export function TokenDashboard({
     if (val < 0.0001 && val > 0) return '< $0.0001';
     return `$${val.toFixed(4)}`;
   };
+
+  const shouldVirtualizeHotFiles = analytics.topFiles.length > HOT_FILE_VIRTUALIZE_THRESHOLD;
+  const hotFileListHeight = Math.min(HOT_FILE_LIST_MAX_HEIGHT, analytics.topFiles.length * 34);
 
   return (
     <div className="flex flex-col min-h-full max-w-6xl w-full mx-auto p-4 md:p-6 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -259,44 +318,54 @@ export function TokenDashboard({
                </div>
            </div>
 
-           {/* Largest Files (Interactive) */}
-           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-3">
-              <div className="flex items-center justify-between mb-2">
-                 <h3 className="text-sm font-semibold flex items-center gap-2"><AlertTriangle size={16} /> {t('context.topFiles')}</h3>
-                 <span className="text-xs text-muted-foreground">{t('context.largestFiles')}</span>
-              </div>
-              <div className="space-y-1">
-                 {analytics.topFiles.length === 0 && <span className="text-xs text-muted-foreground px-1">{t('common.noFilesSelected')}</span>}
-                 {analytics.topFiles.map((f, i) => (
-                   <div
-                     key={f.id}
-                     className="group/item relative flex items-center justify-between text-xs p-1.5 -mx-1.5 rounded-md hover:bg-secondary/50 transition-colors cursor-default"
-                   >
-                      <div className="flex items-center gap-2 truncate max-w-[70%]">
-                         <span className="font-mono text-muted-foreground w-4 opacity-70">{i+1}.</span>
-                         <span className="truncate text-foreground font-medium" title={f.path}>{f.name}</span>
-                      </div>
-
-                      <span className="font-mono text-muted-foreground transition-opacity duration-200 group-hover/item:opacity-0">
-                          {formatSize(f.size || 0)}
-                      </span>
-
-                      {/* Hover State: Show Remove Button */}
-                      <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toggleSelect(f.id, false);
+            {/* Largest Files (Interactive) */}
+            <div className="bg-card border border-border rounded-xl px-4 py-5 shadow-sm space-y-3">
+               <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold flex items-center gap-2"><AlertTriangle size={16} /> {t('context.topFiles')}</h3>
+                  <span className="text-xs text-muted-foreground">{t('context.largestFiles')}</span>
+               </div>
+               <div
+                  className={cn(
+                    "custom-scrollbar",
+                    shouldVirtualizeHotFiles ? "overflow-hidden" : "space-y-1 overflow-y-auto"
+                  )}
+                  style={{ maxHeight: `${HOT_FILE_LIST_MAX_HEIGHT}px` }}
+                >
+                  {analytics.topFiles.length === 0 && <span className="text-xs text-muted-foreground px-1">{t('common.noFilesSelected')}</span>}
+                  {!shouldVirtualizeHotFiles && analytics.topFiles.map((f, i) => (
+                    <HotFileRow
+                      key={f.id}
+                      file={f}
+                      index={i}
+                      sizeLabel={formatSize(f.size || 0)}
+                      removeTitle={t('common.removeFromContext')}
+                      onRemove={(id) => toggleSelect(id, false)}
+                    />
+                  ))}
+                  {shouldVirtualizeHotFiles && (
+                    <div>
+                      <Virtuoso
+                        className="custom-scrollbar"
+                        style={{ height: `${hotFileListHeight}px` }}
+                        totalCount={analytics.topFiles.length}
+                        itemContent={(index) => {
+                          const file = analytics.topFiles[index];
+                          return (
+                            <HotFileRow
+                              file={file}
+                              index={index}
+                              sizeLabel={formatSize(file.size || 0)}
+                              removeTitle={t('common.removeFromContext')}
+                              onRemove={(id) => toggleSelect(id, false)}
+                            />
+                          );
                         }}
-                        className="absolute right-1.5 opacity-0 group-hover/item:opacity-100 transition-all duration-200 p-1 hover:bg-destructive/10 hover:text-destructive text-muted-foreground rounded-sm scale-90 group-hover/item:scale-100"
-                        title={t('common.removeFromContext')}
-                      >
-                        <X size={14} />
-                      </button>
-                   </div>
-                 ))}
-              </div>
-           </div>
-        </div>
+                      />
+                    </div>
+                  )}
+               </div>
+            </div>
+         </div>
       </div>
 
       {/* 底部按钮 */}

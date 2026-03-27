@@ -36,6 +36,8 @@ interface FlatNode {
   depth: number;
   isExpanded: boolean;
   hasChildren: boolean;
+  displaySelected: boolean;
+  displayPartial: boolean;
 }
 
 interface RowProps {
@@ -59,6 +61,8 @@ const Row = memo(function Row({ index, style, data }: RowProps) {
       depth={item.depth}
       isExpanded={item.isExpanded}
       hasChildren={item.hasChildren}
+      displaySelected={item.displaySelected}
+      displayPartial={item.displayPartial}
       style={style}
       onToggleSelect={onToggleSelect}
       onToggleExpand={onToggleExpand}

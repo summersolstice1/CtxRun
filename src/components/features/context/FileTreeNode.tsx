@@ -2,13 +2,15 @@ import { ChevronRight, ChevronDown, Folder, FileCode, Lock, Eye } from 'lucide-r
 import { FileNode } from '@/types/context';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { CSSProperties } from 'react';
+import { CSSProperties, useEffect, useRef } from 'react';
 
 interface FileTreeNodeProps {
   node: FileNode;
   depth: number;
   isExpanded: boolean;
   hasChildren: boolean;
+  displaySelected: boolean;
+  displayPartial: boolean;
   style: CSSProperties;
   onToggleSelect: (id: string, checked: boolean) => void;
   onToggleExpand: (id: string) => void;
@@ -20,12 +22,15 @@ export function FileTreeNode({
   depth,
   isExpanded,
   hasChildren,
+  displaySelected,
+  displayPartial,
   style,
   onToggleSelect,
   onToggleExpand,
   onPreview
 }: FileTreeNodeProps) {
   const { t } = useTranslation();
+  const checkboxRef = useRef<HTMLInputElement>(null);
 
   // 计算缩进
   const indent = depth * 16 + 12;
@@ -55,6 +60,12 @@ export function FileTreeNode({
     if (onPreview) onPreview(node.path);
   };
 
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = displayPartial;
+    }
+  }, [displayPartial]);
+
   const Icon = hasChildren ? (isExpanded ? ChevronDown : ChevronRight) : null;
   const TypeIcon = node.kind === 'dir' ? Folder : FileCode;
   const lockedReason = node.ignoreSource === 'git'
@@ -63,6 +74,7 @@ export function FileTreeNode({
   const lockedTitle = node.kind === 'dir'
     ? `${lockedReason}. ${t('common.lockedDirNotScanned')}`
     : lockedReason;
+  const isVisuallySelected = displaySelected || displayPartial;
 
   return (
     <div
@@ -71,7 +83,7 @@ export function FileTreeNode({
         node.isLocked
           ? "opacity-40 cursor-not-allowed bg-secondary/20"
           : "hover:bg-secondary/50",
-        !node.isSelected && !node.isLocked && "opacity-60 hover:opacity-100"
+        !isVisuallySelected && !node.isLocked && "opacity-60 hover:opacity-100"
       )}
       style={{
         ...style,
@@ -92,8 +104,10 @@ export function FileTreeNode({
           <Lock size={12} className="text-muted-foreground" />
         ) : (
           <input
+            ref={checkboxRef}
             type="checkbox"
-            checked={node.isSelected}
+            checked={displaySelected}
+            aria-checked={displayPartial ? 'mixed' : displaySelected}
             onChange={handleCheckboxChange}
             className="w-3.5 h-3.5 rounded border-slate-600 bg-transparent text-primary focus:ring-0 cursor-pointer accent-primary"
           />

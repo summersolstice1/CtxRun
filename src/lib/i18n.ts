@@ -995,7 +995,7 @@ const translations = {
       costNote: "基于当前 Token 数量和云端价格计算",
       contextUsage: "上下文窗口占用",
       topFiles: "Token 消耗大户",
-      largestFiles: "最大文件 Top 5",
+      largestFiles: "最大文件",
       tipSelect: "请从左侧文件树选择文件",
       btnCopy: "复制上下文",
       btnSave: "保存为文件...",
