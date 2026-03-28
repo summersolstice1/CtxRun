@@ -3,7 +3,7 @@ use tauri::State;
 
 #[cfg(target_os = "windows")]
 use ctxrun_process_utils::new_background_command;
-#[cfg(target_os = "windows")]
+#[cfg(any(target_os = "windows", target_os = "linux"))]
 use std::path::Path;
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
