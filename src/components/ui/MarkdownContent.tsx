@@ -140,9 +140,15 @@ export function MarkdownContent({
               </a>
             );
           },
-          img({ className: elementClassName, alt, ...elementProps }: any) {
+          img({ className: elementClassName, alt, src, ...elementProps }: any) {
+            const resolvedSrc = typeof src === 'string' ? src.trim() : '';
+            if (!resolvedSrc) {
+              return null;
+            }
+
             return (
               <img
+                src={resolvedSrc}
                 alt={alt ?? ''}
                 className={cn('ctx-markdown-image', elementClassName)}
                 loading="lazy"

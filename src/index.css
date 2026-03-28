@@ -137,6 +137,12 @@
     width: 100vw;
   }
 
+  #root {
+    height: 100vh;
+    width: 100vw;
+    background-color: transparent !important;
+  }
+
   input, textarea {
     @apply select-text cursor-text;
   }

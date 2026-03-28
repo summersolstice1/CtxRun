@@ -2,15 +2,11 @@ import { useEffect } from 'react';
 import { usePreviewStore } from '@/store/usePreviewStore';
 import { X, FileText } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ImageRenderer } from './renderers/ImageRenderer';
-import { MediaRenderer } from './renderers/MediaRenderer';
-import { CodeRenderer } from './renderers/CodeRenderer';
-import { MarkdownRenderer } from './renderers/MarkdownRenderer';
-import { BinaryRenderer } from './renderers/BinaryRenderer';
-import { FileMeta } from '@/types/hyperview';
+import { PreviewContent } from './PreviewContent';
+import { PreviewModeSwitch } from './PreviewModeSwitch';
 
 export function PreviewModal() {
-  const { isOpen, activeFile, isLoading, error, closePreview } = usePreviewStore();
+  const { isOpen, activeFile, activeMode, isLoading, error, closePreview, setActiveMode } = usePreviewStore();
 
   // 监听 ESC 关闭
   useEffect(() => {
@@ -54,6 +50,13 @@ export function PreviewModal() {
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {activeFile && activeFile.supportedModes.length > 1 && (
+                        <PreviewModeSwitch
+                          modes={activeFile.supportedModes}
+                          value={activeMode}
+                          onChange={setActiveMode}
+                        />
+                    )}
                     <button onClick={closePreview} className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded transition-colors">
                         <X size={18} />
                     </button>
@@ -72,7 +75,7 @@ export function PreviewModal() {
                         <p className="text-sm opacity-80">{error}</p>
                     </div>
                 ) : activeFile ? (
-                   <ContentSwitch meta={activeFile} />
+                   <PreviewContent meta={activeFile} mode={activeMode} />
                 ) : null}
             </div>
           </div>
@@ -80,16 +83,4 @@ export function PreviewModal() {
       )}
     </AnimatePresence>
   );
-}
-
-function ContentSwitch({ meta }: { meta: FileMeta }) {
-    switch (meta.previewType) {
-        case 'image': return <ImageRenderer meta={meta} />;
-        case 'video':
-        case 'audio': return <MediaRenderer meta={meta} />;
-        case 'markdown': return <MarkdownRenderer meta={meta} />;
-        case 'code': return <CodeRenderer meta={meta} />;
-        // 后续添加 Office, Pdf, Archive 支持
-        default: return <BinaryRenderer meta={meta} />;
-    }
 }

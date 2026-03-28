@@ -1,7 +1,9 @@
 import { FileMeta } from "@/types/hyperview";
 
+import { buildPreviewUrl } from "@/lib/previewUrl";
+
 export function MediaRenderer({ meta }: { meta: FileMeta }) {
-  const src = `preview://${encodeURIComponent(meta.path)}`;
+  const src = buildPreviewUrl(meta.path);
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-black">

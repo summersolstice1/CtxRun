@@ -26,7 +26,9 @@ mod agent_tools;
 mod apps;
 mod error;
 mod monitor;
+mod peek;
 mod shortcuts;
+mod window_styling;
 
 const MAIN_WINDOW_LABEL: &str = "main";
 const TRAY_ID: &str = "main";
@@ -324,10 +326,13 @@ fn main() {
             ctxrun_env_probe::env_probe::network::probe_network_target,
             monitor::get_ai_context,
             ctxrun_hyperview::get_file_meta,
+            peek::peek_get_request,
+            peek::peek_clear_request,
         ])
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
+            app.manage(peek::PeekState::default());
             let initial_language = load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
 
             match db::init_db(app.handle()) {
@@ -347,6 +352,7 @@ fn main() {
             let shortcut_manager = shortcuts::ShortcutManager::new();
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
+            peek::initialize(app.handle());
 
             let app_handle = app.handle().clone();
             let language_listener_handle = app_handle.clone();
@@ -404,6 +410,8 @@ fn main() {
                 } else if label == "spotlight" {
                     api.prevent_close();
                     let _ = window.hide();
+                } else if label == "peek" {
+                    peek::clear_pending_request(&window.app_handle());
                 }
             }
         })

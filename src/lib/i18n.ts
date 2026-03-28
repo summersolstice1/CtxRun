@@ -535,6 +535,25 @@ const translations = {
       execBlocked: "Blocked",
       execStateTerminated: "Terminated"
     },
+    peek: {
+      title: "Super Preview",
+      subtitle: "Press Space in Explorer to preview the focused file.",
+      loading: "Loading preview...",
+      failed: "Preview failed",
+      emptyTitle: "Nothing to preview",
+      emptyDescription: "Select a file in Explorer and press Space.",
+      hintClose: "Space / Esc Close",
+      hintOpen: "Enter Open in default app",
+      hintPrevious: "Previous",
+      hintNext: "Next",
+      modeDefault: "Preview",
+      modeSource: "Source",
+      modeRendered: "Rendered",
+      modeFormatted: "Formatted",
+      modeTable: "Table",
+      tableRowsLimited: "Showing first {{count}} rows",
+      formatFallback: "Formatted preview is unavailable. Falling back to source."
+    },
     actions: {
       collapse: "Collapse Sidebar",
       expand: "Expand Sidebar",
@@ -1313,6 +1332,25 @@ const translations = {
       execAllowPrefix: "按前缀允许",
       execBlocked: "已拦截",
       execStateTerminated: "已终止"
+    },
+    peek: {
+      title: "超级预览",
+      subtitle: "在资源管理器中按 Space 预览当前文件。",
+      loading: "正在加载预览...",
+      failed: "预览失败",
+      emptyTitle: "暂无可预览内容",
+      emptyDescription: "请在资源管理器中选中文件后按 Space。",
+      hintClose: "Space / Esc 关闭",
+      hintOpen: "Enter 默认打开",
+      hintPrevious: "上一个",
+      hintNext: "下一个",
+      modeDefault: "预览",
+      modeSource: "源码",
+      modeRendered: "渲染",
+      modeFormatted: "格式化",
+      modeTable: "表格",
+      tableRowsLimited: "当前仅显示前 {{count}} 行",
+      formatFallback: "格式化预览不可用，已回退为源码。"
     },
     actions: {
       collapse: "收起侧栏",

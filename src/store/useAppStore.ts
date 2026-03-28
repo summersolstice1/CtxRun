@@ -14,6 +14,7 @@ import {
 } from '@/lib/appStoreEvents';
 import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
+import { isPeekWindow } from '@/lib/windowContext';
 import { useContextStore } from './useContextStore';
 
 type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner' | 'settings';
@@ -380,7 +381,7 @@ export const useAppStore = create<AppState>()(
           broadcastLanguageSync({ language: state.language });
         }
         // Keep context store in sync after persisted app root is restored.
-        if (state?.projectRoot) {
+        if (state?.projectRoot && !isPeekWindow()) {
           void useContextStore.getState().setProjectRoot(state.projectRoot);
         }
       },

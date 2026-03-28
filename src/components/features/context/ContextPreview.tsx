@@ -9,6 +9,7 @@ import { useContextStore } from '@/store/useContextStore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { invoke } from '@tauri-apps/api/core';
+import { ensureMonacoThemes, getMonacoTheme } from '@/lib/monaco';
 
 const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 
@@ -68,9 +69,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
 
   useEffect(() => {
     if (monacoRef.current) {
-      // 修复：只要不是 light 模式，都使用深色主题
-      const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
-      monacoRef.current.editor.setTheme(targetTheme);
+      monacoRef.current.editor.setTheme(getMonacoTheme(theme));
     }
   }, [theme]);
 
@@ -83,39 +82,8 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-
-    monaco.editor.defineTheme('codeforge-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [],
-      colors: {
-        'editor.background': '#161b2e',
-        'editor.lineHighlightBackground': '#1e2540',
-        'scrollbarSlider.background': '#2d3555',
-        'scrollbarSlider.hoverBackground': '#3a4368',
-        'editor.selectionBackground': '#0078d440',
-        'editorGutter.background': '#161b2e',
-        'editorWidget.background': '#1a2038',
-        'editorWidget.border': '#2d3555',
-      }
-    });
-
-    monaco.editor.defineTheme('codeforge-light', {
-      base: 'vs',
-      inherit: true,
-      rules: [],
-      colors: {
-        'editor.background': '#fbfaf5',
-        'editor.lineHighlightBackground': '#f2f0ea',
-        'scrollbarSlider.background': '#c8c4bc50',
-        'editor.selectionBackground': '#d8f0fa70',
-        'editorGutter.background': '#fbfaf5',
-      }
-    });
-
-    // 修复：同样修改这里的判断逻辑
-    const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
-    monaco.editor.setTheme(targetTheme);
+    ensureMonacoThemes(monaco);
+    monaco.editor.setTheme(getMonacoTheme(theme));
     editor.onKeyDown((e) => {
       if (!editor.getOption(monaco.editor.EditorOption.readOnly)) return;
 
@@ -231,6 +199,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
           language="xml"
           value={content}
           onMount={handleEditorDidMount}
+          theme={getMonacoTheme(theme)}
           loading={
              <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
                 <Loader2 size={20} className="animate-spin" />

@@ -1,0 +1,23 @@
+{
+  "identifier": "peek",
+  "description": "Minimal permissions for the peek preview window.",
+  "local": true,
+  "windows": ["peek"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-close",
+    "core:window:allow-start-dragging",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-size",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": ["**"]
+    },
+    "fs:allow-read-text-file",
+    "fs:allow-exists",
+    "shell:allow-open"
+  ]
+}

@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App";
-import SpotlightApp from "./SpotlightApp";
 import "./index.css";
 import "./i18n/config"; // Initialize i18next 
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { hydratePersistedStores } from '@/lib/store_bootstrap';
+
+const MainApp = lazy(() => import('./App'));
+const SpotlightApp = lazy(() => import('./SpotlightApp'));
+const PeekApp = lazy(() => import('./PeekApp'));
+
 const appWindow = getCurrentWebviewWindow()
 
 const label = appWindow.label;
@@ -16,7 +19,7 @@ function Bootstrap() {
   useEffect(() => {
     let cancelled = false;
 
-    hydratePersistedStores()
+    hydratePersistedStores(label)
       .catch((err) => {
         console.error('[Bootstrap] Failed to hydrate persisted stores:', err);
       })
@@ -35,7 +38,27 @@ function Bootstrap() {
     return null;
   }
 
-  return label === 'spotlight' ? <SpotlightApp /> : <App />;
+  if (label === 'spotlight') {
+    return (
+      <Suspense fallback={null}>
+        <SpotlightApp />
+      </Suspense>
+    );
+  }
+
+  if (label === 'peek') {
+    return (
+      <Suspense fallback={null}>
+        <PeekApp />
+      </Suspense>
+    );
+  }
+
+  return (
+    <Suspense fallback={null}>
+      <MainApp />
+    </Suspense>
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

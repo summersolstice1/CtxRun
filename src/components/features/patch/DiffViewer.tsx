@@ -5,6 +5,7 @@ import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { getMonacoLanguage } from '@/lib/langs';
+import { ensureMonacoThemes, getMonacoTheme } from '@/lib/monaco';
 
 interface DiffViewerProps {
   original: string;
@@ -25,51 +26,13 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
   const handleEditorDidMount: DiffOnMount = (editor, monaco) => {
     editorRef.current = editor;
     monacoRef.current = monaco;
-
-    monaco.editor.defineTheme('codeforge-dark', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [],
-      colors: {
-        'editor.background': '#161b2e',
-        'editor.lineHighlightBackground': '#1e2540',
-        'scrollbarSlider.background': '#2d3555',
-        'scrollbarSlider.hoverBackground': '#3a4368',
-        'editor.selectionBackground': '#0078d440',
-        'editorGutter.background': '#161b2e',
-        'diffEditor.insertedTextBackground': '#22c55e15',
-        'diffEditor.removedTextBackground': '#ef444415',
-        'diffEditor.diagonalFill': '#2d355540',
-        'editorWidget.background': '#1a2038',
-        'editorWidget.border': '#2d3555',
-      }
-    });
-
-    monaco.editor.defineTheme('codeforge-light', {
-      base: 'vs',
-      inherit: true,
-      rules: [],
-      colors: {
-        'editor.background': '#fbfaf5',
-        'editor.lineHighlightBackground': '#f2f0ea',
-        'scrollbarSlider.background': '#c8c4bc50',
-        'editor.selectionBackground': '#d8f0fa70',
-        'editorGutter.background': '#fbfaf5',
-        'diffEditor.insertedTextBackground': '#d8f0fa25',
-        'diffEditor.removedTextBackground': '#f5d0cc25',
-      }
-    });
-
-    // 修复：只要不是 light 模式，都使用深色主题
-    const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
-    monaco.editor.setTheme(targetTheme);
+    ensureMonacoThemes(monaco);
+    monaco.editor.setTheme(getMonacoTheme(theme));
   };
 
   useEffect(() => {
     if (monacoRef.current) {
-      // 修复：只要不是 light 模式，都使用深色主题
-      const targetTheme = theme === 'light' ? 'codeforge-light' : 'codeforge-dark';
-      monacoRef.current.editor.setTheme(targetTheme);
+      monacoRef.current.editor.setTheme(getMonacoTheme(theme));
     }
   }, [theme]);
 
@@ -148,6 +111,7 @@ export function DiffViewer({ original, modified, fileName = '', placeholder }: D
             original={original}
             modified={modified}
             onMount={handleEditorDidMount}
+            theme={getMonacoTheme(theme)}
             loading={
                 <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
                     <Loader2 className="animate-spin" size={20} />

@@ -11,10 +11,21 @@ pub enum PreviewType {
     Audio,
     Code, // 源代码/纯文本
     Markdown,
+    Html,
     Pdf,
     Archive, // Zip, Tar...
     Binary,  // 未知/二进制
     Office,  // Docx, Xlsx...
+}
+
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub enum PreviewMode {
+    Default,
+    Source,
+    Rendered,
+    Formatted,
+    Table,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -24,6 +35,8 @@ pub struct FileMeta {
     pub name: String,
     pub size: u64,
     pub preview_type: PreviewType,
+    pub supported_modes: Vec<PreviewMode>,
+    pub default_mode: PreviewMode,
     pub mime: String,
 }
 
@@ -63,9 +76,10 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
 
     let mut p_type = match ext.as_str() {
         "md" | "markdown" => PreviewType::Markdown,
-        "txt" | "json" | "rs" | "js" | "ts" | "tsx" | "jsx" | "css" | "html" | "xml" | "yml"
+        "htm" | "html" => PreviewType::Html,
+        "txt" | "json" | "rs" | "js" | "ts" | "tsx" | "jsx" | "css" | "xml" | "yml"
         | "yaml" | "toml" | "sql" | "py" | "java" | "c" | "cpp" | "h" | "sh" | "bat" | "cmd"
-        | "ps1" | "log" | "ini" | "conf" => PreviewType::Code,
+        | "ps1" | "log" | "ini" | "conf" | "csv" | "tsv" => PreviewType::Code,
         "pdf" => PreviewType::Pdf,
         "zip" | "rar" | "7z" | "tar" | "gz" => PreviewType::Archive,
         "docx" | "doc" | "xlsx" | "xls" | "pptx" | "ppt" => PreviewType::Office,
@@ -85,19 +99,45 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
                 p_type = PreviewType::Video;
             } else if mime_type.starts_with("audio/") {
                 p_type = PreviewType::Audio;
+            } else if mime_type == "text/html" {
+                p_type = PreviewType::Html;
             } else if mime_type.starts_with("text/") {
                 p_type = PreviewType::Code;
             }
+        } else if mime == "text/html" {
+            p_type = PreviewType::Html;
         } else if mime.starts_with("text/") {
             p_type = PreviewType::Code;
         }
     }
+
+    let (supported_modes, default_mode) = match p_type {
+        PreviewType::Markdown => (
+            vec![PreviewMode::Rendered, PreviewMode::Source],
+            PreviewMode::Rendered,
+        ),
+        PreviewType::Html => (
+            vec![PreviewMode::Source, PreviewMode::Rendered],
+            PreviewMode::Source,
+        ),
+        PreviewType::Code if ext == "json" || ext == "xml" => (
+            vec![PreviewMode::Formatted, PreviewMode::Source],
+            PreviewMode::Formatted,
+        ),
+        PreviewType::Code if ext == "csv" || ext == "tsv" => (
+            vec![PreviewMode::Table, PreviewMode::Source],
+            PreviewMode::Table,
+        ),
+        _ => (vec![PreviewMode::Default], PreviewMode::Default),
+    };
 
     Ok(FileMeta {
         path: path_str.to_string(),
         name,
         size,
         preview_type: p_type,
+        supported_modes,
+        default_mode,
         mime,
     })
 }

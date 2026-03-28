@@ -10,6 +10,8 @@ import {
   BaseDirectory
 } from '@tauri-apps/plugin-fs';
 
+import { isReadOnlyStorageWindow } from '@/lib/windowContext';
+
 const BASE_DIR_OPT = { baseDir: BaseDirectory.AppLocalData };
 const PACKS_SUBDIR = 'packs';
 const TEMP_SUFFIX = '.tmp';
@@ -126,9 +128,11 @@ export const fileStorage = {
 
       const backupContent = await readValidatedJsonFile(`${fileName}${BACKUP_SUFFIX}`);
       if (backupContent !== null) {
-        await atomicWriteTextFile(fileName, backupContent, { skipBackupCopy: true }).catch((err) => {
-          logStorageError('restore backup to primary', fileName, err);
-        });
+        if (!isReadOnlyStorageWindow()) {
+          await atomicWriteTextFile(fileName, backupContent, { skipBackupCopy: true }).catch((err) => {
+            logStorageError('restore backup to primary', fileName, err);
+          });
+        }
         return backupContent;
       }
     } catch (err) {
@@ -139,6 +143,10 @@ export const fileStorage = {
   },
 
   setItem: async (name: string, value: string): Promise<void> => {
+    if (isReadOnlyStorageWindow()) {
+      return;
+    }
+
     const fileName = `${name}.json`;
     try {
       await enqueueWrite(fileName, async () => {
@@ -150,6 +158,10 @@ export const fileStorage = {
   },
 
   removeItem: async (name: string): Promise<void> => {
+    if (isReadOnlyStorageWindow()) {
+      return;
+    }
+
     const fileName = `${name}.json`;
     try {
       if (await hasFile(fileName)) {
@@ -175,6 +187,10 @@ export const fileStorage = {
 
   packs: {
     ensureDir: async () => {
+      if (isReadOnlyStorageWindow()) {
+        return;
+      }
+
       try {
         if (!(await hasFile(PACKS_SUBDIR))) {
           await mkdir(PACKS_SUBDIR, { ...BASE_DIR_OPT, recursive: true });
@@ -185,6 +201,10 @@ export const fileStorage = {
     },
 
     savePack: async (filename: string, content: string) => {
+      if (isReadOnlyStorageWindow()) {
+        return;
+      }
+
       try {
         await fileStorage.packs.ensureDir();
         await enqueueWrite(`${PACKS_SUBDIR}/${filename}`, async () => {
@@ -221,6 +241,10 @@ export const fileStorage = {
     },
 
     removePack: async (filename: string) => {
+      if (isReadOnlyStorageWindow()) {
+        return;
+      }
+
       try {
         const filePath = `${PACKS_SUBDIR}/${filename}`;
         if(await hasFile(filePath)) {
