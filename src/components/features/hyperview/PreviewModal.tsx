@@ -21,8 +21,6 @@ export function PreviewModal() {
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, closePreview]);
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
       {isOpen && (

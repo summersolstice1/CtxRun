@@ -138,9 +138,10 @@ mod windows_impl {
     use windows::Win32::System::Com::{
         CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
     };
+    use windows::Win32::System::Threading::{AttachThreadInput, GetCurrentThreadId};
     use windows::Win32::System::Variant::VARIANT;
     use windows::Win32::UI::Input::KeyboardAndMouse::{
-        GetAsyncKeyState, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
+        GetAsyncKeyState, GetFocus, VK_CONTROL, VK_LWIN, VK_MENU, VK_RWIN, VK_SHIFT,
     };
     use windows::Win32::UI::Shell::{
         FolderItem, FolderItems, IShellFolderViewDual, IShellWindows, IWebBrowserApp, ShellWindows,
@@ -163,6 +164,7 @@ mod windows_impl {
         "ComboBox",
         "ComboBoxEx32",
         "SearchEditBox",
+        "Windows.UI.Core.CoreWindow",
         "RichEditD2DPT",
         "RichEdit50W",
     ];
@@ -239,10 +241,8 @@ mod windows_impl {
             return unsafe { CallNextHookEx(None, code, wparam, lparam) };
         }
 
-        if let Some(tx) = TRIGGER_TX.get()
-            && tx.try_send(()).is_ok()
-        {
-            return LRESULT(1);
+        if let Some(tx) = TRIGGER_TX.get() {
+            let _ = tx.try_send(());
         }
 
         unsafe { CallNextHookEx(None, code, wparam, lparam) }
@@ -281,16 +281,10 @@ mod windows_impl {
             return false;
         }
 
-        let mut info = GUITHREADINFO {
-            cbSize: std::mem::size_of::<GUITHREADINFO>() as u32,
-            ..Default::default()
+        let Some(mut current) = focused_control(thread_id) else {
+            return false;
         };
 
-        if unsafe { GetGUIThreadInfo(thread_id, &mut info) }.is_err() || info.hwndFocus.0.is_null() {
-            return false;
-        }
-
-        let mut current = info.hwndFocus;
         for _ in 0..6 {
             let class_name = window_class_name(current);
             if BLOCKED_FOCUS_CLASSES
@@ -312,6 +306,44 @@ mod windows_impl {
         }
 
         false
+    }
+
+    fn focused_control(thread_id: u32) -> Option<HWND> {
+        attached_focus_control(thread_id).or_else(|| gui_thread_focus_control(thread_id))
+    }
+
+    fn attached_focus_control(thread_id: u32) -> Option<HWND> {
+        let current_thread_id = unsafe { GetCurrentThreadId() };
+        let attached = if current_thread_id == thread_id {
+            false
+        } else {
+            unsafe { AttachThreadInput(current_thread_id, thread_id, true) }.as_bool()
+        };
+
+        let focused = unsafe { GetFocus() };
+
+        if attached {
+            let _ = unsafe { AttachThreadInput(current_thread_id, thread_id, false) };
+        }
+
+        if focused.0.is_null() {
+            None
+        } else {
+            Some(focused)
+        }
+    }
+
+    fn gui_thread_focus_control(thread_id: u32) -> Option<HWND> {
+        let mut info = GUITHREADINFO {
+            cbSize: std::mem::size_of::<GUITHREADINFO>() as u32,
+            ..Default::default()
+        };
+
+        if unsafe { GetGUIThreadInfo(thread_id, &mut info) }.is_err() || info.hwndFocus.0.is_null() {
+            None
+        } else {
+            Some(info.hwndFocus)
+        }
     }
 
     fn window_class_name(hwnd: HWND) -> String {
