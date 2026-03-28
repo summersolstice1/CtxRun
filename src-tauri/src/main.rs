@@ -8,7 +8,9 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::app_config::load_app_language;
-use ctxrun_process_utils::{new_background_command, new_detached_command};
+use ctxrun_process_utils::new_background_command;
+#[cfg(target_os = "windows")]
+use ctxrun_process_utils::new_detached_command;
 use serde::Deserialize;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
 use tauri::window::Color;

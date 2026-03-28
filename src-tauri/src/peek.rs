@@ -72,10 +72,13 @@ pub fn clear_pending_request(app: &AppHandle<Wry>) {
     app.state::<PeekState>().clear();
 }
 
+#[cfg(target_os = "windows")]
 pub fn initialize(app: &AppHandle<Wry>) {
-    #[cfg(target_os = "windows")]
     windows_impl::initialize(app.clone());
 }
+
+#[cfg(not(target_os = "windows"))]
+pub fn initialize(_app: &AppHandle<Wry>) {}
 
 fn ensure_peek_window(app: &AppHandle<Wry>) -> Option<tauri::WebviewWindow<Wry>> {
     if let Some(window) = app.get_webview_window("peek") {
@@ -89,13 +92,15 @@ fn ensure_peek_window(app: &AppHandle<Wry>) -> Option<tauri::WebviewWindow<Wry>>
         .center()
         .decorations(false)
         .resizable(true)
-        .transparent(true)
         .shadow(false)
         .always_on_top(true)
         .visible(false)
         .skip_taskbar(true)
         .focused(true)
         .use_https_scheme(true);
+
+    #[cfg(not(target_os = "macos"))]
+    let builder = builder.transparent(true);
 
     match builder.build() {
         Ok(window) => {

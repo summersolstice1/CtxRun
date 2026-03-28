@@ -1,8 +1,10 @@
 use ctxrun_db::{AppEntry, DbState};
-use ctxrun_process_utils::new_background_command;
-use std::path::Path;
 use tauri::State;
 
+#[cfg(target_os = "windows")]
+use ctxrun_process_utils::new_background_command;
+#[cfg(target_os = "windows")]
+use std::path::Path;
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
 

@@ -709,10 +709,10 @@ fn ping_status(received: u32, loss_percent: f64, avg_ms: Option<f64>) -> Network
 
 #[cfg(test)]
 mod tests {
-    use super::{NetworkHealthStatus, normalize_probe_request, parse_ping_output, ping_command};
+    use super::{NetworkHealthStatus, normalize_probe_request, parse_ping_output};
 
     #[cfg(target_os = "windows")]
-    use super::powershell_ping_command;
+    use super::{ping_command, powershell_ping_command};
 
     #[test]
     fn normalize_probe_request_adds_https_for_host_only_targets() {
