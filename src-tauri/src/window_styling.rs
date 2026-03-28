@@ -1,5 +1,7 @@
+#[cfg(target_os = "windows")]
 use tauri::WebviewWindow;
 
+#[cfg(target_os = "windows")]
 pub fn configure_peek_window(window: &WebviewWindow) {
     let _ = window.set_shadow(false);
     let _ = window.set_background_color(Some(tauri::window::Color(0, 0, 0, 0)));

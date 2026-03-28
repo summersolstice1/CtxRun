@@ -1,12 +1,13 @@
-use std::sync::{
-    Mutex,
-    atomic::{AtomicU64, Ordering},
-};
+use std::sync::Mutex;
+
+#[cfg(target_os = "windows")]
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
-use tauri::{
-    AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, Wry, window::Color,
-};
+use tauri::{AppHandle, State, Wry};
+
+#[cfg(target_os = "windows")]
+use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder, window::Color};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,6 +17,7 @@ pub struct PeekOpenPayload {
     pub active_index: usize,
 }
 
+#[cfg(target_os = "windows")]
 #[derive(Debug)]
 struct PeekRequest {
     paths: Vec<String>,
@@ -25,10 +27,12 @@ struct PeekRequest {
 #[derive(Default)]
 pub struct PeekState {
     latest_request: Mutex<Option<PeekOpenPayload>>,
+    #[cfg(target_os = "windows")]
     session_counter: AtomicU64,
 }
 
 impl PeekState {
+    #[cfg(target_os = "windows")]
     fn publish(&self, request: PeekRequest) -> PeekOpenPayload {
         let session_id = self.session_counter.fetch_add(1, Ordering::SeqCst) + 1;
         let payload = PeekOpenPayload {
@@ -80,6 +84,7 @@ pub fn initialize(app: &AppHandle<Wry>) {
 #[cfg(not(target_os = "windows"))]
 pub fn initialize(_app: &AppHandle<Wry>) {}
 
+#[cfg(target_os = "windows")]
 fn ensure_peek_window(app: &AppHandle<Wry>) -> Option<tauri::WebviewWindow<Wry>> {
     if let Some(window) = app.get_webview_window("peek") {
         return Some(window);
@@ -114,6 +119,7 @@ fn ensure_peek_window(app: &AppHandle<Wry>) -> Option<tauri::WebviewWindow<Wry>>
     }
 }
 
+#[cfg(target_os = "windows")]
 fn open_peek_window(app: &AppHandle<Wry>, request: PeekRequest) {
     let Some(window) = ensure_peek_window(app) else {
         return;
@@ -421,10 +427,10 @@ mod windows_impl {
 
         for index in 0..count {
             let item = unsafe { items.Item(&variant_i32(index)) }?;
-            if let Some(path) = read_item_path(Some(item))? {
-                if !paths.iter().any(|existing| existing == &path) {
-                    paths.push(path);
-                }
+            if let Some(path) = read_item_path(Some(item))?
+                && !paths.iter().any(|existing| existing == &path)
+            {
+                paths.push(path);
             }
         }
 

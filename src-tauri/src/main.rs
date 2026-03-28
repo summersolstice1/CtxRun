@@ -413,7 +413,7 @@ fn main() {
                     api.prevent_close();
                     let _ = window.hide();
                 } else if label == "peek" {
-                    peek::clear_pending_request(&window.app_handle());
+                    peek::clear_pending_request(window.app_handle());
                 }
             }
         })
