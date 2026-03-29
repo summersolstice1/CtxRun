@@ -6,6 +6,7 @@ export type PreviewType =
   | 'markdown'
   | 'html'
   | 'pdf'
+  | 'docx'
   | 'archive'
   | 'binary'
   | 'office';

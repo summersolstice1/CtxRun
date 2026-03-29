@@ -13,6 +13,7 @@ pub enum PreviewType {
     Markdown,
     Html,
     Pdf,
+    Docx,
     Archive, // Zip, Tar...
     Binary,  // 未知/二进制
     Office,  // Docx, Xlsx...
@@ -81,8 +82,9 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
         | "yaml" | "toml" | "sql" | "py" | "java" | "c" | "cpp" | "h" | "sh" | "bat" | "cmd"
         | "ps1" | "log" | "ini" | "conf" | "csv" | "tsv" => PreviewType::Code,
         "pdf" => PreviewType::Pdf,
+        "docx" => PreviewType::Docx,
         "zip" | "rar" | "7z" | "tar" | "gz" => PreviewType::Archive,
-        "docx" | "doc" | "xlsx" | "xls" | "pptx" | "ppt" => PreviewType::Office,
+        "doc" | "xlsx" | "xls" | "pptx" | "ppt" => PreviewType::Office,
         _ => PreviewType::Binary,
     };
 
@@ -120,6 +122,7 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
             vec![PreviewMode::Source, PreviewMode::Rendered],
             PreviewMode::Source,
         ),
+        PreviewType::Docx => (vec![PreviewMode::Rendered], PreviewMode::Rendered),
         PreviewType::Code if ext == "json" || ext == "xml" => (
             vec![PreviewMode::Formatted, PreviewMode::Source],
             PreviewMode::Formatted,
