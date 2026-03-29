@@ -4,10 +4,10 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use serde::Serialize;
-use tauri::{AppHandle, State, Wry};
+use tauri::{AppHandle, Manager, State, Wry};
 
 #[cfg(target_os = "windows")]
-use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder, window::Color};
+use tauri::{Emitter, WebviewUrl, WebviewWindowBuilder, window::Color};
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
