@@ -79,6 +79,20 @@ const DEFAULT_REFINERY_SETTINGS: RefinerySettings = {
   keepPinned: true,
 };
 
+export interface GuardSettings {
+  enabled: boolean;
+  idleTimeoutSecs: number;
+  preventSleep: boolean;
+  keepDisplayOn: boolean;
+}
+
+const DEFAULT_GUARD_SETTINGS: GuardSettings = {
+  enabled: false,
+  idleTimeoutSecs: 180,
+  preventSleep: true,
+  keepDisplayOn: false,
+};
+
 type WindowDestroyDelay = number;
 
 const MAX_RECENT_PROJECT_ROOTS = 5;
@@ -88,6 +102,15 @@ function buildRecentProjectRoots(current: string[], path: string | null): string
 
   const deduped = current.filter((item) => item !== path);
   return [path, ...deduped].slice(0, MAX_RECENT_PROJECT_ROOTS);
+}
+
+function areGuardSettingsEqual(left: GuardSettings, right: GuardSettings): boolean {
+  return (
+    left.enabled === right.enabled &&
+    left.idleTimeoutSecs === right.idleTimeoutSecs &&
+    left.preventSleep === right.preventSleep &&
+    left.keepDisplayOn === right.keepDisplayOn
+  );
 }
 
 interface AppState {
@@ -120,6 +143,7 @@ interface AppState {
   };
 
   refinerySettings: RefinerySettings;
+  guardSettings: GuardSettings;
 
   setView: (view: AppView) => void;
   setProjectRoot: (path: string | null) => void;
@@ -137,6 +161,7 @@ interface AppState {
   setWindowDestroyDelay: (seconds: number) => void;
   setSearchSettings: (config: Partial<AppState['searchSettings']>) => void;
   setRefinerySettings: (config: Partial<RefinerySettings>) => void;
+  setGuardSettings: (config: Partial<GuardSettings>) => void;
   syncModels: () => Promise<void>;
   resetModels: () => void;
   setSpotlightAppearance: (config: Partial<SpotlightAppearance>) => void;
@@ -171,6 +196,7 @@ export const useAppStore = create<AppState>()(
         customUrl: 'https://search.bilibili.com/all?keyword=%s'
       },
       refinerySettings: DEFAULT_REFINERY_SETTINGS,
+      guardSettings: DEFAULT_GUARD_SETTINGS,
       setSpotlightAppearance: (config) => {
         set((state) => ({
           spotlightAppearance: { ...state.spotlightAppearance, ...config }
@@ -300,6 +326,30 @@ export const useAppStore = create<AppState>()(
       setRefinerySettings: (config) => set((state) => ({
         refinerySettings: { ...state.refinerySettings, ...config }
       })),
+      setGuardSettings: (config) => {
+        set((state) => {
+          const nextGuardSettings = {
+            ...state.guardSettings,
+            ...config,
+          };
+
+          if (!nextGuardSettings.preventSleep) {
+            nextGuardSettings.keepDisplayOn = false;
+          }
+
+          nextGuardSettings.idleTimeoutSecs = Math.max(15, nextGuardSettings.idleTimeoutSecs);
+
+          if (areGuardSettingsEqual(state.guardSettings, nextGuardSettings)) {
+            return state;
+          }
+
+          return { guardSettings: nextGuardSettings };
+        });
+
+        void invoke('refresh_guard_service').catch((err) => {
+          console.error('[AppStore] Failed to refresh guard service after settings update:', err);
+        });
+      },
       setLanguage: (language) => {
         set({ language });
         // Also update i18next language
@@ -404,7 +454,8 @@ export const useAppStore = create<AppState>()(
         spotlightAppearance: state.spotlightAppearance,
         windowDestroyDelay: state.windowDestroyDelay,
         searchSettings: state.searchSettings,
-        refinerySettings: state.refinerySettings
+        refinerySettings: state.refinerySettings,
+        guardSettings: state.guardSettings,
       }),
       skipHydration: true,
     }

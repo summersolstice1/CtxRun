@@ -11,25 +11,44 @@ pub fn configure_peek_window(window: &WebviewWindow) {
 }
 
 #[cfg(target_os = "windows")]
+pub fn configure_guard_window(window: &WebviewWindow) {
+    let _ = window.set_shadow(false);
+    let _ = window.set_background_color(Some(tauri::window::Color(0, 0, 0, 0)));
+
+    #[cfg(target_os = "windows")]
+    windows::apply_guard_window_style(window);
+}
+
+#[cfg(target_os = "windows")]
 mod windows {
     use std::mem::size_of_val;
 
     use tauri::WebviewWindow;
     use windows::Win32::Graphics::Dwm::{
-        DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
-        DwmSetWindowAttribute,
+        DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE,
+        DWM_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND, DWMWCP_ROUND, DwmSetWindowAttribute,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
         SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetWindowPos,
     };
 
     pub fn apply_peek_window_style(window: &WebviewWindow) {
+        apply_window_style(window, DWMWCP_ROUND);
+    }
+
+    pub fn apply_guard_window_style(window: &WebviewWindow) {
+        apply_window_style(window, DWMWCP_DONOTROUND);
+    }
+
+    fn apply_window_style(
+        window: &WebviewWindow,
+        corner_preference: DWM_WINDOW_CORNER_PREFERENCE,
+    ) {
         let Ok(hwnd) = window.hwnd() else {
             return;
         };
 
         unsafe {
-            let corner_preference = DWMWCP_ROUND;
             let _ = DwmSetWindowAttribute(
                 hwnd,
                 DWMWA_WINDOW_CORNER_PREFERENCE,

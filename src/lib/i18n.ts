@@ -394,6 +394,16 @@ const translations = {
       btnImportJson: "Import JSON",
       importProjectConfigMsg: "Do you want to overwrite existing project configs with the same path?",
       navSecurity: "Security & Whitelist",
+      guardTitle: "Guard Mode",
+      guardDesc: "Freeze accidental keyboard and mouse input after a period of idle time while letting the current work keep running underneath a translucent overlay.",
+      guardEnabled: "Enable idle guard",
+      guardEnabledDesc: "Automatically enter guard mode after the configured idle timeout.",
+      guardIdleTimeout: "Idle timeout",
+      guardPreventSleep: "Prevent system sleep",
+      guardPreventSleepDesc: "Use SetThreadExecutionState during guard mode without changing the system power plan.",
+      guardKeepDisplayOn: "Keep display on",
+      guardKeepDisplayOnDesc: "Also prevent the monitor from turning off while guard mode is active.",
+      guardVisibilityNote: "The guard window stays about 95% transparent so you can still watch the task running underneath while blocking stray input.",
       securityTitle: "Ignored Secrets (Whitelist)",
       securityDesc: "These strings will be ignored in future security scans.",
       value: "Value",
@@ -553,6 +563,9 @@ const translations = {
       modeTable: "Table",
       tableRowsLimited: "Showing first {{count}} rows",
       formatFallback: "Formatted preview is unavailable. Falling back to source."
+    },
+    guard: {
+      holdAction: "Hold to unlock"
     },
     actions: {
       collapse: "Collapse Sidebar",
@@ -1192,6 +1205,16 @@ const translations = {
       btnImportJson: "导入 JSON",
       importProjectConfigMsg: "是否覆盖路径相同的现有项目配置？",
       navSecurity: "安全与白名单",
+      guardTitle: "输入守护",
+      guardDesc: "在空闲一段时间后自动冻结误触输入，同时保持下层任务继续运行，并通过半透明遮罩让你仍能看到当前执行状态。",
+      guardEnabled: "启用空闲守护",
+      guardEnabledDesc: "达到设定空闲时长后自动进入守护模式。",
+      guardIdleTimeout: "空闲时长",
+      guardPreventSleep: "守护期间防止休眠",
+      guardPreventSleepDesc: "守护开启时通过 SetThreadExecutionState 临时声明保持唤醒，不改系统电源计划。",
+      guardKeepDisplayOn: "守护期间保持屏幕常亮",
+      guardKeepDisplayOnDesc: "额外阻止显示器因空闲熄灭。",
+      guardVisibilityNote: "守护窗约 95% 透明，你可以继续观察下层任务运行，但误触输入不会落到下面的应用。",
       securityTitle: "已忽略的敏感词 (白名单)",
       securityDesc: "以下字符串将在未来的安全扫描中被自动忽略。",
       value: "内容",
@@ -1351,6 +1374,9 @@ const translations = {
       modeTable: "表格",
       tableRowsLimited: "当前仅显示前 {{count}} 行",
       formatFallback: "格式化预览不可用，已回退为源码。"
+    },
+    guard: {
+      holdAction: "长按解锁"
     },
     actions: {
       collapse: "收起侧栏",

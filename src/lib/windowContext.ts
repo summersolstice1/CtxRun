@@ -12,6 +12,10 @@ export function isPeekWindow(): boolean {
   return getCurrentWindowLabel() === 'peek';
 }
 
+export function isGuardWindow(): boolean {
+  return getCurrentWindowLabel() === 'guard';
+}
+
 export function isReadOnlyStorageWindow(): boolean {
-  return isPeekWindow();
+  return isPeekWindow() || isGuardWindow();
 }

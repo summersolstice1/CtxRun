@@ -216,7 +216,7 @@ export function PatchSidebar({
                       <Trash2 size={12} />
                   </button>
                 </div>
-                <textarea value={yamlInput} onChange={e => onYamlChange(e.target.value)} onContextMenu={onContextMenu} placeholder={t('patch.pasteAIResponse') + '\n\nFile: src/App.tsx\n<<<<<<< SEARCH\n...\n=======\n...\n>>>>>>> REPLACE'} className="flex-1 w-full bg-transparent p-4 resize-none outline-none font-mono text-[11px] leading-relaxed custom-scrollbar placeholder:text-muted-foreground/30 text-muted-foreground focus:text-foreground transition-colors" spellCheck="false" />
+                <textarea value={yamlInput} onChange={e => onYamlChange(e.target.value)} onContextMenu={onContextMenu} placeholder={t('patch.pasteAIResponse') + '\n\nFile: src/windows/main/MainWindowApp.tsx\n<<<<<<< SEARCH\n...\n=======\n...\n>>>>>>> REPLACE'} className="flex-1 w-full bg-transparent p-4 resize-none outline-none font-mono text-[11px] leading-relaxed custom-scrollbar placeholder:text-muted-foreground/30 text-muted-foreground focus:text-foreground transition-colors" spellCheck="false" />
               </div>
               <div className="h-[40%] flex flex-col min-h-0 bg-secondary/5">
                 <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between bg-secondary/10 shrink-0">

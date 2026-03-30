@@ -27,6 +27,7 @@ mod app_config;
 mod agent_tools;
 mod apps;
 mod error;
+mod guard;
 mod monitor;
 mod peek;
 mod shortcuts;
@@ -287,6 +288,9 @@ fn main() {
             check_python_env,
             refresh_shortcuts,
             open_folder_in_file_manager,
+            guard::refresh_guard_service,
+            guard::guard_request_release,
+            guard::activate_guard_now,
             agent_tools::agent_read_local_file,
             agent_tools::agent_list_local_files,
             agent_tools::agent_search_local_files,
@@ -334,6 +338,7 @@ fn main() {
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
+            app.manage(guard::GuardState::default());
             app.manage(peek::PeekState::default());
             let initial_language = load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
 
@@ -354,6 +359,7 @@ fn main() {
             let shortcut_manager = shortcuts::ShortcutManager::new();
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
+            app.state::<guard::GuardState>().initialize(app.handle());
             peek::initialize(app.handle());
 
             let app_handle = app.handle().clone();
@@ -412,6 +418,13 @@ fn main() {
                 } else if label == "spotlight" {
                     api.prevent_close();
                     let _ = window.hide();
+                } else if label == "guard" {
+                    api.prevent_close();
+                    if let Some(state) = window.app_handle().try_state::<guard::GuardState>() {
+                        let _ = state.release(window.app_handle());
+                    } else {
+                        let _ = window.hide();
+                    }
                 } else if label == "peek" {
                     peek::clear_pending_request(window.app_handle());
                 }

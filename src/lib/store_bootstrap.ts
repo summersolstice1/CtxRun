@@ -6,6 +6,7 @@ import { usePromptStore } from '@/store/usePromptStore';
 
 let fullHydrationPromise: Promise<void> | null = null;
 let peekHydrationPromise: Promise<void> | null = null;
+let guardHydrationPromise: Promise<void> | null = null;
 
 function hydrateAllStores(): Promise<void> {
   if (!fullHydrationPromise) {
@@ -29,9 +30,21 @@ function hydratePeekStores(): Promise<void> {
   return peekHydrationPromise;
 }
 
+function hydrateGuardStores(): Promise<void> {
+  if (!guardHydrationPromise) {
+    guardHydrationPromise = Promise.resolve(useAppStore.persist.rehydrate()).then(() => undefined);
+  }
+
+  return guardHydrationPromise;
+}
+
 export function hydratePersistedStores(windowLabel?: string): Promise<void> {
   if (windowLabel === 'peek') {
     return hydratePeekStores();
+  }
+
+  if (windowLabel === 'guard') {
+    return hydrateGuardStores();
   }
 
   return hydrateAllStores();

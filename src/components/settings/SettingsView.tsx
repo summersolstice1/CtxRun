@@ -63,6 +63,8 @@ export function SettingsView() {
     setSearchSettings,
     refinerySettings,
     setRefinerySettings,
+    guardSettings,
+    setGuardSettings,
   ] = useAppStore(
     useShallow((state) => [
       state.theme,
@@ -87,6 +89,8 @@ export function SettingsView() {
       state.setSearchSettings,
       state.refinerySettings,
       state.setRefinerySettings,
+      state.guardSettings,
+      state.setGuardSettings,
     ]),
   );
 
@@ -170,7 +174,13 @@ export function SettingsView() {
           />
         );
       case 'security':
-        return <SecuritySection />;
+        return (
+          <SecuritySection
+            guardSettings={guardSettings}
+            setGuardSettings={setGuardSettings}
+            formatDuration={formatDuration}
+          />
+        );
       case 'about':
         return <AboutSection />;
       default:

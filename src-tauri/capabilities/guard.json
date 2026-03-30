@@ -1,0 +1,21 @@
+{
+  "identifier": "guard",
+  "description": "Minimal permissions for the guard overlay window.",
+  "local": true,
+  "windows": ["guard"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-close",
+    "core:window:allow-hide",
+    "core:window:allow-show",
+    "core:window:allow-set-focus",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": ["$APP_LOCAL_DATA/**"]
+    },
+    "fs:allow-read-text-file",
+    "fs:allow-exists"
+  ]
+}

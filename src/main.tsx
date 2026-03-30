@@ -5,9 +5,10 @@ import "./i18n/config"; // Initialize i18next
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { hydratePersistedStores } from '@/lib/store_bootstrap';
 
-const MainApp = lazy(() => import('./App'));
-const SpotlightApp = lazy(() => import('./SpotlightApp'));
-const PeekApp = lazy(() => import('./PeekApp'));
+const MainApp = lazy(() => import('./windows/main/MainWindowApp'));
+const SpotlightApp = lazy(() => import('./windows/spotlight/SpotlightWindowApp'));
+const PeekApp = lazy(() => import('./windows/peek/PeekWindowApp'));
+const GuardApp = lazy(() => import('./windows/guard/GuardWindowApp'));
 
 const appWindow = getCurrentWebviewWindow()
 
@@ -50,6 +51,14 @@ function Bootstrap() {
     return (
       <Suspense fallback={null}>
         <PeekApp />
+      </Suspense>
+    );
+  }
+
+  if (label === 'guard') {
+    return (
+      <Suspense fallback={null}>
+        <GuardApp />
       </Suspense>
     );
   }
