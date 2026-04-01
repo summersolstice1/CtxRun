@@ -17,7 +17,6 @@ import { NumberTicker } from '@/components/ui/NumberTicker';
 import { Virtuoso } from 'react-virtuoso';
 
 interface TokenDashboardProps {
-  stats?: any;
   fileTree: FileNode[];
   models: AIModelConfig[];
   onCopy: () => void;

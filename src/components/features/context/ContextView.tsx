@@ -178,7 +178,7 @@ export function ContextView() {
     ])
   );
 
-  const { openPreview } = usePreviewStore();
+  const openPreview = usePreviewStore((state) => state.openPreview);
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [showFilters, setShowFilters] = useState(false); 
@@ -215,6 +215,26 @@ export function ContextView() {
   }, [globalProjectRoot]);
 
   useEffect(() => {
+    if (!globalProjectRoot || scannedProjectRoot === globalProjectRoot) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (useAppStore.getState().projectRoot !== globalProjectRoot) {
+        return;
+      }
+      if (useContextStore.getState().scannedProjectRoot === globalProjectRoot) {
+        return;
+      }
+
+      void performScan(globalProjectRoot);
+    }, 150);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [globalProjectRoot, scannedProjectRoot, projectIgnore, globalIgnore, isIgnoreSyncActive]);
+
+  useEffect(() => {
     if (fileTree.length > 0) {
       refreshTreeStatus(globalIgnore);
     }
@@ -230,7 +250,7 @@ export function ContextView() {
     if (!root || scannedProjectRoot !== root) return;
     void performScan(root);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isIgnoreSyncActive, scannedProjectRoot]);
+  }, [isIgnoreSyncActive]);
 
   useEffect(() => {
     if (!ignoreRescanInitializedRef.current) {
@@ -358,7 +378,7 @@ export function ContextView() {
           }
       } catch (e) {
           console.warn('Security scan failed, fallback to direct action:', e);
-          triggerToast("Security scan error, proceeding anyway.", 'warning');
+          triggerToast(t('context.securityScanFallback'), 'warning');
           await executeFinalAction(text, action, savePath);
       }
   };
@@ -414,7 +434,7 @@ export function ContextView() {
       }
     } catch (err) {
       console.error('Failed to copy context to clipboard:', err);
-      triggerToast("Copy failed", 'error');
+      triggerToast(t('context.toastCopyFail'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -452,7 +472,7 @@ export function ContextView() {
       }
     } catch (err) {
       console.error('Failed to generate and save context:', err);
-      triggerToast("Generation failed", 'error');
+      triggerToast(t('context.toastSaveFail'), 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -495,7 +515,7 @@ export function ContextView() {
     } catch (err) {
       if (requestId !== scanRequestIdRef.current) return;
       console.error('Project scan failed:', err);
-      triggerToast("Scan failed. Check path.", 'error');
+      triggerToast(t('context.scanFail'), 'error');
     } finally {
       if (requestId === scanRequestIdRef.current) {
         setIsScanning(false);
@@ -504,20 +524,53 @@ export function ContextView() {
   };
 
   const isResizingRef = useRef(false);
-  const startResizing = () => { isResizingRef.current = true; };
-  
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  const sidebarLeftRef = useRef(0);
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizingRef.current = true;
+    if (sidebarRef.current) {
+      sidebarLeftRef.current = sidebarRef.current.getBoundingClientRect().left;
+      sidebarRef.current.style.transition = 'none';
+    }
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+  };
+
   useEffect(() => {
+    let rafId = 0;
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingRef.current) return;
-      const newWidth = Math.max(200, Math.min(e.clientX - 64, 800));
-      setContextSidebarWidth(newWidth);
+      const newWidth = Math.max(200, Math.min(e.clientX - sidebarLeftRef.current, 800));
+      // 直接操作 DOM，不经过 React 状态更新，避免重渲染卡顿
+      if (sidebarRef.current) {
+        sidebarRef.current.style.width = `${newWidth}px`;
+      }
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setContextSidebarWidth(newWidth);
+      });
     };
-    const handleMouseUp = () => { isResizingRef.current = false; };
+    const handleMouseUp = () => {
+      if (!isResizingRef.current) return;
+      isResizingRef.current = false;
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      cancelAnimationFrame(rafId);
+      if (sidebarRef.current) {
+        sidebarRef.current.style.transition = '';
+      }
+      // 最终状态同步到 Zustand
+      const finalWidth = sidebarRef.current ? parseInt(sidebarRef.current.style.width, 10) : 200;
+      setContextSidebarWidth(finalWidth);
+    };
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      cancelAnimationFrame(rafId);
     };
   }, [setContextSidebarWidth]);
 
@@ -571,6 +624,7 @@ export function ContextView() {
 
       <div className="flex-1 flex overflow-hidden relative">
         <div 
+          ref={sidebarRef}
           className={cn("flex flex-col bg-secondary/5 border-r border-border transition-all duration-75 ease-linear overflow-hidden relative group/sidebar", !isContextSidebarOpen && "w-0 border-none opacity-0")}
           style={{ width: isContextSidebarOpen ? `${contextSidebarWidth}px` : 0 }}
         >
