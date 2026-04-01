@@ -196,58 +196,83 @@ export function TokenDashboard({
         />
       </div>
 
-      {/* 功能开关区 */}
-      <div className="flex items-center justify-end px-2 gap-3">
-         {/* 安全检测开关 */}
-         <button
-           onClick={() => setDetectSecrets(!detectSecrets)}
-           className={cn(
-             "flex items-center gap-3 px-4 py-2 rounded-lg border transition-all duration-200 shadow-sm",
-             detectSecrets
-               ? "bg-orange-500/10 border-orange-500/30 text-orange-600"
-               : "bg-card border-border text-muted-foreground hover:bg-secondary/50"
-           )}
-           title={t('context.securityFilterTooltip')}
-         >
-            <div className={cn(
-                "w-8 h-4 rounded-full relative transition-colors duration-300",
-                detectSecrets ? "bg-orange-500" : "bg-slate-300 dark:bg-slate-600"
-            )}>
-                <div className={cn(
-                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-300 shadow-sm",
-                    detectSecrets ? "left-4.5 translate-x-0" : "left-0.5"
-                )} style={{ left: detectSecrets ? '18px' : '2px' }} />
-            </div>
-            <div className="flex items-center gap-2">
-                <ShieldCheck size={16} />
-                <span className="text-sm font-medium">{t('context.securityFilter')}</span>
-            </div>
-         </button>
+      {/* 功能开关 + 操作按钮区 */}
+      <div className="flex items-center justify-between px-2 gap-4">
+         <div className="flex items-center gap-3">
+           {/* 安全检测开关 */}
+           <button
+             onClick={() => setDetectSecrets(!detectSecrets)}
+             className={cn(
+               "flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200 shadow-sm whitespace-nowrap",
+               detectSecrets
+                 ? "bg-orange-500/10 border-orange-500/30 text-orange-600"
+                 : "bg-card border-border text-muted-foreground hover:bg-secondary/50"
+             )}
+             title={t('context.securityFilterTooltip')}
+           >
+              <div className={cn(
+                  "w-8 h-4 rounded-full relative transition-colors duration-300",
+                  detectSecrets ? "bg-orange-500" : "bg-slate-300 dark:bg-slate-600"
+              )}>
+                  <div className={cn(
+                      "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-300 shadow-sm",
+                      detectSecrets ? "left-4.5 translate-x-0" : "left-0.5"
+                  )} style={{ left: detectSecrets ? '18px' : '2px' }} />
+              </div>
+              <div className="flex items-center gap-2">
+                  <ShieldCheck size={16} />
+                  <span className="text-sm font-medium">{t('context.securityFilter')}</span>
+              </div>
+           </button>
 
-         {/* 移除注释开关 */}
-         <button
-           onClick={() => setRemoveComments(!removeComments)}
-           className={cn(
-             "flex items-center gap-3 px-4 py-2 rounded-lg border transition-all duration-200 shadow-sm",
-             removeComments
-               ? "bg-primary/10 border-primary/30 text-primary"
-               : "bg-card border-border text-muted-foreground hover:bg-secondary/50"
-           )}
-         >
-            <div className={cn(
-                "w-8 h-4 rounded-full relative transition-colors duration-300",
-                removeComments ? "bg-primary" : "bg-slate-300 dark:bg-slate-600"
-            )}>
-                <div className={cn(
-                    "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-300 shadow-sm",
-                    removeComments ? "left-4.5 translate-x-0" : "left-0.5"
-                )} style={{ left: removeComments ? '18px' : '2px' }} />
-            </div>
-            <div className="flex items-center gap-2">
-                <Eraser size={16} />
-                <span className="text-sm font-medium">{t('context.removeComments')}</span>
-            </div>
-         </button>
+           {/* 移除注释开关 */}
+           <button
+             onClick={() => setRemoveComments(!removeComments)}
+             className={cn(
+               "flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all duration-200 shadow-sm whitespace-nowrap",
+               removeComments
+                 ? "bg-primary/10 border-primary/30 text-primary"
+                 : "bg-card border-border text-muted-foreground hover:bg-secondary/50"
+             )}
+           >
+              <div className={cn(
+                  "w-8 h-4 rounded-full relative transition-colors duration-300",
+                  removeComments ? "bg-primary" : "bg-slate-300 dark:bg-slate-600"
+              )}>
+                  <div className={cn(
+                      "absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform duration-300 shadow-sm",
+                      removeComments ? "left-4.5 translate-x-0" : "left-0.5"
+                  )} style={{ left: removeComments ? '18px' : '2px' }} />
+              </div>
+              <div className="flex items-center gap-2">
+                  <Eraser size={16} />
+                  <span className="text-sm font-medium">{t('context.removeComments')}</span>
+              </div>
+           </button>
+         </div>
+
+         {/* 右侧操作按钮 */}
+         {instantFileCount > 0 ? (
+           <div className="flex items-center gap-3">
+             <button onClick={onCopy} disabled={isGenerating} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium bg-secondary/80 border-border text-foreground hover:bg-secondary hover:border-primary/30 transition-all active:scale-95 disabled:opacity-50 whitespace-nowrap shadow-sm">
+               {isGenerating
+                 ? <><Loader2 size={16} className="animate-spin" /><span>{t('context.processing')}</span></>
+                 : <><CheckCircle2 size={16} /><span>{t('context.btnCopy')}</span></>
+               }
+             </button>
+             <button onClick={onSave} disabled={isGenerating} className={cn(
+               "inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 whitespace-nowrap shadow-sm",
+               isGenerating ? "cursor-wait bg-primary/80 border-primary/30 text-primary-foreground"
+                 : "bg-primary border-primary/30 text-primary-foreground hover:bg-primary/90"
+             )}>
+               <Save size={16} /><span>{t('context.btnSave')}</span>
+             </button>
+           </div>
+         ) : (
+           <div className="text-muted-foreground flex items-center gap-2 text-sm">
+             <AlertCircle size={16} /> {t('context.tipSelect')}
+           </div>
+         )}
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -368,23 +393,6 @@ export function TokenDashboard({
          </div>
       </div>
 
-      {/* 底部按钮 */}
-      <div className="flex flex-col items-center gap-4 mt-auto">
-         {instantFileCount === 0 ? (
-           <div className="text-muted-foreground flex items-center gap-2 bg-secondary/50 px-4 py-2 rounded-full text-sm">
-             <AlertCircle size={16} /> {t('context.tipSelect')}
-           </div>
-         ) : (
-           <div className="flex flex-wrap items-center gap-3 w-full justify-center">
-             <button onClick={onCopy} disabled={isGenerating} className={cn("group relative inline-flex items-center justify-center gap-2 px-8 py-3 text-base font-semibold text-primary-foreground transition-all duration-200 bg-primary rounded-full shadow-lg shadow-primary/25 hover:bg-primary/90 hover:scale-105 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed disabled:scale-100 min-w-[200px] whitespace-nowrap", isGenerating && "cursor-wait")}>
-               {isGenerating ? (<><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /><span>{t('context.processing')}</span></>) : (<><CheckCircle2 size={20} /><span>{t('context.btnCopy')}</span></>)}
-             </button>
-             <button onClick={onSave} disabled={isGenerating} className="inline-flex items-center justify-center gap-2 px-6 py-3 text-base font-medium text-foreground bg-secondary/80 border border-border rounded-full hover:bg-secondary hover:border-primary/30 transition-all active:scale-95 disabled:opacity-50 whitespace-nowrap">
-               <Save size={20} /><span>{t('context.btnSave')}</span>
-             </button>
-           </div>
-         )}
-      </div>
     </div>
   );
 }
