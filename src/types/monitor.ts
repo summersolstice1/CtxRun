@@ -2,6 +2,26 @@ export interface SystemMetrics {
   cpu_usage: number;
   memory_used: number;
   memory_total: number;
+  battery: BatteryMetrics | null;
+}
+
+export interface BatteryMetrics {
+  battery_count: number;
+  state: string;
+  percent: number;
+  health_percent: number | null;
+  power_watts: number | null;
+  voltage_volts: number | null;
+  energy_wh: number | null;
+  energy_full_wh: number | null;
+  energy_design_wh: number | null;
+  cycle_count: number | null;
+  temperature_celsius: number | null;
+  time_to_full_minutes: number | null;
+  time_to_empty_minutes: number | null;
+  vendor: string | null;
+  model: string | null;
+  technology: string | null;
 }
 
 export interface ProcessInfo {

@@ -2,6 +2,17 @@ use ctxrun_process_utils::new_background_command;
 use listeners::{Protocol, get_all};
 use rayon::prelude::*;
 use serde::Serialize;
+use starship_battery::{
+    Manager as BatteryManager,
+    State as BatteryState,
+    units::{
+        electric_potential::volt,
+        energy::watt_hour,
+        power::watt,
+        thermodynamic_temperature::degree_celsius,
+        time::second,
+    },
+};
 use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::path::Path;
@@ -35,6 +46,27 @@ pub struct SystemMetrics {
     pub cpu_usage: f32,
     pub memory_used: u64,
     pub memory_total: u64,
+    pub battery: Option<BatteryMetrics>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct BatteryMetrics {
+    pub battery_count: u32,
+    pub state: String,
+    pub percent: f32,
+    pub health_percent: Option<f32>,
+    pub power_watts: Option<f32>,
+    pub voltage_volts: Option<f32>,
+    pub energy_wh: Option<f32>,
+    pub energy_full_wh: Option<f32>,
+    pub energy_design_wh: Option<f32>,
+    pub cycle_count: Option<u32>,
+    pub temperature_celsius: Option<f32>,
+    pub time_to_full_minutes: Option<f32>,
+    pub time_to_empty_minutes: Option<f32>,
+    pub vendor: Option<String>,
+    pub model: Option<String>,
+    pub technology: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -64,6 +96,143 @@ pub struct LockedFileProcess {
     pub icon: Option<String>,
     pub user: String,
     pub is_system: bool,
+}
+
+fn normalize_battery_state(state: BatteryState) -> &'static str {
+    match state {
+        BatteryState::Charging => "charging",
+        BatteryState::Discharging => "discharging",
+        BatteryState::Empty => "empty",
+        BatteryState::Full => "full",
+        _ => "unknown",
+    }
+}
+
+fn collect_battery_metrics() -> crate::error::Result<Option<BatteryMetrics>> {
+    let manager = BatteryManager::new().map_err(|e| e.to_string())?;
+    let batteries = manager.batteries().map_err(|e| e.to_string())?;
+
+    let mut battery_count = 0_u32;
+    let mut total_energy_wh = 0.0_f32;
+    let mut total_energy_full_wh = 0.0_f32;
+    let mut total_energy_design_wh = 0.0_f32;
+    let mut total_power_watts = 0.0_f32;
+    let mut total_voltage_volts = 0.0_f32;
+    let mut voltage_samples = 0_u32;
+    let mut total_temperature_celsius = 0.0_f32;
+    let mut temperature_samples = 0_u32;
+    let mut cycle_count = None;
+    let mut time_to_full_minutes = None;
+    let mut time_to_empty_minutes = None;
+    let mut vendor = None;
+    let mut model = None;
+    let mut technology = None;
+    let mut saw_charging = false;
+    let mut saw_discharging = false;
+    let mut saw_full = false;
+    let mut saw_empty = false;
+    let mut first_state = None;
+
+    for next_battery in batteries {
+        let battery = next_battery.map_err(|e| e.to_string())?;
+        battery_count += 1;
+
+        let state = battery.state();
+        first_state.get_or_insert_with(|| normalize_battery_state(state).to_string());
+
+        match state {
+            BatteryState::Charging => saw_charging = true,
+            BatteryState::Discharging => saw_discharging = true,
+            BatteryState::Full => saw_full = true,
+            BatteryState::Empty => saw_empty = true,
+            _ => {}
+        }
+
+        total_energy_wh += battery.energy().get::<watt_hour>().max(0.0);
+        total_energy_full_wh += battery.energy_full().get::<watt_hour>().max(0.0);
+        total_energy_design_wh += battery.energy_full_design().get::<watt_hour>().max(0.0);
+        total_power_watts += battery.energy_rate().get::<watt>().abs();
+
+        let voltage = battery.voltage().get::<volt>();
+        if voltage.is_finite() && voltage > 0.0 {
+            total_voltage_volts += voltage;
+            voltage_samples += 1;
+        }
+
+        if let Some(temp) = battery.temperature() {
+            let celsius = temp.get::<degree_celsius>();
+            if celsius.is_finite() {
+                total_temperature_celsius += celsius;
+                temperature_samples += 1;
+            }
+        }
+
+        if cycle_count.is_none() {
+            cycle_count = battery.cycle_count();
+        }
+        if time_to_full_minutes.is_none() {
+            time_to_full_minutes = battery.time_to_full().map(|time| time.get::<second>() / 60.0);
+        }
+        if time_to_empty_minutes.is_none() {
+            time_to_empty_minutes =
+                battery.time_to_empty().map(|time| time.get::<second>() / 60.0);
+        }
+        if vendor.is_none() {
+            vendor = battery.vendor().map(|value| value.to_string());
+        }
+        if model.is_none() {
+            model = battery.model().map(|value| value.to_string());
+        }
+        if technology.is_none() {
+            technology = Some(format!("{:?}", battery.technology()));
+        }
+    }
+
+    if battery_count == 0 {
+        return Ok(None);
+    }
+
+    let state = if saw_charging {
+        "charging"
+    } else if saw_discharging {
+        "discharging"
+    } else if saw_full && !saw_empty {
+        "full"
+    } else if saw_empty && !saw_full {
+        "empty"
+    } else {
+        first_state.as_deref().unwrap_or("unknown")
+    };
+
+    let charge_percent = if total_energy_full_wh > 0.0 {
+        ((total_energy_wh / total_energy_full_wh) * 100.0).clamp(0.0, 100.0)
+    } else {
+        0.0
+    };
+
+    let health_percent = (total_energy_design_wh > 0.0)
+        .then(|| ((total_energy_full_wh / total_energy_design_wh) * 100.0).clamp(0.0, 100.0));
+
+    Ok(Some(BatteryMetrics {
+        battery_count,
+        state: state.to_string(),
+        percent: charge_percent,
+        health_percent,
+        power_watts: (total_power_watts > 0.0).then_some(total_power_watts),
+        voltage_volts: (voltage_samples > 0)
+            .then_some(total_voltage_volts / voltage_samples as f32),
+        energy_wh: (total_energy_wh > 0.0).then_some(total_energy_wh),
+        energy_full_wh: (total_energy_full_wh > 0.0).then_some(total_energy_full_wh),
+        energy_design_wh: (total_energy_design_wh > 0.0).then_some(total_energy_design_wh),
+        cycle_count,
+        temperature_celsius: (temperature_samples > 0)
+            .then_some(total_temperature_celsius / temperature_samples as f32),
+        time_to_full_minutes,
+        time_to_empty_minutes,
+        vendor,
+        model,
+        technology,
+    }))
 }
 
 fn is_critical_system_process(_sys: &System, process: &sysinfo::Process) -> bool {
@@ -144,6 +313,13 @@ pub fn get_system_metrics(
         cpu_usage: sys.global_cpu_usage(),
         memory_used: sys.used_memory(),
         memory_total: sys.total_memory(),
+        battery: match collect_battery_metrics() {
+            Ok(metrics) => metrics,
+            Err(err) => {
+                eprintln!("battery metrics unavailable: {err}");
+                None
+            }
+        },
     })
 }
 
