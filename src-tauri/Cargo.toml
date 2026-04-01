@@ -110,11 +110,9 @@ tauri-plugin-http = { workspace = true }
 tauri-plugin-clipboard-manager = { workspace = true }
 tauri-plugin-os = { workspace = true }
 sysinfo = "0.37"
-starship-battery = "0.10"
 regex = { workspace = true }
 rayon = { workspace = true }
 reqwest = { workspace = true }
-listeners = "0.3"
 walkdir = "2"
 tokio = { workspace = true }
 thiserror = { workspace = true }

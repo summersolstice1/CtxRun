@@ -4,6 +4,8 @@ import { useContextStore } from '@/store/useContextStore';
 import { AgentToolRegistry } from '../registry';
 import { AgentToolExecutionResult } from '../types';
 
+const TOOL_RUNTIME_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-tool-runtime|';
+
 type SearchMode = 'contains' | 'glob' | 'auto';
 
 interface ListDirectoryArgs {
@@ -277,7 +279,7 @@ export function registerFsTools(registry: AgentToolRegistry): void {
           maxDepth: args.maxDepth,
           includeHidden: args.includeHidden,
         };
-        const result = await invoke<AgentListLocalFilesResponse>('agent_list_local_files', {
+        const result = await invoke<AgentListLocalFilesResponse>(`${TOOL_RUNTIME_PLUGIN_PREFIX}agent_list_local_files`, {
           request,
         });
         return {
@@ -339,7 +341,7 @@ export function registerFsTools(registry: AgentToolRegistry): void {
           includeHidden: args.includeHidden,
           filesOnly: args.filesOnly,
         };
-        const result = await invoke<AgentSearchLocalFilesResponse>('agent_search_local_files', {
+        const result = await invoke<AgentSearchLocalFilesResponse>(`${TOOL_RUNTIME_PLUGIN_PREFIX}agent_search_local_files`, {
           request,
         });
         return {
@@ -385,7 +387,7 @@ export function registerFsTools(registry: AgentToolRegistry): void {
           endLine: args.endLine,
           maxBytes: args.maxBytes,
         };
-        const result = await invoke<AgentReadLocalFileResponse>('agent_read_local_file', {
+        const result = await invoke<AgentReadLocalFileResponse>(`${TOOL_RUNTIME_PLUGIN_PREFIX}agent_read_local_file`, {
           request,
         });
         return {

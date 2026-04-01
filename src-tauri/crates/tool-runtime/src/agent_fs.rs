@@ -1,10 +1,11 @@
-use crate::error::{AppError, Result};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::{Component, Path, PathBuf};
 use walkdir::WalkDir;
+
+type Result<T> = crate::Result<T>;
 
 const DEFAULT_READ_MAX_BYTES: usize = 64 * 1024;
 const MAX_READ_MAX_BYTES: usize = 256 * 1024;
@@ -288,21 +289,18 @@ pub fn agent_read_local_file(
     let target_canonical = resolve_scoped_path(&root_canonical, &relative_path, true)?;
 
     if is_probably_binary(&target_canonical)? {
-        return Err(AppError::Message(
-            "Binary files are not supported by fs.read_file.".to_string(),
-        ));
+        return Err("Binary files are not supported by fs.read_file.".to_string());
     }
 
-    let metadata = std::fs::metadata(&target_canonical)?;
+    let metadata = std::fs::metadata(&target_canonical)
+        .map_err(|e| format!("Failed to stat '{}': {}", target_canonical.display(), e))?;
     let total_bytes = metadata.len();
 
     let start_line = request.start_line.unwrap_or(1).max(1);
     if let Some(end_line) = request.end_line
         && end_line < start_line
     {
-        return Err(AppError::Message(
-            "endLine must be greater than or equal to startLine.".to_string(),
-        ));
+        return Err("endLine must be greater than or equal to startLine.".to_string());
     }
 
     let max_bytes = clamp_usize(
@@ -312,7 +310,8 @@ pub fn agent_read_local_file(
         MAX_READ_MAX_BYTES,
     );
 
-    let file = File::open(&target_canonical)?;
+    let file = File::open(&target_canonical)
+        .map_err(|e| format!("Failed to open '{}': {}", target_canonical.display(), e))?;
     let reader = BufReader::new(file);
 
     let mut current_line = 0u64;
@@ -322,7 +321,8 @@ pub fn agent_read_local_file(
     let mut actual_end_line: Option<u64> = None;
 
     for line_result in reader.lines() {
-        let line = line_result?;
+        let line = line_result
+            .map_err(|e| format!("Failed to read '{}': {}", target_canonical.display(), e))?;
         current_line = current_line.saturating_add(1);
 
         if current_line < start_line {

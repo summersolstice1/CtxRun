@@ -21,6 +21,7 @@ chrono = { workspace = true }
 uuid = { workspace = true }
 ctxrun-plugin-miner = { path = "../miner" }
 ctxrun-process-utils = { workspace = true, features = ["tokio"] }
+walkdir = "2"
 
 [build-dependencies]
 tauri-plugin = { workspace = true, features = ["build"] }

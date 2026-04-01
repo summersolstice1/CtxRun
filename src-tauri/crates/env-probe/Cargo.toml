@@ -17,3 +17,13 @@ tokio = { workspace = true }
 sysinfo = "0.37"
 wait-timeout = "0.2"
 ctxrun-process-utils = { workspace = true }
+listeners = "0.3"
+starship-battery = "0.10"
+walkdir = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_System_RestartManager",
+    "Win32_System_Threading",
+] }

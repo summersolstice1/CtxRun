@@ -1123,13 +1123,11 @@ dependencies = [
  "ctxrun-plugin-refinery",
  "ctxrun-plugin-tool-runtime",
  "ctxrun-process-utils",
- "listeners",
  "rayon",
  "regex",
  "reqwest 0.12.24",
  "serde",
  "serde_json",
- "starship-battery",
  "sysinfo",
  "tauri",
  "tauri-build",
@@ -1178,17 +1176,21 @@ name = "ctxrun-env-probe"
 version = "2.0.0"
 dependencies = [
  "ctxrun-process-utils",
+ "listeners",
  "once_cell",
  "rayon",
  "regex",
  "reqwest 0.12.24",
  "serde",
  "serde_json",
+ "starship-battery",
  "sysinfo",
  "tauri",
  "tokio",
  "wait-timeout",
+ "walkdir",
  "which",
+ "windows 0.61.3",
 ]
 
 [[package]]
@@ -1200,6 +1202,7 @@ dependencies = [
  "percent-encoding",
  "serde",
  "tauri",
+ "windows 0.61.3",
 ]
 
 [[package]]
@@ -1329,6 +1332,7 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "uuid",
+ "walkdir",
 ]
 
 [[package]]

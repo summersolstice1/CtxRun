@@ -8,15 +8,14 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::app_config::load_app_language;
-use ctxrun_process_utils::new_background_command;
 #[cfg(target_os = "windows")]
 use ctxrun_process_utils::new_detached_command;
 use serde::Deserialize;
-use sysinfo::{CpuRefreshKind, MemoryRefreshKind, RefreshKind, System};
+use sysinfo::System;
 use tauri::window::Color;
 use tauri::{
-    AppHandle, Listener, Manager, RunEvent, State, WebviewUrl, WebviewWindow,
-    WebviewWindowBuilder, WindowEvent, Wry,
+    AppHandle, Listener, Manager, RunEvent, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    WindowEvent, Wry,
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
 };
@@ -24,12 +23,10 @@ use tokio::time::sleep;
 
 use ctxrun_db as db;
 mod app_config;
-mod agent_tools;
 mod apps;
 mod error;
 mod guard;
 mod monitor;
-mod peek;
 mod shortcuts;
 mod window_styling;
 
@@ -144,74 +141,12 @@ async fn hide_main_window(
     Ok(())
 }
 
-#[derive(serde::Serialize)]
-struct SystemInfo {
-    cpu_usage: f64,
-    memory_usage: u64,
-    memory_total: u64,
-    memory_available: u64,
-    uptime: u64,
-}
-
 #[tauri::command]
 fn get_file_size(path: String) -> u64 {
     match fs::metadata(path) {
         Ok(meta) => meta.len(),
         Err(_) => 0,
     }
-}
-
-#[tauri::command]
-fn get_system_info(system: State<'_, Arc<Mutex<System>>>) -> SystemInfo {
-    let mut sys = system.lock().unwrap();
-
-    sys.refresh_specifics(
-        RefreshKind::nothing()
-            .with_cpu(CpuRefreshKind::nothing().with_cpu_usage())
-            .with_memory(MemoryRefreshKind::nothing()),
-    );
-
-    let cpu_usage = sys.global_cpu_usage() as f64;
-
-    let memory_total = sys.total_memory();
-    let memory_used = sys.used_memory();
-    let memory_available = sys.available_memory();
-    let uptime = System::uptime();
-
-    SystemInfo {
-        cpu_usage,
-        memory_usage: memory_used,
-        memory_total,
-        memory_available,
-        uptime,
-    }
-}
-
-#[tauri::command]
-async fn check_python_env() -> crate::error::Result<String> {
-    tauri::async_runtime::spawn_blocking(move || -> crate::error::Result<String> {
-        #[cfg(target_os = "windows")]
-        let bin = "python";
-        #[cfg(not(target_os = "windows"))]
-        let bin = "python3";
-
-        let mut cmd = new_background_command(bin);
-        cmd.arg("--version");
-        let output = cmd.output().map_err(|_| "Not Found".to_string())?;
-
-        if output.status.success() {
-            let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if version.is_empty() {
-                Ok(String::from_utf8_lossy(&output.stderr).trim().to_string())
-            } else {
-                Ok(version)
-            }
-        } else {
-            Err("Not Installed".into())
-        }
-    })
-    .await
-    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -284,16 +219,13 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
             get_file_size,
-            get_system_info,
-            check_python_env,
+            ctxrun_env_probe::commands::system_info::get_system_info,
+            ctxrun_env_probe::commands::system_info::check_python_env,
             refresh_shortcuts,
             open_folder_in_file_manager,
             guard::refresh_guard_service,
             guard::guard_request_release,
             guard::activate_guard_now,
-            agent_tools::agent_read_local_file,
-            agent_tools::agent_list_local_files,
-            agent_tools::agent_search_local_files,
             db::prompts::get_prompts,
             db::prompts::search_prompts,
             db::prompts::import_prompt_pack,
@@ -322,24 +254,24 @@ fn main() {
             db::shell_history::record_shell_command,
             db::shell_history::get_recent_shell_history,
             db::shell_history::search_shell_history,
-            monitor::get_system_metrics,
-            monitor::get_top_processes,
-            monitor::get_active_ports,
+            ctxrun_env_probe::commands::monitoring::get_system_metrics,
+            ctxrun_env_probe::commands::monitoring::get_top_processes,
+            ctxrun_env_probe::commands::monitoring::get_active_ports,
             monitor::kill_process,
-            monitor::check_file_locks,
-            monitor::get_env_info,
+            ctxrun_env_probe::commands::monitoring::check_file_locks,
+            ctxrun_env_probe::commands::environment::get_env_info,
             ctxrun_env_probe::env_probe::network::diagnose_network,
             ctxrun_env_probe::env_probe::network::probe_network_target,
-            monitor::get_ai_context,
+            ctxrun_env_probe::commands::environment::get_ai_context,
             ctxrun_hyperview::get_file_meta,
-            peek::peek_get_request,
-            peek::peek_clear_request,
+            ctxrun_hyperview::peek::peek_get_request,
+            ctxrun_hyperview::peek::peek_clear_request,
         ])
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
             app.manage(guard::GuardState::default());
-            app.manage(peek::PeekState::default());
+            app.manage(ctxrun_hyperview::peek::PeekState::default());
             let initial_language = load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
 
             match db::init_db(app.handle()) {
@@ -360,7 +292,7 @@ fn main() {
             shortcut_manager.refresh(app.handle());
             app.manage(shortcut_manager);
             app.state::<guard::GuardState>().initialize(app.handle());
-            peek::initialize(app.handle());
+            ctxrun_hyperview::peek::initialize(app.handle());
 
             let app_handle = app.handle().clone();
             let language_listener_handle = app_handle.clone();
@@ -426,7 +358,7 @@ fn main() {
                         let _ = window.hide();
                     }
                 } else if label == "peek" {
-                    peek::clear_pending_request(window.app_handle());
+                    ctxrun_hyperview::peek::clear_pending_request(window.app_handle());
                 }
             }
         })
