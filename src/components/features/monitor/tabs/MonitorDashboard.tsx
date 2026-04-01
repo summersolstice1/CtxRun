@@ -1,23 +1,64 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
+  Download,
   BatteryCharging,
+  ChevronDown,
+  ChevronUp,
   Clock3,
   Cpu,
   Gauge,
   HardDrive,
   HeartPulse,
+  Network,
   PlugZap,
   ShieldCheck,
+  Upload,
   User,
   XCircle,
   Zap,
 } from 'lucide-react';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useTranslation } from 'react-i18next';
-import { cn, formatBytes } from '@/lib/utils';
-import { BatteryMetrics, ProcessInfo, SystemMetrics } from '@/types/monitor';
+import { cn, formatBytes, formatBytesPerSecond } from '@/lib/utils';
+import {
+  BatteryMetrics,
+  DiskSummary,
+  NetworkInterfaceSummary,
+  ProcessInfo,
+  SystemMetrics,
+  SystemSummary,
+} from '@/types/monitor';
 import { Toast, ToastType } from '@/components/ui/Toast';
+
+type NetworkRateSnapshot = {
+  received_bytes_per_sec: number;
+  transmitted_bytes_per_sec: number;
+};
+
+type DecoratedNetworkInterface = NetworkInterfaceSummary & {
+  is_virtual: boolean;
+  has_routable_address: boolean;
+  has_traffic: boolean;
+};
+
+const VIRTUAL_INTERFACE_KEYWORDS = [
+  'loopback',
+  'vethernet',
+  'hyper-v',
+  'vmware',
+  'virtualbox',
+  'vbox',
+  'wsl',
+  'docker',
+  'bluetooth',
+  'npcap',
+  'tap-',
+  'tap ',
+  'tun-',
+  'tun ',
+  'bridge',
+];
 
 function formatWatts(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return '--';
@@ -67,10 +108,91 @@ function batteryStateLabel(state: string, t: (key: string) => string) {
   }
 }
 
+function diskKindLabel(kind: string, t: (key: string) => string) {
+  switch (kind) {
+    case 'SSD':
+      return t('monitor.diskTypeSSD');
+    case 'HDD':
+      return t('monitor.diskTypeHDD');
+    default:
+      return t('monitor.diskTypeUnknown');
+  }
+}
+
+function hasRoutableAddress(network: NetworkInterfaceSummary) {
+  return network.ip_networks.some((entry) => {
+    const normalized = entry.trim().toLowerCase();
+    return (
+      normalized.length > 0 &&
+      !normalized.startsWith('127.') &&
+      !normalized.startsWith('::1') &&
+      !normalized.startsWith('fe80:')
+    );
+  });
+}
+
+function isLikelyVirtualInterface(name: string) {
+  const normalized = name.trim().toLowerCase();
+  return VIRTUAL_INTERFACE_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function decorateInterface(entry: NetworkInterfaceSummary): DecoratedNetworkInterface {
+  return {
+    ...entry,
+    is_virtual: isLikelyVirtualInterface(entry.name),
+    has_routable_address: hasRoutableAddress(entry),
+    has_traffic: entry.received_bytes_per_sec > 0 || entry.transmitted_bytes_per_sec > 0,
+  };
+}
+
+function pickVisibleInterfaces(interfaces: DecoratedNetworkInterface[]) {
+  const decorated = [...interfaces];
+
+  const preferred = decorated.filter((entry) => !entry.is_virtual && entry.has_routable_address);
+  const secondary = decorated.filter((entry) => !entry.is_virtual);
+  const fallback = decorated.filter((entry) => entry.has_routable_address);
+
+  const selected =
+    preferred.length > 0
+      ? preferred
+      : secondary.length > 0
+        ? secondary
+        : fallback.length > 0
+          ? fallback
+          : decorated;
+
+  return selected
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .slice(0, 3)
+    .map((entry) => entry);
+}
+
 function getErrorMessage(error: unknown) {
   if (typeof error === 'string') return error;
   if (error instanceof Error) return error.message;
   return '';
+}
+
+function formatTextValue(value: string | null | undefined) {
+  if (!value || !value.trim()) return '--';
+  return value;
+}
+
+function formatUptime(seconds: number, t: (key: string, options?: Record<string, unknown>) => string) {
+  if (!Number.isFinite(seconds) || seconds <= 0) return t('monitor.uptimeLessThanMinute');
+
+  const totalMinutes = Math.floor(seconds / 60);
+  const days = Math.floor(totalMinutes / (24 * 60));
+  const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return t('monitor.uptimeDaysHours', { days, hours });
+  }
+  if (hours > 0) {
+    return t('monitor.uptimeHoursMinutes', { hours, minutes });
+  }
+  return t('monitor.uptimeMinutes', { minutes: Math.max(minutes, 1) });
 }
 
 interface MetricCardProps {
@@ -88,6 +210,8 @@ export function MonitorDashboard() {
   
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [processes, setProcesses] = useState<ProcessInfo[]>([]);
+  const [smoothedNetworkRates, setSmoothedNetworkRates] = useState<Record<string, NetworkRateSnapshot>>({});
+  const [showAllInterfaces, setShowAllInterfaces] = useState(false);
   const [toast, setToast] = useState<{show: boolean, msg: string, type: ToastType}>({ show: false, msg: '', type: 'success' });
 
   const fetchMetrics = async () => {
@@ -121,6 +245,38 @@ export function MonitorDashboard() {
     };
   }, []);
 
+  useEffect(() => {
+    const interfaces = metrics?.network_interfaces ?? [];
+
+    if (interfaces.length === 0) {
+      setSmoothedNetworkRates({});
+      return;
+    }
+
+    setSmoothedNetworkRates((previous) => {
+      const next: Record<string, NetworkRateSnapshot> = {};
+
+      for (const entry of interfaces) {
+        const prior = previous[entry.name];
+        next[entry.name] = prior
+          ? {
+              received_bytes_per_sec: Math.round(
+                prior.received_bytes_per_sec * 0.6 + entry.received_bytes_per_sec * 0.4,
+              ),
+              transmitted_bytes_per_sec: Math.round(
+                prior.transmitted_bytes_per_sec * 0.6 + entry.transmitted_bytes_per_sec * 0.4,
+              ),
+            }
+          : {
+              received_bytes_per_sec: entry.received_bytes_per_sec,
+              transmitted_bytes_per_sec: entry.transmitted_bytes_per_sec,
+            };
+      }
+
+      return next;
+    });
+  }, [metrics?.network_interfaces]);
+
   const handleKillProcess = async (proc: ProcessInfo) => {
       if (proc.is_system) return;
 
@@ -149,6 +305,16 @@ export function MonitorDashboard() {
       }
   };
 
+  const decoratedInterfaces = (metrics?.network_interfaces ?? []).map((entry) => ({
+    ...entry,
+    received_bytes_per_sec:
+      smoothedNetworkRates[entry.name]?.received_bytes_per_sec ?? entry.received_bytes_per_sec,
+    transmitted_bytes_per_sec:
+      smoothedNetworkRates[entry.name]?.transmitted_bytes_per_sec ?? entry.transmitted_bytes_per_sec,
+  })).map(decorateInterface).sort((a, b) => a.name.localeCompare(b.name));
+
+  const visibleInterfaces = pickVisibleInterfaces(decoratedInterfaces);
+
   return (
     <div className="h-full min-h-0 overflow-y-auto p-6">
       <div className="flex min-h-full flex-col gap-6 animate-in fade-in duration-300">
@@ -171,7 +337,7 @@ export function MonitorDashboard() {
             label={t('monitor.memory')} 
             value={metrics ? formatBytes(metrics.memory_used) : '...'} 
             subValue={metrics ? `/ ${formatBytes(metrics.memory_total)}` : ''}
-            percent={metrics ? (metrics.memory_used / metrics.memory_total) * 100 : 0}
+            percent={metrics && metrics.memory_total > 0 ? (metrics.memory_used / metrics.memory_total) * 100 : 0}
             color="bg-purple-500"
           />
           {metrics?.battery && (
@@ -201,6 +367,19 @@ export function MonitorDashboard() {
         </div>
 
         {metrics && <BatteryOverview battery={metrics.battery} />}
+        {metrics && <SystemSummaryPanel summary={metrics.summary} />}
+
+        {metrics && (
+          <div className="grid shrink-0 gap-6 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+            <DiskOverviewPanel disks={metrics.disks} />
+            <NetworkInterfacesPanel
+              interfaces={visibleInterfaces}
+              allInterfaces={decoratedInterfaces}
+              showAllInterfaces={showAllInterfaces}
+              onToggleAllInterfaces={() => setShowAllInterfaces((current) => !current)}
+            />
+          </div>
+        )}
 
         {/* 进程列表 */}
         <div className="flex min-h-[320px] flex-1 flex-col bg-secondary/20 rounded-xl border border-border overflow-hidden shadow-sm">
@@ -268,6 +447,276 @@ export function MonitorDashboard() {
 
         <Toast show={toast.show} message={toast.msg} type={toast.type} onDismiss={() => setToast(prev => ({...prev, show: false}))} />
       </div>
+    </div>
+  );
+}
+
+function SystemSummaryPanel({ summary }: { summary: SystemSummary }) {
+  const { t } = useTranslation();
+
+  const coreValue =
+    summary.physical_core_count != null
+      ? `${summary.physical_core_count} / ${summary.logical_core_count}`
+      : `${summary.logical_core_count}`;
+
+  return (
+    <div className="shrink-0 rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <Cpu size={16} className="text-blue-500" />
+        <h3 className="text-sm font-semibold text-foreground">{t('monitor.systemSummary')}</h3>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+        <SummaryStat label={t('monitor.systemHost')} value={formatTextValue(summary.host_name)} />
+        <SummaryStat label={t('monitor.systemOs')} value={formatTextValue(summary.os_version)} />
+        <SummaryStat
+          label={t('monitor.systemKernel')}
+          value={formatTextValue(summary.kernel_version)}
+        />
+        <SummaryStat label={t('monitor.systemArch')} value={summary.cpu_arch} />
+        <SummaryStat label={t('monitor.systemCores')} value={coreValue} />
+        <SummaryStat
+          label={t('monitor.systemUptime')}
+          value={formatUptime(summary.uptime_seconds, t)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function DiskOverviewPanel({ disks }: { disks: DiskSummary[] }) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="shrink-0 rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+      <div className="mb-4 flex items-center gap-2">
+        <HardDrive size={16} className="text-purple-500" />
+        <h3 className="text-sm font-semibold text-foreground">{t('monitor.diskOverview')}</h3>
+      </div>
+
+      {disks.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-secondary/5 px-4 py-6 text-sm text-muted-foreground">
+          {t('monitor.noDiskData')}
+        </div>
+      ) : (
+        <div className="grid gap-3 xl:grid-cols-2">
+          {disks.map((disk) => (
+            <div
+              key={`${disk.mount_point}-${disk.name}`}
+              className="rounded-lg border border-border/70 bg-secondary/10 px-3 py-3"
+            >
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-foreground" title={disk.mount_point}>
+                    {disk.mount_point}
+                  </div>
+                  {disk.name !== disk.mount_point && (
+                    <div className="truncate text-xs text-muted-foreground" title={disk.name}>
+                      {disk.name}
+                    </div>
+                  )}
+                </div>
+                <span className="w-fit rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  {diskKindLabel(disk.kind, t)}
+                </span>
+              </div>
+
+              <div className="mb-2 h-2 overflow-hidden rounded-full bg-secondary">
+                <div
+                  className="h-full bg-purple-500 transition-all duration-500"
+                  style={{ width: `${Math.min(Math.max(disk.used_percent, 0), 100)}%` }}
+                />
+              </div>
+
+              <div className="mb-3 grid gap-1 text-xs text-muted-foreground">
+                <span>{t('monitor.diskAvailable')}</span>
+                <span className="break-words text-sm font-medium text-foreground">
+                  {formatBytes(disk.available_space)} / {formatBytes(disk.total_space)}
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                {disk.file_system && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5">{disk.file_system}</span>
+                )}
+                {disk.is_removable && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5">
+                    {t('monitor.diskRemovable')}
+                  </span>
+                )}
+                {disk.is_read_only && (
+                  <span className="rounded-full bg-secondary px-2 py-0.5">
+                    {t('monitor.diskReadOnly')}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NetworkInterfacesPanel({
+  interfaces,
+  allInterfaces,
+  showAllInterfaces,
+  onToggleAllInterfaces,
+}: {
+  interfaces: DecoratedNetworkInterface[];
+  allInterfaces: DecoratedNetworkInterface[];
+  showAllInterfaces: boolean;
+  onToggleAllInterfaces: () => void;
+}) {
+  const { t } = useTranslation();
+  const primaryNames = new Set(interfaces.map((entry) => entry.name));
+
+  return (
+    <div className="shrink-0 rounded-xl border border-border bg-card/80 p-4 shadow-sm">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Network size={16} className="text-emerald-500" />
+          <h3 className="text-sm font-semibold text-foreground">{t('monitor.networkInterfaces')}</h3>
+        </div>
+        {allInterfaces.length > 0 && (
+          <button
+            type="button"
+            onClick={onToggleAllInterfaces}
+            className="inline-flex w-fit items-center gap-2 rounded-md border border-border/70 bg-secondary/20 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-secondary/40 hover:text-foreground"
+          >
+            {showAllInterfaces ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {showAllInterfaces
+              ? t('monitor.hideAllAdapters')
+              : t('monitor.showAllAdapters', { count: allInterfaces.length })}
+          </button>
+        )}
+      </div>
+
+      {interfaces.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border bg-secondary/5 px-4 py-6 text-sm text-muted-foreground">
+          {t('monitor.noNetworkInterfaces')}
+        </div>
+      ) : (
+        <div className="grid gap-3">
+          {interfaces.map((network) => (
+            <div
+              key={network.name}
+              className="rounded-lg border border-border/70 bg-secondary/10 px-3 py-3"
+            >
+              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <div className="truncate text-sm font-semibold text-foreground" title={network.name}>
+                      {network.name}
+                    </div>
+                    <InterfaceBadge tone="primary" label={t('monitor.adapterPrimary')} />
+                    {network.is_virtual && (
+                      <InterfaceBadge tone="muted" label={t('monitor.adapterVirtual')} />
+                    )}
+                  </div>
+                  <div className="truncate text-xs text-muted-foreground" title={network.ip_networks.join(', ')}>
+                    {network.ip_networks.length > 0
+                      ? network.ip_networks.join(' · ')
+                      : t('monitor.networkNoAddress')}
+                  </div>
+                </div>
+                <span className="w-fit rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                  MTU {network.mtu}
+                </span>
+              </div>
+
+              <div className="mb-3 grid gap-2 xl:grid-cols-2">
+                <RateStat
+                  icon={<Download size={13} className="text-blue-500" />}
+                  label={t('monitor.networkDownload')}
+                  value={formatBytesPerSecond(network.received_bytes_per_sec)}
+                />
+                <RateStat
+                  icon={<Upload size={13} className="text-emerald-500" />}
+                  label={t('monitor.networkUpload')}
+                  value={formatBytesPerSecond(network.transmitted_bytes_per_sec)}
+                />
+              </div>
+
+              <div className="grid gap-2 text-xs text-muted-foreground xl:grid-cols-2">
+                <SummaryInline
+                  label={t('monitor.networkTotalReceived')}
+                  value={formatBytes(network.total_received)}
+                />
+                <SummaryInline
+                  label={t('monitor.networkTotalTransmitted')}
+                  value={formatBytes(network.total_transmitted)}
+                />
+                <SummaryInline
+                  label={t('monitor.networkMac')}
+                  value={formatTextValue(network.mac_address)}
+                />
+                <SummaryInline label={t('monitor.networkMtu')} value={network.mtu.toString()} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAllInterfaces && allInterfaces.length > 0 && (
+        <div className="mt-4 border-t border-border/60 pt-4">
+          <div className="mb-3 text-xs font-medium text-muted-foreground">
+            {t('monitor.allAdapters')}
+          </div>
+          <div className="grid gap-2">
+            {allInterfaces.map((network) => (
+              <div
+                key={`all-${network.name}`}
+                className="rounded-lg border border-border/70 bg-secondary/10 px-3 py-2.5"
+              >
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="truncate text-sm font-medium text-foreground" title={network.name}>
+                        {network.name}
+                      </span>
+                      {primaryNames.has(network.name) && (
+                        <InterfaceBadge tone="primary" label={t('monitor.adapterPrimary')} />
+                      )}
+                      {network.is_virtual && (
+                        <InterfaceBadge tone="muted" label={t('monitor.adapterVirtual')} />
+                      )}
+                      {network.has_traffic && (
+                        <InterfaceBadge tone="success" label={t('monitor.adapterActive')} />
+                      )}
+                    </div>
+                    <div
+                      className="truncate text-xs text-muted-foreground"
+                      title={network.ip_networks.join(', ')}
+                    >
+                      {network.ip_networks.length > 0
+                        ? network.ip_networks.join(' · ')
+                        : t('monitor.networkNoAddress')}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
+                    <SummaryInline
+                      label={t('monitor.networkDownload')}
+                      value={formatBytesPerSecond(network.received_bytes_per_sec)}
+                    />
+                    <SummaryInline
+                      label={t('monitor.networkUpload')}
+                      value={formatBytesPerSecond(network.transmitted_bytes_per_sec)}
+                    />
+                    <SummaryInline
+                      label={t('monitor.networkMac')}
+                      value={formatTextValue(network.mac_address)}
+                    />
+                    <SummaryInline label={t('monitor.networkMtu')} value={network.mtu.toString()} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -344,6 +793,71 @@ function BatteryOverview({ battery }: { battery: BatteryMetrics | null }) {
             }
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border/70 bg-secondary/10 px-3 py-3">
+      <div className="mb-1 text-[11px] font-medium text-muted-foreground">{label}</div>
+      <div className="truncate text-sm font-semibold text-foreground" title={value}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function SummaryInline({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex min-w-0 items-center justify-between gap-3 rounded-md bg-secondary/20 px-2 py-1.5">
+      <span className="min-w-0 truncate">{label}</span>
+      <span className="min-w-0 truncate text-right font-medium text-foreground" title={value}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function InterfaceBadge({
+  label,
+  tone,
+}: {
+  label: string;
+  tone: 'primary' | 'success' | 'muted';
+}) {
+  const toneClass =
+    tone === 'primary'
+      ? 'bg-emerald-500/15 text-emerald-400'
+      : tone === 'success'
+        ? 'bg-blue-500/15 text-blue-400'
+        : 'bg-secondary text-muted-foreground';
+
+  return (
+    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-medium', toneClass)}>
+      {label}
+    </span>
+  );
+}
+
+function RateStat({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-md bg-secondary/20 px-2.5 py-2">
+      <div className="mb-1 flex items-center gap-2 text-[11px] font-medium text-muted-foreground">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <div className="truncate text-sm font-semibold text-foreground" title={value}>
+        {value}
       </div>
     </div>
   );

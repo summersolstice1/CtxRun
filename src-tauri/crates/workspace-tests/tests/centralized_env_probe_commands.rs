@@ -106,10 +106,22 @@ async fn centralized_check_python_env_returns_a_known_outcome() {
 #[test]
 fn centralized_get_system_metrics_returns_memory_and_cpu_data() {
     let system = Arc::new(Mutex::new(System::new()));
-    let metrics = monitoring::get_system_metrics(state_of(&system)).expect("metrics should succeed");
+    let probes = monitoring::MonitorProbeState::default();
+    let metrics = monitoring::get_system_metrics(state_of(&system), state_of(&probes))
+        .expect("metrics should succeed");
 
     assert!(metrics.cpu_usage >= 0.0);
     assert!(metrics.memory_total >= metrics.memory_used);
+    assert!(!metrics.summary.cpu_arch.trim().is_empty());
+    assert!(metrics.summary.logical_core_count > 0);
+    assert!(metrics
+        .disks
+        .iter()
+        .all(|disk| disk.total_space >= disk.available_space));
+    assert!(metrics
+        .network_interfaces
+        .iter()
+        .all(|network| !network.name.trim().is_empty()));
 }
 
 #[test]

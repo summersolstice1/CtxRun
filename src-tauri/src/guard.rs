@@ -173,12 +173,12 @@ mod windows_impl {
     use windows::Win32::UI::WindowsAndMessaging::{
         CallNextHookEx, DispatchMessageW, GA_ROOT, GetAncestor, GetForegroundWindow, GetMessageW,
         GetSystemMetrics, KBDLLHOOKSTRUCT, MSG, MSLLHOOKSTRUCT, SM_CXVIRTUALSCREEN,
-        SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SWP_FRAMECHANGED,
-        SWP_NOACTIVATE, SWP_NOOWNERZORDER, SWP_NOZORDER, SetWindowPos, SetWindowsHookExW,
-        TranslateMessage, UnhookWindowsHookEx, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN,
-        WM_LBUTTONDBLCLK, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN,
-        WM_MBUTTONUP, WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK,
-        WM_RBUTTONDOWN, WM_RBUTTONUP, WM_SYSKEYDOWN, WindowFromPoint,
+        SM_CYVIRTUALSCREEN, SM_XVIRTUALSCREEN, SM_YVIRTUALSCREEN, SWP_FRAMECHANGED, SWP_NOACTIVATE,
+        SWP_NOOWNERZORDER, SWP_NOZORDER, SetWindowPos, SetWindowsHookExW, TranslateMessage,
+        UnhookWindowsHookEx, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_LBUTTONDBLCLK,
+        WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDBLCLK, WM_MBUTTONDOWN, WM_MBUTTONUP,
+        WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDBLCLK, WM_RBUTTONDOWN,
+        WM_RBUTTONUP, WM_SYSKEYDOWN, WindowFromPoint,
     };
 
     use super::GuardConfig;
@@ -275,9 +275,10 @@ mod windows_impl {
             self.inner
                 .prevent_sleep
                 .store(config.prevent_sleep, Ordering::SeqCst);
-            self.inner
-                .keep_display_on
-                .store(config.prevent_sleep && config.keep_display_on, Ordering::SeqCst);
+            self.inner.keep_display_on.store(
+                config.prevent_sleep && config.keep_display_on,
+                Ordering::SeqCst,
+            );
             self.inner
                 .idle_timeout_secs
                 .store(config.idle_timeout_secs.max(15), Ordering::SeqCst);
@@ -394,9 +395,7 @@ mod windows_impl {
         let data = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
         let vk = data.vkCode;
 
-        if (message == WM_SYSKEYDOWN || message == WM_KEYDOWN)
-            && is_guard_escape_shortcut(vk)
-        {
+        if (message == WM_SYSKEYDOWN || message == WM_KEYDOWN) && is_guard_escape_shortcut(vk) {
             return LRESULT(1);
         }
 

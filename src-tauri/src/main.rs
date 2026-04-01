@@ -207,9 +207,11 @@ fn main() {
         .setup(|app| {
             let system = System::new();
             app.manage(Arc::new(Mutex::new(system)));
+            app.manage(ctxrun_env_probe::commands::MonitorProbeState::default());
             app.manage(guard::GuardState::default());
             app.manage(ctxrun_hyperview::peek::PeekState::default());
-            let initial_language = load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
+            let initial_language =
+                load_app_language(app.handle()).unwrap_or_else(|| "zh".to_string());
 
             match db::init_db(app.handle()) {
                 Ok(conn) => {

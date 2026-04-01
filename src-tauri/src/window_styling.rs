@@ -16,8 +16,8 @@ mod windows {
 
     use tauri::WebviewWindow;
     use windows::Win32::Graphics::Dwm::{
-        DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE,
-        DWM_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND, DwmSetWindowAttribute,
+        DWM_WINDOW_CORNER_PREFERENCE, DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE,
+        DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_DONOTROUND, DwmSetWindowAttribute,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
         SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetWindowPos,
@@ -27,10 +27,7 @@ mod windows {
         apply_window_style(window, DWMWCP_DONOTROUND);
     }
 
-    fn apply_window_style(
-        window: &WebviewWindow,
-        corner_preference: DWM_WINDOW_CORNER_PREFERENCE,
-    ) {
+    fn apply_window_style(window: &WebviewWindow, corner_preference: DWM_WINDOW_CORNER_PREFERENCE) {
         let Ok(hwnd) = window.hwnd() else {
             return;
         };

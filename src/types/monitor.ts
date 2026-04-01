@@ -2,7 +2,44 @@ export interface SystemMetrics {
   cpu_usage: number;
   memory_used: number;
   memory_total: number;
+  summary: SystemSummary;
+  disks: DiskSummary[];
+  network_interfaces: NetworkInterfaceSummary[];
   battery: BatteryMetrics | null;
+}
+
+export interface SystemSummary {
+  host_name: string | null;
+  os_version: string | null;
+  kernel_version: string | null;
+  cpu_arch: string;
+  physical_core_count: number | null;
+  logical_core_count: number;
+  uptime_seconds: number;
+}
+
+export interface DiskSummary {
+  name: string;
+  mount_point: string;
+  file_system: string;
+  total_space: number;
+  available_space: number;
+  used_space: number;
+  used_percent: number;
+  kind: string;
+  is_removable: boolean;
+  is_read_only: boolean;
+}
+
+export interface NetworkInterfaceSummary {
+  name: string;
+  mac_address: string | null;
+  ip_networks: string[];
+  mtu: number;
+  received_bytes_per_sec: number;
+  transmitted_bytes_per_sec: number;
+  total_received: number;
+  total_transmitted: number;
 }
 
 export interface BatteryMetrics {

@@ -28,3 +28,8 @@ export function formatBytes(bytes: number): string {
 
   return `${value.toFixed(precision)} ${units[index]}`;
 }
+
+export function formatBytesPerSecond(bytesPerSecond: number): string {
+  if (!Number.isFinite(bytesPerSecond) || bytesPerSecond <= 0) return '0 B/s';
+  return `${formatBytes(bytesPerSecond)}/s`;
+}

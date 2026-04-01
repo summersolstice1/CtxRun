@@ -2,9 +2,9 @@ use std::collections::HashSet;
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 use listeners::{Protocol, get_all};
-use once_cell::sync::Lazy;
 use serde::Serialize;
 use starship_battery::{
     Manager as BatteryManager,
@@ -18,8 +18,8 @@ use starship_battery::{
     },
 };
 use sysinfo::{
-    CpuRefreshKind, MemoryRefreshKind, Pid, ProcessRefreshKind, ProcessesToUpdate, RefreshKind,
-    System, UpdateKind,
+    CpuRefreshKind, DiskKind, DiskRefreshKind, Disks, MemoryRefreshKind, Networks, Pid,
+    ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System, UpdateKind,
 };
 use tauri::State;
 #[cfg(target_os = "windows")]
@@ -38,14 +38,52 @@ use windows::Win32::System::Threading::{
 #[cfg(target_os = "windows")]
 use windows::core::{BOOL, PCWSTR, PWSTR};
 
-static BATTERY_MANAGER: Lazy<Mutex<Option<BatteryManager>>> = Lazy::new(|| Mutex::new(None));
-
 #[derive(Debug, Serialize, Clone)]
 pub struct SystemMetrics {
     pub cpu_usage: f32,
     pub memory_used: u64,
     pub memory_total: u64,
+    pub summary: SystemSummary,
+    pub disks: Vec<DiskSummary>,
+    pub network_interfaces: Vec<NetworkInterfaceSummary>,
     pub battery: Option<BatteryMetrics>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct SystemSummary {
+    pub host_name: Option<String>,
+    pub os_version: Option<String>,
+    pub kernel_version: Option<String>,
+    pub cpu_arch: String,
+    pub physical_core_count: Option<u32>,
+    pub logical_core_count: u32,
+    pub uptime_seconds: u64,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DiskSummary {
+    pub name: String,
+    pub mount_point: String,
+    pub file_system: String,
+    pub total_space: u64,
+    pub available_space: u64,
+    pub used_space: u64,
+    pub used_percent: f32,
+    pub kind: String,
+    pub is_removable: bool,
+    pub is_read_only: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct NetworkInterfaceSummary {
+    pub name: String,
+    pub mac_address: Option<String>,
+    pub ip_networks: Vec<String>,
+    pub mtu: u64,
+    pub received_bytes_per_sec: u64,
+    pub transmitted_bytes_per_sec: u64,
+    pub total_received: u64,
+    pub total_transmitted: u64,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -97,6 +135,38 @@ pub struct LockedFileProcess {
     pub is_system: bool,
 }
 
+pub struct MonitorProbeState {
+    resources: Mutex<MonitorProbeResources>,
+}
+
+struct MonitorProbeResources {
+    battery_manager: Option<BatteryManager>,
+    disks: Disks,
+    networks: Networks,
+    last_network_refresh_at: Instant,
+}
+
+impl Default for MonitorProbeState {
+    fn default() -> Self {
+        Self {
+            resources: Mutex::new(MonitorProbeResources::new()),
+        }
+    }
+}
+
+impl MonitorProbeResources {
+    fn new() -> Self {
+        Self {
+            battery_manager: None,
+            disks: Disks::new_with_refreshed_list_specifics(
+                DiskRefreshKind::nothing().with_kind().with_storage(),
+            ),
+            networks: Networks::new_with_refreshed_list(),
+            last_network_refresh_at: Instant::now(),
+        }
+    }
+}
+
 fn normalize_battery_state(state: BatteryState) -> &'static str {
     match state {
         BatteryState::Charging => "charging",
@@ -107,12 +177,36 @@ fn normalize_battery_state(state: BatteryState) -> &'static str {
     }
 }
 
-fn collect_battery_metrics() -> crate::error::Result<Option<BatteryMetrics>> {
-    let mut manager_guard = BATTERY_MANAGER.lock().map_err(|e| e.to_string())?;
-    if manager_guard.is_none() {
-        *manager_guard = Some(BatteryManager::new().map_err(|e| e.to_string())?);
+fn disk_kind_label(kind: DiskKind) -> &'static str {
+    match kind {
+        DiskKind::HDD => "HDD",
+        DiskKind::SSD => "SSD",
+        _ => "Unknown",
     }
-    let manager = manager_guard.as_ref().expect("battery manager initialized");
+}
+
+fn collect_system_summary(logical_core_count: usize) -> SystemSummary {
+    SystemSummary {
+        host_name: System::host_name(),
+        os_version: System::long_os_version(),
+        kernel_version: System::kernel_version(),
+        cpu_arch: System::cpu_arch(),
+        physical_core_count: System::physical_core_count().map(|count| count as u32),
+        logical_core_count: logical_core_count as u32,
+        uptime_seconds: System::uptime(),
+    }
+}
+
+fn collect_battery_metrics(
+    resources: &mut MonitorProbeResources,
+) -> crate::error::Result<Option<BatteryMetrics>> {
+    if resources.battery_manager.is_none() {
+        resources.battery_manager = Some(BatteryManager::new().map_err(|e| e.to_string())?);
+    }
+    let manager = resources
+        .battery_manager
+        .as_ref()
+        .expect("battery manager initialized");
     let batteries = manager.batteries().map_err(|e| e.to_string())?;
 
     let mut battery_count = 0_u32;
@@ -237,6 +331,105 @@ fn collect_battery_metrics() -> crate::error::Result<Option<BatteryMetrics>> {
     }))
 }
 
+fn collect_disk_summaries(resources: &mut MonitorProbeResources) -> Vec<DiskSummary> {
+    resources.disks.refresh_specifics(
+        true,
+        DiskRefreshKind::nothing().with_kind().with_storage(),
+    );
+
+    let mut disks = resources
+        .disks
+        .list()
+        .iter()
+        .map(|disk| {
+            let total_space = disk.total_space();
+            let available_space = disk.available_space();
+            let used_space = total_space.saturating_sub(available_space);
+            let used_percent = if total_space > 0 {
+                (used_space as f32 / total_space as f32) * 100.0
+            } else {
+                0.0
+            };
+
+            DiskSummary {
+                name: disk.name().to_string_lossy().to_string(),
+                mount_point: disk.mount_point().to_string_lossy().to_string(),
+                file_system: disk.file_system().to_string_lossy().to_string(),
+                total_space,
+                available_space,
+                used_space,
+                used_percent,
+                kind: disk_kind_label(disk.kind()).to_string(),
+                is_removable: disk.is_removable(),
+                is_read_only: disk.is_read_only(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    disks.sort_by(|a, b| a.mount_point.to_lowercase().cmp(&b.mount_point.to_lowercase()));
+    disks
+}
+
+fn collect_network_interface_summaries(
+    resources: &mut MonitorProbeResources,
+) -> Vec<NetworkInterfaceSummary> {
+    let now = Instant::now();
+    let elapsed_seconds = now
+        .saturating_duration_since(resources.last_network_refresh_at)
+        .as_secs_f64();
+
+    resources.networks.refresh(true);
+    resources.last_network_refresh_at = now;
+
+    let can_calculate_rate = elapsed_seconds >= 0.5;
+
+    let mut interfaces = resources
+        .networks
+        .list()
+        .iter()
+        .map(|(name, network)| {
+            let mac_address = {
+                let mac = network.mac_address();
+                (!mac.is_unspecified()).then(|| mac.to_string())
+            };
+
+            let ip_networks = network
+                .ip_networks()
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>();
+
+            let received_bytes_per_sec = if can_calculate_rate {
+                (network.received() as f64 / elapsed_seconds).round().max(0.0) as u64
+            } else {
+                0
+            };
+
+            let transmitted_bytes_per_sec = if can_calculate_rate {
+                (network.transmitted() as f64 / elapsed_seconds)
+                    .round()
+                    .max(0.0) as u64
+            } else {
+                0
+            };
+
+            NetworkInterfaceSummary {
+                name: name.clone(),
+                mac_address,
+                ip_networks,
+                mtu: network.mtu(),
+                received_bytes_per_sec,
+                transmitted_bytes_per_sec,
+                total_received: network.total_received(),
+                total_transmitted: network.total_transmitted(),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    interfaces.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    interfaces
+}
+
 pub fn is_critical_system_process(sys: &System, process: &sysinfo::Process) -> bool {
     let pid = process.pid().as_u32();
 
@@ -300,8 +493,9 @@ pub fn is_critical_system_process(sys: &System, process: &sysinfo::Process) -> b
 #[tauri::command]
 pub fn get_system_metrics(
     system: State<'_, Arc<Mutex<System>>>,
+    probes: State<'_, MonitorProbeState>,
 ) -> crate::error::Result<SystemMetrics> {
-    let (cpu_usage, memory_used, memory_total) = {
+    let (cpu_usage, memory_used, memory_total, logical_core_count) = {
         let mut sys = system.lock().map_err(|e| e.to_string())?;
 
         sys.refresh_specifics(
@@ -310,14 +504,27 @@ pub fn get_system_metrics(
                 .with_memory(MemoryRefreshKind::everything()),
         );
 
-        (sys.global_cpu_usage(), sys.used_memory(), sys.total_memory())
+        (
+            sys.global_cpu_usage(),
+            sys.used_memory(),
+            sys.total_memory(),
+            sys.cpus().len(),
+        )
     };
+
+    let summary = collect_system_summary(logical_core_count);
+    let mut resources = probes.resources.lock().map_err(|e| e.to_string())?;
+    let disks = collect_disk_summaries(&mut resources);
+    let network_interfaces = collect_network_interface_summaries(&mut resources);
 
     Ok(SystemMetrics {
         cpu_usage,
         memory_used,
         memory_total,
-        battery: match collect_battery_metrics() {
+        summary,
+        disks,
+        network_interfaces,
+        battery: match collect_battery_metrics(&mut resources) {
             Ok(metrics) => metrics,
             Err(err) => {
                 eprintln!("battery metrics unavailable: {err}");
