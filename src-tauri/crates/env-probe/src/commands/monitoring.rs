@@ -4,7 +4,7 @@ use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use listeners::{Protocol, get_all};
-use rayon::prelude::*;
+use once_cell::sync::Lazy;
 use serde::Serialize;
 use starship_battery::{
     Manager as BatteryManager,
@@ -37,6 +37,8 @@ use windows::Win32::System::Threading::{
 };
 #[cfg(target_os = "windows")]
 use windows::core::{BOOL, PCWSTR, PWSTR};
+
+static BATTERY_MANAGER: Lazy<Mutex<Option<BatteryManager>>> = Lazy::new(|| Mutex::new(None));
 
 #[derive(Debug, Serialize, Clone)]
 pub struct SystemMetrics {
@@ -106,7 +108,11 @@ fn normalize_battery_state(state: BatteryState) -> &'static str {
 }
 
 fn collect_battery_metrics() -> crate::error::Result<Option<BatteryMetrics>> {
-    let manager = BatteryManager::new().map_err(|e| e.to_string())?;
+    let mut manager_guard = BATTERY_MANAGER.lock().map_err(|e| e.to_string())?;
+    if manager_guard.is_none() {
+        *manager_guard = Some(BatteryManager::new().map_err(|e| e.to_string())?);
+    }
+    let manager = manager_guard.as_ref().expect("battery manager initialized");
     let batteries = manager.batteries().map_err(|e| e.to_string())?;
 
     let mut battery_count = 0_u32;
@@ -295,18 +301,22 @@ pub fn is_critical_system_process(sys: &System, process: &sysinfo::Process) -> b
 pub fn get_system_metrics(
     system: State<'_, Arc<Mutex<System>>>,
 ) -> crate::error::Result<SystemMetrics> {
-    let mut sys = system.lock().map_err(|e| e.to_string())?;
+    let (cpu_usage, memory_used, memory_total) = {
+        let mut sys = system.lock().map_err(|e| e.to_string())?;
 
-    sys.refresh_specifics(
-        RefreshKind::nothing()
-            .with_cpu(CpuRefreshKind::everything())
-            .with_memory(MemoryRefreshKind::everything()),
-    );
+        sys.refresh_specifics(
+            RefreshKind::nothing()
+                .with_cpu(CpuRefreshKind::everything())
+                .with_memory(MemoryRefreshKind::everything()),
+        );
+
+        (sys.global_cpu_usage(), sys.used_memory(), sys.total_memory())
+    };
 
     Ok(SystemMetrics {
-        cpu_usage: sys.global_cpu_usage(),
-        memory_used: sys.used_memory(),
-        memory_total: sys.total_memory(),
+        cpu_usage,
+        memory_used,
+        memory_total,
         battery: match collect_battery_metrics() {
             Ok(metrics) => metrics,
             Err(err) => {
@@ -362,7 +372,7 @@ pub fn get_top_processes(
         })
         .collect();
 
-    processes.par_sort_unstable_by(|a, b| {
+    processes.sort_unstable_by(|a, b| {
         b.memory
             .partial_cmp(&a.memory)
             .unwrap_or(std::cmp::Ordering::Equal)

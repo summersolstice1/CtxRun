@@ -15,17 +15,9 @@ import {
 } from 'lucide-react';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
+import { cn, formatBytes } from '@/lib/utils';
 import { BatteryMetrics, ProcessInfo, SystemMetrics } from '@/types/monitor';
 import { Toast, ToastType } from '@/components/ui/Toast';
-
-function formatBytes(bytes: number) {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
 
 function formatWatts(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return '--';
@@ -73,6 +65,21 @@ function batteryStateLabel(state: string, t: (key: string) => string) {
     default:
       return t('monitor.batteryStateUnknown');
   }
+}
+
+function getErrorMessage(error: unknown) {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  return '';
+}
+
+interface MetricCardProps {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  subValue: string;
+  percent: number;
+  color: string;
 }
 
 export function MonitorDashboard() {
@@ -131,8 +138,14 @@ export function MonitorDashboard() {
           await invoke('kill_process', { pid: proc.pid });
           setToast({ show: true, msg: t('monitor.killSuccess'), type: 'success' });
           fetchProcesses(); // 立即刷新
-      } catch (err: any) {
-          setToast({ show: true, msg: `Error: ${err}`, type: 'error' });
+      } catch (err: unknown) {
+          console.error(err);
+          const detail = getErrorMessage(err);
+          setToast({
+            show: true,
+            msg: detail ? t('monitor.killFailedWithReason', { reason: detail }) : t('monitor.killFailed'),
+            type: 'error',
+          });
       }
   };
 
@@ -145,14 +158,14 @@ export function MonitorDashboard() {
           "grid gap-4 shrink-0",
           metrics?.battery ? "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4" : "grid-cols-1 sm:grid-cols-2",
         )}>
-          <MetricCard
-            icon={<Cpu className="text-blue-500" />}
-            label={t('monitor.cpu')}
-            value={`${metrics?.cpu_usage.toFixed(1) || 0}%`}
-            subValue={t('monitor.totalLoad')}
-            percent={metrics?.cpu_usage || 0}
-            color="bg-blue-500"
-          />
+            <MetricCard
+              icon={<Cpu className="text-blue-500" />}
+              label={t('monitor.cpu')}
+              value={`${(metrics?.cpu_usage ?? 0).toFixed(1)}%`}
+              subValue={t('monitor.totalLoad')}
+              percent={metrics?.cpu_usage ?? 0}
+              color="bg-blue-500"
+            />
           <MetricCard
             icon={<HardDrive className="text-purple-500" />}
             label={t('monitor.memory')} 
@@ -358,7 +371,7 @@ function BatteryStat({
   );
 }
 
-function MetricCard({ icon, label, value, subValue, percent, color }: any) {
+function MetricCard({ icon, label, value, subValue, percent, color }: MetricCardProps) {
   return (
     <div className="bg-card border border-border p-5 rounded-xl shadow-sm flex min-h-[170px] flex-col">
        <div className="flex items-center gap-2 text-muted-foreground">
@@ -371,10 +384,10 @@ function MetricCard({ icon, label, value, subValue, percent, color }: any) {
          {value}
        </div>
         
-       <div className="mt-auto w-full h-2 bg-secondary rounded-full overflow-hidden">
+        <div className="mt-auto w-full h-2 bg-secondary rounded-full overflow-hidden">
           <div 
             className={cn("h-full transition-all duration-500", color)} 
-            style={{ width: `${Math.min(percent, 100)}%` }} 
+            style={{ width: `${Math.min(Math.max(percent, 0), 100)}%` }} 
           />
         </div>
        <div className="mt-3 text-xs text-right text-muted-foreground">{subValue}</div>

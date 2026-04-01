@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Clock, Copy, Check, Monitor, Cpu, HardDrive, Activity, ExternalLink } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatBytes } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { invoke } from '@tauri-apps/api/core';
@@ -91,17 +91,6 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
     if (days > 0) return i18n.language === 'zh' ? `${days}天 ${hours}小时` : `${days}d ${hours}h`;
     if (hours > 0) return i18n.language === 'zh' ? `${hours}小时 ${minutes}分钟` : `${hours}h ${minutes}m`;
     return i18n.language === 'zh' ? `${minutes}分钟` : `${minutes}m`;
-  };
-
-  const formatBytes = (bytes: number) => {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024;
-      unitIndex++;
-    }
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
   };
 
   const handleCopy = async (type: 'timestamp' | 'iso' | 'full') => {
