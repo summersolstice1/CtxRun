@@ -1348,16 +1348,24 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "ctxrun-db",
+ "ctxrun-env-probe",
+ "ctxrun-plugin-automator",
  "ctxrun-plugin-context",
  "ctxrun-plugin-git",
  "ctxrun-plugin-miner",
  "ctxrun-plugin-refinery",
  "ctxrun-plugin-tool-runtime",
+ "ctxrun-process-utils",
  "git2",
+ "reqwest 0.12.24",
  "rusqlite",
+ "serde",
  "serde_json",
+ "sysinfo",
  "tauri",
+ "thiserror 2.0.17",
  "tokio",
+ "walkdir",
 ]
 
 [[package]]

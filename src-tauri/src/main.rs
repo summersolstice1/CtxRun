@@ -3,13 +3,10 @@
     windows_subsystem = "windows"
 )]
 
-use std::fs;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::app_config::load_app_language;
-#[cfg(target_os = "windows")]
-use ctxrun_process_utils::new_detached_command;
 use serde::Deserialize;
 use sysinfo::System;
 use tauri::window::Color;
@@ -25,9 +22,11 @@ use ctxrun_db as db;
 mod app_config;
 mod apps;
 mod error;
+mod fs_commands;
 mod guard;
 mod monitor;
 mod shortcuts;
+mod tray_support;
 mod window_styling;
 
 const MAIN_WINDOW_LABEL: &str = "main";
@@ -40,28 +39,8 @@ struct LanguageSyncPayload {
     language: String,
 }
 
-struct TrayMenuTexts {
-    quit: &'static str,
-}
-
-fn normalize_tray_language(language: &str) -> &'static str {
-    let normalized = language.trim().to_ascii_lowercase();
-    if normalized == "en" || normalized.starts_with("en-") || normalized.starts_with("en_") {
-        "en"
-    } else {
-        "zh"
-    }
-}
-
-fn tray_menu_texts(language: &str) -> TrayMenuTexts {
-    match normalize_tray_language(language) {
-        "en" => TrayMenuTexts { quit: "Quit" },
-        _ => TrayMenuTexts { quit: "退出" },
-    }
-}
-
 fn create_tray_menu(app: &AppHandle, language: &str) -> tauri::Result<Menu<Wry>> {
-    let texts = tray_menu_texts(language);
+    let texts = tray_support::tray_menu_texts(language);
     let quit_item = MenuItem::with_id(app, TRAY_QUIT_MENU_ID, texts.quit, true, None::<&str>)?;
     Menu::with_items(app, &[&quit_item])
 }
@@ -142,14 +121,6 @@ async fn hide_main_window(
 }
 
 #[tauri::command]
-fn get_file_size(path: String) -> u64 {
-    match fs::metadata(path) {
-        Ok(meta) => meta.len(),
-        Err(_) => 0,
-    }
-}
-
-#[tauri::command]
 fn refresh_shortcuts(app: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
@@ -157,40 +128,6 @@ fn refresh_shortcuts(app: tauri::AppHandle) {
             manager.refresh(&app);
         }
     });
-}
-
-#[tauri::command]
-fn open_folder_in_file_manager(path: String) -> crate::error::Result<()> {
-    let metadata = fs::metadata(&path).map_err(|e| format!("Failed to access path: {e}"))?;
-    if !metadata.is_dir() {
-        return Err("Path is not a directory".into());
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        new_detached_command("explorer")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| format!("Failed to open folder: {e}"))?;
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        std::process::Command::new("open")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| format!("Failed to open folder: {e}"))?;
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        std::process::Command::new("xdg-open")
-            .arg(&path)
-            .spawn()
-            .map_err(|e| format!("Failed to open folder: {e}"))?;
-    }
-
-    Ok(())
 }
 
 fn main() {
@@ -218,11 +155,11 @@ fn main() {
         )
         .invoke_handler(tauri::generate_handler![
             hide_main_window,
-            get_file_size,
+            fs_commands::get_file_size,
             ctxrun_env_probe::commands::system_info::get_system_info,
             ctxrun_env_probe::commands::system_info::check_python_env,
             refresh_shortcuts,
-            open_folder_in_file_manager,
+            fs_commands::open_folder_in_file_manager,
             guard::refresh_guard_service,
             guard::guard_request_release,
             guard::activate_guard_now,

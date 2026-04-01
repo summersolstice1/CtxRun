@@ -8,6 +8,90 @@ use std::path::Path;
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
 
+#[cfg(target_os = "windows")]
+fn windows_ignored_dir_names() -> &'static [&'static str] {
+    &[
+        "Windows Kits",
+        "Administrative Tools",
+        "Accessibility",
+        "Accessories",
+        "System Tools",
+        "Maintenance",
+        "Startup",
+        "PowerShell",
+        "Driver",
+    ]
+}
+
+#[cfg(target_os = "windows")]
+fn windows_ignored_keywords() -> &'static [&'static str] {
+    &[
+        "uninstall",
+        "卸载",
+        "remove",
+        "help",
+        "帮助",
+        "documentation",
+        "manual",
+        "guide",
+        "faq",
+        "说明",
+        "readme",
+        "notes",
+        "config",
+        "配置",
+        "setting",
+        "设置",
+        "setup",
+        "install",
+        "update",
+        "updater",
+        "升级",
+        "url",
+        "website",
+        "homepage",
+        "link",
+        "网站",
+        "主页",
+        "license",
+        "agreement",
+        "协议",
+        "console",
+        "command prompt",
+        "powershell",
+        "debug",
+        "diagnostic",
+        "feedback",
+        "report",
+        "recovery",
+        "safe mode",
+    ]
+}
+
+#[cfg(target_os = "windows")]
+fn is_windows_shortcut_ignored(path_str: &str, name: &str) -> bool {
+    let normalized_path = path_str.to_lowercase();
+    let in_ignored_dir = windows_ignored_dir_names().iter().any(|dir_name| {
+        let pattern = format!("\\{}", dir_name.to_lowercase());
+        normalized_path.contains(&pattern)
+    });
+
+    if in_ignored_dir {
+        return true;
+    }
+
+    let lower_name = name.to_lowercase();
+    windows_ignored_keywords()
+        .iter()
+        .any(|keyword| lower_name.contains(keyword))
+}
+
+fn finalize_apps(mut apps: Vec<AppEntry>) -> Vec<AppEntry> {
+    apps.sort_by(|a, b| a.path.cmp(&b.path));
+    apps.dedup_by(|a, b| a.path == b.path);
+    apps
+}
+
 /// 启动浏览器并开启调试端口（用于 CDP 自动化）
 #[tauri::command]
 pub async fn launch_browser(
@@ -79,60 +163,6 @@ fn scan_system() -> Vec<AppEntry> {
 
         let dirs = vec![start_menu_common, &start_menu_user];
 
-        let ignored_dir_names = vec![
-            "Windows Kits",
-            "Administrative Tools",
-            "Accessibility",
-            "Accessories",
-            "System Tools",
-            "Maintenance",
-            "Startup",
-            "PowerShell",
-            "Driver",
-        ];
-
-        let ignored_keywords = vec![
-            "uninstall",
-            "卸载",
-            "remove",
-            "help",
-            "帮助",
-            "documentation",
-            "manual",
-            "guide",
-            "faq",
-            "说明",
-            "readme",
-            "notes",
-            "config",
-            "配置",
-            "setting",
-            "设置",
-            "setup",
-            "install",
-            "update",
-            "updater",
-            "升级",
-            "url",
-            "website",
-            "homepage",
-            "link",
-            "网站",
-            "主页",
-            "license",
-            "agreement",
-            "协议",
-            "console",
-            "command prompt",
-            "powershell",
-            "debug",
-            "diagnostic",
-            "feedback",
-            "report",
-            "recovery",
-            "safe mode",
-        ];
-
         for dir in dirs {
             if Path::new(dir).exists() {
                 for entry in WalkDir::new(dir).into_iter().filter_map(|e| e.ok()) {
@@ -140,21 +170,8 @@ fn scan_system() -> Vec<AppEntry> {
                     let path_str = path.to_string_lossy().to_lowercase();
 
                     if path.extension().is_some_and(|ext| ext == "lnk") {
-                        let in_ignored_dir = ignored_dir_names.iter().any(|&d| {
-                            let pattern = format!("\\{}", d.to_lowercase());
-                            path_str.contains(&pattern)
-                        });
-
-                        if in_ignored_dir {
-                            continue;
-                        }
-
                         let name = path.file_stem().unwrap().to_string_lossy().to_string();
-                        let lower_name = name.to_lowercase();
-
-                        let has_ignored_keyword =
-                            ignored_keywords.iter().any(|&k| lower_name.contains(k));
-                        if has_ignored_keyword {
+                        if is_windows_shortcut_ignored(&path_str, &name) {
                             continue;
                         }
 
@@ -242,8 +259,5 @@ fn scan_system() -> Vec<AppEntry> {
         }
     }
 
-    apps.sort_by(|a, b| a.path.cmp(&b.path));
-    apps.dedup_by(|a, b| a.path == b.path);
-
-    apps
+    finalize_apps(apps)
 }
