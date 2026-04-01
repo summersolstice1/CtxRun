@@ -1,4 +1,5 @@
-import { useState, Suspense, lazy } from 'react';
+import { Suspense, lazy, useState, type ReactNode } from 'react';
+import { AnimatePresence, motion, useReducedMotion, type Variants } from 'framer-motion';
 import { X, Activity, Network, Terminal, Settings2 } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
@@ -13,19 +14,83 @@ const NetworkDoctor = lazy(() => import('./tabs/NetworkDoctor').then(module => (
 
 type TabType = 'dashboard' | 'ports' | 'env' | 'network';
 
+const TAB_ORDER: TabType[] = ['dashboard', 'ports', 'env', 'network'];
+
+const NAV_HIGHLIGHT_SPRING = {
+  type: 'spring' as const,
+  stiffness: 420,
+  damping: 34,
+  mass: 0.9,
+};
+
+const TAB_CONTENT_VARIANTS: Variants = {
+  initial: (direction: number) => ({
+    opacity: 0,
+    x: direction >= 0 ? 28 : -28,
+    scale: 0.985,
+    filter: 'blur(6px)',
+  }),
+  animate: {
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    filter: 'blur(0px)',
+  },
+  exit: (direction: number) => ({
+    opacity: 0,
+    x: direction >= 0 ? -20 : 20,
+    scale: 0.99,
+    filter: 'blur(4px)',
+  }),
+};
+
+const REDUCED_MOTION_VARIANTS: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
+};
+
 export function SystemMonitorModal() {
   const [isMonitorOpen, setMonitorOpen] = useAppStore(
     useShallow((state) => [state.isMonitorOpen, state.setMonitorOpen])
   );
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [tabDirection, setTabDirection] = useState(0);
+  const shouldReduceMotion = useReducedMotion();
   const isNetworkTab = activeTab === 'network';
+
+  const changeTab = (nextTab: TabType) => {
+    if (nextTab === activeTab) return;
+
+    const currentIndex = TAB_ORDER.indexOf(activeTab);
+    const nextIndex = TAB_ORDER.indexOf(nextTab);
+    setTabDirection(nextIndex > currentIndex ? 1 : -1);
+    setActiveTab(nextTab);
+  };
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <MonitorDashboard />;
+      case 'ports':
+        return <PortManager />;
+      case 'env':
+        return <EnvFingerprint />;
+      case 'network':
+        return <NetworkDoctor />;
+      default:
+        return null;
+    }
+  };
 
   if (!isMonitorOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 p-4">
-      <div
+      <motion.div
+        layout
+        transition={NAV_HIGHLIGHT_SPRING}
         className={cn(
           "w-full max-h-[90vh] bg-background border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200",
           isNetworkTab ? "max-w-[1220px] h-[760px]" : "max-w-[950px] h-[650px]"
@@ -52,25 +117,25 @@ export function SystemMonitorModal() {
           <div className="w-48 bg-secondary/5 border-r border-border p-2 space-y-1 overflow-y-auto custom-scrollbar shrink-0 select-none">
             <NavBtn 
               active={activeTab === 'dashboard'} 
-              onClick={() => setActiveTab('dashboard')} 
+              onClick={() => changeTab('dashboard')} 
               icon={<Activity size={16} />} 
               label={t('monitor.navDashboard')} 
             />
             <NavBtn 
               active={activeTab === 'ports'} 
-              onClick={() => setActiveTab('ports')} 
+              onClick={() => changeTab('ports')} 
               icon={<Network size={16} />} 
               label={t('monitor.navPorts')} 
             />
             <NavBtn 
               active={activeTab === 'env'} 
-              onClick={() => setActiveTab('env')} 
+              onClick={() => changeTab('env')} 
               icon={<Terminal size={16} />} 
               label={t('monitor.navEnv')} 
             />
             <NavBtn 
               active={activeTab === 'network'} 
-              onClick={() => setActiveTab('network')} 
+              onClick={() => changeTab('network')} 
               icon={<Settings2 size={16} />} 
               label={t('monitor.navNetwork')} 
             />
@@ -78,32 +143,65 @@ export function SystemMonitorModal() {
 
           {/* Content Area */}
           <div className="flex-1 overflow-hidden relative bg-background/50">
-            <Suspense fallback={<DashboardSkeleton />}>
-              {activeTab === 'dashboard' && <MonitorDashboard />}
-              {activeTab === 'ports' && <PortManager />}
-              {activeTab === 'env' && <EnvFingerprint />}
-              {activeTab === 'network' && <NetworkDoctor />}
-            </Suspense>
+            <AnimatePresence mode="wait" initial={false} custom={tabDirection}>
+              <motion.div
+                key={activeTab}
+                custom={tabDirection}
+                variants={shouldReduceMotion ? REDUCED_MOTION_VARIANTS : TAB_CONTENT_VARIANTS}
+                initial="initial"
+                animate="animate"
+                exit="exit"
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.14, ease: 'easeOut' }
+                    : { duration: 0.24, ease: [0.22, 1, 0.36, 1] }
+                }
+                className="h-full w-full"
+              >
+                <Suspense fallback={<DashboardSkeleton />}>
+                  {renderTabContent()}
+                </Suspense>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
 
-function NavBtn({ active, onClick, icon, label }: any) {
+interface NavBtnProps {
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  label: string;
+}
+
+function NavBtn({ active, onClick, icon, label }: NavBtnProps) {
   return (
-    <button
+    <motion.button
+      type="button"
       onClick={onClick}
+      whileTap={{ scale: 0.985 }}
       className={cn(
-        "w-full flex items-center gap-3 px-3 py-2.5 text-sm rounded-md transition-colors whitespace-nowrap overflow-hidden text-ellipsis",
+        "relative w-full overflow-hidden rounded-md border text-sm transition-colors",
         active
-          ? "bg-primary/10 text-primary font-medium border border-primary/10"
-          : "text-muted-foreground hover:bg-secondary hover:text-foreground border border-transparent"
+          ? "text-primary"
+          : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
     >
-      <div className="shrink-0">{icon}</div> {label}
-    </button>
+      {active && (
+        <motion.span
+          layoutId="monitor-nav-active"
+          transition={NAV_HIGHLIGHT_SPRING}
+          className="absolute inset-0 rounded-md border border-primary/10 bg-primary/10"
+        />
+      )}
+      <span className="relative z-10 flex items-center gap-3 px-3 py-2.5 whitespace-nowrap">
+        <span className="shrink-0">{icon}</span>
+        <span className="overflow-hidden text-ellipsis font-medium">{label}</span>
+      </span>
+    </motion.button>
   );
 }
 

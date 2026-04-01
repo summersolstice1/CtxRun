@@ -1,4 +1,4 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import {
   Download,
@@ -41,24 +41,6 @@ type DecoratedNetworkInterface = NetworkInterfaceSummary & {
   has_routable_address: boolean;
   has_traffic: boolean;
 };
-
-const VIRTUAL_INTERFACE_KEYWORDS = [
-  'loopback',
-  'vethernet',
-  'hyper-v',
-  'vmware',
-  'virtualbox',
-  'vbox',
-  'wsl',
-  'docker',
-  'bluetooth',
-  'npcap',
-  'tap-',
-  'tap ',
-  'tun-',
-  'tun ',
-  'bridge',
-];
 
 function formatWatts(value: number | null | undefined) {
   if (value == null || !Number.isFinite(value)) return '--';
@@ -131,15 +113,43 @@ function hasRoutableAddress(network: NetworkInterfaceSummary) {
   });
 }
 
-function isLikelyVirtualInterface(name: string) {
-  const normalized = name.trim().toLowerCase();
-  return VIRTUAL_INTERFACE_KEYWORDS.some((keyword) => normalized.includes(keyword));
+function networkConnectionStatusLabel(status: string, t: (key: string) => string) {
+  switch (status) {
+    case 'connected':
+      return t('monitor.adapterStatusConnected');
+    case 'disconnected':
+      return t('monitor.adapterStatusDisconnected');
+    case 'testing':
+      return t('monitor.adapterStatusTesting');
+    case 'dormant':
+      return t('monitor.adapterStatusDormant');
+    case 'not_present':
+      return t('monitor.adapterStatusNotPresent');
+    case 'lower_layer_down':
+      return t('monitor.adapterStatusLowerLayerDown');
+    default:
+      return t('monitor.adapterStatusUnknown');
+  }
+}
+
+function networkInterfaceTypeLabel(type: string, t: (key: string) => string) {
+  switch (type) {
+    case 'wifi':
+      return t('monitor.adapterTypeWifi');
+    case 'ethernet':
+      return t('monitor.adapterTypeEthernet');
+    case 'loopback':
+      return t('monitor.adapterTypeLoopback');
+    case 'tunnel':
+      return t('monitor.adapterTypeTunnel');
+    default:
+      return t('monitor.adapterTypeOther');
+  }
 }
 
 function decorateInterface(entry: NetworkInterfaceSummary): DecoratedNetworkInterface {
   return {
     ...entry,
-    is_virtual: isLikelyVirtualInterface(entry.name),
     has_routable_address: hasRoutableAddress(entry),
     has_traffic: entry.received_bytes_per_sec > 0 || entry.transmitted_bytes_per_sec > 0,
   };
@@ -148,8 +158,13 @@ function decorateInterface(entry: NetworkInterfaceSummary): DecoratedNetworkInte
 function pickVisibleInterfaces(interfaces: DecoratedNetworkInterface[]) {
   const decorated = [...interfaces];
 
-  const preferred = decorated.filter((entry) => !entry.is_virtual && entry.has_routable_address);
-  const secondary = decorated.filter((entry) => !entry.is_virtual);
+  const preferred = decorated.filter(
+    (entry) =>
+      entry.connection_status === 'connected' && !entry.is_virtual && entry.has_routable_address,
+  );
+  const secondary = decorated.filter(
+    (entry) => entry.connection_status === 'connected' && !entry.is_virtual,
+  );
   const fallback = decorated.filter((entry) => entry.has_routable_address);
 
   const selected =
@@ -305,15 +320,26 @@ export function MonitorDashboard() {
       }
   };
 
-  const decoratedInterfaces = (metrics?.network_interfaces ?? []).map((entry) => ({
-    ...entry,
-    received_bytes_per_sec:
-      smoothedNetworkRates[entry.name]?.received_bytes_per_sec ?? entry.received_bytes_per_sec,
-    transmitted_bytes_per_sec:
-      smoothedNetworkRates[entry.name]?.transmitted_bytes_per_sec ?? entry.transmitted_bytes_per_sec,
-  })).map(decorateInterface).sort((a, b) => a.name.localeCompare(b.name));
+  const decoratedInterfaces = useMemo(
+    () =>
+      (metrics?.network_interfaces ?? [])
+        .map((entry) => ({
+          ...entry,
+          received_bytes_per_sec:
+            smoothedNetworkRates[entry.name]?.received_bytes_per_sec ?? entry.received_bytes_per_sec,
+          transmitted_bytes_per_sec:
+            smoothedNetworkRates[entry.name]?.transmitted_bytes_per_sec ??
+            entry.transmitted_bytes_per_sec,
+        }))
+        .map(decorateInterface)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [metrics?.network_interfaces, smoothedNetworkRates],
+  );
 
-  const visibleInterfaces = pickVisibleInterfaces(decoratedInterfaces);
+  const visibleInterfaces = useMemo(
+    () => pickVisibleInterfaces(decoratedInterfaces),
+    [decoratedInterfaces],
+  );
 
   return (
     <div className="h-full min-h-0 overflow-y-auto p-6">
@@ -570,7 +596,7 @@ function NetworkInterfacesPanel({
   onToggleAllInterfaces: () => void;
 }) {
   const { t } = useTranslation();
-  const primaryNames = new Set(interfaces.map((entry) => entry.name));
+  const primaryNames = useMemo(() => new Set(interfaces.map((entry) => entry.name)), [interfaces]);
 
   return (
     <div className="shrink-0 rounded-xl border border-border bg-card/80 p-4 shadow-sm">
@@ -614,6 +640,10 @@ function NetworkInterfacesPanel({
                     {network.is_virtual && (
                       <InterfaceBadge tone="muted" label={t('monitor.adapterVirtual')} />
                     )}
+                    <InterfaceBadge
+                      tone={network.connection_status === 'connected' ? 'success' : 'muted'}
+                      label={networkConnectionStatusLabel(network.connection_status, t)}
+                    />
                   </div>
                   <div className="truncate text-xs text-muted-foreground" title={network.ip_networks.join(', ')}>
                     {network.ip_networks.length > 0
@@ -621,9 +651,6 @@ function NetworkInterfacesPanel({
                       : t('monitor.networkNoAddress')}
                   </div>
                 </div>
-                <span className="w-fit rounded-full bg-secondary px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  MTU {network.mtu}
-                </span>
               </div>
 
               <div className="mb-3 grid gap-2 xl:grid-cols-2">
@@ -652,6 +679,14 @@ function NetworkInterfacesPanel({
                   label={t('monitor.networkMac')}
                   value={formatTextValue(network.mac_address)}
                 />
+                <SummaryInline
+                  label={t('monitor.networkGateway')}
+                  value={formatTextValue(network.default_gateway)}
+                />
+                <SummaryInline
+                  label={t('monitor.networkType')}
+                  value={networkInterfaceTypeLabel(network.interface_type, t)}
+                />
                 <SummaryInline label={t('monitor.networkMtu')} value={network.mtu.toString()} />
               </div>
             </div>
@@ -668,49 +703,59 @@ function NetworkInterfacesPanel({
             {allInterfaces.map((network) => (
               <div
                 key={`all-${network.name}`}
-                className="rounded-lg border border-border/70 bg-secondary/10 px-3 py-2.5"
+                className="rounded-lg border border-border/70 bg-secondary/10 px-3 py-3"
               >
-                <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                  <div className="min-w-0">
-                    <div className="mb-1 flex flex-wrap items-center gap-2">
-                      <span className="truncate text-sm font-medium text-foreground" title={network.name}>
-                        {network.name}
-                      </span>
-                      {primaryNames.has(network.name) && (
-                        <InterfaceBadge tone="primary" label={t('monitor.adapterPrimary')} />
-                      )}
-                      {network.is_virtual && (
-                        <InterfaceBadge tone="muted" label={t('monitor.adapterVirtual')} />
-                      )}
-                      {network.has_traffic && (
-                        <InterfaceBadge tone="success" label={t('monitor.adapterActive')} />
-                      )}
-                    </div>
-                    <div
-                      className="truncate text-xs text-muted-foreground"
-                      title={network.ip_networks.join(', ')}
-                    >
-                      {network.ip_networks.length > 0
-                        ? network.ip_networks.join(' · ')
-                        : t('monitor.networkNoAddress')}
-                    </div>
+                <div className="mb-3 min-w-0">
+                  <div className="mb-1 flex flex-wrap items-center gap-2">
+                    <span className="truncate text-sm font-medium text-foreground" title={network.name}>
+                      {network.name}
+                    </span>
+                    {primaryNames.has(network.name) && (
+                      <InterfaceBadge tone="primary" label={t('monitor.adapterPrimary')} />
+                    )}
+                    {network.is_virtual && (
+                      <InterfaceBadge tone="muted" label={t('monitor.adapterVirtual')} />
+                    )}
+                    <InterfaceBadge
+                      tone={network.connection_status === 'connected' ? 'success' : 'muted'}
+                      label={networkConnectionStatusLabel(network.connection_status, t)}
+                    />
+                    {network.has_traffic && (
+                      <InterfaceBadge tone="success" label={t('monitor.adapterActive')} />
+                    )}
                   </div>
+                  <div
+                    className="truncate text-xs text-muted-foreground"
+                    title={network.ip_networks.join(', ')}
+                  >
+                    {network.ip_networks.length > 0
+                      ? network.ip_networks.join(' · ')
+                      : t('monitor.networkNoAddress')}
+                  </div>
+                </div>
 
-                  <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2 xl:grid-cols-4">
-                    <SummaryInline
-                      label={t('monitor.networkDownload')}
-                      value={formatBytesPerSecond(network.received_bytes_per_sec)}
-                    />
-                    <SummaryInline
-                      label={t('monitor.networkUpload')}
-                      value={formatBytesPerSecond(network.transmitted_bytes_per_sec)}
-                    />
-                    <SummaryInline
-                      label={t('monitor.networkMac')}
-                      value={formatTextValue(network.mac_address)}
-                    />
-                    <SummaryInline label={t('monitor.networkMtu')} value={network.mtu.toString()} />
-                  </div>
+                <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                  <SummaryTile
+                    label={t('monitor.networkDownload')}
+                    value={formatBytesPerSecond(network.received_bytes_per_sec)}
+                  />
+                  <SummaryTile
+                    label={t('monitor.networkUpload')}
+                    value={formatBytesPerSecond(network.transmitted_bytes_per_sec)}
+                  />
+                  <SummaryTile
+                    label={t('monitor.networkMac')}
+                    value={formatTextValue(network.mac_address)}
+                  />
+                  <SummaryTile
+                    label={t('monitor.networkGateway')}
+                    value={formatTextValue(network.default_gateway)}
+                  />
+                  <SummaryTile
+                    label={t('monitor.networkType')}
+                    value={networkInterfaceTypeLabel(network.interface_type, t)}
+                  />
+                  <SummaryTile label={t('monitor.networkMtu')} value={network.mtu.toString()} />
                 </div>
               </div>
             ))}
@@ -816,6 +861,19 @@ function SummaryInline({ label, value }: { label: string; value: string }) {
       <span className="min-w-0 truncate text-right font-medium text-foreground" title={value}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function SummaryTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-md bg-secondary/20 px-3 py-2">
+      <div className="mb-1 truncate text-[11px] font-medium text-muted-foreground" title={label}>
+        {label}
+      </div>
+      <div className="truncate text-sm font-semibold text-foreground" title={value}>
+        {value}
+      </div>
     </div>
   );
 }

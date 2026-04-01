@@ -122,6 +122,11 @@ fn centralized_get_system_metrics_returns_memory_and_cpu_data() {
         .network_interfaces
         .iter()
         .all(|network| !network.name.trim().is_empty()));
+    assert!(metrics.network_interfaces.iter().all(|network| !network.interface_type.is_empty()));
+    assert!(metrics
+        .network_interfaces
+        .iter()
+        .all(|network| !network.connection_status.is_empty()));
 }
 
 #[test]

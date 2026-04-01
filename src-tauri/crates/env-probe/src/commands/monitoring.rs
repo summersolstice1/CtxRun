@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::net::SocketAddr;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -23,9 +23,25 @@ use sysinfo::{
 };
 use tauri::State;
 #[cfg(target_os = "windows")]
+use std::net::IpAddr;
+#[cfg(target_os = "windows")]
+use std::ptr::NonNull;
+#[cfg(target_os = "windows")]
 use walkdir::WalkDir;
 #[cfg(target_os = "windows")]
-use windows::Win32::Foundation::{ERROR_MORE_DATA, ERROR_SUCCESS, WIN32_ERROR};
+use windows::Win32::Foundation::{
+    ERROR_BUFFER_OVERFLOW, ERROR_MORE_DATA, ERROR_SUCCESS, WIN32_ERROR,
+};
+#[cfg(target_os = "windows")]
+use windows::Win32::NetworkManagement::IpHelper::{
+    GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER, GAA_FLAG_SKIP_MULTICAST,
+    GetAdaptersAddresses, IP_ADAPTER_ADDRESSES_LH, IP_ADAPTER_GATEWAY_ADDRESS_LH,
+    IP_ADAPTER_UNICAST_ADDRESS_LH,
+};
+#[cfg(target_os = "windows")]
+use windows::Win32::Networking::WinSock::{
+    AF_INET, AF_INET6, AF_UNSPEC, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6,
+};
 #[cfg(target_os = "windows")]
 use windows::Win32::System::RestartManager::{
     CCH_RM_SESSION_KEY, RM_PROCESS_INFO, RmEndSession, RmGetList, RmRegisterResources,
@@ -80,6 +96,10 @@ pub struct NetworkInterfaceSummary {
     pub mac_address: Option<String>,
     pub ip_networks: Vec<String>,
     pub mtu: u64,
+    pub connection_status: String,
+    pub interface_type: String,
+    pub default_gateway: Option<String>,
+    pub is_virtual: bool,
     pub received_bytes_per_sec: u64,
     pub transmitted_bytes_per_sec: u64,
     pub total_received: u64,
@@ -136,7 +156,16 @@ pub struct LockedFileProcess {
 }
 
 pub struct MonitorProbeState {
+    static_summary: CachedSystemSummary,
     resources: Mutex<MonitorProbeResources>,
+}
+
+struct CachedSystemSummary {
+    host_name: Option<String>,
+    os_version: Option<String>,
+    kernel_version: Option<String>,
+    cpu_arch: String,
+    physical_core_count: Option<u32>,
 }
 
 struct MonitorProbeResources {
@@ -149,7 +178,20 @@ struct MonitorProbeResources {
 impl Default for MonitorProbeState {
     fn default() -> Self {
         Self {
+            static_summary: CachedSystemSummary::collect(),
             resources: Mutex::new(MonitorProbeResources::new()),
+        }
+    }
+}
+
+impl CachedSystemSummary {
+    fn collect() -> Self {
+        Self {
+            host_name: System::host_name(),
+            os_version: System::long_os_version(),
+            kernel_version: System::kernel_version(),
+            cpu_arch: System::cpu_arch(),
+            physical_core_count: System::physical_core_count().map(|count| count as u32),
         }
     }
 }
@@ -165,6 +207,27 @@ impl MonitorProbeResources {
             last_network_refresh_at: Instant::now(),
         }
     }
+}
+
+#[cfg(target_os = "windows")]
+#[derive(Clone)]
+struct WindowsNetworkAdapter {
+    name: String,
+    mac_address: Option<String>,
+    ip_networks: Vec<String>,
+    mtu: u64,
+    connection_status: String,
+    interface_type: String,
+    default_gateway: Option<String>,
+    is_virtual: bool,
+}
+
+#[derive(Clone, Copy, Default)]
+struct NetworkTrafficSnapshot {
+    received_bytes_per_sec: u64,
+    transmitted_bytes_per_sec: u64,
+    total_received: u64,
+    total_transmitted: u64,
 }
 
 fn normalize_battery_state(state: BatteryState) -> &'static str {
@@ -185,13 +248,16 @@ fn disk_kind_label(kind: DiskKind) -> &'static str {
     }
 }
 
-fn collect_system_summary(logical_core_count: usize) -> SystemSummary {
+fn collect_system_summary(
+    cached_summary: &CachedSystemSummary,
+    logical_core_count: usize,
+) -> SystemSummary {
     SystemSummary {
-        host_name: System::host_name(),
-        os_version: System::long_os_version(),
-        kernel_version: System::kernel_version(),
-        cpu_arch: System::cpu_arch(),
-        physical_core_count: System::physical_core_count().map(|count| count as u32),
+        host_name: cached_summary.host_name.clone(),
+        os_version: cached_summary.os_version.clone(),
+        kernel_version: cached_summary.kernel_version.clone(),
+        cpu_arch: cached_summary.cpu_arch.clone(),
+        physical_core_count: cached_summary.physical_core_count,
         logical_core_count: logical_core_count as u32,
         uptime_seconds: System::uptime(),
     }
@@ -383,6 +449,66 @@ fn collect_network_interface_summaries(
 
     let can_calculate_rate = elapsed_seconds >= 0.5;
 
+    let traffic_by_name = resources
+        .networks
+        .list()
+        .iter()
+        .map(|(name, network)| {
+            let received_bytes_per_sec = if can_calculate_rate {
+                (network.received() as f64 / elapsed_seconds).round().max(0.0) as u64
+            } else {
+                0
+            };
+
+            let transmitted_bytes_per_sec = if can_calculate_rate {
+                (network.transmitted() as f64 / elapsed_seconds)
+                    .round()
+                    .max(0.0) as u64
+            } else {
+                0
+            };
+
+            (
+                name.clone(),
+                NetworkTrafficSnapshot {
+                    received_bytes_per_sec,
+                    transmitted_bytes_per_sec,
+                    total_received: network.total_received(),
+                    total_transmitted: network.total_transmitted(),
+                },
+            )
+        })
+        .collect::<HashMap<_, _>>();
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(mut adapters) = collect_windows_network_adapters() {
+            let mut interfaces = adapters
+                .drain(..)
+                .map(|adapter| {
+                    let traffic = traffic_by_name.get(&adapter.name).copied().unwrap_or_default();
+                    NetworkInterfaceSummary {
+                        name: adapter.name,
+                        mac_address: adapter.mac_address,
+                        ip_networks: adapter.ip_networks,
+                        mtu: adapter.mtu,
+                        connection_status: adapter.connection_status,
+                        interface_type: adapter.interface_type,
+                        default_gateway: adapter.default_gateway,
+                        is_virtual: adapter.is_virtual,
+                        received_bytes_per_sec: traffic.received_bytes_per_sec,
+                        transmitted_bytes_per_sec: traffic.transmitted_bytes_per_sec,
+                        total_received: traffic.total_received,
+                        total_transmitted: traffic.total_transmitted,
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            interfaces.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+            return interfaces;
+        }
+    }
+
     let mut interfaces = resources
         .networks
         .list()
@@ -399,35 +525,220 @@ fn collect_network_interface_summaries(
                 .map(ToString::to_string)
                 .collect::<Vec<_>>();
 
-            let received_bytes_per_sec = if can_calculate_rate {
-                (network.received() as f64 / elapsed_seconds).round().max(0.0) as u64
+            let connection_status = if ip_networks.is_empty() {
+                "unknown".to_string()
             } else {
-                0
+                "connected".to_string()
             };
 
-            let transmitted_bytes_per_sec = if can_calculate_rate {
-                (network.transmitted() as f64 / elapsed_seconds)
-                    .round()
-                    .max(0.0) as u64
-            } else {
-                0
-            };
+            let traffic = traffic_by_name.get(name).copied().unwrap_or_default();
 
             NetworkInterfaceSummary {
                 name: name.clone(),
                 mac_address,
                 ip_networks,
                 mtu: network.mtu(),
-                received_bytes_per_sec,
-                transmitted_bytes_per_sec,
-                total_received: network.total_received(),
-                total_transmitted: network.total_transmitted(),
+                connection_status,
+                interface_type: "other".to_string(),
+                default_gateway: None,
+                is_virtual: false,
+                received_bytes_per_sec: traffic.received_bytes_per_sec,
+                transmitted_bytes_per_sec: traffic.transmitted_bytes_per_sec,
+                total_received: traffic.total_received,
+                total_transmitted: traffic.total_transmitted,
             }
         })
         .collect::<Vec<_>>();
 
     interfaces.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
     interfaces
+}
+
+#[cfg(target_os = "windows")]
+fn format_windows_mac(bytes: &[u8], length: u32) -> Option<String> {
+    let take = usize::min(length as usize, bytes.len());
+    if take == 0 {
+        return None;
+    }
+    Some(
+        bytes[..take]
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<Vec<_>>()
+            .join(":"),
+    )
+}
+
+#[cfg(target_os = "windows")]
+fn network_oper_status_label(status: u32) -> &'static str {
+    match status {
+        1 => "connected",
+        2 => "disconnected",
+        3 => "testing",
+        5 => "dormant",
+        6 => "not_present",
+        7 => "lower_layer_down",
+        _ => "unknown",
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn network_interface_type_label(if_type: u32) -> &'static str {
+    match if_type {
+        6 => "ethernet",
+        24 => "loopback",
+        71 => "wifi",
+        131 => "tunnel",
+        _ => "other",
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn is_virtual_adapter(name: &str, interface_type: &str) -> bool {
+    if matches!(interface_type, "loopback" | "tunnel") {
+        return true;
+    }
+
+    let normalized = name.trim().to_lowercase();
+    [
+        "loopback",
+        "vethernet",
+        "hyper-v",
+        "vmware",
+        "virtualbox",
+        "vbox",
+        "wsl",
+        "docker",
+        "bluetooth",
+        "npcap",
+        "tap-",
+        "tap ",
+        "tun-",
+        "tun ",
+        "bridge",
+        "local connection*",
+    ]
+    .iter()
+    .any(|keyword| normalized.contains(keyword))
+}
+
+#[cfg(target_os = "windows")]
+fn get_ip_address_from_socket_address(socket_address: NonNull<SOCKADDR>) -> Option<IpAddr> {
+    let socket_address_family = unsafe { socket_address.as_ref().sa_family };
+    match socket_address_family {
+        AF_INET => {
+            let socket_address = unsafe { socket_address.cast::<SOCKADDR_IN>().as_ref() };
+            let address = unsafe { socket_address.sin_addr.S_un.S_addr };
+            Some(IpAddr::from(address.to_ne_bytes()))
+        }
+        AF_INET6 => {
+            let socket_address = unsafe { socket_address.cast::<SOCKADDR_IN6>().as_ref() };
+            let address = unsafe { socket_address.sin6_addr.u.Byte };
+            Some(IpAddr::from(address))
+        }
+        _ => None,
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_adapter_ip_networks(mut unicast_ptr: *mut IP_ADAPTER_UNICAST_ADDRESS_LH) -> Vec<String> {
+    let mut ip_networks = Vec::new();
+
+    while !unicast_ptr.is_null() {
+        let unicast = unsafe { unicast_ptr.read_unaligned() };
+        if let Some(socket_address) = NonNull::new(unicast.Address.lpSockaddr)
+            && let Some(ip_address) = get_ip_address_from_socket_address(socket_address)
+        {
+            ip_networks.push(format!("{ip_address}/{}", unicast.OnLinkPrefixLength));
+        }
+        unicast_ptr = unicast.Next;
+    }
+
+    ip_networks.sort();
+    ip_networks.dedup();
+    ip_networks
+}
+
+#[cfg(target_os = "windows")]
+fn get_adapter_gateway(mut gateway_ptr: *mut IP_ADAPTER_GATEWAY_ADDRESS_LH) -> Option<String> {
+    while !gateway_ptr.is_null() {
+        let gateway = unsafe { gateway_ptr.read_unaligned() };
+        if let Some(socket_address) = NonNull::new(gateway.Address.lpSockaddr)
+            && let Some(ip_address) = get_ip_address_from_socket_address(socket_address)
+        {
+            return Some(ip_address.to_string());
+        }
+        gateway_ptr = gateway.Next;
+    }
+
+    None
+}
+
+#[cfg(target_os = "windows")]
+fn collect_windows_network_adapters() -> crate::error::Result<Vec<WindowsNetworkAdapter>> {
+    let mut buffer_size: u32 = 15 * 1024;
+    let mut buffer = vec![0u8; buffer_size as usize];
+    let mut last_error = ERROR_SUCCESS.0;
+
+    for _ in 0..3 {
+        let result = unsafe {
+            GetAdaptersAddresses(
+                AF_UNSPEC.0.into(),
+                GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_DNS_SERVER,
+                None,
+                Some(buffer.as_mut_ptr().cast::<IP_ADAPTER_ADDRESSES_LH>()),
+                &mut buffer_size,
+            )
+        };
+
+        if result == ERROR_SUCCESS.0 {
+            let mut adapters = Vec::new();
+            let mut current = buffer.as_mut_ptr().cast::<IP_ADAPTER_ADDRESSES_LH>();
+
+            while !current.is_null() {
+                let adapter = unsafe { current.read_unaligned() };
+                let name = match unsafe { adapter.FriendlyName.to_string() } {
+                    Ok(name) if !name.trim().is_empty() => name,
+                    _ => {
+                        current = adapter.Next;
+                        continue;
+                    }
+                };
+
+                let interface_type = network_interface_type_label(adapter.IfType).to_string();
+                adapters.push(WindowsNetworkAdapter {
+                    name: name.clone(),
+                    mac_address: format_windows_mac(
+                        &adapter.PhysicalAddress,
+                        adapter.PhysicalAddressLength,
+                    ),
+                    ip_networks: get_adapter_ip_networks(adapter.FirstUnicastAddress),
+                    mtu: adapter.Mtu as u64,
+                    connection_status: network_oper_status_label(adapter.OperStatus.0 as u32)
+                        .to_string(),
+                    interface_type: interface_type.clone(),
+                    default_gateway: get_adapter_gateway(adapter.FirstGatewayAddress),
+                    is_virtual: is_virtual_adapter(&name, &interface_type),
+                });
+
+                current = adapter.Next;
+            }
+
+            return Ok(adapters);
+        }
+
+        if result != ERROR_BUFFER_OVERFLOW.0 {
+            last_error = result;
+            break;
+        }
+
+        buffer.resize(buffer_size as usize, 0);
+        last_error = result;
+    }
+
+    Err(format!(
+        "GetAdaptersAddresses() failed with code {last_error}"
+    ))
 }
 
 pub fn is_critical_system_process(sys: &System, process: &sysinfo::Process) -> bool {
@@ -512,7 +823,7 @@ pub fn get_system_metrics(
         )
     };
 
-    let summary = collect_system_summary(logical_core_count);
+    let summary = collect_system_summary(&probes.static_summary, logical_core_count);
     let mut resources = probes.resources.lock().map_err(|e| e.to_string())?;
     let disks = collect_disk_summaries(&mut resources);
     let network_interfaces = collect_network_interface_summaries(&mut resources);

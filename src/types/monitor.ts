@@ -36,6 +36,10 @@ export interface NetworkInterfaceSummary {
   mac_address: string | null;
   ip_networks: string[];
   mtu: number;
+  connection_status: string;
+  interface_type: string;
+  default_gateway: string | null;
+  is_virtual: boolean;
   received_bytes_per_sec: number;
   transmitted_bytes_per_sec: number;
   total_received: number;
