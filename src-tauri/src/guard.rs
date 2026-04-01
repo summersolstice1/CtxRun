@@ -394,10 +394,10 @@ mod windows_impl {
         let data = unsafe { &*(lparam.0 as *const KBDLLHOOKSTRUCT) };
         let vk = data.vkCode;
 
-        if message == WM_SYSKEYDOWN || message == WM_KEYDOWN {
-            if is_guard_escape_shortcut(vk) {
-                return LRESULT(1);
-            }
+        if (message == WM_SYSKEYDOWN || message == WM_KEYDOWN)
+            && is_guard_escape_shortcut(vk)
+        {
+            return LRESULT(1);
         }
 
         if is_guard_foreground(runtime) {
