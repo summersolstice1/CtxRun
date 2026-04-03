@@ -577,6 +577,7 @@ Configure files and folders to ignore across all features:
 | Shortcut | Search Mode Function | AI Chat Mode Function |
 | :--- | :--- | :--- |
 | `Tab/Alt+1、2、3` | Switch to AI chat mode | Switch to search mode |
+| `F8` | Enter/save window resize mode | Enter/save window resize mode |
 | `Enter` | Execute command/copy content/open app | Send message |
 | `Arrow Up/Down` | Navigate in search results | Navigate in chat history |
 | `Ctrl/Cmd + K` | - | Clear current chat history |

@@ -7,7 +7,7 @@ import { message } from '@tauri-apps/plugin-dialog';
 import { open } from '@tauri-apps/plugin-shell';
 import { invoke } from '@tauri-apps/api/core';
 
-import { useAppStore, AppTheme } from '@/store/useAppStore';
+import { useAppStore, AppTheme, type SpotlightAppearance } from '@/store/useAppStore';
 import { useContextStore } from '@/store/useContextStore';
 import { usePromptStore } from '@/store/usePromptStore';
 import { useTranslation } from 'react-i18next';
@@ -29,6 +29,16 @@ import { ChatMode } from '@/components/features/spotlight/modes/chat/ChatMode';
 import { SpotlightItem } from '@/types/spotlight';
 import { ShellType } from '@/types/prompt';
 import { applyThemeToDocument } from '@/lib/theme';
+import {
+  DEFAULT_SPOTLIGHT_APPEARANCE,
+  SPOTLIGHT_RESIZE_FAST_STEP,
+  SPOTLIGHT_RESIZE_STEP,
+  applyResizeDelta,
+  areSpotlightAppearancesEqual,
+  formatSpotlightSizeLabel,
+  getSpotlightWindowHeight,
+  normalizeSpotlightAppearance,
+} from './resizeMode';
 
 const appWindow = getCurrentWebviewWindow();
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
@@ -44,6 +54,7 @@ function SpotlightContent() {
     setMode
   } = useSpotlight();
   const spotlightAppearance = useAppStore((state) => state.spotlightAppearance);
+  const setSpotlightAppearance = useAppStore((state) => state.setSpotlightAppearance);
   const projectRoot = useContextStore((state) => state.projectRoot);
   const { t } = useTranslation();
 
@@ -52,6 +63,16 @@ function SpotlightContent() {
   const initExecListeners = useExecStore((state) => state.initListeners);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [isResizeMode, setIsResizeMode] = useState(false);
+  const [resizeDraft, setResizeDraft] = useState<SpotlightAppearance | null>(null);
+
+  const hasChatMessages = chat.messages.length > 0;
+  const effectiveAppearance = normalizeSpotlightAppearance(resizeDraft ?? spotlightAppearance);
+  const effectiveHeight = getSpotlightWindowHeight(effectiveAppearance, mode, hasChatMessages);
+  const resizeSizeLabel = formatSpotlightSizeLabel(
+    effectiveAppearance.width,
+    effectiveHeight,
+  );
 
   useEffect(() => {
     void initExecListeners();
@@ -67,21 +88,40 @@ function SpotlightContent() {
   }, [focusInput]);
 
   useLayoutEffect(() => {
-    const { width, defaultHeight, maxChatHeight } = spotlightAppearance;
-    const safeMaxChatHeight = Math.max(maxChatHeight, defaultHeight);
-    let finalHeight = defaultHeight;
-    if (mode === 'search') {
-      finalHeight = defaultHeight;
-    } else {
-      if (chat.messages.length > 0) {
-        finalHeight = safeMaxChatHeight;
-      } else {
-        finalHeight = defaultHeight;
-      }
-    }
+    appWindow.setSize(new LogicalSize(effectiveAppearance.width, effectiveHeight));
+  }, [effectiveAppearance.width, effectiveHeight]);
 
-    appWindow.setSize(new LogicalSize(width, finalHeight));
-  }, [mode, chat.messages.length, spotlightAppearance]);
+  const enterResizeMode = () => {
+    setResizeDraft(normalizeSpotlightAppearance(spotlightAppearance));
+    setIsResizeMode(true);
+  };
+
+  const exitResizeMode = () => {
+    setIsResizeMode(false);
+    setResizeDraft(null);
+    focusInput();
+  };
+
+  const commitResizeMode = () => {
+    if (resizeDraft && !areSpotlightAppearancesEqual(spotlightAppearance, resizeDraft)) {
+      setSpotlightAppearance(resizeDraft);
+    }
+    exitResizeMode();
+  };
+
+  const cancelResizeMode = () => {
+    exitResizeMode();
+  };
+
+  const adjustResizeMode = (direction: 'up' | 'down' | 'left' | 'right', fast: boolean) => {
+    const baseAppearance = resizeDraft ?? normalizeSpotlightAppearance(spotlightAppearance);
+    const step = fast ? SPOTLIGHT_RESIZE_FAST_STEP : SPOTLIGHT_RESIZE_STEP;
+    setResizeDraft(applyResizeDelta(baseAppearance, direction, mode, hasChatMessages, step));
+  };
+
+  const resetResizeMode = () => {
+    setResizeDraft(DEFAULT_SPOTLIGHT_APPEARANCE);
+  };
 
   const handleItemSelect = async (item: SpotlightItem) => {
     if (!item) return;
@@ -203,6 +243,56 @@ function SpotlightContent() {
     const handleGlobalKeyDown = async (e: KeyboardEvent) => {
       if (e.isComposing) return;
 
+      if (e.key === 'F8') {
+        e.preventDefault();
+        if (isResizeMode) {
+          commitResizeMode();
+        } else {
+          enterResizeMode();
+        }
+        return;
+      }
+
+      if (isResizeMode) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          cancelResizeMode();
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          commitResizeMode();
+          return;
+        }
+
+        if (e.key === '0') {
+          e.preventDefault();
+          resetResizeMode();
+          return;
+        }
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          adjustResizeMode(
+            e.key === 'ArrowDown'
+              ? 'down'
+              : e.key === 'ArrowUp'
+                ? 'up'
+                : e.key === 'ArrowLeft'
+                  ? 'left'
+                  : 'right',
+            e.shiftKey,
+          );
+          return;
+        }
+
+        if (!['Shift', 'Control', 'Meta', 'Alt'].includes(e.key)) {
+          e.preventDefault();
+        }
+        return;
+      }
+
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         return;
@@ -295,21 +385,56 @@ function SpotlightContent() {
     document.addEventListener('keydown', handleGlobalKeyDown);
     return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [
+    isResizeMode,
     mode,
     query, chatInput, searchScope, activeTemplate, attachments.length,
     search.results,
     search.selectedIndex,
     chat.isStreaming,
+    hasChatMessages,
+    resizeDraft,
     chat.sendMessage,
     toggleMode,
-    setMode
+    setMode,
+    spotlightAppearance,
+    setSpotlightAppearance,
   ]);
+
+  const resizeFooterActions = isResizeMode ? (
+    <>
+      <span>{t('spotlight.resizeModeAdjust')} ↑↓←→</span>
+      <span>{t('spotlight.resizeModeAccelerate')} Shift</span>
+      <span>{t('spotlight.resizeModeReset')} 0</span>
+      <span>{t('spotlight.resizeModeSave')} Enter/F8</span>
+      <span>{t('spotlight.resizeModeCancel')} Esc</span>
+    </>
+  ) : undefined;
+
+  const resizeFooterStatus = isResizeMode ? (
+    <span className="px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-medium">
+      {t('spotlight.resizeModeActive')}
+    </span>
+  ) : null;
+
+  const resizeOverlay = isResizeMode ? (
+    <div className="absolute right-4 bottom-12 z-20 pointer-events-none rounded-lg border border-emerald-500/30 bg-background/90 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-300/80">
+        {t('spotlight.resizeModeActive')}
+      </div>
+      <div className="mt-1 font-mono text-sm text-foreground">
+        {resizeSizeLabel}
+      </div>
+    </div>
+  ) : null;
 
   return (
     <SpotlightLayout
-      header={<SearchBar />}
+      header={<SearchBar isResizeMode={isResizeMode} />}
       resultCount={search.results.length}
       isStreaming={chat.isStreaming}
+      footerStatusAddon={resizeFooterStatus}
+      footerActions={resizeFooterActions}
+      overlay={resizeOverlay}
     >
       {(mode === 'search' || mode === 'clipboard') ? (
         <SearchMode

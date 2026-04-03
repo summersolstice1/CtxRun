@@ -8,9 +8,20 @@ interface SpotlightLayoutProps {
   header: ReactNode;
   resultCount?: number; // 用于 Footer 显示
   isStreaming?: boolean;
+  footerStatusAddon?: ReactNode;
+  footerActions?: ReactNode;
+  overlay?: ReactNode;
 }
 
-export function SpotlightLayout({ children, header, resultCount = 0, isStreaming = false }: SpotlightLayoutProps) {
+export function SpotlightLayout({
+  children,
+  header,
+  resultCount = 0,
+  isStreaming = false,
+  footerStatusAddon,
+  footerActions,
+  overlay,
+}: SpotlightLayoutProps) {
   const { mode, addAttachments, clearAttachmentError } = useSpotlight();
   const { t } = useTranslation();
   const [isDragOver, setIsDragOver] = useState(false);
@@ -111,6 +122,8 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
             {children}
         </div>
 
+        {overlay}
+
         {mode === 'chat' && isDragOver && (
           <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/40">
             <div className="px-4 py-2 rounded-lg bg-background/85 text-foreground text-sm border border-border/60 shadow-sm">
@@ -125,23 +138,29 @@ export function SpotlightLayout({ children, header, resultCount = 0, isStreaming
                 {getStatusText()}
                 {/* 只有在 AI 模式且正在生成时才显示呼吸灯 */}
                 {mode === 'chat' && isStreaming && <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />}
+                {footerStatusAddon}
             </span>
             <div className="flex gap-4 pointer-events-none">
-                {/* 模式 1 & 3：搜索和剪贴板共用类似的导航提示 */}
-                {(mode === 'search' || mode === 'clipboard') ? (
-                    <>
-                        <span>{t('spotlight.nav')} ↑↓</span>
-                        {/* 已移除：Alt + 1~9 Quick Paste 提示 */}
-                        <span>{mode === 'clipboard' ? 'Paste' : t('spotlight.copy')} ↵</span>
-                    </>
-                ) : (
-                    /* 模式 2：AI 聊天提示 */
-                    <>
-                    <span className={cn(isStreaming && "opacity-30")}>{t('spotlight.clear')} Ctrl+K</span>
-                    <span>{t('spotlight.send')} ↵</span>
-                    </>
+                {footerActions ?? (
+                  <>
+                      {/* 模式 1 & 3：搜索和剪贴板共用类似的导航提示 */}
+                      {(mode === 'search' || mode === 'clipboard') ? (
+                          <>
+                              <span>{t('spotlight.nav')} ↑↓</span>
+                              {/* 已移除：Alt + 1~9 Quick Paste 提示 */}
+                              <span>{mode === 'clipboard' ? 'Paste' : t('spotlight.copy')} ↵</span>
+                          </>
+                      ) : (
+                          /* 模式 2：AI 聊天提示 */
+                          <>
+                          <span className={cn(isStreaming && "opacity-30")}>{t('spotlight.clear')} Ctrl+K</span>
+                          <span>{t('spotlight.send')} ↵</span>
+                          </>
+                      )}
+                      <span>{t('spotlight.resizeModeToggle')} F8</span>
+                      <span>{t('spotlight.close')} Esc</span>
+                  </>
                 )}
-                <span>{t('spotlight.close')} Esc</span>
             </div>
         </div>
       </div>

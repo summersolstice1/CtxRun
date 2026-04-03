@@ -15,6 +15,7 @@ import { CHAT_ATTACHMENT_ACCEPT, CHAT_ATTACHMENT_COLLAPSE_THRESHOLD } from '@/li
 
 interface SearchBarProps {
   onKeyDown?: (e: React.KeyboardEvent) => void;
+  isResizeMode?: boolean;
 }
 
 const FOLDER_IMPORT_EXCLUDE_DIRS = new Set([
@@ -77,7 +78,7 @@ function getFolderImportSkipReason(file: File): FolderImportSkipReason | null {
   return null;
 }
 
-export function SearchBar({ onKeyDown }: SearchBarProps) {
+export function SearchBar({ onKeyDown, isResizeMode = false }: SearchBarProps) {
   const { t } = useTranslation();
   const {
     mode, query, chatInput, searchScope, activeTemplate,
@@ -307,6 +308,13 @@ export function SearchBar({ onKeyDown }: SearchBarProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (isResizeMode) {
+          if (!['Shift', 'Control', 'Meta', 'Alt'].includes(e.key)) {
+              e.preventDefault();
+          }
+          return;
+      }
+
       if (mode === 'chat' && activeTemplate && chatInput === '' && e.key === 'Backspace') {
           e.preventDefault();
           setActiveTemplate(null);

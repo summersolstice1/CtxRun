@@ -16,6 +16,10 @@ import { fetchFromMirrors, MODEL_MIRROR_BASES } from '@/lib/network';
 import i18n from '@/i18n/config';
 import { isPeekWindow } from '@/lib/windowContext';
 import { useContextStore } from './useContextStore';
+import {
+  DEFAULT_SPOTLIGHT_APPEARANCE,
+  normalizeSpotlightAppearance,
+} from '@/windows/spotlight/resizeMode';
 
 type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner' | 'settings';
 export type AppTheme = 'dark' | 'light' | 'black';
@@ -190,7 +194,7 @@ export const useAppStore = create<AppState>()(
       models: DEFAULT_MODELS,
       lastUpdated: 0,
 
-      spotlightAppearance: { width: 640, defaultHeight: 400, maxChatHeight: 600 },
+      spotlightAppearance: DEFAULT_SPOTLIGHT_APPEARANCE,
       searchSettings: {
         defaultEngine: 'google',
         customUrl: 'https://search.bilibili.com/all?keyword=%s'
@@ -199,7 +203,10 @@ export const useAppStore = create<AppState>()(
       guardSettings: DEFAULT_GUARD_SETTINGS,
       setSpotlightAppearance: (config) => {
         set((state) => ({
-          spotlightAppearance: { ...state.spotlightAppearance, ...config }
+          spotlightAppearance: normalizeSpotlightAppearance({
+            ...state.spotlightAppearance,
+            ...config,
+          })
         }));
         broadcastSpotlightAppearanceSync(useAppStore.getState().spotlightAppearance);
       },
