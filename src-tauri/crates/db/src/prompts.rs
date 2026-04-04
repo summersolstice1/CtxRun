@@ -113,7 +113,8 @@ pub fn search_prompts(
         WHERE ",
     );
 
-    let where_clauses = vec!["(title LIKE ? OR content LIKE ? OR description LIKE ?)"; keywords.len()];
+    let where_clauses =
+        vec!["(title LIKE ? OR content LIKE ? OR description LIKE ?)"; keywords.len()];
     sql.push_str(&where_clauses.join(" AND "));
 
     if let Some(cat) = &category {
@@ -143,7 +144,9 @@ pub fn search_prompts(
         params.push(Box::new(format!("%{}%", kw))); // description LIKE ?
     }
 
-    if let Some(cat) = &category && cat != "prompt" {
+    if let Some(cat) = &category
+        && cat != "prompt"
+    {
         params.push(Box::new(cat.clone()));
     }
 

@@ -56,7 +56,8 @@ fn centralized_assemble_context_includes_header_and_error_for_missing_file() {
     let root = temp_root("context-missing");
     let missing = root.join("missing.rs");
     let header = "<project_context>".to_string();
-    let result = assemble_context_parallel(vec![missing.to_string_lossy().to_string()], header, true);
+    let result =
+        assemble_context_parallel(vec![missing.to_string_lossy().to_string()], header, true);
 
     assert!(result.contains("<project_context>"));
     assert!(result.contains("<source_files>"));

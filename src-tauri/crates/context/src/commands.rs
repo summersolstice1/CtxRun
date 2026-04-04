@@ -10,7 +10,10 @@ use std::path::Path;
 use tauri::State;
 
 #[tauri::command]
-pub async fn calculate_context_stats(paths: Vec<String>, remove_comments: bool) -> Result<ContextStats> {
+pub async fn calculate_context_stats(
+    paths: Vec<String>,
+    remove_comments: bool,
+) -> Result<ContextStats> {
     let stats = tauri::async_runtime::spawn_blocking(move || {
         core::calculate_stats_parallel(paths, remove_comments)
     })

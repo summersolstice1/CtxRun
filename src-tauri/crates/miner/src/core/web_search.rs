@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use chromiumoxide::cdp::browser_protocol::network::CookieParam;
 use chromiumoxide::Page;
+use chromiumoxide::cdp::browser_protocol::network::CookieParam;
 use chrono::Utc;
 use serde::Deserialize;
 use tokio::time::sleep;
@@ -497,9 +497,7 @@ fn build_raw_items_preview(items: &[SearchEvalItem]) -> Vec<WebSearchDebugItem> 
         .collect()
 }
 
-fn build_debug_info(
-    params: BuildDebugInfoParams<'_>,
-) -> Option<WebSearchDebugInfo> {
+fn build_debug_info(params: BuildDebugInfoParams<'_>) -> Option<WebSearchDebugInfo> {
     if !params.request.debug {
         return None;
     }
@@ -551,10 +549,7 @@ fn push_unique_warning(warnings: &mut Vec<String>, message: impl Into<String>) {
     }
 }
 
-fn apply_parallel_metadata(
-    result: &mut WebSearchResult,
-    params: ParallelMetadataParams<'_>,
-) {
+fn apply_parallel_metadata(result: &mut WebSearchResult, params: ParallelMetadataParams<'_>) {
     if params.request.anti_bot_mode {
         push_unique_warning(
             &mut result.warnings,
@@ -976,9 +971,10 @@ async fn run_search_with_script(
     let raw_payload: String = evaluation_result.into_value().map_err(|err| {
         MinerError::ExtractionError(format!("Expected JSON string from search script: {err}"))
     })?;
-    let mut parsed_payload: SearchEvalPayload = serde_json::from_str(&raw_payload).map_err(|err| {
-        MinerError::SystemError(format!("Failed to parse search script payload: {err}"))
-    })?;
+    let mut parsed_payload: SearchEvalPayload =
+        serde_json::from_str(&raw_payload).map_err(|err| {
+            MinerError::SystemError(format!("Failed to parse search script payload: {err}"))
+        })?;
     if let Some(error) = parsed_payload.error.as_deref() {
         let stack = parsed_payload.stack.as_deref().unwrap_or_default();
         let detail = if stack.trim().is_empty() {

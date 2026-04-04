@@ -1,10 +1,6 @@
 use std::{fs, path::PathBuf};
 
-use ctxrun_db::{
-    AppEntry,
-    apps::sync_scanned_apps,
-    secrets::get_all_ignored_values_internal,
-};
+use ctxrun_db::{AppEntry, apps::sync_scanned_apps, secrets::get_all_ignored_values_internal};
 use rusqlite::{Connection, params};
 
 fn read_db_migration(name: &str) -> String {
@@ -124,7 +120,14 @@ fn insert_app(
     conn.execute(
         "INSERT INTO apps (path, name, keywords, icon, usage_count, last_used_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-        params![path, name, keywords, Option::<String>::None, usage_count, last_used_at],
+        params![
+            path,
+            name,
+            keywords,
+            Option::<String>::None,
+            usage_count,
+            last_used_at
+        ],
     )
     .expect("insert app row");
 }
@@ -213,7 +216,14 @@ fn centralized_db_chat_templates_query_filters_and_orders_by_title() {
     let conn = Connection::open_in_memory().expect("open in-memory db");
     apply_migration(&conn, "V1__baseline.sql");
 
-    insert_prompt(&conn, "t1", "Charlie Template", "Default", Some("prompt"), 1);
+    insert_prompt(
+        &conn,
+        "t1",
+        "Charlie Template",
+        "Default",
+        Some("prompt"),
+        1,
+    );
     insert_prompt(&conn, "t2", "Alpha Template", "Default", Some("prompt"), 1);
     insert_prompt(&conn, "n1", "Normal Prompt", "Default", Some("prompt"), 0);
 
@@ -232,10 +242,7 @@ fn centralized_db_chat_templates_query_filters_and_orders_by_title() {
 
     assert_eq!(
         titles,
-        vec![
-            "Alpha Template".to_string(),
-            "Charlie Template".to_string()
-        ]
+        vec!["Alpha Template".to_string(), "Charlie Template".to_string()]
     );
 }
 
@@ -694,8 +701,11 @@ fn centralized_db_ignored_secrets_delete_removes_only_target_row() {
     )
     .expect("insert delete row");
 
-    conn.execute("DELETE FROM ignored_secrets WHERE id = ?1", params!["id-del"])
-        .expect("delete target row");
+    conn.execute(
+        "DELETE FROM ignored_secrets WHERE id = ?1",
+        params!["id-del"],
+    )
+    .expect("delete target row");
 
     let remaining = conn
         .prepare("SELECT id FROM ignored_secrets ORDER BY id ASC")
@@ -751,7 +761,9 @@ fn centralized_db_sync_scanned_apps_non_empty_scan_deletes_stale_and_inserts_new
     let rows = conn
         .prepare("SELECT path, usage_count FROM apps ORDER BY path ASC")
         .expect("prepare apps row query")
-        .query_map([], |row| Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?)))
+        .query_map([], |row| {
+            Ok((row.get::<_, String>(0)?, row.get::<_, i64>(1)?))
+        })
         .expect("query apps rows")
         .collect::<Result<Vec<_>, _>>()
         .expect("collect app rows");
@@ -1092,7 +1104,9 @@ fn centralized_db_prompts_group_filter_orders_by_created_at_desc() {
              LIMIT ?2 OFFSET ?3",
         )
         .expect("prepare prompt group SQL")
-        .query_map(params!["GroupA", 10_i64, 0_i64], |row| row.get::<_, String>(0))
+        .query_map(params!["GroupA", 10_i64, 0_i64], |row| {
+            row.get::<_, String>(0)
+        })
         .expect("query prompt group SQL")
         .collect::<Result<Vec<_>, _>>()
         .expect("collect prompt ids");
@@ -1252,14 +1266,7 @@ fn centralized_db_prompts_search_where_requires_all_keywords() {
         )
         .expect("prepare prompt search keyword SQL")
         .query_map(
-            params![
-                "git%",
-                "%git%",
-                "%git%",
-                "commit%",
-                "%commit%",
-                "%commit%"
-            ],
+            params!["git%", "%git%", "%git%", "commit%", "%commit%", "%commit%"],
             |row| row.get::<_, String>(0),
         )
         .expect("query prompt search keyword SQL")
@@ -1422,7 +1429,10 @@ fn centralized_db_sync_scanned_apps_duplicate_paths_insert_once_without_error() 
     let total: i64 = conn
         .query_row("SELECT COUNT(*) FROM apps", [], |row| row.get(0))
         .expect("count apps after duplicate scan");
-    assert_eq!(total, 1, "duplicate paths should not produce duplicate inserts");
+    assert_eq!(
+        total, 1,
+        "duplicate paths should not produce duplicate inserts"
+    );
 }
 
 #[test]

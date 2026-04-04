@@ -8,10 +8,7 @@ use std::{
 };
 
 use ctxrun_env_probe::{
-    commands::{
-        environment, monitoring,
-        system_info,
-    },
+    commands::{environment, monitoring, system_info},
     env_probe::{self, traits::ProjectScanner},
 };
 use serde_json::Value;
@@ -114,19 +111,30 @@ fn centralized_get_system_metrics_returns_memory_and_cpu_data() {
     assert!(metrics.memory_total >= metrics.memory_used);
     assert!(!metrics.summary.cpu_arch.trim().is_empty());
     assert!(metrics.summary.logical_core_count > 0);
-    assert!(metrics
-        .disks
-        .iter()
-        .all(|disk| disk.total_space >= disk.available_space));
-    assert!(metrics
-        .network_interfaces
-        .iter()
-        .all(|network| !network.name.trim().is_empty()));
-    assert!(metrics.network_interfaces.iter().all(|network| !network.interface_type.is_empty()));
-    assert!(metrics
-        .network_interfaces
-        .iter()
-        .all(|network| !network.connection_status.is_empty()));
+    assert!(
+        metrics
+            .disks
+            .iter()
+            .all(|disk| disk.total_space >= disk.available_space)
+    );
+    assert!(
+        metrics
+            .network_interfaces
+            .iter()
+            .all(|network| !network.name.trim().is_empty())
+    );
+    assert!(
+        metrics
+            .network_interfaces
+            .iter()
+            .all(|network| !network.interface_type.is_empty())
+    );
+    assert!(
+        metrics
+            .network_interfaces
+            .iter()
+            .all(|network| !network.connection_status.is_empty())
+    );
 }
 
 #[test]
@@ -137,7 +145,11 @@ fn centralized_get_top_processes_returns_named_entries_with_limit() {
 
     assert!(!processes.is_empty());
     assert!(processes.len() <= 30);
-    assert!(processes.iter().all(|process| !process.name.trim().is_empty()));
+    assert!(
+        processes
+            .iter()
+            .all(|process| !process.name.trim().is_empty())
+    );
 }
 
 #[tokio::test]
@@ -165,11 +177,9 @@ fn centralized_check_file_locks_rejects_missing_paths() {
     let system = Arc::new(Mutex::new(System::new()));
     let missing = temp_root("missing").join("does-not-exist.txt");
 
-    let error = monitoring::check_file_locks(
-        missing.to_string_lossy().to_string(),
-        state_of(&system),
-    )
-    .expect_err("missing path should fail");
+    let error =
+        monitoring::check_file_locks(missing.to_string_lossy().to_string(), state_of(&system))
+            .expect_err("missing path should fail");
     assert!(error.contains("Path does not exist"));
 }
 
@@ -234,8 +244,8 @@ fn centralized_env_probe_scanners_detect_expected_dependencies() {
 }"#,
     )
     .expect("write package.json");
-    let node_deps = env_probe::scanners::NodeScanner
-        .parse_dependencies(node_root.to_string_lossy().as_ref());
+    let node_deps =
+        env_probe::scanners::NodeScanner.parse_dependencies(node_root.to_string_lossy().as_ref());
     assert_eq!(node_deps.get("react"), Some(&"^19.0.0".to_string()));
     assert_eq!(node_deps.get("vite"), Some(&"^7.0.0".to_string()));
     assert!(!node_deps.contains_key("lodash"));
@@ -252,8 +262,8 @@ rand = "0.9"
 "#,
     )
     .expect("write Cargo.toml");
-    let rust_deps = env_probe::scanners::RustScanner
-        .parse_dependencies(rust_root.to_string_lossy().as_ref());
+    let rust_deps =
+        env_probe::scanners::RustScanner.parse_dependencies(rust_root.to_string_lossy().as_ref());
     assert_eq!(rust_deps.get("tauri"), Some(&"2".to_string()));
     assert_eq!(rust_deps.get("tauri-plugin-shell"), Some(&"2".to_string()));
     assert!(!rust_deps.contains_key("rand"));
@@ -276,8 +286,8 @@ rand = "0.9"
         "module example\n\nrequire (\n  github.com/gin-gonic/gin v1.9.0\n  github.com/google/uuid v1.6.0\n)\n",
     )
     .expect("write go.mod");
-    let go_deps = env_probe::scanners::GoScanner
-        .parse_dependencies(go_root.to_string_lossy().as_ref());
+    let go_deps =
+        env_probe::scanners::GoScanner.parse_dependencies(go_root.to_string_lossy().as_ref());
     assert_eq!(go_deps.get("gin"), Some(&"1.9.0".to_string()));
     assert!(!go_deps.contains_key("uuid"));
 
@@ -293,9 +303,12 @@ rand = "0.9"
 }"#,
     )
     .expect("write composer.json");
-    let php_deps = env_probe::scanners::PhpScanner
-        .parse_dependencies(php_root.to_string_lossy().as_ref());
-    assert_eq!(php_deps.get("laravel/framework"), Some(&"^11.0".to_string()));
+    let php_deps =
+        env_probe::scanners::PhpScanner.parse_dependencies(php_root.to_string_lossy().as_ref());
+    assert_eq!(
+        php_deps.get("laravel/framework"),
+        Some(&"^11.0".to_string())
+    );
     assert_eq!(php_deps.get("guzzlehttp/guzzle"), Some(&"^7.0".to_string()));
     assert!(!php_deps.contains_key("monolog/monolog"));
 
@@ -317,7 +330,10 @@ rand = "0.9"
         dotnet_deps.get("Microsoft.EntityFrameworkCore.SqlServer"),
         Some(&"8.0.0".to_string())
     );
-    assert_eq!(dotnet_deps.get("Newtonsoft.Json"), Some(&"13.0.3".to_string()));
+    assert_eq!(
+        dotnet_deps.get("Newtonsoft.Json"),
+        Some(&"13.0.3".to_string())
+    );
     assert!(!dotnet_deps.contains_key("Serilog"));
 
     let mobile_root = temp_root("flutter");

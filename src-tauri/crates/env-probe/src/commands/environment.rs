@@ -21,7 +21,10 @@ pub async fn get_env_info(
                     ides,
                     (
                         languages,
-                        (virtualization, (utilities, (managers, (npm_packages, (databases, sdks))))),
+                        (
+                            virtualization,
+                            (utilities, (managers, (npm_packages, (databases, sdks)))),
+                        ),
                     ),
                 ),
             ),
@@ -41,10 +44,18 @@ pub async fn get_env_info(
                                         || env_probe::binaries::probe_by_category("Virtualization"),
                                         || {
                                             join(
-                                                || env_probe::binaries::probe_by_category("Utilities"),
+                                                || {
+                                                    env_probe::binaries::probe_by_category(
+                                                        "Utilities",
+                                                    )
+                                                },
                                                 || {
                                                     join(
-                                                        || env_probe::binaries::probe_by_category("Managers"),
+                                                        || {
+                                                            env_probe::binaries::probe_by_category(
+                                                                "Managers",
+                                                            )
+                                                        },
                                                         || {
                                                             join(
                                                                 || {
@@ -54,7 +65,9 @@ pub async fn get_env_info(
                                                                 },
                                                                 || {
                                                                     join(
-                                                                        || env_probe::binaries::probe_by_category("Databases"),
+                                                                        || {
+                                                                            env_probe::binaries::probe_by_category("Databases")
+                                                                        },
                                                                         env_probe::sdks::probe_sdks,
                                                                     )
                                                                 },
@@ -91,11 +104,9 @@ pub async fn get_env_info(
 
 #[tauri::command]
 pub async fn get_ai_context(project_path: String) -> crate::error::Result<AiContextReport> {
-    Ok(
-        tauri::async_runtime::spawn_blocking(move || {
-            env_probe::scan_logic::scan_ai_context(&project_path)
-        })
-        .await
-        .map_err(|e| e.to_string())?,
-    )
+    Ok(tauri::async_runtime::spawn_blocking(move || {
+        env_probe::scan_logic::scan_ai_context(&project_path)
+    })
+    .await
+    .map_err(|e| e.to_string())?)
 }

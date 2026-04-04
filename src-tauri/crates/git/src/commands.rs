@@ -80,7 +80,9 @@ fn read_blob_content(repo: &Repository, id: git2::Oid, max_size: usize) -> (Stri
 }
 
 fn read_file_content(full_path: &Path, max_size: usize) -> (String, bool, bool) {
-    if let Ok(meta) = std::fs::metadata(full_path) && meta.len() > max_size as u64 {
+    if let Ok(meta) = std::fs::metadata(full_path)
+        && meta.len() > max_size as u64
+    {
         return (
             format!("[File Too Large: {} bytes]", meta.len()),
             false,

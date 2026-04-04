@@ -76,9 +76,15 @@ pub async fn handle_socket<R: tauri::Runtime>(
     eprintln!("[transfer] New WS connection from {ip_address}, waiting for handshake...");
     let (mut sender, mut receiver) = socket.split();
     let hello = match tokio::time::timeout(Duration::from_secs(20), receiver.next()).await {
-        Ok(Some(Ok(WsMessage::Text(text)))) => match serde_json::from_str::<ClientWsMessage>(&text) {
+        Ok(Some(Ok(WsMessage::Text(text)))) => match serde_json::from_str::<ClientWsMessage>(&text)
+        {
             Ok(ClientWsMessage::Hello { user_agent, pin }) => {
-                if let Some(expected_pin) = shared.config.pin.as_ref().filter(|pin| !pin.trim().is_empty()) {
+                if let Some(expected_pin) = shared
+                    .config
+                    .pin
+                    .as_ref()
+                    .filter(|pin| !pin.trim().is_empty())
+                {
                     if pin.as_deref().map(str::trim) != Some(expected_pin.trim()) {
                         let _ = send_direct(
                             &mut sender,
@@ -136,7 +142,8 @@ pub async fn handle_socket<R: tauri::Runtime>(
         id: device_id.clone(),
         name: infer_device_name(&hello),
         device_type: infer_device_type(&hello),
-        ip_address: ip_address.clone(),        connected_at_ms: now_ms(),
+        ip_address: ip_address.clone(),
+        connected_at_ms: now_ms(),
     };
 
     let (outbound_tx, mut outbound_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
@@ -157,7 +164,10 @@ pub async fn handle_socket<R: tauri::Runtime>(
             device: device.clone(),
         },
     );
-    eprintln!("[transfer] Device connected: {} ({}) from {ip_address}", device.name, device_id);
+    eprintln!(
+        "[transfer] Device connected: {} ({}) from {ip_address}",
+        device.name, device_id
+    );
 
     let _ = outbound_tx.send(
         serde_json::to_string(&ServerWsMessage::Session {
@@ -274,5 +284,7 @@ async fn send_direct(
     sender
         .send(WsMessage::Text(serde_json::to_string(payload)?.into()))
         .await
-        .map_err(|error| TransferError::Message(format!("Failed to write websocket response: {error}")))
+        .map_err(|error| {
+            TransferError::Message(format!("Failed to write websocket response: {error}"))
+        })
 }

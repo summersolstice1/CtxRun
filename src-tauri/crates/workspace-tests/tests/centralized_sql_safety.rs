@@ -8,13 +8,8 @@ fn read_crate_file(relative_to_crates_dir: &str) -> String {
         .to_path_buf();
 
     let target = crates_dir.join(relative_to_crates_dir);
-    fs::read_to_string(&target).unwrap_or_else(|e| {
-        panic!(
-            "failed to read source file {}: {}",
-            target.display(),
-            e
-        )
-    })
+    fs::read_to_string(&target)
+        .unwrap_or_else(|e| panic!("failed to read source file {}: {}", target.display(), e))
 }
 
 #[test]

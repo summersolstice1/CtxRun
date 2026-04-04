@@ -1,7 +1,7 @@
 use crate::error::{MinerError, Result};
 use chromiumoxide::{Browser, BrowserConfig, Page};
 use ctxrun_browser_utils::{
-    launch_debug_browser as launch_debug_browser_shared, locate_browser, BrowserType,
+    BrowserType, launch_debug_browser as launch_debug_browser_shared, locate_browser,
 };
 use futures::StreamExt;
 use std::path::PathBuf;

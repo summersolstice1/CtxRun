@@ -58,12 +58,16 @@ pub fn get_refinery_history(
                 .replace('\\', "\\\\")
                 .replace('"', "\"\"")
                 .replace(' ', " AND ");
-            sql.push_str(" AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH ?)");
+            sql.push_str(
+                " AND rowid IN (SELECT rowid FROM refinery_fts WHERE refinery_fts MATCH ?)",
+            );
             params.push(Box::new(escaped_query));
         }
     }
 
-    if let Some(k) = kind_filter && (k == "text" || k == "image") {
+    if let Some(k) = kind_filter
+        && (k == "text" || k == "image")
+    {
         sql.push_str(" AND kind = ?");
         params.push(Box::new(k));
     }

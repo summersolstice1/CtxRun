@@ -98,7 +98,9 @@ fn centralized_refinery_capture_clipboard_deduplicates_by_hash() {
     assert_eq!(id1, id2);
 
     let count: i64 = conn
-        .query_row("SELECT COUNT(*) FROM refinery_history", [], |row| row.get(0))
+        .query_row("SELECT COUNT(*) FROM refinery_history", [], |row| {
+            row.get(0)
+        })
         .expect("count rows");
     assert_eq!(count, 1, "duplicate hash should not insert a new row");
 
@@ -136,7 +138,10 @@ fn centralized_refinery_manual_note_create_and_update_flow() {
     assert_eq!(is_manual, 1);
     assert_eq!(is_edited, 0);
     assert_eq!(title.as_deref(), Some("Initial Title"));
-    assert_eq!(preview_len, 300, "create_manual_note_db preview should cap at 300 chars");
+    assert_eq!(
+        preview_len, 300,
+        "create_manual_note_db preview should cap at 300 chars"
+    );
 
     let updated_content = "b".repeat(180);
     update_note_db(
@@ -147,7 +152,12 @@ fn centralized_refinery_manual_note_create_and_update_flow() {
     )
     .expect("update note content and title");
 
-    let (content, is_edited_after, title_after, preview_len_after): (String, i64, Option<String>, i64) = conn
+    let (content, is_edited_after, title_after, preview_len_after): (
+        String,
+        i64,
+        Option<String>,
+        i64,
+    ) = conn
         .query_row(
             "SELECT content, is_edited, title, LENGTH(preview) FROM refinery_history WHERE id = ?1",
             params![note_id.clone()],
@@ -157,10 +167,12 @@ fn centralized_refinery_manual_note_create_and_update_flow() {
     assert_eq!(content, updated_content);
     assert_eq!(is_edited_after, 1);
     assert_eq!(title_after.as_deref(), Some("Updated Title"));
-    assert_eq!(preview_len_after, 150, "update_note_db preview should cap at 150 chars");
+    assert_eq!(
+        preview_len_after, 150,
+        "update_note_db preview should cap at 150 chars"
+    );
 
-    update_note_db(&conn, &note_id, None, Some("Retitled".to_string()))
-        .expect("update title only");
+    update_note_db(&conn, &note_id, None, Some("Retitled".to_string())).expect("update title only");
     let title_only: Option<String> = conn
         .query_row(
             "SELECT title FROM refinery_history WHERE id = ?1",

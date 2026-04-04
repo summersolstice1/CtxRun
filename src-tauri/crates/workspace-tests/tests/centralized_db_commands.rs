@@ -7,9 +7,10 @@ use std::{
 };
 
 use ctxrun_db::{
+    apps,
     init::DbState,
     models::{AppEntry, IgnoredSecret, ProjectConfig, Prompt},
-    apps, project_config, prompts, secrets, shell_history, url_history,
+    project_config, prompts, secrets, shell_history, url_history,
 };
 use rusqlite::{Connection, params};
 
@@ -197,14 +198,12 @@ fn centralized_db_shell_history_commands_cover_recent_and_search_paths() {
     assert_eq!(recent.len(), 2);
     assert!(recent.iter().any(|e| e.command == "cargo test -p ctxrun"));
 
-    let empty_search =
-        shell_history::search_shell_history(state_of(&db_state), "   ".into(), 10)
-            .expect("empty query should fallback to recent");
+    let empty_search = shell_history::search_shell_history(state_of(&db_state), "   ".into(), 10)
+        .expect("empty query should fallback to recent");
     assert_eq!(empty_search.len(), 2);
 
-    let search =
-        shell_history::search_shell_history(state_of(&db_state), "cargo test".into(), 10)
-            .expect("search shell history");
+    let search = shell_history::search_shell_history(state_of(&db_state), "cargo test".into(), 10)
+        .expect("search shell history");
     assert!(!search.is_empty());
     assert!(search[0].command.contains("cargo test"));
 }
@@ -226,8 +225,8 @@ fn centralized_db_url_history_search_covers_empty_short_and_fts_queries() {
         .expect("insert blog row");
     }
 
-    let recent =
-        url_history::search_url_history(state_of(&db_state), "".into()).expect("empty query url history");
+    let recent = url_history::search_url_history(state_of(&db_state), "".into())
+        .expect("empty query url history");
     assert_eq!(recent.len(), 2);
     assert_eq!(recent[0].url, "https://example.com/blog");
 
@@ -286,8 +285,9 @@ fn centralized_db_prompt_commands_cover_crud_search_counts_and_csv_paths() {
     assert_eq!(search_hits[0].id, "p2");
 
     prompts::toggle_prompt_favorite(state_of(&db_state), "p2".into()).expect("toggle favorite");
-    let fav_after_toggle = prompts::get_prompts(state_of(&db_state), 1, 20, "favorite".into(), None)
-        .expect("favorites after toggle");
+    let fav_after_toggle =
+        prompts::get_prompts(state_of(&db_state), 1, 20, "favorite".into(), None)
+            .expect("favorites after toggle");
     assert_eq!(fav_after_toggle.len(), 2);
 
     let groups = prompts::get_prompt_groups(state_of(&db_state)).expect("prompt groups");
@@ -340,8 +340,22 @@ fn centralized_db_prompt_commands_cover_crud_search_counts_and_csv_paths() {
         .expect("import prompt pack");
 
     let local_prompts = vec![
-        sample_prompt("local-1", "Local One", "local", Some("prompt"), false, false),
-        sample_prompt("local-1", "Local One Dup", "local", Some("prompt"), false, false),
+        sample_prompt(
+            "local-1",
+            "Local One",
+            "local",
+            Some("prompt"),
+            false,
+            false,
+        ),
+        sample_prompt(
+            "local-1",
+            "Local One Dup",
+            "local",
+            Some("prompt"),
+            false,
+            false,
+        ),
     ];
     let imported_local = prompts::batch_import_local_prompts(state_of(&db_state), local_prompts)
         .expect("batch import local prompts");
@@ -419,16 +433,15 @@ fn centralized_db_app_commands_cover_search_and_usage_updates() {
         .expect("insert runner app");
     }
 
-    let results = apps::search_apps_in_db(state_of(&db_state), " code ".into())
-        .expect("search apps in db");
+    let results =
+        apps::search_apps_in_db(state_of(&db_state), " code ".into()).expect("search apps in db");
     assert_eq!(results.len(), 2);
     assert_eq!(results[0].name, "Code Runner");
     assert_eq!(results[1].name, "Code Editor");
 
-    apps::record_app_usage(state_of(&db_state), "/apps/code.exe".into())
-        .expect("record app usage");
-    let updated = apps::search_apps_in_db(state_of(&db_state), "editor".into())
-        .expect("search updated app");
+    apps::record_app_usage(state_of(&db_state), "/apps/code.exe".into()).expect("record app usage");
+    let updated =
+        apps::search_apps_in_db(state_of(&db_state), "editor".into()).expect("search updated app");
     assert_eq!(updated.len(), 1);
     assert_eq!(updated[0].path, "/apps/code.exe");
     assert_eq!(updated[0].usage_count, 5);

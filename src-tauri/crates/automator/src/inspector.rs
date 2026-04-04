@@ -79,10 +79,7 @@ pub fn get_element_under_cursor_impl() -> Result<PickedElement> {
                                 class_name: c_class,
                             });
 
-                            if c_role == "Window"
-                                && window_title.is_none()
-                                && !c_name.is_empty()
-                            {
+                            if c_role == "Window" && window_title.is_none() && !c_name.is_empty() {
                                 window_title = Some(c_name);
                             }
 
@@ -251,7 +248,8 @@ fn resolve_semantic_target_windows(
                 loop {
                     let w_name = child.get_name().unwrap_or_default();
                     if !w_name.is_empty()
-                        && (w_name.contains(&expected_win_name) || expected_win_name.contains(&w_name))
+                        && (w_name.contains(&expected_win_name)
+                            || expected_win_name.contains(&w_name))
                     {
                         target_window = Some(child.clone());
                         break;

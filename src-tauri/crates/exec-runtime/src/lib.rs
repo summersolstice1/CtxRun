@@ -1,6 +1,5 @@
 use tauri::{
-    Manager,
-    Runtime,
+    Manager, Runtime,
     plugin::{Builder, TauriPlugin},
 };
 

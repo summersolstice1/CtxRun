@@ -21,8 +21,8 @@ axum = { workspace = true }
 tokio-util = { workspace = true }
 qrcode = { workspace = true }
 percent-encoding = { workspace = true }
-log = "0.4"
 sysinfo = "0.37"
+ctxrun-env-probe = { workspace = true }
 
 [build-dependencies]
 tauri-plugin = { workspace = true, features = ["build"] }

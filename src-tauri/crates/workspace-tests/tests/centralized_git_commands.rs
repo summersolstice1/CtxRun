@@ -134,9 +134,8 @@ fn centralized_git_commands_get_diff_workdir_detects_binary_and_large_files() {
 fn centralized_git_commands_get_diff_text_contains_patch_markers() {
     let (root, old_hash, new_hash) = setup_repo_with_two_commits("git-diff-text");
 
-    let diff_text =
-        get_git_diff_text(root.to_string_lossy().to_string(), old_hash, new_hash)
-            .expect("get diff text");
+    let diff_text = get_git_diff_text(root.to_string_lossy().to_string(), old_hash, new_hash)
+        .expect("get diff text");
     assert!(diff_text.contains("@@"));
     assert!(diff_text.contains("+line-2"));
 

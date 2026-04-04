@@ -52,8 +52,7 @@ pub async fn record_url_visit(
                 .await
         {
             // A successful range request returns 206 Partial Content
-            if (resp.status().is_success()
-                || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT)
+            if (resp.status().is_success() || resp.status() == reqwest::StatusCode::PARTIAL_CONTENT)
                 && let Ok(text) = resp.text().await
                 && let Some(caps) = TITLE_REGEX.captures(&text)
                 && let Some(title_match) = caps.get(1)

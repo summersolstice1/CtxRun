@@ -48,9 +48,6 @@ pub struct RunningServiceShared<R: Runtime> {
     pub file_registry: Arc<RwLock<HashMap<String, FileEntry>>>,
     pub save_dir: Arc<PathBuf>,
     pub shutdown: CancellationToken,
-    /// The LAN-facing IPv4 address (e.g. 192.168.1.100) used in URLs / QR codes.
-    /// The server itself binds 0.0.0.0 but this is the address devices connect to.
-    pub lan_address: String,
 }
 
 impl<R: Runtime> Clone for RunningServiceShared<R> {
@@ -64,7 +61,6 @@ impl<R: Runtime> Clone for RunningServiceShared<R> {
             file_registry: self.file_registry.clone(),
             save_dir: self.save_dir.clone(),
             shutdown: self.shutdown.clone(),
-            lan_address: self.lan_address.clone(),
         }
     }
 }
@@ -125,7 +121,9 @@ async fn favicon_handler() -> StatusCode {
     StatusCode::NO_CONTENT
 }
 
-async fn root_page<R: Runtime>(State(shared): State<RunningServiceShared<R>>) -> Result<Html<String>> {
+async fn root_page<R: Runtime>(
+    State(shared): State<RunningServiceShared<R>>,
+) -> Result<Html<String>> {
     if shared.route_token.is_some() {
         return Err(TransferError::InvalidRouteToken);
     }
@@ -135,7 +133,9 @@ async fn root_page<R: Runtime>(State(shared): State<RunningServiceShared<R>>) ->
     )))
 }
 
-async fn fixed_page<R: Runtime>(State(shared): State<RunningServiceShared<R>>) -> Result<Html<String>> {
+async fn fixed_page<R: Runtime>(
+    State(shared): State<RunningServiceShared<R>>,
+) -> Result<Html<String>> {
     if shared.route_token.is_some() {
         return Err(TransferError::InvalidRouteToken);
     }
@@ -205,7 +205,9 @@ async fn download_handler<R: Runtime>(
             build_content_disposition(&entry.file_name),
         )
         .body(body)
-        .map_err(|error| TransferError::Message(format!("Failed to build download response: {error}")))
+        .map_err(|error| {
+            TransferError::Message(format!("Failed to build download response: {error}"))
+        })
 }
 
 async fn upload_handler<R: Runtime>(
@@ -238,11 +240,9 @@ async fn upload_handler<R: Runtime>(
         let mut written = 0u64;
         let mut last_emit = Instant::now();
 
-        while let Some(chunk) = field
-            .chunk()
-            .await
-            .map_err(|error| TransferError::BadRequest(format!("Failed to read upload chunk: {error}")))?
-        {
+        while let Some(chunk) = field.chunk().await.map_err(|error| {
+            TransferError::BadRequest(format!("Failed to read upload chunk: {error}"))
+        })? {
             output.write_all(&chunk).await?;
             written += chunk.len() as u64;
 
@@ -277,7 +277,10 @@ async fn upload_handler<R: Runtime>(
         );
         message.saved_path = Some(saved_path.clone());
         message.progress_percent = Some(100.0);
-        shared.device_manager.append_history(&device_id, message.clone()).await;
+        shared
+            .device_manager
+            .append_history(&device_id, message.clone())
+            .await;
         shared.emit(EVENT_FILE_RECEIVED, &message);
 
         emit_upload_progress(

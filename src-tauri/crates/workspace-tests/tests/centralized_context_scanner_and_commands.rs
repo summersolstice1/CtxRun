@@ -206,7 +206,10 @@ fn centralized_context_scanner_max_entries_sets_capped_flag() {
     )
     .expect("scan project tree");
 
-    assert!(result.capped, "scan should be capped when reaching max_entries");
+    assert!(
+        result.capped,
+        "scan should be capped when reaching max_entries"
+    );
     assert_eq!(result.scanned_entries, 1);
     assert_eq!(result.max_entries, 1);
     assert_eq!(result.nodes.len(), 1);

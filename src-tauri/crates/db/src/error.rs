@@ -70,7 +70,8 @@ mod tests {
             .expect_err("missing table should fail");
         let sqlite = DbError::from(sqlite_error);
         let io = DbError::from(std::io::Error::other("disk failed"));
-        let json = DbError::from(serde_json::from_str::<serde_json::Value>("{").expect_err("bad json"));
+        let json =
+            DbError::from(serde_json::from_str::<serde_json::Value>("{").expect_err("bad json"));
         let csv = DbError::from(csv::Error::from(std::io::Error::other("csv failed")));
         let migration = DbError::Migration("migration failed".into());
         let from_string = DbError::from("message".to_string());

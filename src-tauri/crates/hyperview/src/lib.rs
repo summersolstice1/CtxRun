@@ -1,5 +1,5 @@
-pub mod error;
 pub mod commands;
+pub mod error;
 pub mod peek;
 pub mod protocol;
 pub mod sniffer;

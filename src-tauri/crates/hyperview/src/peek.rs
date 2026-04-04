@@ -149,8 +149,8 @@ mod windows_style {
 
     use tauri::WebviewWindow;
     use windows::Win32::Graphics::Dwm::{
-        DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE,
-        DWMWCP_ROUND, DwmSetWindowAttribute,
+        DWMWA_BORDER_COLOR, DWMWA_COLOR_NONE, DWMWA_WINDOW_CORNER_PREFERENCE, DWMWCP_ROUND,
+        DwmSetWindowAttribute,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
         SWP_FRAMECHANGED, SWP_NOACTIVATE, SWP_NOMOVE, SWP_NOSIZE, SWP_NOZORDER, SetWindowPos,
@@ -213,10 +213,10 @@ mod windows_impl {
         FolderItem, FolderItems, IShellFolderViewDual, IShellWindows, IWebBrowserApp, ShellWindows,
     };
     use windows::Win32::UI::WindowsAndMessaging::{
-        CallNextHookEx, DispatchMessageW, GetClassNameW, GetForegroundWindow, GetGUIThreadInfo,
-        GetMessageW, GetParent, GetWindowThreadProcessId, GUITHREADINFO,
-        KBDLLHOOKSTRUCT, MSG, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx,
-        WH_KEYBOARD_LL, WM_KEYDOWN, WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
+        CallNextHookEx, DispatchMessageW, GUITHREADINFO, GetClassNameW, GetForegroundWindow,
+        GetGUIThreadInfo, GetMessageW, GetParent, GetWindowThreadProcessId, KBDLLHOOKSTRUCT, MSG,
+        SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx, WH_KEYBOARD_LL, WM_KEYDOWN,
+        WM_KEYUP, WM_SYSKEYDOWN, WM_SYSKEYUP,
     };
     use windows::core::Interface;
 
@@ -336,7 +336,9 @@ mod windows_impl {
 
     fn is_explorer_window(hwnd: HWND) -> bool {
         let class_name = window_class_name(hwnd);
-        EXPLORER_CLASSES.iter().any(|candidate| class_name == *candidate)
+        EXPLORER_CLASSES
+            .iter()
+            .any(|candidate| class_name == *candidate)
     }
 
     fn focus_is_editing(hwnd: HWND) -> bool {
@@ -470,7 +472,10 @@ mod windows_impl {
                 .and_then(|path| paths.iter().position(|item| item == path))
                 .unwrap_or(0);
 
-            return Ok(Some(PeekRequest { paths, active_index }));
+            return Ok(Some(PeekRequest {
+                paths,
+                active_index,
+            }));
         }
 
         Ok(None)

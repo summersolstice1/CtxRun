@@ -18,8 +18,11 @@ fn sample_file() -> GitDiffFile {
 
 #[test]
 fn centralized_git_export_markdown_unified_contains_diff_markers() {
-    let output =
-        generate_export_content(vec![sample_file()], ExportFormat::Markdown, ExportLayout::Unified);
+    let output = generate_export_content(
+        vec![sample_file()],
+        ExportFormat::Markdown,
+        ExportLayout::Unified,
+    );
     assert!(output.contains("# Git Diff Export"));
     assert!(output.contains("### Full Context Diff"));
     assert!(output.contains("-    println!(\"old\");"));
@@ -41,8 +44,11 @@ fn centralized_git_export_json_split_has_original_and_modified() {
 
 #[test]
 fn centralized_git_export_xml_gitpatch_includes_git_headers() {
-    let output =
-        generate_export_content(vec![sample_file()], ExportFormat::Xml, ExportLayout::GitPatch);
+    let output = generate_export_content(
+        vec![sample_file()],
+        ExportFormat::Xml,
+        ExportLayout::GitPatch,
+    );
     assert!(output.contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"));
     assert!(output.contains("<git_diff_export>"));
     assert!(output.contains("diff --git a/src/main.rs b/src/main.rs"));
@@ -51,7 +57,8 @@ fn centralized_git_export_xml_gitpatch_includes_git_headers() {
 
 #[test]
 fn centralized_git_export_txt_split_contains_section_headers() {
-    let output = generate_export_content(vec![sample_file()], ExportFormat::Txt, ExportLayout::Split);
+    let output =
+        generate_export_content(vec![sample_file()], ExportFormat::Txt, ExportLayout::Split);
     assert!(output.contains("FILE: src/main.rs  STATUS: modified"));
     assert!(output.contains("<<<<<<<< ORIGINAL VERSION START"));
     assert!(output.contains("<<<<<<<< MODIFIED VERSION START"));

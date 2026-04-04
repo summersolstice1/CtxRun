@@ -6,15 +6,15 @@
 use std::time::Duration;
 
 use chromiumoxide::{
+    Browser, Element, Page,
     cdp::browser_protocol::{
         input::{DispatchKeyEventParams, DispatchKeyEventType},
         target::{ActivateTargetParams, TargetId, TargetInfo},
     },
     keys::{self, KeyDefinition},
-    Browser, Element, Page,
 };
 use ctxrun_browser_utils::{
-    launch_debug_browser as launch_debug_browser_shared, BrowserType as UtilsBrowserType,
+    BrowserType as UtilsBrowserType, launch_debug_browser as launch_debug_browser_shared,
 };
 use futures::StreamExt;
 use regex::Regex;
@@ -167,14 +167,11 @@ impl BrowserConnection {
     }
 
     fn into_tab_session(mut self, page: Page) -> Result<TabSession> {
-        let browser = self
-            .browser
-            .take()
-            .ok_or_else(|| {
-                AutomatorError::BrowserError(
-                    "Browser connection unavailable while creating tab session".into(),
-                )
-            })?;
+        let browser = self.browser.take().ok_or_else(|| {
+            AutomatorError::BrowserError(
+                "Browser connection unavailable while creating tab session".into(),
+            )
+        })?;
         Ok(TabSession {
             page,
             _browser: browser,

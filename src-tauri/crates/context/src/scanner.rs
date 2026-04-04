@@ -129,23 +129,24 @@ impl ScanConfig {
             if self.ignore_dir_names.contains(name_lower) {
                 return true;
             }
-            return self
-                .ignore_dir_paths
-                .iter()
-                .any(|rule| {
-                    rel_path_lower == rule
-                        || rel_path_lower
-                            .strip_prefix(rule.as_str())
-                            .map(|suffix| suffix.starts_with('/'))
-                            .unwrap_or(false)
-                });
+            return self.ignore_dir_paths.iter().any(|rule| {
+                rel_path_lower == rule
+                    || rel_path_lower
+                        .strip_prefix(rule.as_str())
+                        .map(|suffix| suffix.starts_with('/'))
+                        .unwrap_or(false)
+            });
         }
 
         if self.ignore_file_names.contains(name_lower) {
             return true;
         }
 
-        if self.ignore_file_paths.iter().any(|rule| rel_path_lower == rule) {
+        if self
+            .ignore_file_paths
+            .iter()
+            .any(|rule| rel_path_lower == rule)
+        {
             return true;
         }
 

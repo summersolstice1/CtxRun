@@ -1398,8 +1398,8 @@ version = "2.0.0"
 dependencies = [
  "axum",
  "chrono",
+ "ctxrun-env-probe",
  "futures",
- "log",
  "percent-encoding",
  "qrcode",
  "serde",

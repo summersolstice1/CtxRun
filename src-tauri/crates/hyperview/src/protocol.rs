@@ -9,10 +9,7 @@ pub fn preview_protocol_handler<R: tauri::Runtime>(
     request: Request<Vec<u8>>,
 ) -> Response<Vec<u8>> {
     let uri = request.uri();
-    let path_str = uri
-        .path()
-        .trim_start_matches('/')
-        .to_string();
+    let path_str = uri.path().trim_start_matches('/').to_string();
     let path_str = if path_str.is_empty() {
         uri.host().unwrap_or_default().to_string()
     } else {
@@ -78,10 +75,7 @@ pub fn preview_protocol_handler<R: tauri::Runtime>(
                 let mut buffer = Vec::with_capacity(content_length as usize);
 
                 if file.seek(SeekFrom::Start(start)).is_err()
-                    || file
-                        .take(content_length)
-                        .read_to_end(&mut buffer)
-                        .is_err()
+                    || file.take(content_length).read_to_end(&mut buffer).is_err()
                 {
                     return Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)
@@ -93,7 +87,10 @@ pub fn preview_protocol_handler<R: tauri::Runtime>(
                     .status(StatusCode::PARTIAL_CONTENT)
                     .header(header::CONTENT_TYPE, mime_type.as_ref())
                     .header(header::CONTENT_LENGTH, content_length.to_string())
-                    .header(header::CONTENT_RANGE, format!("bytes {start}-{end}/{file_size}"))
+                    .header(
+                        header::CONTENT_RANGE,
+                        format!("bytes {start}-{end}/{file_size}"),
+                    )
                     .header(header::ACCEPT_RANGES, "bytes")
                     .header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                     .body(buffer)
@@ -132,7 +129,11 @@ fn parse_single_range(range_header: &str, file_size: u64) -> Option<(u64, u64)> 
         return None;
     }
 
-    let range = range_header.strip_prefix("bytes=")?.split(',').next()?.trim();
+    let range = range_header
+        .strip_prefix("bytes=")?
+        .split(',')
+        .next()?
+        .trim();
     let (start, end) = range.split_once('-')?;
 
     if start.is_empty() {

@@ -2,15 +2,15 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 use chrono::Utc;
-use ctxrun_plugin_miner::core::queue::{run_crawl_task_with_sink, CrawlEventSink};
+use ctxrun_plugin_miner::core::queue::{CrawlEventSink, run_crawl_task_with_sink};
 use ctxrun_plugin_miner::core::single_page::extract_single_page;
 use ctxrun_plugin_miner::core::web_search::search_web;
 use ctxrun_plugin_miner::models::{MinerConfig, MinerEvent, SinglePageRequest, WebSearchRequest};
-use futures::future::BoxFuture;
 use futures::FutureExt;
+use futures::future::BoxFuture;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
@@ -243,7 +243,9 @@ impl CrawlManager {
         let task = tokio::spawn(async move {
             let run_result =
                 run_crawl_task_with_sink(config, stop_flag_task.clone(), Some(event_sink)).await;
-            if let Err(err) = run_result && let Ok(mut status) = state_for_fail.lock() {
+            if let Err(err) = run_result
+                && let Ok(mut status) = state_for_fail.lock()
+            {
                 status.running = false;
                 status.finished_at = Some(Utc::now().to_rfc3339());
                 status.error_count = status.error_count.saturating_add(1);
@@ -272,11 +274,15 @@ impl CrawlManager {
     fn stop_crawl(&self) -> CrawlStatusSnapshot {
         self.refresh_runtime();
 
-        if let Ok(runtime) = self.runtime.lock() && let Some(flag) = &runtime.stop_flag {
+        if let Ok(runtime) = self.runtime.lock()
+            && let Some(flag) = &runtime.stop_flag
+        {
             flag.store(false, Ordering::SeqCst);
         }
 
-        if let Ok(mut status) = self.state.lock() && status.running {
+        if let Ok(mut status) = self.state.lock()
+            && status.running
+        {
             status.last_stage = Some("Stopping".to_string());
         }
 

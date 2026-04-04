@@ -3,8 +3,8 @@ use tauri::{
     plugin::{Builder, TauriPlugin},
 };
 
-pub mod commands;
 mod agent_fs;
+pub mod commands;
 mod fs_tools;
 mod miner_tools;
 pub mod models;

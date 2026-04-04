@@ -21,7 +21,9 @@ fn centralized_gitleaks_allowlist_recognizes_safe_placeholders() {
 
 #[test]
 fn centralized_gitleaks_allowlist_rejects_non_placeholder_secret_shape() {
-    assert!(!is_safe_value("skABCDEFGHIJKLMNOPQRSTUVWX1234567890ABCDEFGHIJKL"));
+    assert!(!is_safe_value(
+        "skABCDEFGHIJKLMNOPQRSTUVWX1234567890ABCDEFGHIJKL"
+    ));
 }
 
 #[test]
@@ -30,7 +32,10 @@ fn centralized_gitleaks_scan_detects_openai_style_key_and_enriches_context() {
     let text = format!("const key = \"{secret}\";\nconsole.log('ok');\n");
 
     let matches = scan_text(&text);
-    assert!(!matches.is_empty(), "scan_text should detect openai-style key");
+    assert!(
+        !matches.is_empty(),
+        "scan_text should detect openai-style key"
+    );
     let hit = matches
         .iter()
         .find(|m| m.value == secret)

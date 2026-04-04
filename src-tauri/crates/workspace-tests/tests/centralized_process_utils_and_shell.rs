@@ -140,7 +140,10 @@ fn centralized_fs_commands_get_file_size_returns_size_or_zero_for_missing_files(
     let file = root.join("sample.txt");
     fs::write(&file, "hello world").expect("write sample file");
 
-    assert_eq!(fs_commands::get_file_size(file.to_string_lossy().to_string()), 11);
+    assert_eq!(
+        fs_commands::get_file_size(file.to_string_lossy().to_string()),
+        11
+    );
     assert_eq!(
         fs_commands::get_file_size(root.join("missing.txt").to_string_lossy().to_string()),
         0
@@ -161,9 +164,8 @@ fn centralized_fs_commands_open_folder_rejects_files_and_missing_paths() {
     .expect_err("missing path should error");
     assert!(missing.to_string().contains("Failed to access path"));
 
-    let not_dir =
-        fs_commands::open_folder_in_file_manager(file.to_string_lossy().to_string())
-            .expect_err("files should be rejected");
+    let not_dir = fs_commands::open_folder_in_file_manager(file.to_string_lossy().to_string())
+        .expect_err("files should be rejected");
     assert_eq!(not_dir.to_string(), "Path is not a directory");
 
     let _ = fs::remove_dir_all(root);

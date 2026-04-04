@@ -86,7 +86,10 @@ fn centralized_db_prompts_fts_triggers_sync_insert_update_delete() {
             |row| row.get(0),
         )
         .expect("count deleted prompt in fts");
-    assert_eq!(fts_count, 0, "deleted prompts should be removed from prompts_fts");
+    assert_eq!(
+        fts_count, 0,
+        "deleted prompts should be removed from prompts_fts"
+    );
 }
 
 #[test]
@@ -137,7 +140,10 @@ fn centralized_db_url_history_fts_triggers_sync_insert_update_delete() {
             |row| row.get(0),
         )
         .expect("count deleted url in fts");
-    assert_eq!(fts_count, 0, "deleted url should be removed from url_history_fts");
+    assert_eq!(
+        fts_count, 0,
+        "deleted url should be removed from url_history_fts"
+    );
 }
 
 #[test]
@@ -269,7 +275,10 @@ fn centralized_db_refinery_v4_hash_index_non_unique_and_fts_text_only() {
     let fts_count: i64 = conn
         .query_row("SELECT COUNT(*) FROM refinery_fts", [], |row| row.get(0))
         .expect("count refinery_fts rows");
-    assert_eq!(fts_count, 2, "only text rows should be indexed in refinery_fts");
+    assert_eq!(
+        fts_count, 2,
+        "only text rows should be indexed in refinery_fts"
+    );
 
     // Update trigger should refresh indexed title for text row.
     conn.execute(

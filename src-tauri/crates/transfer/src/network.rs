@@ -1,6 +1,7 @@
-use std::net::{IpAddr, Ipv4Addr, SocketAddrV4};
+use std::cmp::Ordering;
+use std::net::{IpAddr, Ipv4Addr};
 
-use sysinfo::Networks;
+use ctxrun_env_probe::commands::{NetworkInterfaceSummary, list_network_interface_summaries};
 use tokio::net::TcpListener;
 
 use crate::error::{Result, TransferError};
@@ -9,89 +10,74 @@ use crate::models::TransferNetworkInterface;
 const PORT_START: u16 = 18900;
 const PORT_ATTEMPTS: u16 = 10;
 
-/// Known prefixes of virtual / tunnel network adapters that should be deprioritized.
-const VIRTUAL_ADAPTER_PREFIXES: &[&str] = &[
-    "VMware",    // VMware virtual adapters
-    "vmnet",     // VMware VMnet adapters
-    "VBox",      // VirtualBox host-only adapters
-    "vEthernet", // Hyper-V virtual switches
-    "WSL",       // Windows Subsystem for Linux
-    "Hyper-V",   // Hyper-V default switch
-    "Docker",    // Docker Desktop virtual NIC
-    "Loopback",  // Loopback pseudo-adapter
-    "Tailscale", // Tailscale VPN
-    "WireGuard", // WireGuard VPN
-    "tun",       // Tunnel interfaces
-    "utun",      // macOS tunnel
-    "vnic",      // Virtual NIC
-    "virbr",     // libvirt bridge
-    "veth",      // Virtual ethernet
-    "br-",       // Docker bridge
+const VIRTUAL_ADAPTER_KEYWORDS: &[&str] = &[
+    "loopback",
+    "vethernet",
+    "hyper-v",
+    "vmware",
+    "virtualbox",
+    "vbox",
+    "wsl",
+    "docker",
+    "bluetooth",
+    "npcap",
+    "tap-",
+    "tap ",
+    "tun-",
+    "tun ",
+    "bridge",
+    "tailscale",
+    "wireguard",
+    "utun",
+    "vnic",
+    "virbr",
+    "veth",
+    "br-",
 ];
 
-/// Known virtual/tunnel IP ranges that should be deprioritized.
-const VIRTUAL_SUBNETS: &[(&str, &str)] = &[
-    // 192.168.244.x — commonly used by VMware
-    ("192.168.244", "VMware default"),
-    // 172.16.x.x / 172.17.x.x — Docker / WSL
-    ("172.16", "Docker/WSL"),
-    ("172.17", "Docker default"),
-    // 192.168.56.x — VirtualBox host-only
-    ("192.168.56", "VirtualBox host-only"),
-    // 192.168.99.x — Docker Machine / VirtualBox
-    ("192.168.99", "Docker Machine"),
-    // 100.64-127.x.x — CGNAT / Tailscale
-    // We check these programmatically below
-];
-
-pub fn list_network_interfaces() -> Vec<TransferNetworkInterface> {
-    let networks = Networks::new_with_refreshed_list();
-    let mut interfaces: Vec<_> = networks
-        .list()
-        .iter()
-        .filter_map(|(name, network)| {
-            let addresses = network
-                .ip_networks()
-                .iter()
-                .map(ToString::to_string)
-                .filter_map(|entry| extract_ipv4_address(&entry))
-                .collect::<Vec<_>>();
-
-            if addresses.is_empty() {
-                return None;
-            }
-
-            Some(TransferNetworkInterface {
-                id: format!("{name}-{}", addresses[0]),
-                name: name.clone(),
-                addresses,
-            })
-        })
-        .collect();
-
-    // Sort: physical adapters first, virtual adapters last
-    interfaces.sort_by(|left, right| {
-        let left_virtual = is_virtual_interface(&left.name, &left.addresses);
-        let right_virtual = is_virtual_interface(&right.name, &right.addresses);
-        left_virtual.cmp(&right_virtual).then_with(|| left.name.to_lowercase().cmp(&right.name.to_lowercase()))
-    });
-
-    interfaces
+#[derive(Clone, Debug)]
+struct InterfaceCandidate {
+    name: String,
+    addresses: Vec<String>,
+    connection_status: String,
+    interface_type: String,
+    default_gateway: Option<String>,
+    is_virtual: bool,
 }
 
-/// Resolve the LAN-facing IPv4 address used for generating the QR code URL.
-/// This is NOT the bind address — the server always binds to 0.0.0.0.
-pub fn resolve_lan_address(preferred: Option<&str>) -> Result<String> {
-    let interfaces = list_network_interfaces();
+pub fn list_network_interfaces() -> Vec<TransferNetworkInterface> {
+    let mut interfaces = list_interface_candidates();
+    interfaces.sort_by(compare_candidates);
+    interfaces
+        .into_iter()
+        .map(|candidate| TransferNetworkInterface {
+            id: format!("{}-{}", candidate.name, candidate.addresses[0]),
+            name: candidate.name,
+            addresses: candidate.addresses,
+        })
+        .collect()
+}
 
-    // Log all detected interfaces for debugging
-    eprintln!("[transfer] Detected {} network interface(s):", interfaces.len());
+pub fn resolve_lan_address(preferred: Option<&str>) -> Result<String> {
+    let mut interfaces = list_interface_candidates();
+    interfaces.sort_by(compare_candidates);
+
+    eprintln!(
+        "[transfer] Detected {} network interface(s):",
+        interfaces.len()
+    );
     for iface in &interfaces {
-        let virtual_flag = if is_virtual_interface(&iface.name, &iface.addresses) { " [VIRTUAL]" } else { "" };
-        eprintln!("[transfer]   {} ({}){virtual_flag}", iface.name, iface.addresses.join(", "));
+        let virtual_flag = if iface.is_virtual { " [VIRTUAL]" } else { "" };
+        let gateway = iface.default_gateway.as_deref().unwrap_or("-");
+        eprintln!(
+            "[transfer]   {} ({}) type={} status={} gateway={gateway}{virtual_flag}",
+            iface.name,
+            iface.addresses.join(", "),
+            iface.interface_type,
+            iface.connection_status,
+        );
     }
 
-    // If user specified a preferred address, use it
     if let Some(address) = preferred.map(str::trim).filter(|value| !value.is_empty()) {
         let found = interfaces
             .iter()
@@ -104,29 +90,12 @@ pub fn resolve_lan_address(preferred: Option<&str>) -> Result<String> {
         return Err(TransferError::InvalidBindAddress(address.to_string()));
     }
 
-    // Auto-detect: prefer physical adapters over virtual ones
-    // The list is already sorted with physical first
-    let result = interfaces
-        .iter()
-        .flat_map(|interface| {
-            let is_virtual = is_virtual_interface(&interface.name, &interface.addresses);
-            interface.addresses.iter().map(move |addr| (addr.clone(), is_virtual))
-        })
-        .find(|(candidate, _is_virtual)| {
-            let addr = candidate.parse::<IpAddr>().ok();
-            match addr {
-                Some(addr) => {
-                    addr.is_ipv4()
-                        && !addr.is_loopback()
-                        && !addr.is_unspecified()
-                        && !is_cgnat_address(&candidate)
-                }
-                None => false,
-            }
-        })
+    let result = select_auto_address(&interfaces)
         .map(|(addr, is_virtual)| {
             if is_virtual {
-                eprintln!("[transfer] ⚠ Only virtual adapter addresses found, using {addr} (may not work for LAN transfer)");
+                eprintln!(
+                    "[transfer] ⚠ Falling back to a virtual adapter address: {addr} (LAN transfer may fail)"
+                );
             }
             addr
         })
@@ -140,66 +109,196 @@ pub fn resolve_lan_address(preferred: Option<&str>) -> Result<String> {
     result
 }
 
-/// Bind a TCP listener on 0.0.0.0 (all interfaces) so LAN devices can connect.
-/// Returns the listener and the actual port bound.
-pub async fn bind_listener(requested_port: Option<u16>) -> Result<(TcpListener, u16)> {
+pub async fn bind_listener(
+    bind_address: &str,
+    requested_port: Option<u16>,
+) -> Result<(TcpListener, u16)> {
+    let address: IpAddr = bind_address
+        .parse()
+        .map_err(|_| TransferError::InvalidBindAddress(bind_address.to_string()))?;
+
     if let Some(port) = requested_port {
-        let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
-        eprintln!("[transfer] Attempting to bind 0.0.0.0:{port}");
-        let listener = TcpListener::bind(addr)
+        eprintln!("[transfer] Attempting to bind {bind_address}:{port}");
+        let listener = TcpListener::bind((address, port))
             .await
             .map_err(|_| TransferError::PortUnavailable(port))?;
-        eprintln!("[transfer] ✓ Bound successfully on 0.0.0.0:{port}");
+        eprintln!("[transfer] ✓ Bound successfully on {bind_address}:{port}");
         return Ok((listener, port));
     }
 
     for offset in 0..PORT_ATTEMPTS {
         let port = PORT_START + offset;
-        let addr = SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, port);
-        eprintln!("[transfer] Attempting to bind 0.0.0.0:{port}");
-        if let Ok(listener) = TcpListener::bind(addr).await {
-            eprintln!("[transfer] ✓ Bound successfully on 0.0.0.0:{port}");
+        eprintln!("[transfer] Attempting to bind {bind_address}:{port}");
+        if let Ok(listener) = TcpListener::bind((address, port)).await {
+            eprintln!("[transfer] ✓ Bound successfully on {bind_address}:{port}");
             return Ok((listener, port));
         }
     }
 
-    eprintln!("[transfer] ✗ All ports {PORT_START}-{} are unavailable", PORT_START + PORT_ATTEMPTS - 1);
+    eprintln!(
+        "[transfer] ✗ All ports {PORT_START}-{} are unavailable on {bind_address}",
+        PORT_START + PORT_ATTEMPTS - 1
+    );
     Err(TransferError::PortUnavailable(PORT_START))
 }
 
-/// Check if a network interface is likely virtual / VPN / tunnel.
-fn is_virtual_interface(name: &str, addresses: &[String]) -> bool {
-    let lower_name = name.to_lowercase();
-
-    // Check by name prefix
-    for prefix in VIRTUAL_ADAPTER_PREFIXES {
-        if lower_name.starts_with(&prefix.to_lowercase()) {
-            return true;
-        }
-    }
-
-    // Check by IP subnet
-    for addr in addresses {
-        for (subnet, _label) in VIRTUAL_SUBNETS {
-            if addr.starts_with(subnet) {
-                return true;
-            }
-        }
-    }
-
-    false
+fn list_interface_candidates() -> Vec<InterfaceCandidate> {
+    list_network_interface_summaries()
+        .into_iter()
+        .filter_map(candidate_from_summary)
+        .collect()
 }
 
-/// Check if an IP is in the CGNAT range (100.64.0.0/10) used by Tailscale/etc.
-fn is_cgnat_address(addr: &str) -> bool {
-    let octets: Vec<u8> = addr
-        .split('.')
-        .filter_map(|o| o.parse::<u8>().ok())
-        .collect();
-    if octets.len() != 4 {
-        return false;
+fn candidate_from_summary(summary: NetworkInterfaceSummary) -> Option<InterfaceCandidate> {
+    let mut addresses = summary
+        .ip_networks
+        .iter()
+        .filter_map(|entry| extract_ipv4_address(entry))
+        .collect::<Vec<_>>();
+
+    addresses.sort();
+    addresses.dedup();
+    if addresses.is_empty() {
+        return None;
     }
-    // 100.64.0.0 – 100.127.255.255
+
+    let is_virtual =
+        summary.is_virtual || guess_virtual_interface(&summary.name, &summary.interface_type);
+
+    Some(InterfaceCandidate {
+        name: summary.name,
+        addresses,
+        connection_status: summary.connection_status,
+        interface_type: summary.interface_type,
+        default_gateway: normalize_gateway(summary.default_gateway),
+        is_virtual,
+    })
+}
+
+fn compare_candidates(left: &InterfaceCandidate, right: &InterfaceCandidate) -> Ordering {
+    interface_rank(left)
+        .cmp(&interface_rank(right))
+        .then_with(|| left.name.to_lowercase().cmp(&right.name.to_lowercase()))
+}
+
+fn interface_rank(candidate: &InterfaceCandidate) -> (u8, u8, u8, u8, u8) {
+    let connected = candidate.connection_status == "connected";
+    let physical = !candidate.is_virtual
+        && !matches!(candidate.interface_type.as_str(), "loopback" | "tunnel");
+    let has_gateway = candidate.default_gateway.is_some();
+    let has_private_lan = candidate
+        .addresses
+        .iter()
+        .any(|address| parse_ipv4(address).is_some_and(|ip| is_private_lan_ipv4(&ip)));
+    let has_usable_ipv4 = candidate
+        .addresses
+        .iter()
+        .any(|address| parse_ipv4(address).is_some_and(|ip| is_usable_ipv4(&ip)));
+    let interface_type_rank = match candidate.interface_type.as_str() {
+        "ethernet" => 0,
+        "wifi" => 1,
+        "other" => 2,
+        "loopback" => 3,
+        "tunnel" => 4,
+        _ => 5,
+    };
+
+    let class = if connected && physical && has_gateway && has_private_lan {
+        0
+    } else if connected && physical && has_private_lan {
+        1
+    } else if connected && physical && has_usable_ipv4 {
+        2
+    } else if connected && has_private_lan {
+        3
+    } else if has_private_lan {
+        4
+    } else if connected && has_usable_ipv4 {
+        5
+    } else if has_usable_ipv4 {
+        6
+    } else {
+        7
+    };
+
+    (
+        class,
+        u8::from(!connected),
+        u8::from(candidate.is_virtual),
+        u8::from(!has_gateway),
+        interface_type_rank,
+    )
+}
+
+fn select_auto_address(candidates: &[InterfaceCandidate]) -> Option<(String, bool)> {
+    candidates
+        .iter()
+        .filter_map(|candidate| select_best_address(candidate).map(|address| (candidate, address)))
+        .min_by(|(left, _), (right, _)| compare_candidates(left, right))
+        .map(|(candidate, address)| (address, candidate.is_virtual))
+}
+
+fn select_best_address(candidate: &InterfaceCandidate) -> Option<String> {
+    let mut addresses = candidate
+        .addresses
+        .iter()
+        .filter_map(|address| {
+            let ipv4 = parse_ipv4(address)?;
+            Some((address_rank(&ipv4), address))
+        })
+        .collect::<Vec<_>>();
+
+    addresses.sort_by(|left, right| left.0.cmp(&right.0).then_with(|| left.1.cmp(right.1)));
+    addresses
+        .into_iter()
+        .find(|(rank, _)| *rank < 2)
+        .map(|(_, address)| address.to_string())
+}
+
+fn address_rank(address: &Ipv4Addr) -> u8 {
+    if is_private_lan_ipv4(address) {
+        0
+    } else if is_usable_ipv4(address) {
+        1
+    } else {
+        2
+    }
+}
+
+fn guess_virtual_interface(name: &str, interface_type: &str) -> bool {
+    if matches!(interface_type, "loopback" | "tunnel") {
+        return true;
+    }
+
+    let lower_name = name.to_lowercase();
+    VIRTUAL_ADAPTER_KEYWORDS
+        .iter()
+        .any(|keyword| lower_name.contains(keyword))
+}
+
+fn normalize_gateway(gateway: Option<String>) -> Option<String> {
+    let gateway = gateway?;
+    let ipv4 = parse_ipv4(gateway.trim())?;
+    is_usable_ipv4(&ipv4).then(|| ipv4.to_string())
+}
+
+fn parse_ipv4(value: &str) -> Option<Ipv4Addr> {
+    value.parse::<Ipv4Addr>().ok()
+}
+
+fn is_private_lan_ipv4(address: &Ipv4Addr) -> bool {
+    address.is_private() && !is_cgnat_ipv4(address)
+}
+
+fn is_usable_ipv4(address: &Ipv4Addr) -> bool {
+    !address.is_loopback()
+        && !address.is_unspecified()
+        && !address.is_link_local()
+        && !is_cgnat_ipv4(address)
+}
+
+fn is_cgnat_ipv4(address: &Ipv4Addr) -> bool {
+    let octets = address.octets();
     octets[0] == 100 && (64..=127).contains(&octets[1])
 }
 
@@ -209,5 +308,96 @@ fn extract_ipv4_address(entry: &str) -> Option<String> {
     match addr {
         IpAddr::V4(ipv4) if !ipv4.is_loopback() && !ipv4.is_unspecified() => Some(ipv4.to_string()),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{InterfaceCandidate, select_auto_address};
+
+    fn candidate(
+        name: &str,
+        addresses: &[&str],
+        connection_status: &str,
+        interface_type: &str,
+        default_gateway: Option<&str>,
+        is_virtual: bool,
+    ) -> InterfaceCandidate {
+        InterfaceCandidate {
+            name: name.to_string(),
+            addresses: addresses.iter().map(|entry| entry.to_string()).collect(),
+            connection_status: connection_status.to_string(),
+            interface_type: interface_type.to_string(),
+            default_gateway: default_gateway.map(str::to_string),
+            is_virtual,
+        }
+    }
+
+    #[test]
+    fn prefers_connected_physical_interface_with_gateway() {
+        let candidates = vec![
+            candidate(
+                "vEthernet (Docker)",
+                &["172.17.96.1"],
+                "connected",
+                "other",
+                Some("172.17.96.1"),
+                true,
+            ),
+            candidate(
+                "Wi-Fi",
+                &["192.168.1.24"],
+                "connected",
+                "wifi",
+                Some("192.168.1.1"),
+                false,
+            ),
+        ];
+
+        let (address, is_virtual) =
+            select_auto_address(&candidates).expect("should pick a LAN address");
+        assert_eq!(address, "192.168.1.24");
+        assert!(!is_virtual);
+    }
+
+    #[test]
+    fn falls_back_to_connected_physical_without_gateway() {
+        let candidates = vec![
+            candidate(
+                "Ethernet",
+                &["192.168.50.10"],
+                "connected",
+                "ethernet",
+                None,
+                false,
+            ),
+            candidate(
+                "Tailscale",
+                &["100.101.102.103"],
+                "connected",
+                "tunnel",
+                Some("100.100.100.100"),
+                true,
+            ),
+        ];
+
+        let (address, is_virtual) =
+            select_auto_address(&candidates).expect("should pick the physical LAN address");
+        assert_eq!(address, "192.168.50.10");
+        assert!(!is_virtual);
+    }
+
+    #[test]
+    fn rejects_cgnat_only_candidates() {
+        let candidates = vec![candidate(
+            "Tailscale",
+            &["100.101.102.103"],
+            "connected",
+            "tunnel",
+            Some("100.100.100.100"),
+            true,
+        )];
+
+        assert!(select_auto_address(&candidates).is_none());
     }
 }

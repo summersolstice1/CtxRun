@@ -66,13 +66,11 @@ pub async fn start_service<R: Runtime>(
     config.save_dir = normalize_optional_text(config.save_dir);
     config.bind_address = normalize_optional_text(config.bind_address);
 
-    // Resolve the LAN IP used for QR code / URL generation
     let lan_address = network::resolve_lan_address(config.bind_address.as_deref())?;
     eprintln!("[transfer] Resolved LAN address: {lan_address}");
 
-    // Bind on 0.0.0.0 (all interfaces) so LAN devices can connect
-    let (listener, port) = network::bind_listener(config.port).await?;
-    eprintln!("[transfer] Server listening on 0.0.0.0:{port}, LAN URL will use {lan_address}");
+    let (listener, port) = network::bind_listener(&lan_address, config.port).await?;
+    eprintln!("[transfer] Server listening on {lan_address}:{port}");
 
     let route_token = match config.url_mode {
         UrlMode::Random => Some(generate_token(12)),
@@ -106,7 +104,6 @@ pub async fn start_service<R: Runtime>(
         file_registry: Arc::new(RwLock::new(HashMap::new())),
         save_dir: Arc::new(save_dir),
         shutdown: CancellationToken::new(),
-        lan_address: lan_address.clone(),
     };
 
     coordinator.running = Some(server::spawn_server(listener, shared));
@@ -146,7 +143,10 @@ pub async fn send_message<R: Runtime>(
     state: State<'_, TransferState<R>>,
     request: SendMessageRequest,
 ) -> Result<()> {
-    let shared = state.current_shared().await.ok_or(TransferError::NotRunning)?;
+    let shared = state
+        .current_shared()
+        .await
+        .ok_or(TransferError::NotRunning)?;
     let content = request.content.trim();
     if content.is_empty() {
         return Err(TransferError::BadRequest(
@@ -186,12 +186,18 @@ pub async fn send_file<R: Runtime>(
     state: State<'_, TransferState<R>>,
     request: SendFileRequest,
 ) -> Result<SendFileResponse> {
-    let shared = state.current_shared().await.ok_or(TransferError::NotRunning)?;
+    let shared = state
+        .current_shared()
+        .await
+        .ok_or(TransferError::NotRunning)?;
     if !shared.device_manager.has_device(&request.device_id).await {
         return Err(TransferError::DeviceNotFound(request.device_id));
     }
 
-    let entry = create_file_entry(&request.device_id, PathBuf::from(&request.file_path).as_path())?;
+    let entry = create_file_entry(
+        &request.device_id,
+        PathBuf::from(&request.file_path).as_path(),
+    )?;
     let file_message = TransferMessage::file(
         request.device_id.clone(),
         crate::models::TransferMessageDirection::Sent,

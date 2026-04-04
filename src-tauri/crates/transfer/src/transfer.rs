@@ -94,7 +94,13 @@ pub fn build_content_disposition(file_name: &str) -> String {
     let encoded = utf8_percent_encode(file_name, CONTENT_DISPOSITION_SET).to_string();
     let ascii_fallback = file_name
         .chars()
-        .map(|ch| if ch.is_ascii() && !ch.is_control() { ch } else { '_' })
+        .map(|ch| {
+            if ch.is_ascii() && !ch.is_control() {
+                ch
+            } else {
+                '_'
+            }
+        })
         .collect::<String>();
     let ascii_fallback = if ascii_fallback.trim().is_empty() {
         "download.bin".to_string()
@@ -102,9 +108,7 @@ pub fn build_content_disposition(file_name: &str) -> String {
         ascii_fallback
     };
 
-    format!(
-        "attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}"
-    )
+    format!("attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}")
 }
 
 #[cfg(test)]

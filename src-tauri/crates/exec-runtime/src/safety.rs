@@ -69,7 +69,8 @@ pub fn assess_command(
     if looks_blocked_raw(trimmed) {
         return Ok(SafetyAssessment {
             decision: SafetyDecision::Blocked,
-            reason: "Blocked because the command includes a dangerous process or shell launcher.".to_string(),
+            reason: "Blocked because the command includes a dangerous process or shell launcher."
+                .to_string(),
             risk: ExecRiskLevel::High,
             workdir,
             parsed_commands: Vec::new(),
@@ -84,7 +85,9 @@ pub fn assess_command(
             if is_blocked_command(&fallback_words) {
                 return Ok(SafetyAssessment {
                     decision: SafetyDecision::Blocked,
-                    reason: "Blocked because the command maps to a dangerous cmdlet or shell launcher.".to_string(),
+                    reason:
+                        "Blocked because the command maps to a dangerous cmdlet or shell launcher."
+                            .to_string(),
                     risk: ExecRiskLevel::High,
                     workdir,
                     parsed_commands: vec![fallback_words],
@@ -129,10 +132,14 @@ pub fn assess_command(
         });
     }
 
-    if parsed_commands.iter().any(|words| is_blocked_command(words)) {
+    if parsed_commands
+        .iter()
+        .any(|words| is_blocked_command(words))
+    {
         return Ok(SafetyAssessment {
             decision: SafetyDecision::Blocked,
-            reason: "Blocked because the command maps to a dangerous cmdlet or shell launcher.".to_string(),
+            reason: "Blocked because the command maps to a dangerous cmdlet or shell launcher."
+                .to_string(),
             risk: ExecRiskLevel::High,
             workdir,
             parsed_commands,
@@ -140,7 +147,10 @@ pub fn assess_command(
         });
     }
 
-    if parsed_commands.iter().all(|words| is_safe_read_only_command(words)) {
+    if parsed_commands
+        .iter()
+        .all(|words| is_safe_read_only_command(words))
+    {
         return Ok(SafetyAssessment {
             decision: SafetyDecision::SafeAuto,
             reason: "Read-only command is in the auto-allowed safelist.".to_string(),
@@ -153,7 +163,8 @@ pub fn assess_command(
 
     Ok(SafetyAssessment {
         decision: SafetyDecision::ApprovalRequired,
-        reason: "Command is not in the read-only safelist and requires explicit approval.".to_string(),
+        reason: "Command is not in the read-only safelist and requires explicit approval."
+            .to_string(),
         risk: ExecRiskLevel::Medium,
         prefix_rule: suggested_prefix_rule(&parsed_commands),
         workdir,
@@ -234,10 +245,8 @@ fn looks_blocked_raw(command: &str) -> bool {
     static BLOCKED_PATTERN: std::sync::OnceLock<Regex> = std::sync::OnceLock::new();
 
     let blocked = BLOCKED_PATTERN.get_or_init(|| {
-        Regex::new(
-            r"(?i)\b(start-process|stop-process|invoke-item|ii|cmd|bash|sh)\b",
-        )
-        .expect("valid blocked regex")
+        Regex::new(r"(?i)\b(start-process|stop-process|invoke-item|ii|cmd|bash|sh)\b")
+            .expect("valid blocked regex")
     });
     blocked.is_match(command)
 }
@@ -312,10 +321,12 @@ fn encode_utf16_base64(script: &str) -> String {
 }
 
 fn try_parse_simple_command_words(script: &str) -> Option<Vec<String>> {
-    if script
-        .chars()
-        .any(|ch| matches!(ch, '|' | ';' | '&' | '>' | '<' | '$' | '`' | '(' | ')' | '{' | '}' | '[' | ']'))
-    {
+    if script.chars().any(|ch| {
+        matches!(
+            ch,
+            '|' | ';' | '&' | '>' | '<' | '$' | '`' | '(' | ')' | '{' | '}' | '[' | ']'
+        )
+    }) {
         return None;
     }
 
@@ -354,11 +365,7 @@ fn try_parse_simple_command_words(script: &str) -> Option<Vec<String>> {
         words.push(current);
     }
 
-    if words.is_empty() {
-        None
-    } else {
-        Some(words)
-    }
+    if words.is_empty() { None } else { Some(words) }
 }
 
 fn is_safe_read_only_command(words: &[String]) -> bool {
@@ -391,7 +398,10 @@ fn is_safe_git_command(words: &[String]) -> bool {
     while let Some(arg) = iter.next() {
         let arg_lc = arg.to_ascii_lowercase();
         if arg.starts_with('-') {
-            if matches!(arg_lc.as_str(), "-c" | "--config" | "--git-dir" | "--work-tree") {
+            if matches!(
+                arg_lc.as_str(),
+                "-c" | "--config" | "--git-dir" | "--work-tree"
+            ) {
                 if iter.next().is_none() {
                     return false;
                 }
@@ -452,13 +462,7 @@ fn is_blocked_command(words: &[String]) -> bool {
     let command = normalize_name(&words[0]);
     if matches!(
         command.as_str(),
-        "start-process"
-            | "stop-process"
-            | "invoke-item"
-            | "ii"
-            | "cmd"
-            | "bash"
-            | "sh"
+        "start-process" | "stop-process" | "invoke-item" | "ii" | "cmd" | "bash" | "sh"
     ) {
         return true;
     }
@@ -471,13 +475,19 @@ fn is_blocked_git_command(words: &[String]) -> bool {
     while let Some(arg) = iter.next() {
         let arg_lc = arg.to_ascii_lowercase();
         if arg.starts_with('-') {
-            if matches!(arg_lc.as_str(), "-c" | "--config" | "--git-dir" | "--work-tree") {
+            if matches!(
+                arg_lc.as_str(),
+                "-c" | "--config" | "--git-dir" | "--work-tree"
+            ) {
                 let _ = iter.next();
             }
             continue;
         }
 
-        return matches!(arg_lc.as_str(), "reset" | "clean" | "checkout" | "switch" | "restore");
+        return matches!(
+            arg_lc.as_str(),
+            "reset" | "clean" | "checkout" | "switch" | "restore"
+        );
     }
 
     false
@@ -538,9 +548,8 @@ mod tests {
     #[test]
     fn set_content_requires_approval_instead_of_blocking() {
         let workspace = TestWorkspace::new();
-        let assessment =
-            assess_command("Set-Content notes.txt hello", &workspace.root_str(), None)
-                .expect("assess command");
+        let assessment = assess_command("Set-Content notes.txt hello", &workspace.root_str(), None)
+            .expect("assess command");
 
         assert_eq!(assessment.decision, SafetyDecision::ApprovalRequired);
     }
@@ -566,9 +575,8 @@ mod tests {
     #[test]
     fn start_process_stays_blocked() {
         let workspace = TestWorkspace::new();
-        let assessment =
-            assess_command("Start-Process notepad", &workspace.root_str(), None)
-                .expect("assess command");
+        let assessment = assess_command("Start-Process notepad", &workspace.root_str(), None)
+            .expect("assess command");
 
         assert_eq!(assessment.decision, SafetyDecision::Blocked);
     }

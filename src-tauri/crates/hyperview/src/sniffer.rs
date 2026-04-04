@@ -78,9 +78,9 @@ pub fn detect_file_type(path_str: &str) -> crate::error::Result<FileMeta> {
     let mut p_type = match ext.as_str() {
         "md" | "markdown" => PreviewType::Markdown,
         "htm" | "html" => PreviewType::Html,
-        "txt" | "json" | "rs" | "js" | "ts" | "tsx" | "jsx" | "css" | "xml" | "yml"
-        | "yaml" | "toml" | "sql" | "py" | "java" | "c" | "cpp" | "h" | "sh" | "bat" | "cmd"
-        | "ps1" | "log" | "ini" | "conf" | "csv" | "tsv" => PreviewType::Code,
+        "txt" | "json" | "rs" | "js" | "ts" | "tsx" | "jsx" | "css" | "xml" | "yml" | "yaml"
+        | "toml" | "sql" | "py" | "java" | "c" | "cpp" | "h" | "sh" | "bat" | "cmd" | "ps1"
+        | "log" | "ini" | "conf" | "csv" | "tsv" => PreviewType::Code,
         "pdf" => PreviewType::Pdf,
         "docx" => PreviewType::Docx,
         "zip" | "rar" | "7z" | "tar" | "gz" => PreviewType::Archive,

@@ -156,13 +156,11 @@ impl ExecRuntime {
         }
     }
 
-    pub async fn write_exec(
-        &self,
-        session_id: &str,
-        input: &str,
-    ) -> Result<(), ExecRuntimeError> {
+    pub async fn write_exec(&self, session_id: &str, input: &str) -> Result<(), ExecRuntimeError> {
         let Some(session) = self.sessions.lock().await.get(session_id).cloned() else {
-            return Err(ExecRuntimeError::Message("exec session not found".to_string()));
+            return Err(ExecRuntimeError::Message(
+                "exec session not found".to_string(),
+            ));
         };
 
         let mut stdin_guard = session.stdin.lock().await;
@@ -188,7 +186,9 @@ impl ExecRuntime {
         session_id: &str,
     ) -> Result<(), ExecRuntimeError> {
         let Some(session) = self.sessions.lock().await.get(session_id).cloned() else {
-            return Err(ExecRuntimeError::Message("exec session not found".to_string()));
+            return Err(ExecRuntimeError::Message(
+                "exec session not found".to_string(),
+            ));
         };
 
         session.terminate_requested.store(true, Ordering::SeqCst);
@@ -278,10 +278,20 @@ impl ExecRuntime {
         );
 
         if let Some(stdout) = stdout {
-            spawn_output_task(app.clone(), handle.clone(), stdout, ExecOutputStream::Stdout);
+            spawn_output_task(
+                app.clone(),
+                handle.clone(),
+                stdout,
+                ExecOutputStream::Stdout,
+            );
         }
         if let Some(stderr) = stderr {
-            spawn_output_task(app.clone(), handle.clone(), stderr, ExecOutputStream::Stderr);
+            spawn_output_task(
+                app.clone(),
+                handle.clone(),
+                stderr,
+                ExecOutputStream::Stderr,
+            );
         }
         spawn_wait_task(self.sessions.clone(), app, handle.clone(), timeout_ms);
 
@@ -382,16 +392,12 @@ fn spawn_wait_task<R: Runtime>(
             )
         } else {
             match outcome {
-                WaitOutcome::ExitStatus(0) => (
-                    ExecSessionState::Completed,
-                    0,
-                    ExecExitReason::ExitZero,
-                ),
-                WaitOutcome::ExitStatus(code) => (
-                    ExecSessionState::Failed,
-                    code,
-                    ExecExitReason::ExitNonZero,
-                ),
+                WaitOutcome::ExitStatus(0) => {
+                    (ExecSessionState::Completed, 0, ExecExitReason::ExitZero)
+                }
+                WaitOutcome::ExitStatus(code) => {
+                    (ExecSessionState::Failed, code, ExecExitReason::ExitNonZero)
+                }
                 WaitOutcome::WaitError => (
                     ExecSessionState::Failed,
                     EXIT_CODE_WAIT_ERROR,

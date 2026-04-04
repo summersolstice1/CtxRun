@@ -7,25 +7,21 @@ use std::time::Instant;
 use listeners::{Protocol, get_all};
 use serde::Serialize;
 use starship_battery::{
-    Manager as BatteryManager,
-    State as BatteryState,
+    Manager as BatteryManager, State as BatteryState,
     units::{
-        electric_potential::volt,
-        energy::watt_hour,
-        power::watt,
-        thermodynamic_temperature::degree_celsius,
-        time::second,
+        electric_potential::volt, energy::watt_hour, power::watt,
+        thermodynamic_temperature::degree_celsius, time::second,
     },
 };
+#[cfg(target_os = "windows")]
+use std::net::IpAddr;
+#[cfg(target_os = "windows")]
+use std::ptr::NonNull;
 use sysinfo::{
     CpuRefreshKind, DiskKind, DiskRefreshKind, Disks, MemoryRefreshKind, Networks, Pid,
     ProcessRefreshKind, ProcessesToUpdate, RefreshKind, System, UpdateKind,
 };
 use tauri::State;
-#[cfg(target_os = "windows")]
-use std::net::IpAddr;
-#[cfg(target_os = "windows")]
-use std::ptr::NonNull;
 #[cfg(target_os = "windows")]
 use walkdir::WalkDir;
 #[cfg(target_os = "windows")]
@@ -34,9 +30,8 @@ use windows::Win32::Foundation::{
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::NetworkManagement::IpHelper::{
-    GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER, GAA_FLAG_SKIP_MULTICAST,
-    GetAdaptersAddresses, IP_ADAPTER_ADDRESSES_LH, IP_ADAPTER_GATEWAY_ADDRESS_LH,
-    IP_ADAPTER_UNICAST_ADDRESS_LH,
+    GAA_FLAG_SKIP_ANYCAST, GAA_FLAG_SKIP_DNS_SERVER, GAA_FLAG_SKIP_MULTICAST, GetAdaptersAddresses,
+    IP_ADAPTER_ADDRESSES_LH, IP_ADAPTER_GATEWAY_ADDRESS_LH, IP_ADAPTER_UNICAST_ADDRESS_LH,
 };
 #[cfg(target_os = "windows")]
 use windows::Win32::Networking::WinSock::{
@@ -334,11 +329,14 @@ fn collect_battery_metrics(
             cycle_count = battery.cycle_count();
         }
         if time_to_full_minutes.is_none() {
-            time_to_full_minutes = battery.time_to_full().map(|time| time.get::<second>() / 60.0);
+            time_to_full_minutes = battery
+                .time_to_full()
+                .map(|time| time.get::<second>() / 60.0);
         }
         if time_to_empty_minutes.is_none() {
-            time_to_empty_minutes =
-                battery.time_to_empty().map(|time| time.get::<second>() / 60.0);
+            time_to_empty_minutes = battery
+                .time_to_empty()
+                .map(|time| time.get::<second>() / 60.0);
         }
         if vendor.is_none() {
             vendor = battery.vendor().map(|value| value.to_string());
@@ -382,7 +380,8 @@ fn collect_battery_metrics(
         percent: charge_percent,
         health_percent,
         power_watts: (total_power_watts > 0.0).then_some(total_power_watts),
-        voltage_volts: (voltage_samples > 0).then_some(total_voltage_volts / voltage_samples as f32),
+        voltage_volts: (voltage_samples > 0)
+            .then_some(total_voltage_volts / voltage_samples as f32),
         energy_wh: (total_energy_wh > 0.0).then_some(total_energy_wh),
         energy_full_wh: (total_energy_full_wh > 0.0).then_some(total_energy_full_wh),
         energy_design_wh: (total_energy_design_wh > 0.0).then_some(total_energy_design_wh),
@@ -398,10 +397,9 @@ fn collect_battery_metrics(
 }
 
 fn collect_disk_summaries(resources: &mut MonitorProbeResources) -> Vec<DiskSummary> {
-    resources.disks.refresh_specifics(
-        true,
-        DiskRefreshKind::nothing().with_kind().with_storage(),
-    );
+    resources
+        .disks
+        .refresh_specifics(true, DiskRefreshKind::nothing().with_kind().with_storage());
 
     let mut disks = resources
         .disks
@@ -432,7 +430,11 @@ fn collect_disk_summaries(resources: &mut MonitorProbeResources) -> Vec<DiskSumm
         })
         .collect::<Vec<_>>();
 
-    disks.sort_by(|a, b| a.mount_point.to_lowercase().cmp(&b.mount_point.to_lowercase()));
+    disks.sort_by(|a, b| {
+        a.mount_point
+            .to_lowercase()
+            .cmp(&b.mount_point.to_lowercase())
+    });
     disks
 }
 
@@ -455,7 +457,9 @@ fn collect_network_interface_summaries(
         .iter()
         .map(|(name, network)| {
             let received_bytes_per_sec = if can_calculate_rate {
-                (network.received() as f64 / elapsed_seconds).round().max(0.0) as u64
+                (network.received() as f64 / elapsed_seconds)
+                    .round()
+                    .max(0.0) as u64
             } else {
                 0
             };
@@ -480,27 +484,42 @@ fn collect_network_interface_summaries(
         })
         .collect::<HashMap<_, _>>();
 
+    let mut interfaces = build_network_interface_summaries(&resources.networks);
+    for interface in &mut interfaces {
+        if let Some(traffic) = traffic_by_name.get(&interface.name).copied() {
+            interface.received_bytes_per_sec = traffic.received_bytes_per_sec;
+            interface.transmitted_bytes_per_sec = traffic.transmitted_bytes_per_sec;
+            interface.total_received = traffic.total_received;
+            interface.total_transmitted = traffic.total_transmitted;
+        }
+    }
+    interfaces
+}
+
+pub fn list_network_interface_summaries() -> Vec<NetworkInterfaceSummary> {
+    let networks = Networks::new_with_refreshed_list();
+    build_network_interface_summaries(&networks)
+}
+
+fn build_network_interface_summaries(networks: &Networks) -> Vec<NetworkInterfaceSummary> {
     #[cfg(target_os = "windows")]
     {
         if let Ok(mut adapters) = collect_windows_network_adapters() {
             let mut interfaces = adapters
                 .drain(..)
-                .map(|adapter| {
-                    let traffic = traffic_by_name.get(&adapter.name).copied().unwrap_or_default();
-                    NetworkInterfaceSummary {
-                        name: adapter.name,
-                        mac_address: adapter.mac_address,
-                        ip_networks: adapter.ip_networks,
-                        mtu: adapter.mtu,
-                        connection_status: adapter.connection_status,
-                        interface_type: adapter.interface_type,
-                        default_gateway: adapter.default_gateway,
-                        is_virtual: adapter.is_virtual,
-                        received_bytes_per_sec: traffic.received_bytes_per_sec,
-                        transmitted_bytes_per_sec: traffic.transmitted_bytes_per_sec,
-                        total_received: traffic.total_received,
-                        total_transmitted: traffic.total_transmitted,
-                    }
+                .map(|adapter| NetworkInterfaceSummary {
+                    name: adapter.name,
+                    mac_address: adapter.mac_address,
+                    ip_networks: adapter.ip_networks,
+                    mtu: adapter.mtu,
+                    connection_status: adapter.connection_status,
+                    interface_type: adapter.interface_type,
+                    default_gateway: adapter.default_gateway,
+                    is_virtual: adapter.is_virtual,
+                    received_bytes_per_sec: 0,
+                    transmitted_bytes_per_sec: 0,
+                    total_received: 0,
+                    total_transmitted: 0,
                 })
                 .collect::<Vec<_>>();
 
@@ -509,8 +528,13 @@ fn collect_network_interface_summaries(
         }
     }
 
-    let mut interfaces = resources
-        .networks
+    build_network_interface_summaries_from_sysinfo(networks)
+}
+
+fn build_network_interface_summaries_from_sysinfo(
+    networks: &Networks,
+) -> Vec<NetworkInterfaceSummary> {
+    let mut interfaces = networks
         .list()
         .iter()
         .map(|(name, network)| {
@@ -531,8 +555,6 @@ fn collect_network_interface_summaries(
                 "connected".to_string()
             };
 
-            let traffic = traffic_by_name.get(name).copied().unwrap_or_default();
-
             NetworkInterfaceSummary {
                 name: name.clone(),
                 mac_address,
@@ -542,10 +564,10 @@ fn collect_network_interface_summaries(
                 interface_type: "other".to_string(),
                 default_gateway: None,
                 is_virtual: false,
-                received_bytes_per_sec: traffic.received_bytes_per_sec,
-                transmitted_bytes_per_sec: traffic.transmitted_bytes_per_sec,
-                total_received: traffic.total_received,
-                total_transmitted: traffic.total_transmitted,
+                received_bytes_per_sec: 0,
+                transmitted_bytes_per_sec: 0,
+                total_received: 0,
+                total_transmitted: 0,
             }
         })
         .collect::<Vec<_>>();

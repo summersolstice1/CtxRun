@@ -70,7 +70,9 @@ impl ClipboardHandler for RefineryListener {
         let active_window = get_active_window().ok();
         let app_name = active_window.as_ref().map(|w| w.info.exec_name.clone());
 
-        if let Some(ref name) = app_name && self.is_self_app(name) {
+        if let Some(ref name) = app_name
+            && self.is_self_app(name)
+        {
             return;
         }
 

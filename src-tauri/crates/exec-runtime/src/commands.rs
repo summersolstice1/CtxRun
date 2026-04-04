@@ -33,10 +33,7 @@ pub async fn approve_exec<R: Runtime>(
 }
 
 #[tauri::command]
-pub async fn write_exec(
-    state: State<'_, ExecRuntime>,
-    request: ExecWriteRequest,
-) -> Result<()> {
+pub async fn write_exec(state: State<'_, ExecRuntime>, request: ExecWriteRequest) -> Result<()> {
     state
         .write_exec(&request.session_id, &request.input)
         .await
@@ -44,10 +41,7 @@ pub async fn write_exec(
 }
 
 #[tauri::command]
-pub async fn resize_exec(
-    state: State<'_, ExecRuntime>,
-    request: ExecResizeRequest,
-) -> Result<()> {
+pub async fn resize_exec(state: State<'_, ExecRuntime>, request: ExecResizeRequest) -> Result<()> {
     let _size = (request.cols, request.rows);
     state
         .resize_exec(&request.session_id)

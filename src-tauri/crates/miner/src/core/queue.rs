@@ -183,7 +183,8 @@ pub async fn run_crawl_task_with_sink(
                                         .saturating_sub(crawled_count_clone.load(Ordering::SeqCst))
                                         .saturating_sub(
                                             queued_tasks_clone.load(Ordering::SeqCst) as u32
-                                        ) as usize;
+                                        )
+                                        as usize;
 
                                     let mut pending_enqueue = Vec::new();
                                     if remaining_slots > 0 {

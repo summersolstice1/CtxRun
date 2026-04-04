@@ -109,7 +109,10 @@ mod tests {
         assert_eq!(join.to_string(), "Async operation failed: join failed");
         assert_eq!(from_string.to_string(), "message");
         assert_eq!(from_str.to_string(), "message-ref");
-        assert_eq!(tauri.to_string(), "Tauri error: asset not found: missing.txt");
+        assert_eq!(
+            tauri.to_string(),
+            "Tauri error: asset not found: missing.txt"
+        );
         assert!(poisoned.to_string().contains("Mutex lock failed:"));
 
         let serialized = serde_json::to_string(&clipboard).expect("serialize refinery error");

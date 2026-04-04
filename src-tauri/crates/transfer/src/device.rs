@@ -46,7 +46,11 @@ impl DeviceManager {
     }
 
     pub async fn remove_device(&self, device_id: &str) -> Option<TransferDevice> {
-        self.devices.write().await.remove(device_id).map(|entry| entry.device)
+        self.devices
+            .write()
+            .await
+            .remove(device_id)
+            .map(|entry| entry.device)
     }
 
     pub async fn list_devices(&self) -> Vec<TransferDevice> {

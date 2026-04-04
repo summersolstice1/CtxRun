@@ -105,9 +105,14 @@ fn centralized_runtime_registers_fs_tools_and_aliases() {
 #[test]
 fn centralized_runtime_command_wrapper_lists_registered_tools() {
     let runtime = ToolRuntime::new();
-    let tools = commands::list_tools(state_of(&runtime)).expect("list tools through command wrapper");
+    let tools =
+        commands::list_tools(state_of(&runtime)).expect("list tools through command wrapper");
     assert!(tools.iter().any(|tool| tool.name == "read_file"));
-    assert!(tools.iter().any(|tool| tool.name == "patch.preview_search_replace"));
+    assert!(
+        tools
+            .iter()
+            .any(|tool| tool.name == "patch.preview_search_replace")
+    );
 }
 
 #[tokio::test]
@@ -182,7 +187,9 @@ async fn centralized_list_dir_tool_respects_depth_and_paging() {
         .await;
 
     let data = ensure_success(&response, "list_dir should succeed");
-    let entries = data["entries"].as_array().expect("entries should be an array");
+    let entries = data["entries"]
+        .as_array()
+        .expect("entries should be an array");
     assert_eq!(
         entries,
         &vec![
@@ -250,7 +257,11 @@ async fn centralized_patch_preview_supports_fuzzy_whitespace_match() {
     let root = temp_root("patch-fuzzy");
     let src_dir = root.join("src");
     fs::create_dir_all(&src_dir).expect("create src");
-    fs::write(src_dir.join("lib.rs"), "fn demo() {\n    let value = 1;\n}\n").expect("write file");
+    fs::write(
+        src_dir.join("lib.rs"),
+        "fn demo() {\n    let value = 1;\n}\n",
+    )
+    .expect("write file");
 
     let patch = r#"
 File: src/lib.rs
@@ -310,7 +321,9 @@ async fn centralized_grep_files_respects_limit() {
         .await;
 
     let data = ensure_success(&response, "grep_files should succeed");
-    let matches = data["matches"].as_array().expect("matches should be an array");
+    let matches = data["matches"]
+        .as_array()
+        .expect("matches should be an array");
     assert_eq!(matches.len(), 2, "grep_files should apply the limit");
 
     let _ = fs::remove_dir_all(root);
@@ -341,7 +354,9 @@ async fn centralized_grep_files_exact_limit_is_not_truncated() {
         .await;
 
     let data = ensure_success(&response, "grep_files should succeed");
-    let matches = data["matches"].as_array().expect("matches should be an array");
+    let matches = data["matches"]
+        .as_array()
+        .expect("matches should be an array");
     assert_eq!(matches.len(), 3, "grep_files should return all matches");
     assert_eq!(
         data["truncated"].as_bool(),
@@ -411,7 +426,10 @@ async fn centralized_patch_apply_writes_file_when_approved() {
         })
         .await;
 
-    let data = ensure_success(&response, "approved patch.apply_file_content should succeed");
+    let data = ensure_success(
+        &response,
+        "approved patch.apply_file_content should succeed",
+    );
     assert_eq!(data["filePath"], json!("note.txt"));
     assert_eq!(data["bytesWritten"], json!(5));
     let current = fs::read_to_string(&target).expect("read after approved apply");

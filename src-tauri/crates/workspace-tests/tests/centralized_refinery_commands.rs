@@ -183,8 +183,14 @@ fn centralized_refinery_history_commands_cover_filters_details_stats_and_pin_tog
         vec!["note-1", "image-1", "text-1"]
     );
     assert_eq!(all[1].content.as_deref(), Some("/tmp/image.png"));
-    assert_eq!(all[2].content, None, "history list should not expose text bodies");
-    assert_eq!(all[2].tags.as_ref().map(|tags| tags[0].as_str()), Some("tag-a"));
+    assert_eq!(
+        all[2].content, None,
+        "history list should not expose text bodies"
+    );
+    assert_eq!(
+        all[2].tags.as_ref().map(|tags| tags[0].as_str()),
+        Some("tag-a")
+    );
 
     let search = commands::get_refinery_history(
         state_of(&db_state),
@@ -340,13 +346,14 @@ fn centralized_refinery_delete_and_clear_history_remove_rows_and_image_files() {
         0
     );
 
-    let deleted_old = commands::delete_refinery_items(
-        state_of(&db_state),
-        vec!["image-old".into()],
-    )
-    .expect("delete direct image row");
+    let deleted_old =
+        commands::delete_refinery_items(state_of(&db_state), vec!["image-old".into()])
+            .expect("delete direct image row");
     assert_eq!(deleted_old, 1);
-    assert!(!image_path.exists(), "image-backed entries should remove their cached file");
+    assert!(
+        !image_path.exists(),
+        "image-backed entries should remove their cached file"
+    );
 
     let deleted_pinned = commands::clear_refinery_history(
         state_of(&db_state),
