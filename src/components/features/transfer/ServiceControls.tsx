@@ -72,9 +72,9 @@ export function ServiceControls({
   const modeLabel = serviceInfo?.urlMode === 'fixed' ? t('transfer.fixedLink') : t('transfer.randomLink');
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[#091323]/85 shadow-[0_28px_80px_rgba(0,0,0,0.36)] backdrop-blur-xl">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.22),transparent_34%),radial-gradient(circle_at_right,rgba(59,130,246,0.12),transparent_26%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-300/50 to-transparent" />
+    <section className="relative overflow-hidden rounded-[32px] border border-border/70 bg-background/80 shadow-[0_24px_70px_rgba(148,163,184,0.16)] backdrop-blur-xl dark:border-white/10 dark:bg-[#091323]/85 dark:shadow-[0_28px_80px_rgba(0,0,0,0.36)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.14),transparent_34%),radial-gradient(circle_at_right,rgba(14,165,233,0.08),transparent_26%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.22),transparent_34%),radial-gradient(circle_at_right,rgba(59,130,246,0.12),transparent_26%)]" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/35 to-transparent dark:via-cyan-300/50" />
 
       <div className="relative px-5 py-5 md:px-6 md:py-6">
         <div className="flex flex-col gap-5">
@@ -85,55 +85,56 @@ export function ServiceControls({
                   className={cn(
                     'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em]',
                     isRunning
-                      ? 'border-emerald-400/30 bg-emerald-500/10 text-emerald-200'
-                      : 'border-white/10 bg-white/5 text-slate-300'
+                      ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:text-emerald-200'
+                      : 'border-border/70 bg-background/60 text-muted-foreground dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
                   )}
                 >
                   <span
                     className={cn(
                       'h-2 w-2 rounded-full',
-                      isRunning ? 'bg-emerald-400 shadow-[0_0_14px_rgba(74,222,128,0.85)]' : 'bg-slate-500'
+                      isRunning
+                        ? 'bg-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.45)] dark:bg-emerald-400 dark:shadow-[0_0_14px_rgba(74,222,128,0.85)]'
+                        : 'bg-muted-foreground/60 dark:bg-slate-500'
                     )}
                   />
                   {isRunning ? t('transfer.ready') : t('transfer.offline')}
                 </span>
 
-                <span className="inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-100">
+                <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-700 dark:border-cyan-400/15 dark:text-cyan-100">
                   <Shield size={12} />
                   {t('transfer.secureLocal')}
                 </span>
 
                 {isRunning && (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-slate-300">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-[11px] font-medium text-foreground/75 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                     <Wifi size={12} />
                     {devicesCount} · {t('transfer.connectedDevices')}
                   </span>
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-400/20 bg-cyan-500/12 text-cyan-200 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-cyan-400/20 dark:bg-cyan-500/12 dark:text-cyan-200 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                       <Radio size={20} />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-semibold tracking-tight text-slate-50 md:text-[2rem]">
+                      <h2 className="text-2xl font-semibold tracking-tight text-foreground dark:text-slate-50 md:text-[2rem]">
                         {t('transfer.title')}
                       </h2>
-                      <p className="mt-1 text-sm text-slate-400 md:text-[15px]">{t('transfer.subtitle')}</p>
                     </div>
                   </div>
 
                 {serviceInfo && (
-                  <div className="flex flex-wrap items-center gap-2 pt-2 text-xs text-slate-300/75">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-foreground/75 dark:text-slate-300/75">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/[0.04]">
                       <Link2 size={12} />
                       {details?.host}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/[0.04]">
                       {t('transfer.port')}: {details?.port}
                     </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/[0.04]">
                       {modeLabel}
                     </span>
                   </div>
@@ -146,7 +147,7 @@ export function ServiceControls({
                 <Button
                   variant="outline"
                   onClick={() => setDetailsOpen((open) => !open)}
-                  className="h-11 gap-2 rounded-2xl border-white/10 bg-white/[0.04] px-4 text-slate-100 hover:border-cyan-300/30 hover:bg-cyan-500/10 hover:text-cyan-50"
+                  className="h-11 gap-2 rounded-2xl border-border/70 bg-background/60 px-4 text-foreground hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-cyan-300/30 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
                 >
                   <QrCode size={15} />
                   {detailsOpen ? t('transfer.hideDetails') : t('transfer.showDetails')}
@@ -189,45 +190,45 @@ export function ServiceControls({
                 transition={{ duration: 0.24, ease: 'easeOut' }}
                 className="overflow-hidden"
               >
-                <div className="grid gap-4 rounded-[28px] border border-white/10 bg-black/15 p-4 md:p-5 xl:grid-cols-[minmax(0,1.45fr)_280px]">
+                <div className="grid gap-4 rounded-[28px] border border-border/70 bg-background/55 p-4 md:p-5 xl:grid-cols-[minmax(0,1.45fr)_280px] dark:border-white/10 dark:bg-black/15">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm font-medium text-slate-100">
-                      <CheckCheck size={16} className="text-cyan-300" />
+                    <div className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-slate-100">
+                      <CheckCheck size={16} className="text-cyan-600 dark:text-cyan-300" />
                       {t('transfer.sessionDetails')}
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      <div className="rounded-2xl border border-border/60 bg-background/72 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-400">
                           {t('transfer.address')}
                         </div>
-                        <div className="mt-3 break-all font-mono text-sm text-slate-100">{details?.host}</div>
+                        <div className="mt-3 break-all font-mono text-sm text-foreground dark:text-slate-100">{details?.host}</div>
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      <div className="rounded-2xl border border-border/60 bg-background/72 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-400">
                           {t('transfer.route')}
                         </div>
-                        <div className="mt-3 break-all font-mono text-sm text-slate-100">{details?.route}</div>
+                        <div className="mt-3 break-all font-mono text-sm text-foreground dark:text-slate-100">{details?.route}</div>
                       </div>
 
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4 sm:col-span-2 xl:col-span-1">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      <div className="rounded-2xl border border-border/60 bg-background/72 p-4 sm:col-span-2 xl:col-span-1 dark:border-white/10 dark:bg-white/[0.03]">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-400">
                           {t('transfer.linkMode')}
                         </div>
-                        <div className="mt-3 text-sm text-slate-100">{modeLabel}</div>
+                        <div className="mt-3 text-sm text-foreground dark:text-slate-100">{modeLabel}</div>
                       </div>
                     </div>
 
-                    <div className="rounded-[24px] border border-cyan-400/12 bg-gradient-to-br from-cyan-500/[0.10] via-white/[0.04] to-transparent p-4 md:p-5">
+                    <div className="rounded-[24px] border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.10] via-white/70 to-transparent p-4 md:p-5 dark:border-cyan-400/12 dark:via-white/[0.04]">
                       <div className="space-y-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-100/75">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700/80 dark:text-cyan-100/75">
                           {t('transfer.serviceUrl')}
                         </div>
 
                         <div className="flex flex-col gap-3 md:flex-row md:items-center">
                           <div
-                            className="min-w-0 flex-1 overflow-hidden text-ellipsis rounded-2xl border border-white/10 bg-black/20 px-4 py-3 font-mono text-sm leading-6 text-slate-50"
+                            className="min-w-0 flex-1 overflow-hidden text-ellipsis rounded-2xl border border-border/70 bg-white/80 px-4 py-3 font-mono text-sm leading-6 text-foreground dark:border-white/10 dark:bg-black/20 dark:text-slate-50"
                             title={serviceInfo.url}
                           >
                             {serviceInfo.url}
@@ -236,17 +237,17 @@ export function ServiceControls({
                           <Button
                             variant="outline"
                             onClick={onCopyUrl}
-                            className="h-11 shrink-0 gap-2 rounded-2xl border-white/10 bg-white/[0.05] px-4 text-slate-100 hover:border-cyan-300/30 hover:bg-cyan-500/10 hover:text-cyan-50"
+                            className="h-11 shrink-0 gap-2 rounded-2xl border-border/70 bg-background/60 px-4 text-foreground hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-cyan-300/30 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
                           >
                             <Copy size={14} />
                             {copied ? t('transfer.copied') : t('transfer.copyUrl')}
                           </Button>
                         </div>
 
-                        <div className="flex items-start gap-3 text-sm text-slate-300/78">
-                          <FolderDown size={16} className="mt-0.5 shrink-0 text-cyan-200" />
+                        <div className="flex items-start gap-3 text-sm text-foreground/75 dark:text-slate-300/78">
+                          <FolderDown size={16} className="mt-0.5 shrink-0 text-cyan-700 dark:text-cyan-200" />
                           <div className="min-w-0">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+                            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-500">
                               {t('transfer.saveDir')}
                             </div>
                             <div className="mt-1 truncate" title={serviceInfo.saveDir}>
@@ -258,23 +259,23 @@ export function ServiceControls({
                     </div>
                   </div>
 
-                  <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+                  <div className="rounded-[28px] border border-border/60 bg-background/70 p-4 dark:border-white/10 dark:bg-white/[0.04]">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-400">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground dark:text-slate-400">
                           QR
                         </div>
                       </div>
-                      <div className="rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-100">
+                      <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-700 dark:border-cyan-400/20 dark:text-cyan-100">
                         {t('transfer.secureLocal')}
                       </div>
                     </div>
 
-                    <div className="mt-4 rounded-[24px] border border-white/10 bg-white p-4 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                    <div className="mt-4 rounded-[24px] border border-border/60 bg-white p-4 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] dark:border-white/10">
                       <QrCodeSVG matrix={serviceInfo.qrMatrix} />
                     </div>
 
-                    <div className="mt-4 h-1 rounded-full bg-gradient-to-r from-transparent via-cyan-300/25 to-transparent" />
+                    <div className="mt-4 h-1 rounded-full bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent dark:via-cyan-300/25" />
                   </div>
                 </div>
               </motion.div>

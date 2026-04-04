@@ -58,30 +58,30 @@ export function ChatPanel({
   const canInteract = Boolean(selectedDevice && isRunning && !isBusy);
 
   return (
-    <section className="flex min-w-0 flex-1 flex-col rounded-[30px] border border-white/10 bg-[#081120]/80 shadow-[0_24px_90px_rgba(0,0,0,0.28)] backdrop-blur-xl">
+    <section className="flex min-w-0 flex-1 flex-col rounded-[30px] border border-border/70 bg-background/80 shadow-[0_24px_70px_rgba(148,163,184,0.16)] backdrop-blur-xl dark:border-white/10 dark:bg-[#081120]/80 dark:shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
       {selectedDevice ? (
         <>
-          <div className="border-b border-white/10 px-5 py-5 md:px-6">
+          <div className="border-b border-border/60 px-5 py-5 dark:border-white/10 md:px-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-500/12 text-cyan-100">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/15 dark:bg-cyan-500/12 dark:text-cyan-100">
                   {selectedDevice.name.slice(0, 1).toUpperCase()}
                 </div>
                 <div className="min-w-0">
-                  <div className="truncate text-xl font-semibold text-slate-50">{selectedDevice.name}</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-200">
+                  <div className="truncate text-xl font-semibold text-foreground dark:text-slate-50">{selectedDevice.name}</div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground dark:text-slate-400">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-700 dark:border-emerald-400/20 dark:text-emerald-200">
                       <span className="h-2 w-2 rounded-full bg-emerald-400" />
                       {t('transfer.online')}
                     </span>
                     <span>{selectedDevice.ipAddress}</span>
-                    <span className="text-slate-600">/</span>
-                    <span className="uppercase tracking-[0.2em] text-slate-500">{selectedDevice.deviceType}</span>
+                    <span className="text-muted-foreground/40 dark:text-slate-600">/</span>
+                    <span className="uppercase tracking-[0.2em] text-muted-foreground dark:text-slate-500">{selectedDevice.deviceType}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-muted-foreground dark:text-slate-400">
                 {t('transfer.sessionWorkspace')} · {messages.length}
               </div>
             </div>
@@ -91,19 +91,16 @@ export function ChatPanel({
             ref={scrollRef}
             className="relative flex-1 overflow-y-auto px-4 py-5 custom-scrollbar md:px-6"
           >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_34%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(6,182,212,0.07),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.55),transparent_34%)] dark:bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_34%)]" />
 
             <div className="relative space-y-4">
               {messages.length === 0 ? (
-                <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-white/12 bg-white/[0.03] px-8 text-center">
+                <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-border/60 bg-background/60 px-8 text-center dark:border-white/12 dark:bg-white/[0.03]">
                   <div className="max-w-md">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-300/15 bg-cyan-500/10 text-cyan-100">
+                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/15 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/15 dark:text-cyan-100">
                       <Sparkles size={20} />
                     </div>
-                    <div className="mt-4 text-lg font-semibold text-slate-50">{t('transfer.emptyChat')}</div>
-                    <div className="mt-2 text-sm leading-7 text-slate-400">
-                      {t('transfer.workspaceWaitingBody')}
-                    </div>
+                    <div className="mt-4 text-lg font-semibold text-foreground dark:text-slate-50">{t('transfer.emptyChat')}</div>
                   </div>
                 </div>
               ) : (
@@ -111,9 +108,9 @@ export function ChatPanel({
                   if (message.kind === 'system') {
                     return (
                       <div key={message.id} className="flex justify-center">
-                        <div className="rounded-full border border-white/8 bg-white/[0.04] px-4 py-1.5 text-center text-xs tracking-[0.16em] text-slate-400">
-                          {message.content}
-                        </div>
+                          <div className="rounded-full border border-border/50 bg-background/70 px-4 py-1.5 text-center text-xs tracking-[0.16em] text-muted-foreground dark:border-white/8 dark:bg-white/[0.04] dark:text-slate-400">
+                            {message.content}
+                          </div>
                       </div>
                     );
                   }
@@ -123,25 +120,25 @@ export function ChatPanel({
                     <div key={message.id} className={cn('flex', outgoing ? 'justify-end' : 'justify-start')}>
                       <div
                         className={cn(
-                          'max-w-[82%] rounded-[24px] border px-4 py-4 shadow-[0_14px_40px_rgba(0,0,0,0.18)]',
+                          'max-w-[82%] rounded-[24px] border px-4 py-4 shadow-[0_14px_40px_rgba(148,163,184,0.14)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.18)]',
                           outgoing
-                            ? 'border-cyan-300/15 bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(8,17,32,0.85))]'
-                            : 'border-white/10 bg-white/[0.04]'
+                            ? 'border-cyan-500/20 bg-[linear-gradient(135deg,rgba(6,182,212,0.15),rgba(255,255,255,0.96))] dark:border-cyan-300/15 dark:bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(8,17,32,0.85))]'
+                            : 'border-border/60 bg-white/72 dark:border-white/10 dark:bg-white/[0.04]'
                         )}
                       >
                         {message.kind === 'text' ? (
-                          <div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-slate-50">
+                          <div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground dark:text-slate-50">
                             {message.content}
                           </div>
                         ) : (
                           <div className="space-y-4">
                             <div className="flex items-start gap-3">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-slate-200">
+                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-background/60 text-foreground dark:border-white/10 dark:bg-black/20 dark:text-slate-200">
                                 <Paperclip size={15} />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-semibold text-slate-50">{message.fileName}</div>
-                                <div className="mt-1 text-xs text-slate-400">
+                                <div className="truncate text-sm font-semibold text-foreground dark:text-slate-50">{message.fileName}</div>
+                                <div className="mt-1 text-xs text-muted-foreground dark:text-slate-400">
                                   {formatFileSize(message.fileSize)} ·{' '}
                                   {message.status ? t(`transfer.${message.status}`) : t('transfer.pending')}
                                 </div>
@@ -149,13 +146,13 @@ export function ChatPanel({
                             </div>
 
                             <div className="space-y-2">
-                              <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                              <div className="h-1.5 overflow-hidden rounded-full bg-border/60 dark:bg-white/10">
                                 <div
                                   className="h-full bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-400 transition-all duration-200"
                                   style={{ width: `${Math.max(message.progressPercent ?? 0, message.status === 'completed' ? 100 : 6)}%` }}
                                 />
                               </div>
-                              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-slate-500">
+                              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground dark:text-slate-500">
                                 <span>{message.status ? t(`transfer.${message.status}`) : t('transfer.pending')}</span>
                                 <span>{Math.round(message.progressPercent ?? (message.status === 'completed' ? 100 : 0))}%</span>
                               </div>
@@ -166,7 +163,7 @@ export function ChatPanel({
                                 variant="outline"
                                 size="sm"
                                 onClick={() => void onOpenFolder(message.savedPath!)}
-                                className="gap-2 rounded-xl border-white/10 bg-white/[0.04] text-slate-100 hover:border-cyan-300/25 hover:bg-cyan-500/10 hover:text-cyan-50"
+                                className="gap-2 rounded-xl border-border/70 bg-background/60 text-foreground hover:border-cyan-500/25 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-cyan-300/25 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
                               >
                                 <FolderOpen size={13} />
                                 {t('transfer.openFolder')}
@@ -175,7 +172,7 @@ export function ChatPanel({
                           </div>
                         )}
 
-                        <div className="mt-3 text-[11px] uppercase tracking-[0.18em] text-slate-500">
+                        <div className="mt-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground dark:text-slate-500">
                           {formatClock(message.timestampMs)}
                         </div>
                       </div>
@@ -186,8 +183,8 @@ export function ChatPanel({
             </div>
           </div>
 
-          <div className="border-t border-white/10 px-4 py-4 md:px-6 md:py-5">
-            <div className="rounded-[26px] border border-white/10 bg-black/15 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <div className="border-t border-border/60 px-4 py-4 dark:border-white/10 md:px-6 md:py-5">
+            <div className="rounded-[26px] border border-border/60 bg-background/60 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/10 dark:bg-black/15 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
               <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
                 <textarea
                   value={draft}
@@ -200,14 +197,14 @@ export function ChatPanel({
                   }}
                   disabled={!canInteract}
                   placeholder={t('transfer.inputPlaceholder')}
-                  className="min-h-[72px] rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm leading-6 text-slate-50 outline-none transition-colors placeholder:text-slate-500 focus-visible:border-cyan-300/25 focus-visible:ring-2 focus-visible:ring-cyan-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="min-h-[72px] rounded-[20px] border border-border/70 bg-white/78 px-4 py-3 text-sm leading-6 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus-visible:border-cyan-300/25 dark:focus-visible:ring-cyan-400/20"
                 />
 
                 <Button
                   variant="outline"
                   onClick={() => void onAttachFile()}
                   disabled={!canInteract}
-                  className="h-auto min-h-[56px] gap-2 rounded-[20px] border-white/10 bg-white/[0.04] px-4 text-slate-100 hover:border-cyan-300/25 hover:bg-cyan-500/10 hover:text-cyan-50"
+                  className="h-auto min-h-[56px] gap-2 rounded-[20px] border-border/70 bg-background/60 px-4 text-foreground hover:border-cyan-500/25 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-cyan-300/25 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
                 >
                   <Paperclip size={15} />
                   {t('transfer.attachFile')}
@@ -227,15 +224,12 @@ export function ChatPanel({
         </>
       ) : (
         <div className="flex flex-1 items-center justify-center px-6 py-8">
-          <div className="max-w-xl rounded-[30px] border border-dashed border-white/12 bg-white/[0.03] p-8 text-center">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-cyan-300/15 bg-cyan-500/10 text-cyan-100">
+          <div className="max-w-xl rounded-[30px] border border-dashed border-border/60 bg-background/70 p-8 text-center dark:border-white/12 dark:bg-white/[0.03]">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-cyan-500/15 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/15 dark:text-cyan-100">
               <Sparkles size={22} />
             </div>
-            <div className="mt-5 text-2xl font-semibold tracking-tight text-slate-50">
+            <div className="mt-5 text-2xl font-semibold tracking-tight text-foreground dark:text-slate-50">
               {isRunning ? t('transfer.workspaceWaitingTitle') : t('transfer.workspaceIdleTitle')}
-            </div>
-            <div className="mt-3 text-sm leading-7 text-slate-400">
-              {isRunning ? t('transfer.workspaceWaitingBody') : t('transfer.workspaceIdleBody')}
             </div>
           </div>
         </div>
