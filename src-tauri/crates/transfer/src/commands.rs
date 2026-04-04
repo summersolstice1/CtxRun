@@ -66,8 +66,14 @@ pub async fn start_service<R: Runtime>(
     config.save_dir = normalize_optional_text(config.save_dir);
     config.bind_address = normalize_optional_text(config.bind_address);
 
-    let bind_address = network::resolve_bind_address(config.bind_address.as_deref())?;
-    let (listener, port) = network::bind_listener(&bind_address, config.port).await?;
+    // Resolve the LAN IP used for QR code / URL generation
+    let lan_address = network::resolve_lan_address(config.bind_address.as_deref())?;
+    eprintln!("[transfer] Resolved LAN address: {lan_address}");
+
+    // Bind on 0.0.0.0 (all interfaces) so LAN devices can connect
+    let (listener, port) = network::bind_listener(config.port).await?;
+    eprintln!("[transfer] Server listening on 0.0.0.0:{port}, LAN URL will use {lan_address}");
+
     let route_token = match config.url_mode {
         UrlMode::Random => Some(generate_token(12)),
         UrlMode::Fixed => None,
@@ -76,7 +82,8 @@ pub async fn start_service<R: Runtime>(
         .as_deref()
         .map(|token| format!("/{token}"))
         .unwrap_or_else(|| "/t".to_string());
-    let url = format!("http://{bind_address}:{port}{route_path}");
+    let url = format!("http://{lan_address}:{port}{route_path}");
+    eprintln!("[transfer] Service URL: {url}");
     let qr_matrix = qr::build_qr_matrix(&url)?;
     let save_dir = resolve_save_dir(config.save_dir.as_deref())?;
     tokio::fs::create_dir_all(&save_dir).await?;
@@ -84,7 +91,7 @@ pub async fn start_service<R: Runtime>(
     let info = ServiceInfo {
         url,
         port,
-        bind_address: bind_address.clone(),
+        bind_address: lan_address.clone(),
         qr_matrix,
         url_mode: config.url_mode.clone(),
         save_dir: save_dir.to_string_lossy().to_string(),
@@ -99,6 +106,7 @@ pub async fn start_service<R: Runtime>(
         file_registry: Arc::new(RwLock::new(HashMap::new())),
         save_dir: Arc::new(save_dir),
         shutdown: CancellationToken::new(),
+        lan_address: lan_address.clone(),
     };
 
     coordinator.running = Some(server::spawn_server(listener, shared));

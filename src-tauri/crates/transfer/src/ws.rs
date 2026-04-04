@@ -73,6 +73,7 @@ pub async fn handle_socket<R: tauri::Runtime>(
     shared: RunningServiceShared<R>,
     ip_address: String,
 ) {
+    eprintln!("[transfer] New WS connection from {ip_address}, waiting for handshake...");
     let (mut sender, mut receiver) = socket.split();
     let hello = match tokio::time::timeout(Duration::from_secs(20), receiver.next()).await {
         Ok(Some(Ok(WsMessage::Text(text)))) => match serde_json::from_str::<ClientWsMessage>(&text) {
@@ -124,6 +125,7 @@ pub async fn handle_socket<R: tauri::Runtime>(
         }
     };
 
+    eprintln!("[transfer] Handshake OK from {ip_address}, user_agent: {hello}");
     let device_id = uuid::Uuid::new_v4().simple().to_string();
     let session_token = format!(
         "{}{}",
@@ -134,8 +136,7 @@ pub async fn handle_socket<R: tauri::Runtime>(
         id: device_id.clone(),
         name: infer_device_name(&hello),
         device_type: infer_device_type(&hello),
-        ip_address,
-        connected_at_ms: now_ms(),
+        ip_address: ip_address.clone(),        connected_at_ms: now_ms(),
     };
 
     let (outbound_tx, mut outbound_rx) = tokio::sync::mpsc::unbounded_channel::<String>();
@@ -156,6 +157,7 @@ pub async fn handle_socket<R: tauri::Runtime>(
             device: device.clone(),
         },
     );
+    eprintln!("[transfer] Device connected: {} ({}) from {ip_address}", device.name, device_id);
 
     let _ = outbound_tx.send(
         serde_json::to_string(&ServerWsMessage::Session {
@@ -255,6 +257,7 @@ pub async fn handle_socket<R: tauri::Runtime>(
 
     writer_task.abort();
     shared.device_manager.remove_device(&device_id).await;
+    eprintln!("[transfer] Device disconnected: {device_id}");
     shared.emit(
         EVENT_DEVICE_DISCONNECTED,
         &DeviceDisconnectedPayload {

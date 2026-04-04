@@ -21,6 +21,7 @@ axum = { workspace = true }
 tokio-util = { workspace = true }
 qrcode = { workspace = true }
 percent-encoding = { workspace = true }
+log = "0.4"
 sysinfo = "0.37"
 
 [build-dependencies]

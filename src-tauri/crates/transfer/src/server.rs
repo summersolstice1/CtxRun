@@ -48,6 +48,9 @@ pub struct RunningServiceShared<R: Runtime> {
     pub file_registry: Arc<RwLock<HashMap<String, FileEntry>>>,
     pub save_dir: Arc<PathBuf>,
     pub shutdown: CancellationToken,
+    /// The LAN-facing IPv4 address (e.g. 192.168.1.100) used in URLs / QR codes.
+    /// The server itself binds 0.0.0.0 but this is the address devices connect to.
+    pub lan_address: String,
 }
 
 impl<R: Runtime> Clone for RunningServiceShared<R> {
@@ -61,6 +64,7 @@ impl<R: Runtime> Clone for RunningServiceShared<R> {
             file_registry: self.file_registry.clone(),
             save_dir: self.save_dir.clone(),
             shutdown: self.shutdown.clone(),
+            lan_address: self.lan_address.clone(),
         }
     }
 }
@@ -160,6 +164,7 @@ async fn ws_upgrade<R: Runtime>(
     if shared.route_token.is_some() {
         return Err(TransferError::InvalidRouteToken);
     }
+    eprintln!("[transfer] WS upgrade request from {}", addr);
     Ok(ws.on_upgrade(move |socket| ws::handle_socket(socket, shared, addr.ip().to_string())))
 }
 
@@ -170,6 +175,7 @@ async fn token_ws_upgrade<R: Runtime>(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> Result<impl IntoResponse> {
     validate_route_token(shared.route_token.as_deref(), Some(token.as_str()))?;
+    eprintln!("[transfer] WS upgrade request (token route) from {}", addr);
     Ok(ws.on_upgrade(move |socket| ws::handle_socket(socket, shared, addr.ip().to_string())))
 }
 

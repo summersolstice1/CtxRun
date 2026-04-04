@@ -1399,6 +1399,7 @@ dependencies = [
  "axum",
  "chrono",
  "futures",
+ "log",
  "percent-encoding",
  "qrcode",
  "serde",
