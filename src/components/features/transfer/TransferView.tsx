@@ -45,13 +45,11 @@ export function TransferView() {
   );
 
   const [copied, setCopied] = useState(false);
-  const [toastState, setToastState] = useState<{ show: boolean; message: string; type: ToastType }>(
-    {
-      show: false,
-      message: '',
-      type: 'info',
-    }
-  );
+  const [toastState, setToastState] = useState<{ show: boolean; message: string; type: ToastType }>({
+    show: false,
+    message: '',
+    type: 'info',
+  });
 
   useEffect(() => {
     void initListeners();
@@ -110,35 +108,40 @@ export function TransferView() {
   };
 
   return (
-    <div className="flex h-full flex-col bg-background animate-in fade-in duration-300">
-      <ServiceControls
-        isRunning={isRunning}
-        isBusy={isBusy}
-        serviceInfo={serviceInfo}
-        copied={copied}
-        onStart={() => void startService()}
-        onStop={() => void stopService()}
-        onCopyUrl={() => void handleCopyUrl()}
-      />
+    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-[#040b16] text-foreground animate-in fade-in duration-300">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_30%),linear-gradient(180deg,#071120_0%,#040b16_100%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:32px_32px]" />
 
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <DeviceSidebar
-          serviceInfo={serviceInfo}
-          devices={devices}
-          selectedDeviceId={selectedDeviceId}
-          copied={copied}
-          onCopyUrl={() => void handleCopyUrl()}
-          onSelect={(deviceId) => void selectDevice(deviceId)}
-        />
-        <ChatPanel
+      <div className="relative flex min-h-0 flex-1 flex-col gap-4 p-4 md:p-5">
+        <ServiceControls
           isRunning={isRunning}
           isBusy={isBusy}
-          selectedDevice={selectedDevice}
-          messages={messages}
-          onSendMessage={sendMessage}
-          onAttachFile={handleAttachFile}
-          onOpenFolder={handleOpenFolder}
+          serviceInfo={serviceInfo}
+          copied={copied}
+          devicesCount={devices.length}
+          onStart={() => void startService()}
+          onStop={() => void stopService()}
+          onCopyUrl={() => void handleCopyUrl()}
         />
+
+        <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
+          <DeviceSidebar
+            isRunning={isRunning}
+            devices={devices}
+            selectedDeviceId={selectedDeviceId}
+            onSelect={(deviceId) => void selectDevice(deviceId)}
+          />
+
+          <ChatPanel
+            isRunning={isRunning}
+            isBusy={isBusy}
+            selectedDevice={selectedDevice}
+            messages={messages}
+            onSendMessage={sendMessage}
+            onAttachFile={handleAttachFile}
+            onOpenFolder={handleOpenFolder}
+          />
+        </div>
       </div>
 
       <Toast
