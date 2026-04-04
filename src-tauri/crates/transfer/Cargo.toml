@@ -1,0 +1,27 @@
+[package]
+name = "ctxrun-plugin-transfer"
+version = "2.0.0"
+edition = "2024"
+description = "LAN transfer and temporary chat session plugin for CtxRun"
+links = "ctxrun-plugin-transfer"
+
+[package.metadata.cargo-machete]
+ignored = ["tauri-plugin"]
+
+[dependencies]
+tauri = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+futures = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+axum = { workspace = true }
+tokio-util = { workspace = true }
+qrcode = { workspace = true }
+percent-encoding = { workspace = true }
+sysinfo = "0.37"
+
+[build-dependencies]
+tauri-plugin = { workspace = true, features = ["build"] }

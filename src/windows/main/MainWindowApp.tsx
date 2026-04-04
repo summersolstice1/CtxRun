@@ -16,6 +16,7 @@ const PatchView = lazy(() => import('@/components/features/patch/PatchView').the
 const RefineryView = lazy(() => import('@/components/features/refinery/RefineryView').then(module => ({ default: module.RefineryView })));
 const AutomatorView = lazy(() => import('@/components/features/automator/AutomatorView').then(module => ({ default: module.AutomatorView })));
 const MinerView = lazy(() => import('@/components/features/miner/MinerView').then(module => ({ default: module.MinerView })));
+const TransferView = lazy(() => import('@/components/features/transfer/TransferView').then(module => ({ default: module.TransferView })));
 const SettingsView = lazy(() => import('@/components/settings/SettingsView').then(module => ({ default: module.SettingsView })));
 const SystemMonitorModal = lazy(() => import('@/components/features/monitor/SystemMonitorModal').then(module => ({ default: module.SystemMonitorModal })));
 
@@ -126,6 +127,7 @@ function App() {
             {currentView === 'refinery' && <RefineryView />}
             {currentView === 'automator' && <AutomatorView />}
             {currentView === 'miner' && <MinerView />}
+            {currentView === 'transfer' && <TransferView />}
             {currentView === 'settings' && <SettingsView />}
           </Suspense>
         </main>

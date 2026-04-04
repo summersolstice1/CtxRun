@@ -21,7 +21,15 @@ import {
   normalizeSpotlightAppearance,
 } from '@/windows/spotlight/resizeMode';
 
-type AppView = 'prompts' | 'context' | 'patch' | 'refinery' | 'automator' | 'miner' | 'settings';
+type AppView =
+  | 'prompts'
+  | 'context'
+  | 'patch'
+  | 'refinery'
+  | 'automator'
+  | 'miner'
+  | 'transfer'
+  | 'settings';
 export type AppTheme = 'dark' | 'light' | 'black';
 export type AppLang = 'en' | 'zh';
 export type SearchEngineType = 'google' | 'bing' | 'baidu' | 'custom';

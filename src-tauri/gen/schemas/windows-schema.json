@@ -4911,6 +4911,90 @@
           "markdownDescription": "Denies the list_tools command without any pre-configured scope."
         },
         {
+          "description": "Enables the get_chat_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-get-chat-history",
+          "markdownDescription": "Enables the get_chat_history command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_devices command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-get-devices",
+          "markdownDescription": "Enables the get_devices command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the get_network_interfaces command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-get-network-interfaces",
+          "markdownDescription": "Enables the get_network_interfaces command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the send_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-send-file",
+          "markdownDescription": "Enables the send_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the send_message command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-send-message",
+          "markdownDescription": "Enables the send_message command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the start_service command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-start-service",
+          "markdownDescription": "Enables the start_service command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop_service command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-stop-service",
+          "markdownDescription": "Enables the stop_service command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_chat_history command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-get-chat-history",
+          "markdownDescription": "Denies the get_chat_history command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_devices command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-get-devices",
+          "markdownDescription": "Denies the get_devices command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_network_interfaces command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-get-network-interfaces",
+          "markdownDescription": "Denies the get_network_interfaces command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the send_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-send-file",
+          "markdownDescription": "Denies the send_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the send_message command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-send-message",
+          "markdownDescription": "Denies the send_message command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the start_service command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-start-service",
+          "markdownDescription": "Denies the start_service command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop_service command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-stop-service",
+          "markdownDescription": "Denies the stop_service command without any pre-configured scope."
+        },
+        {
           "description": "This permission set configures the types of dialogs\navailable from the dialog plugin.\n\n#### Granted Permissions\n\nAll dialog types are enabled.\n\n\n\n#### This default permission set includes:\n\n- `allow-ask`\n- `allow-confirm`\n- `allow-message`\n- `allow-save`\n- `allow-open`",
           "type": "string",
           "const": "dialog:default",

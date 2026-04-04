@@ -39,6 +39,10 @@ futures = "0.3"
 
 # HTTP
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "blocking"] }
+axum = { version = "0.8", features = ["ws", "multipart"] }
+tokio-util = { version = "0.7", features = ["io", "rt"] }
+qrcode = "0.14"
+percent-encoding = "2.3"
 
 # Automation
 enigo = "0.6.1"
@@ -93,6 +97,7 @@ ctxrun-plugin-refinery = { path = "crates/refinery" }
 ctxrun-plugin-miner = { path = "crates/miner" }
 ctxrun-plugin-tool-runtime = { path = "crates/tool-runtime" }
 ctxrun-plugin-exec-runtime = { path = "crates/exec-runtime" }
+ctxrun-plugin-transfer = { path = "crates/transfer" }
 
 ctxrun-db = { workspace = true }
 ctxrun-env-probe = { workspace = true }

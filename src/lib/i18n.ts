@@ -9,6 +9,7 @@ const translations = {
       refinery: "Refinery",
       automator: "Automator",
       miner: "Knowledge Miner",
+      transfer: "LAN Transfer",
       settings: "Settings"
     },
     refinery: {
@@ -56,6 +57,30 @@ const translations = {
       readyToExecute: "Ready to execute.",
       logStatusFetching: "Fetching",
       logStatusSaved: "Saved"
+    },
+    transfer: {
+      title: "LAN Transfer",
+      subtitle: "Temporary local chat and file relay",
+      start: "Start Service",
+      stop: "Stop Service",
+      serviceUrl: "Service URL",
+      copyUrl: "Copy URL",
+      copied: "Copied",
+      saveDir: "Save directory",
+      waitingConnection: "Scan the QR code on your phone to connect.",
+      connectedDevices: "Connected Devices",
+      noDevices: "No devices connected yet.",
+      selectDevice: "Select a device to start chatting.",
+      emptyChat: "Send a message or share a file to start this session.",
+      inputPlaceholder: "Type a message...",
+      attachFile: "Attach file",
+      send: "Send",
+      openFolder: "Open folder",
+      pending: "Pending",
+      transferring: "Transferring",
+      completed: "Completed",
+      failed: "Failed",
+      online: "Online"
     },
     automator: {
       // Designer UI
@@ -901,6 +926,7 @@ const translations = {
       refinery: "剪贴板",
       automator: "自动化",
       miner: "知识抓取",
+      transfer: "局域网传输",
       settings: "设置"
     },
     refinery: {
@@ -948,6 +974,30 @@ const translations = {
       readyToExecute: "准备执行。",
       logStatusFetching: "获取中",
       logStatusSaved: "已保存"
+    },
+    transfer: {
+      title: "局域网传输",
+      subtitle: "临时聊天与文件中转",
+      start: "开启服务",
+      stop: "关闭服务",
+      serviceUrl: "服务地址",
+      copyUrl: "复制地址",
+      copied: "已复制",
+      saveDir: "保存目录",
+      waitingConnection: "用手机扫描二维码即可连接。",
+      connectedDevices: "已连接设备",
+      noDevices: "暂时还没有设备连接。",
+      selectDevice: "选择一个设备开始聊天。",
+      emptyChat: "发送消息或共享文件来开始本次会话。",
+      inputPlaceholder: "输入消息...",
+      attachFile: "选择文件",
+      send: "发送",
+      openFolder: "打开目录",
+      pending: "等待中",
+      transferring: "传输中",
+      completed: "已完成",
+      failed: "失败",
+      online: "在线"
     },
     automator: {
       // Designer UI
