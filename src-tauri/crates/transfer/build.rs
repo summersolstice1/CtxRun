@@ -6,6 +6,7 @@ const COMMANDS: &[&str] = &[
     "get_devices",
     "get_chat_history",
     "get_network_interfaces",
+    "respond_file_request",
 ];
 
 fn main() {

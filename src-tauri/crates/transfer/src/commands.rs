@@ -268,6 +268,37 @@ pub async fn get_network_interfaces<R: Runtime>(
     Ok(network::list_network_interfaces())
 }
 
+#[tauri::command]
+pub async fn respond_file_request<R: Runtime>(
+    _app: AppHandle<R>,
+    state: State<'_, TransferState<R>>,
+    device_id: String,
+    file_id: String,
+    accept: bool,
+) -> Result<()> {
+    let shared = state.current_shared().await.ok_or(TransferError::NotRunning)?;
+    if accept {
+        shared
+            .device_manager
+            .send_json(
+                &device_id,
+                &ServerWsMessage::FileAccept {
+                    file_id: file_id.clone(),
+                },
+            )
+            .await?;
+    } else {
+        shared
+            .device_manager
+            .send_json(
+                &device_id,
+                &ServerWsMessage::FileReject { file_id },
+            )
+            .await?;
+    }
+    Ok(())
+}
+
 fn normalize_optional_text(value: Option<String>) -> Option<String> {
     value.and_then(|item| {
         let trimmed = item.trim();

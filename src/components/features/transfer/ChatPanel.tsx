@@ -12,6 +12,7 @@ interface ChatPanelProps {
   onSendMessage: (content: string) => Promise<void>;
   onAttachFile: () => Promise<void>;
   onOpenFolder: (path: string) => Promise<void>;
+  onRespondFileRequest: (deviceId: string, fileId: string, accept: boolean) => Promise<void>;
 }
 
 function formatFileSize(value?: number | null) {
@@ -25,7 +26,13 @@ function formatClock(timestampMs: number) {
   return new Date(timestampMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onOpenFolder }: ChatPanelProps) {
+function dirnameFromPath(path: string) {
+  const normalized = path.replace(/[\\/]+$/, '');
+  const lastSlash = Math.max(normalized.lastIndexOf('/'), normalized.lastIndexOf('\\'));
+  return lastSlash > 0 ? normalized.slice(0, lastSlash) : path;
+}
+
+export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onOpenFolder, onRespondFileRequest }: ChatPanelProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -81,6 +88,7 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
             }
 
             const isOut = msg.direction === 'sent';
+            const fileId = msg.fileId;
             return (
               <div key={msg.id} className={cn("flex w-full", isOut ? "justify-end" : "justify-start")}>
                 <div className={cn("flex flex-col max-w-[70%]", isOut ? "items-end" : "items-start")}>
@@ -106,16 +114,40 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
                         </div>
 
                         {/* 极简进度条 */}
-                        <div className="w-full h-1 bg-black/10 rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-current transition-all duration-300 opacity-50" 
-                            style={{ width: `${Math.max(msg.progressPercent ?? 0, msg.status === 'completed' ? 100 : 0)}%` }} 
-                          />
-                        </div>
+                        {msg.status !== 'pending_approval' && msg.status !== 'rejected' && (
+                          <div className="w-full h-1 bg-black/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-current transition-all duration-300 opacity-50" 
+                              style={{ width: `${Math.max(msg.progressPercent ?? 0, msg.status === 'completed' ? 100 : 0)}%` }} 
+                            />
+                          </div>
+                        )}
+
+                        {/* 大文件请求的 接受 / 拒绝 按钮 */}
+                        {msg.status === 'pending_approval' && !isOut && fileId && (
+                          <div className="flex gap-2 mt-1">
+                            <button
+                              onClick={() => void onRespondFileRequest(msg.deviceId, fileId, true)}
+                              className="flex-1 bg-green-500 text-white rounded py-1.5 text-xs font-medium hover:bg-green-600 transition-colors"
+                            >
+                              接受 (Accept)
+                            </button>
+                            <button
+                              onClick={() => void onRespondFileRequest(msg.deviceId, fileId, false)}
+                              className="flex-1 bg-white/20 text-current rounded py-1.5 text-xs font-medium hover:bg-white/30 transition-colors"
+                            >
+                              拒绝 (Reject)
+                            </button>
+                          </div>
+                        )}
+
+                        {msg.status === 'rejected' && (
+                          <div className="text-red-500/80 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">已拒收 (Rejected)</div>
+                        )}
 
                         {msg.savedPath && msg.status === 'completed' && !isOut && (
                           <button 
-                            onClick={() => msg.savedPath && onOpenFolder(msg.savedPath)}
+                            onClick={() => msg.savedPath && onOpenFolder(dirnameFromPath(msg.savedPath))}
                             className="text-xs flex items-center gap-1 opacity-80 hover:opacity-100 hover:underline mt-1"
                           >
                             <FolderOpen size={12} /> {t('transfer.openFolder')}

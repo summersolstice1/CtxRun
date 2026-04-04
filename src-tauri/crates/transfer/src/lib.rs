@@ -23,7 +23,8 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::send_file,
             commands::get_devices,
             commands::get_chat_history,
-            commands::get_network_interfaces
+            commands::get_network_interfaces,
+            commands::respond_file_request
         ])
         .setup(|app, _api| {
             app.manage(commands::TransferState::<R>::new());

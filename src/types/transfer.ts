@@ -1,7 +1,13 @@
 export type UrlMode = 'fixed' | 'random';
 export type TransferMessageKind = 'text' | 'file' | 'system';
 export type TransferMessageDirection = 'sent' | 'received' | 'system';
-export type TransferFileStatus = 'pending' | 'transferring' | 'completed' | 'failed';
+export type TransferFileStatus =
+  | 'pending'
+  | 'pending_approval'
+  | 'rejected'
+  | 'transferring'
+  | 'completed'
+  | 'failed';
 
 export interface ServiceConfig {
   urlMode: UrlMode;

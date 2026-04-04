@@ -12,12 +12,12 @@ import { ChatPanel } from './ChatPanel';
 export function TransferView() {
   const [
     isRunning, isBusy, serviceInfo, devices, selectedDeviceId, chatHistories,
-    lastError, clearError, startService, stopService, selectDevice, sendMessage, sendFile, initListeners,
+    lastError, clearError, startService, stopService, selectDevice, sendMessage, sendFile, respondFileRequest, initListeners,
   ] = useTransferStore(
     useShallow((state) => [
       state.isRunning, state.isBusy, state.serviceInfo, state.devices, state.selectedDeviceId,
       state.chatHistories, state.lastError, state.clearError, state.startService, state.stopService,
-      state.selectDevice, state.sendMessage, state.sendFile, state.initListeners,
+      state.selectDevice, state.sendMessage, state.sendFile, state.respondFileRequest, state.initListeners,
     ])
   );
 
@@ -100,6 +100,7 @@ export function TransferView() {
           onSendMessage={sendMessage}
           onAttachFile={handleAttachFile}
           onOpenFolder={handleOpenFolder}
+          onRespondFileRequest={respondFileRequest}
         />
       </div>
 

@@ -236,7 +236,11 @@ async fn upload_handler<R: Runtime>(
         };
         let output_path = resolve_save_path(shared.save_dir.as_path(), &file_name)?;
         let mut output = tokio::fs::File::create(&output_path).await?;
-        let file_id = generate_token(16);
+        let file_id = headers
+            .get("x-ctxrun-file-id")
+            .and_then(|v| v.to_str().ok())
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| generate_token(16));
         let started_at = Instant::now();
         let mut written = 0u64;
         let mut last_emit = Instant::now();

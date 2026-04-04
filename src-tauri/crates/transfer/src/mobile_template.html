@@ -12,6 +12,7 @@
       --border: #e5e7eb;
       --text: #111827;
       --muted: #6b7280;
+      --danger: #dc2626;
       --primary: #2563eb;
       --primary-fg: #ffffff;
       --bubble-in: #ffffff;
@@ -24,10 +25,11 @@
         --surface: #1e2230;
         --border: #2a2f40;
         --text: #f3f4f6;
-        --muted: #9ca3af;
-        --primary: #3b82f6;
-        --bubble-in: #1e2230;
-      }
+      --muted: #9ca3af;
+      --primary: #3b82f6;
+      --bubble-in: #1e2230;
+      --danger: #f87171;
+    }
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -119,7 +121,7 @@
     </header>
 
     <main id="messages">
-       <div class="system-msg">Session Started</div>
+       <div id="initialSystemMessage" class="system-msg"></div>
     </main>
 
     <footer>
@@ -134,8 +136,8 @@
 
   <div id="pinGate" class="hidden">
     <div class="pin-card">
-      <h2 style="margin:0 0 8px; font-size: 20px;">PIN Required</h2>
-      <p style="margin:0; font-size: 13px; color: var(--muted);">Check your PC for the PIN code.</p>
+      <h2 id="pinTitle" style="margin:0 0 8px; font-size: 20px;">PIN Required</h2>
+      <p id="pinDescription" style="margin:0; font-size: 13px; color: var(--muted);">Check your PC for the PIN code.</p>
       <input id="pinInput" type="number" placeholder="Enter PIN" />
       <button id="pinSubmit">Connect</button>
       <div id="pinError" style="color: var(--danger); font-size: 12px; margin-top: 12px; min-height: 14px;"></div>
@@ -152,13 +154,84 @@
       fileInput: document.getElementById('fileInput'),
       statusDot: document.getElementById('statusDot'),
       headerText: document.getElementById('headerText'),
+      initialSystemMessage: document.getElementById('initialSystemMessage'),
       pinGate: document.getElementById('pinGate'),
+      pinTitle: document.getElementById('pinTitle'),
+      pinDescription: document.getElementById('pinDescription'),
       pinInput: document.getElementById('pinInput'),
       pinSubmit: document.getElementById('pinSubmit'),
       pinError: document.getElementById('pinError')
     };
 
     const state = { ws: null, deviceId: null, reconnectTimer: null };
+    const THRESHOLD = 100 * 1024 * 1024;
+    const pendingFiles = new Map();
+    const language = navigator.language && navigator.language.toLowerCase().startsWith('zh') ? 'zh' : 'en';
+    const messages = {
+      en: {
+        sessionStarted: 'Session Started',
+        attachFile: 'Attach File',
+        messagePlaceholder: 'Message...',
+        send: 'Send',
+        pinRequired: 'PIN Required',
+        pinDescription: 'Check your PC for the PIN code.',
+        enterPin: 'Enter PIN',
+        connect: 'Connect',
+        connected: 'Connected',
+        disconnected: 'Disconnected',
+        download: 'Download',
+        waitingForAccept: 'Waiting for PC to accept...',
+        rejectedByPc: 'Rejected by PC',
+        uploading: 'Uploading...',
+        uploadingPercent: 'Uploading {percent}%',
+        sent: 'Sent',
+        failed: 'Failed'
+      },
+      zh: {
+        sessionStarted: '会话已开始',
+        attachFile: '选择文件',
+        messagePlaceholder: '输入消息...',
+        send: '发送',
+        pinRequired: '需要 PIN 码',
+        pinDescription: '请查看电脑上的 PIN 码。',
+        enterPin: '输入 PIN 码',
+        connect: '连接',
+        connected: '已连接',
+        disconnected: '已断开连接',
+        download: '下载',
+        waitingForAccept: '等待电脑端接受...',
+        rejectedByPc: '已被电脑端拒绝',
+        uploading: '上传中...',
+        uploadingPercent: '上传中 {percent}%',
+        sent: '已发送',
+        failed: '失败'
+      }
+    };
+
+    function t(key, vars) {
+      const dict = messages[language] || messages.en;
+      let value = dict[key] || messages.en[key] || key;
+      if (vars) {
+        Object.keys(vars).forEach((name) => {
+          value = value.replace(`{${name}}`, String(vars[name]));
+        });
+      }
+      return value;
+    }
+
+    function applyStaticTranslations() {
+      document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+      els.initialSystemMessage.textContent = t('sessionStarted');
+      els.attach.setAttribute('aria-label', t('attachFile'));
+      els.input.placeholder = t('messagePlaceholder');
+      els.send.textContent = t('send');
+      els.pinTitle.textContent = t('pinRequired');
+      els.pinDescription.textContent = t('pinDescription');
+      els.pinInput.placeholder = t('enterPin');
+      els.pinSubmit.textContent = t('connect');
+    }
+
+    applyStaticTranslations();
 
     // 输入框自动撑高
     els.input.addEventListener('input', function() {
@@ -211,7 +284,7 @@
         <div class="file-card">
           <div class="file-name">${name}</div>
           <div class="file-meta">${(size/1024/1024).toFixed(2)} MB</div>
-          <a class="file-dl" href="${url}" download="${name}">Download</a>
+          <a class="file-dl" href="${url}" download="${name}">${t('download')}</a>
         </div>
       `;
       wrapper.appendChild(bubble);
@@ -239,10 +312,32 @@
             document.cookie = `${bootstrap.cookieName}=${msg.sessionToken}; path=/; max-age=3600; SameSite=Strict`;
             els.pinGate.classList.add('hidden');
             els.statusDot.classList.add('ready');
-            els.headerText.textContent = "Connected";
+            els.headerText.textContent = t('connected');
             break;
           case 'chat': appendMsg(msg.content, false, msg.timestampMs); break;
           case 'file_offer': appendFile(msg.fileName, msg.fileSize, msg.downloadUrl); break;
+          case 'file_accept':
+            if (msg.fileId && pendingFiles.has(msg.fileId)) {
+              const pending = pendingFiles.get(msg.fileId);
+              pendingFiles.delete(msg.fileId);
+              if (pending) {
+                doActualUpload(pending, msg.fileId);
+              }
+            }
+            break;
+          case 'file_reject':
+            if (msg.fileId && pendingFiles.has(msg.fileId)) {
+              pendingFiles.delete(msg.fileId);
+              const w = document.getElementById(`msg-${msg.fileId}`);
+              if (w) {
+                const st = w.querySelector('.upload-status');
+                if (st) {
+                  st.textContent = t('rejectedByPc');
+                  st.style.color = 'var(--danger)';
+                }
+              }
+            }
+            break;
           case 'error': els.pinError.textContent = msg.message; break;
           case 'system': appendSysMsg(msg.content); break;
         }
@@ -250,7 +345,7 @@
 
       state.ws.onclose = () => {
         els.statusDot.classList.remove('ready');
-        els.headerText.textContent = "Disconnected";
+        els.headerText.textContent = t('disconnected');
         // 断线重连机制
         clearTimeout(state.reconnectTimer);
         state.reconnectTimer = setTimeout(connect, 3000);
@@ -273,38 +368,97 @@
 
     function uploadFile(file) {
       if (!file || !state.deviceId) return;
+      
+      if (file.size > THRESHOLD) {
+        const fileId = Date.now().toString() + Math.random().toString().slice(2);
+        pendingFiles.set(fileId, file);
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'bubble-wrapper out';
+        wrapper.id = `msg-${fileId}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble out';
+        bubble.innerHTML = `
+          <div class="file-card">
+            <div class="file-name">${file.name}</div>
+            <div class="file-meta upload-status" style="color: #fcd34d;">${t('waitingForAccept')}</div>
+          </div>
+        `;
+        wrapper.appendChild(bubble);
+        els.msgs.appendChild(wrapper);
+        scrollToBottom();
+
+        if (state.ws && state.ws.readyState === WebSocket.OPEN) {
+          state.ws.send(JSON.stringify({ type: 'file_request', fileId, fileName: file.name, fileSize: file.size }));
+        }
+      } else {
+        doActualUpload(file, null);
+      }
+    }
+
+    function doActualUpload(file, fileIdOverride) {
+      const fileId = fileIdOverride || (Date.now().toString() + Math.random().toString().slice(2));
+      let wrapper = document.getElementById(`msg-${fileId}`);
+      let prog;
+      let stat;
+      
+      if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'bubble-wrapper out';
+        wrapper.id = `msg-${fileId}`;
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble out';
+        bubble.innerHTML = `
+          <div class="file-card">
+            <div class="file-name">${file.name}</div>
+            <div class="file-meta upload-status">${t('uploading')}</div>
+            <progress max="100" value="0"></progress>
+          </div>
+        `;
+        wrapper.appendChild(bubble);
+        els.msgs.appendChild(wrapper);
+        scrollToBottom();
+        prog = bubble.querySelector('progress');
+        stat = bubble.querySelector('.upload-status');
+      } else {
+        const card = wrapper.querySelector('.file-card');
+        if (card && !card.querySelector('progress')) {
+          const p = document.createElement('progress');
+          p.max = 100;
+          p.value = 0;
+          card.appendChild(p);
+        }
+        prog = wrapper.querySelector('progress');
+        stat = wrapper.querySelector('.upload-status');
+        if (stat) {
+          stat.style.color = '';
+          stat.textContent = t('uploading');
+        }
+      }
+      
       const fd = new FormData();
       fd.append("file", file);
-
-      const wrapper = document.createElement('div');
-      wrapper.className = 'bubble-wrapper out';
-      const bubble = document.createElement('div');
-      bubble.className = 'bubble out';
-      bubble.innerHTML = `
-        <div class="file-card">
-          <div class="file-name">${file.name}</div>
-          <div class="file-meta upload-status">Uploading...</div>
-          <progress max="100" value="0"></progress>
-        </div>
-      `;
-      wrapper.appendChild(bubble);
-      els.msgs.appendChild(wrapper);
-      scrollToBottom();
-
-      const prog = bubble.querySelector('progress');
-      const stat = bubble.querySelector('.upload-status');
-
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `/api/upload/${encodeURIComponent(state.deviceId)}`);
       xhr.setRequestHeader("x-ctxrun-file-size", String(file.size));
+      if (fileIdOverride) {
+        xhr.setRequestHeader("x-ctxrun-file-id", fileIdOverride);
+      }
+      
       xhr.upload.onprogress = e => {
-        if(e.lengthComputable) {
+        if (e.lengthComputable && prog) {
           const pct = Math.round((e.loaded / e.total) * 100);
-          prog.value = pct; stat.textContent = `Uploading ${pct}%`;
+          prog.value = pct;
+          if (stat) stat.textContent = t('uploadingPercent', { percent: `${pct}%` });
         }
       };
-      xhr.onload = () => { prog.value = 100; stat.textContent = "Sent"; };
-      xhr.onerror = () => { stat.textContent = "Failed"; };
+      xhr.onload = () => {
+        if (prog) prog.value = 100;
+        if (stat) stat.textContent = t('sent');
+      };
+      xhr.onerror = () => {
+        if (stat) stat.textContent = t('failed');
+      };
       xhr.send(fd);
     }
 

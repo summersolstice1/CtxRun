@@ -34,6 +34,7 @@ interface TransferState {
   selectDevice: (deviceId: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
   sendFile: (filePath: string) => Promise<void>;
+  respondFileRequest: (deviceId: string, fileId: string, accept: boolean) => Promise<void>;
   loadHistory: (deviceId: string) => Promise<void>;
   initListeners: () => Promise<void>;
   resetRuntime: () => void;
@@ -225,6 +226,25 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     }
   },
 
+  respondFileRequest: async (deviceId, fileId, accept) => {
+    try {
+      await invoke(`${PLUGIN_PREFIX}respond_file_request`, { deviceId, fileId, accept });
+      set((state) => {
+        const history = state.chatHistories[deviceId] ?? [];
+        return {
+          chatHistories: {
+            ...state.chatHistories,
+            [deviceId]: history.map((message) =>
+              message.fileId === fileId ? { ...message, status: accept ? 'pending' : 'rejected' } : message
+            ),
+          },
+        };
+      });
+    } catch (error) {
+      set({ lastError: toErrorMessage(error) });
+    }
+  },
+
   loadHistory: async (deviceId) => {
     if (!deviceId) return;
 
@@ -286,6 +306,13 @@ export const useTransferStore = create<TransferState>((set, get) => ({
           }));
         }
       );
+
+      const unlistenFileRequest = await listen<TransferMessage>('transfer:file-request', (event) => {
+        const message = event.payload;
+        set((state) => ({
+          chatHistories: appendHistoryMessage(state.chatHistories, message.deviceId, message),
+        }));
+      });
 
       const unlistenFileReceived = await listen<TransferMessage>('transfer:file-received', (event) => {
         const message = event.payload;
@@ -358,6 +385,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
           unlistenDeviceConnected,
           unlistenDeviceDisconnected,
           unlistenMessageReceived,
+          unlistenFileRequest,
           unlistenFileReceived,
           unlistenFileProgress,
           unlistenServiceStopped,

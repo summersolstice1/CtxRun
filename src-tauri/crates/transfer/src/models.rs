@@ -81,6 +81,8 @@ pub enum TransferMessageDirection {
 #[serde(rename_all = "snake_case")]
 pub enum TransferFileStatus {
     Pending,
+    PendingApproval,
+    Rejected,
     Transferring,
     Completed,
     Failed,

@@ -88,6 +88,32 @@ Denies the get_network_interfaces command without any pre-configured scope.
 <tr>
 <td>
 
+`ctxrun-plugin-transfer:allow-respond-file-request`
+
+</td>
+<td>
+
+Enables the respond_file_request command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`ctxrun-plugin-transfer:deny-respond-file-request`
+
+</td>
+<td>
+
+Denies the respond_file_request command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `ctxrun-plugin-transfer:allow-send-file`
 
 </td>

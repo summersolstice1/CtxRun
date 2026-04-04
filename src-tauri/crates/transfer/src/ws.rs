@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use crate::device::{infer_device_name, infer_device_type};
 use crate::error::TransferError;
 use crate::models::{
-    DeviceConnectedPayload, DeviceDisconnectedPayload, TransferDevice, TransferMessage,
-    TransferMessageDirection, now_ms,
+    DeviceConnectedPayload, DeviceDisconnectedPayload, TransferDevice, TransferFileStatus,
+    TransferMessage, TransferMessageDirection, now_ms,
 };
 use crate::server::{
     EVENT_DEVICE_CONNECTED, EVENT_DEVICE_DISCONNECTED, EVENT_MESSAGE_RECEIVED,
@@ -27,6 +27,14 @@ enum ClientWsMessage {
         content: String,
     },
     Ping,
+    FileRequest {
+        #[serde(rename = "fileId")]
+        file_id: String,
+        #[serde(rename = "fileName")]
+        file_name: String,
+        #[serde(rename = "fileSize")]
+        file_size: u64,
+    },
 }
 
 #[derive(Debug, Serialize)]
@@ -56,6 +64,14 @@ pub enum ServerWsMessage {
         download_url: String,
         #[serde(rename = "timestampMs")]
         timestamp_ms: u64,
+    },
+    FileAccept {
+        #[serde(rename = "fileId")]
+        file_id: String,
+    },
+    FileReject {
+        #[serde(rename = "fileId")]
+        file_id: String,
     },
     System {
         content: String,
@@ -239,6 +255,21 @@ pub async fn handle_socket<R: tauri::Runtime>(
                             }
                             Ok(ClientWsMessage::Ping) => {
                                 let _ = shared.device_manager.send_json(&device_id, &ServerWsMessage::Pong).await;
+                            }
+                            Ok(ClientWsMessage::FileRequest { file_id, file_name, file_size }) => {
+                                let message = TransferMessage::file(
+                                    device_id.clone(),
+                                    TransferMessageDirection::Received,
+                                    file_id.clone(),
+                                    file_name,
+                                    file_size,
+                                    TransferFileStatus::PendingApproval,
+                                );
+                                shared
+                                    .device_manager
+                                    .append_history(&device_id, message.clone())
+                                    .await;
+                                shared.emit("transfer:file-request", &message);
                             }
                             Ok(ClientWsMessage::Hello { .. }) => {}
                             Err(error) => {
