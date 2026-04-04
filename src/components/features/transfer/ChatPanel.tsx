@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen, Paperclip, Send, FileText, MonitorSmartphone } from 'lucide-react';
+import { FolderOpen, Paperclip, Send, FileText, MonitorSmartphone, Eye } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TransferDevice, TransferMessage } from '@/types/transfer';
 import { cn } from '@/lib/utils';
+import { buildPreviewUrl } from '@/lib/previewUrl';
 
 interface ChatPanelProps {
   isRunning: boolean;
@@ -12,6 +13,7 @@ interface ChatPanelProps {
   onSendMessage: (content: string) => Promise<void>;
   onAttachFile: () => Promise<void>;
   onOpenFolder: (path: string) => Promise<void>;
+  onPreviewFile: (path: string) => Promise<void>;
   onRespondFileRequest: (deviceId: string, fileId: string, accept: boolean) => Promise<void>;
 }
 
@@ -32,7 +34,12 @@ function dirnameFromPath(path: string) {
   return lastSlash > 0 ? normalized.slice(0, lastSlash) : path;
 }
 
-export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onOpenFolder, onRespondFileRequest }: ChatPanelProps) {
+function isImageFile(path?: string | null, fileName?: string | null) {
+  const target = (path || fileName || '').toLowerCase();
+  return /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(target);
+}
+
+export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onOpenFolder, onPreviewFile, onRespondFileRequest }: ChatPanelProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -89,6 +96,8 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
 
             const isOut = msg.direction === 'sent';
             const fileId = msg.fileId;
+            const canPreview = Boolean(msg.savedPath && msg.status === 'completed' && !isOut);
+            const showImagePreview = canPreview && isImageFile(msg.savedPath, msg.fileName);
             return (
               <div key={msg.id} className={cn("flex w-full", isOut ? "justify-end" : "justify-start")}>
                 <div className={cn("flex flex-col max-w-[70%]", isOut ? "items-end" : "items-start")}>
@@ -103,6 +112,20 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
                     ) : (
                       // 文件卡片
                       <div className="flex flex-col gap-3 min-w-[200px]">
+                        {showImagePreview && msg.savedPath && (
+                          <button
+                            type="button"
+                            onClick={() => void onPreviewFile(msg.savedPath!)}
+                            className="overflow-hidden rounded-xl border border-border bg-secondary/20"
+                          >
+                            <img
+                              src={buildPreviewUrl(msg.savedPath)}
+                              alt={msg.fileName ?? 'image'}
+                              className="max-h-56 w-full object-cover"
+                            />
+                          </button>
+                        )}
+
                         <div className="flex items-center gap-3">
                           <div className={cn("p-2 rounded-lg shrink-0", isOut ? "bg-primary-foreground/20" : "bg-secondary")}>
                             <FileText size={20} className={isOut ? "text-primary-foreground" : "text-muted-foreground"} />
@@ -145,13 +168,21 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
                           <div className="text-red-500/80 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">已拒收 (Rejected)</div>
                         )}
 
-                        {msg.savedPath && msg.status === 'completed' && !isOut && (
-                          <button 
-                            onClick={() => msg.savedPath && onOpenFolder(dirnameFromPath(msg.savedPath))}
-                            className="text-xs flex items-center gap-1 opacity-80 hover:opacity-100 hover:underline mt-1"
-                          >
-                            <FolderOpen size={12} /> {t('transfer.openFolder')}
-                          </button>
+                        {canPreview && msg.savedPath && (
+                          <div className="flex items-center gap-3 mt-1">
+                            <button
+                              onClick={() => void onPreviewFile(msg.savedPath!)}
+                              className="text-xs flex items-center gap-1 opacity-80 hover:opacity-100 hover:underline"
+                            >
+                              <Eye size={12} /> {t('transfer.preview')}
+                            </button>
+                            <button 
+                              onClick={() => onOpenFolder(dirnameFromPath(msg.savedPath!))}
+                              className="text-xs flex items-center gap-1 opacity-80 hover:opacity-100 hover:underline"
+                            >
+                              <FolderOpen size={12} /> {t('transfer.openFolder')}
+                            </button>
+                          </div>
                         )}
                       </div>
                     )}

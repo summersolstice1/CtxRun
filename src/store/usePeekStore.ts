@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 
+import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import type { FileMeta, PreviewMode } from '@/types/hyperview';
 import type { PeekOpenPayload } from '@/types/peek';
 
@@ -45,6 +46,16 @@ async function loadIndex(
   try {
     const meta = await invoke<FileMeta>('get_file_meta', { path });
     if (requestId !== activeRequestId) {
+      return;
+    }
+
+    if (meta.size > MAX_INLINE_PREVIEW_BYTES) {
+      set({
+        activeFile: meta,
+        activeMode: meta.defaultMode,
+        isLoading: false,
+        error: OVERSIZED_PREVIEW_ERROR,
+      });
       return;
     }
 

@@ -5,11 +5,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { useShallow } from 'zustand/react/shallow';
 import { Toast, type ToastType } from '@/components/ui/Toast';
 import { useTransferStore } from '@/store/useTransferStore';
+import { usePreviewStore } from '@/store/usePreviewStore';
 import { ServiceControls } from './ServiceControls';
 import { DeviceSidebar } from './DeviceSidebar';
 import { ChatPanel } from './ChatPanel';
 
 export function TransferView() {
+  const openPreview = usePreviewStore((state) => state.openPreview);
   const [
     isRunning, isBusy, serviceInfo, devices, selectedDeviceId, chatHistories,
     lastError, clearError, startService, stopService, selectDevice, sendMessage, sendFile, respondFileRequest, initListeners,
@@ -100,6 +102,7 @@ export function TransferView() {
           onSendMessage={sendMessage}
           onAttachFile={handleAttachFile}
           onOpenFolder={handleOpenFolder}
+          onPreviewFile={openPreview}
           onRespondFileRequest={respondFileRequest}
         />
       </div>

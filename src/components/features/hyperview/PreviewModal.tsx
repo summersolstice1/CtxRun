@@ -1,12 +1,30 @@
 import { useEffect } from 'react';
+import { open } from '@tauri-apps/plugin-shell';
+import { useTranslation } from 'react-i18next';
+import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { usePreviewStore } from '@/store/usePreviewStore';
 import { X, FileText } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PreviewContent } from './PreviewContent';
 import { PreviewModeSwitch } from './PreviewModeSwitch';
 
+function formatBytes(value: number) {
+  if (value >= 1024 * 1024 * 1024) {
+    return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  }
+  if (value >= 1024 * 1024) {
+    return `${(value / 1024 / 1024).toFixed(1)} MB`;
+  }
+  if (value >= 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+  return `${value} B`;
+}
+
 export function PreviewModal() {
+  const { t } = useTranslation();
   const { isOpen, activeFile, activeMode, isLoading, error, closePreview, setActiveMode } = usePreviewStore();
+  const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
 
   // 监听 ESC 关闭
   useEffect(() => {
@@ -43,12 +61,12 @@ export function PreviewModal() {
                         <FileText size={16} />
                     </div>
                     <div className="flex flex-col min-w-0">
-                         <span className="font-medium text-sm truncate">{activeFile?.name || 'Loading...'}</span>
+                         <span className="font-medium text-sm truncate">{activeFile?.name || t('peek.loading')}</span>
                          {activeFile && <span className="text-[10px] text-muted-foreground font-mono">{activeFile.mime} • {activeFile.size.toLocaleString()} bytes</span>}
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {activeFile && activeFile.supportedModes.length > 1 && (
+                    {activeFile && !error && activeFile.supportedModes.length > 1 && (
                         <PreviewModeSwitch
                           modes={activeFile.supportedModes}
                           value={activeMode}
@@ -65,12 +83,27 @@ export function PreviewModal() {
             <div className="flex-1 bg-card relative overflow-hidden">
                 {isLoading ? (
                     <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        Loading metadata...
+                        {t('peek.loading')}
                     </div>
                 ) : error ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-destructive flex-col gap-2">
-                        <p className="font-bold">Preview Failed</p>
-                        <p className="text-sm opacity-80">{error}</p>
+                    <div className="absolute inset-0 flex items-center justify-center px-6 text-destructive flex-col gap-3 text-center">
+                        <p className="font-bold">
+                          {isOversizedPreview ? t('peek.oversizedTitle') : t('peek.failed')}
+                        </p>
+                        <p className="max-w-xl text-sm opacity-80">
+                          {isOversizedPreview
+                            ? t('peek.oversizedDescription', { limit: formatBytes(MAX_INLINE_PREVIEW_BYTES) })
+                            : error}
+                        </p>
+                        {isOversizedPreview && activeFile && (
+                          <button
+                            type="button"
+                            onClick={() => void open(activeFile.path).catch(() => undefined)}
+                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                          >
+                            {t('peek.openExternal')}
+                          </button>
+                        )}
                     </div>
                 ) : activeFile ? (
                    <PreviewContent meta={activeFile} mode={activeMode} />

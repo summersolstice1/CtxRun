@@ -18,6 +18,9 @@
       --bubble-in: #ffffff;
       --bubble-out: #2563eb;
       --bubble-out-text: #ffffff;
+      --scrollbar-track: rgba(17, 24, 39, 0.06);
+      --scrollbar-thumb: rgba(107, 114, 128, 0.36);
+      --scrollbar-thumb-hover: rgba(75, 85, 99, 0.52);
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -25,11 +28,14 @@
         --surface: #1e2230;
         --border: #2a2f40;
         --text: #f3f4f6;
-      --muted: #9ca3af;
-      --primary: #3b82f6;
-      --bubble-in: #1e2230;
-      --danger: #f87171;
-    }
+        --muted: #9ca3af;
+        --primary: #3b82f6;
+        --bubble-in: #1e2230;
+        --danger: #f87171;
+        --scrollbar-track: rgba(255, 255, 255, 0.04);
+        --scrollbar-thumb: rgba(148, 163, 184, 0.38);
+        --scrollbar-thumb-hover: rgba(148, 163, 184, 0.58);
+      }
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -54,6 +60,30 @@
     main {
       flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px;
       -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    }
+    main::-webkit-scrollbar,
+    .input-box::-webkit-scrollbar {
+      width: 10px;
+    }
+    main::-webkit-scrollbar-track,
+    .input-box::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+      border-radius: 999px;
+    }
+    main::-webkit-scrollbar-thumb,
+    .input-box::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--scrollbar-thumb), color-mix(in srgb, var(--scrollbar-thumb) 78%, transparent));
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      min-height: 48px;
+    }
+    main::-webkit-scrollbar-thumb:hover,
+    .input-box::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, var(--scrollbar-thumb-hover), color-mix(in srgb, var(--scrollbar-thumb-hover) 78%, transparent));
+      background-clip: padding-box;
     }
     .system-msg {
       align-self: center; font-size: 11px; color: var(--muted); background: var(--border); padding: 4px 12px; border-radius: 12px;
@@ -93,6 +123,8 @@
       flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
       padding: 8px 14px; font-size: 15px; color: var(--text); resize: none; max-height: 100px;
       outline: none; overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
     }
     .btn-send {
       width: 64px; height: 36px; border-radius: 18px; border: none; background: var(--primary); color: white;
@@ -449,7 +481,7 @@
         if (e.lengthComputable && prog) {
           const pct = Math.round((e.loaded / e.total) * 100);
           prog.value = pct;
-          if (stat) stat.textContent = t('uploadingPercent', { percent: `${pct}%` });
+          if (stat) stat.textContent = t('uploadingPercent', { percent: pct });
         }
       };
       xhr.onload = () => {

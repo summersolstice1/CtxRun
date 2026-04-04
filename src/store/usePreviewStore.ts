@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { FileMeta, PreviewMode } from '@/types/hyperview';
+import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 
 interface PreviewState {
   isOpen: boolean;
@@ -26,6 +27,15 @@ export const usePreviewStore = create<PreviewState>((set) => ({
 
     try {
       const meta = await invoke<FileMeta>('get_file_meta', { path });
+      if (meta.size > MAX_INLINE_PREVIEW_BYTES) {
+        set({
+          activeFile: meta,
+          activeMode: meta.defaultMode,
+          isLoading: false,
+          error: OVERSIZED_PREVIEW_ERROR,
+        });
+        return;
+      }
       set({ activeFile: meta, activeMode: meta.defaultMode, isLoading: false });
     } catch (err: any) {
       set({ error: String(err), isLoading: false });
@@ -43,6 +53,6 @@ export const usePreviewStore = create<PreviewState>((set) => ({
   },
 
   closePreview: () => {
-    set({ isOpen: false, activeFile: null, activeMode: 'default' });
+    set({ isOpen: false, activeFile: null, activeMode: 'default', error: null });
   }
 }));

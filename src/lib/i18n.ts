@@ -97,6 +97,7 @@ const translations = {
       inputPlaceholder: "Type a message...",
       attachFile: "Attach file",
       send: "Send",
+      preview: "Preview",
       openFolder: "Open folder",
       pending: "Pending",
       transferring: "Transferring",
@@ -619,7 +620,10 @@ const translations = {
       modeFormatted: "Formatted",
       modeTable: "Table",
       tableRowsLimited: "Showing first {{count}} rows",
-      formatFallback: "Formatted preview is unavailable. Falling back to source."
+      formatFallback: "Formatted preview is unavailable. Falling back to source.",
+      oversizedTitle: "Inline preview disabled",
+      oversizedDescription: "Files larger than {{limit}} are opened externally to keep the app stable.",
+      openExternal: "Open in default app"
     },
     guard: {
       holdAction: "Hold to unlock"
@@ -1036,6 +1040,7 @@ const translations = {
       inputPlaceholder: "输入消息...",
       attachFile: "选择文件",
       send: "发送",
+      preview: "预览",
       openFolder: "打开目录",
       pending: "等待中",
       transferring: "传输中",
@@ -1558,7 +1563,10 @@ const translations = {
       modeFormatted: "格式化",
       modeTable: "表格",
       tableRowsLimited: "当前仅显示前 {{count}} 行",
-      formatFallback: "格式化预览不可用，已回退为源码。"
+      formatFallback: "格式化预览不可用，已回退为源码。",
+      oversizedTitle: "已禁用内联预览",
+      oversizedDescription: "超过 {{limit}} 的文件会改为外部打开，以保证应用稳定性。",
+      openExternal: "默认应用打开"
     },
     guard: {
       holdAction: "长按解锁"

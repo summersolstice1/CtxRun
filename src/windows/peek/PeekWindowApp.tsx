@@ -9,6 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 
 import { PreviewContent } from '@/components/features/hyperview/PreviewContent';
 import { PreviewModeSwitch } from '@/components/features/hyperview/PreviewModeSwitch';
+import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { applyThemeToDocument } from '@/lib/theme';
 import { useAppStore } from '@/store/useAppStore';
 import { usePeekStore } from '@/store/usePeekStore';
@@ -229,6 +230,7 @@ export default function PeekApp() {
 
   const canNavigate = paths.length > 1;
   const currentPosition = paths.length > 0 ? activeIndex + 1 : 0;
+  const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
 
   return (
     <div className="peek-window flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
@@ -256,7 +258,7 @@ export default function PeekApp() {
         </div>
 
         <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground">
-          {activeFile && activeFile.supportedModes.length > 1 && (
+          {activeFile && !error && activeFile.supportedModes.length > 1 && (
             <PreviewModeSwitch
               modes={activeFile.supportedModes}
               value={activeMode}
@@ -281,9 +283,26 @@ export default function PeekApp() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
             <FileText size={22} className="text-destructive" />
             <div>
-              <p className="text-sm font-semibold text-foreground">{t('peek.failed')}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{error}</p>
+              <p className="text-sm font-semibold text-foreground">
+                {isOversizedPreview ? t('peek.oversizedTitle') : t('peek.failed')}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isOversizedPreview
+                  ? t('peek.oversizedDescription', { limit: formatSize(MAX_INLINE_PREVIEW_BYTES) })
+                  : error}
+              </p>
             </div>
+            {isOversizedPreview && activeFile && (
+              <button
+                type="button"
+                onClick={() => void open(activeFile.path).catch((openError) => {
+                  console.error('[Peek] Failed to open oversized file with default app:', openError);
+                })}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+              >
+                {t('peek.openExternal')}
+              </button>
+            )}
           </div>
         ) : activeFile ? (
           <PreviewContent meta={activeFile} mode={activeMode} />
