@@ -1,21 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import {
-  CheckCheck,
-  ChevronDown,
-  Copy,
-  FolderDown,
-  Link2,
-  Loader2,
-  QrCode,
-  Radio,
-  Shield,
-  Square,
-  Wifi,
-} from 'lucide-react';
+import { useState } from 'react';
+import { Play, Square, QrCode, Link2, Copy, Check, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { ServiceInfo } from '@/types/transfer';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { QrCodeSVG } from './QrCodeSVG';
 
@@ -30,259 +16,54 @@ interface ServiceControlsProps {
   onCopyUrl: () => void;
 }
 
-function formatServiceInfo(serviceInfo: ServiceInfo | null) {
-  if (!serviceInfo) {
-    return null;
-  }
-
-  try {
-    const parsed = new URL(serviceInfo.url);
-    return {
-      host: parsed.hostname,
-      port: parsed.port || String(serviceInfo.port),
-      route: parsed.pathname,
-    };
-  } catch {
-    return {
-      host: serviceInfo.bindAddress,
-      port: String(serviceInfo.port),
-      route: '/',
-    };
-  }
-}
-
 export function ServiceControls({
-  isRunning,
-  isBusy,
-  serviceInfo,
-  copied,
-  devicesCount,
-  onStart,
-  onStop,
-  onCopyUrl,
+  isRunning, isBusy, serviceInfo, copied, onStart, onStop, onCopyUrl,
 }: ServiceControlsProps) {
   const { t } = useTranslation();
-  const [detailsOpen, setDetailsOpen] = useState(true);
-
-  useEffect(() => {
-    setDetailsOpen(Boolean(serviceInfo));
-  }, [serviceInfo?.url]);
-
-  const details = useMemo(() => formatServiceInfo(serviceInfo), [serviceInfo]);
-  const modeLabel = serviceInfo?.urlMode === 'fixed' ? t('transfer.fixedLink') : t('transfer.randomLink');
+  const [showQr, setShowQr] = useState(false);
 
   return (
-    <section className="relative overflow-hidden rounded-[32px] border border-border/70 bg-background/80 shadow-[0_24px_70px_rgba(148,163,184,0.16)] backdrop-blur-xl dark:border-white/10 dark:bg-[#091323]/85 dark:shadow-[0_28px_80px_rgba(0,0,0,0.36)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.14),transparent_34%),radial-gradient(circle_at_right,rgba(14,165,233,0.08),transparent_26%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.22),transparent_34%),radial-gradient(circle_at_right,rgba(59,130,246,0.12),transparent_26%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/35 to-transparent dark:via-cyan-300/50" />
-
-      <div className="relative px-5 py-5 md:px-6 md:py-6">
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-3xl space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em]',
-                    isRunning
-                      ? 'border-emerald-500/25 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/30 dark:text-emerald-200'
-                      : 'border-border/70 bg-background/60 text-muted-foreground dark:border-white/10 dark:bg-white/5 dark:text-slate-300'
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'h-2 w-2 rounded-full',
-                      isRunning
-                        ? 'bg-emerald-500 shadow-[0_0_14px_rgba(16,185,129,0.45)] dark:bg-emerald-400 dark:shadow-[0_0_14px_rgba(74,222,128,0.85)]'
-                        : 'bg-muted-foreground/60 dark:bg-slate-500'
-                    )}
-                  />
-                  {isRunning ? t('transfer.ready') : t('transfer.offline')}
-                </span>
-
-                <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-700 dark:border-cyan-400/15 dark:text-cyan-100">
-                  <Shield size={12} />
-                  {t('transfer.secureLocal')}
-                </span>
-
-                {isRunning && (
-                  <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1 text-[11px] font-medium text-foreground/75 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
-                    <Wifi size={12} />
-                    {devicesCount} · {t('transfer.connectedDevices')}
-                  </span>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] dark:border-cyan-400/20 dark:bg-cyan-500/12 dark:text-cyan-200 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                      <Radio size={20} />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-semibold tracking-tight text-foreground dark:text-slate-50 md:text-[2rem]">
-                        {t('transfer.title')}
-                      </h2>
-                    </div>
-                  </div>
-
-                {serviceInfo && (
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-foreground/75 dark:text-slate-300/75">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/[0.04]">
-                      <Link2 size={12} />
-                      {details?.host}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/[0.04]">
-                      {t('transfer.port')}: {details?.port}
-                    </span>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 dark:border-white/10 dark:bg-white/[0.04]">
-                      {modeLabel}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col items-stretch gap-3 sm:flex-row xl:items-center">
-              {serviceInfo && (
-                <Button
-                  variant="outline"
-                  onClick={() => setDetailsOpen((open) => !open)}
-                  className="h-11 gap-2 rounded-2xl border-border/70 bg-background/60 px-4 text-foreground hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-cyan-300/30 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
-                >
-                  <QrCode size={15} />
-                  {detailsOpen ? t('transfer.hideDetails') : t('transfer.showDetails')}
-                  <ChevronDown
-                    size={15}
-                    className={cn('transition-transform duration-200', detailsOpen && 'rotate-180')}
-                  />
-                </Button>
-              )}
-
-              {isRunning ? (
-                <Button
-                  variant="destructive"
-                  onClick={onStop}
-                  disabled={isBusy}
-                  className="h-11 gap-2 rounded-2xl border border-red-400/20 bg-red-500/90 px-5 text-white shadow-[0_14px_40px_rgba(239,68,68,0.28)] hover:bg-red-500"
-                >
-                  {isBusy ? <Loader2 size={16} className="animate-spin" /> : <Square size={14} fill="currentColor" />}
-                  {t('transfer.stop')}
-                </Button>
-              ) : (
-                <Button
-                  onClick={onStart}
-                  disabled={isBusy}
-                  className="h-11 gap-2 rounded-2xl border border-cyan-300/15 bg-cyan-500 px-5 text-slate-950 shadow-[0_18px_50px_rgba(56,189,248,0.36)] hover:bg-cyan-400"
-                >
-                  {isBusy ? <Loader2 size={16} className="animate-spin" /> : <Radio size={15} />}
-                  {t('transfer.start')}
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <AnimatePresence initial={false}>
-            {serviceInfo && detailsOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0, y: -10 }}
-                animate={{ height: 'auto', opacity: 1, y: 0 }}
-                exit={{ height: 0, opacity: 0, y: -10 }}
-                transition={{ duration: 0.24, ease: 'easeOut' }}
-                className="overflow-hidden"
-              >
-                <div className="grid gap-4 rounded-[28px] border border-border/70 bg-background/55 p-4 md:p-5 xl:grid-cols-[minmax(0,1.45fr)_280px] dark:border-white/10 dark:bg-black/15">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-slate-100">
-                      <CheckCheck size={16} className="text-cyan-600 dark:text-cyan-300" />
-                      {t('transfer.sessionDetails')}
-                    </div>
-
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      <div className="rounded-2xl border border-border/60 bg-background/72 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-400">
-                          {t('transfer.address')}
-                        </div>
-                        <div className="mt-3 break-all font-mono text-sm text-foreground dark:text-slate-100">{details?.host}</div>
-                      </div>
-
-                      <div className="rounded-2xl border border-border/60 bg-background/72 p-4 dark:border-white/10 dark:bg-white/[0.03]">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-400">
-                          {t('transfer.route')}
-                        </div>
-                        <div className="mt-3 break-all font-mono text-sm text-foreground dark:text-slate-100">{details?.route}</div>
-                      </div>
-
-                      <div className="rounded-2xl border border-border/60 bg-background/72 p-4 sm:col-span-2 xl:col-span-1 dark:border-white/10 dark:bg-white/[0.03]">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-400">
-                          {t('transfer.linkMode')}
-                        </div>
-                        <div className="mt-3 text-sm text-foreground dark:text-slate-100">{modeLabel}</div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-[24px] border border-cyan-500/15 bg-gradient-to-br from-cyan-500/[0.10] via-white/70 to-transparent p-4 md:p-5 dark:border-cyan-400/12 dark:via-white/[0.04]">
-                      <div className="space-y-4">
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-700/80 dark:text-cyan-100/75">
-                          {t('transfer.serviceUrl')}
-                        </div>
-
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                          <div
-                            className="min-w-0 flex-1 overflow-hidden text-ellipsis rounded-2xl border border-border/70 bg-white/80 px-4 py-3 font-mono text-sm leading-6 text-foreground dark:border-white/10 dark:bg-black/20 dark:text-slate-50"
-                            title={serviceInfo.url}
-                          >
-                            {serviceInfo.url}
-                          </div>
-
-                          <Button
-                            variant="outline"
-                            onClick={onCopyUrl}
-                            className="h-11 shrink-0 gap-2 rounded-2xl border-border/70 bg-background/60 px-4 text-foreground hover:border-cyan-500/30 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-cyan-300/30 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
-                          >
-                            <Copy size={14} />
-                            {copied ? t('transfer.copied') : t('transfer.copyUrl')}
-                          </Button>
-                        </div>
-
-                        <div className="flex items-start gap-3 text-sm text-foreground/75 dark:text-slate-300/78">
-                          <FolderDown size={16} className="mt-0.5 shrink-0 text-cyan-700 dark:text-cyan-200" />
-                          <div className="min-w-0">
-                            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground dark:text-slate-500">
-                              {t('transfer.saveDir')}
-                            </div>
-                            <div className="mt-1 truncate" title={serviceInfo.saveDir}>
-                              {serviceInfo.saveDir}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[28px] border border-border/60 bg-background/70 p-4 dark:border-white/10 dark:bg-white/[0.04]">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground dark:text-slate-400">
-                          QR
-                        </div>
-                      </div>
-                      <div className="rounded-full border border-cyan-500/20 bg-cyan-500/10 px-3 py-1 text-[11px] font-medium text-cyan-700 dark:border-cyan-400/20 dark:text-cyan-100">
-                        {t('transfer.secureLocal')}
-                      </div>
-                    </div>
-
-                    <div className="mt-4 rounded-[24px] border border-border/60 bg-white p-4 text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] dark:border-white/10">
-                      <QrCodeSVG matrix={serviceInfo.qrMatrix} />
-                    </div>
-
-                    <div className="mt-4 h-1 rounded-full bg-gradient-to-r from-transparent via-cyan-500/20 to-transparent dark:via-cyan-300/25" />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+    <div className="p-4 border-b border-border shrink-0 flex flex-col gap-3 relative">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className={cn("w-2 h-2 rounded-full", isRunning ? "bg-green-500" : "bg-muted-foreground")} />
+          <span className="text-sm font-semibold">{isRunning ? t('transfer.ready') : t('transfer.offline')}</span>
         </div>
+        
+        {isRunning ? (
+          <button onClick={onStop} disabled={isBusy} className="p-1.5 text-destructive hover:bg-destructive/10 rounded-md transition-colors" title={t('transfer.stop')}>
+            {isBusy ? <Loader2 size={16} className="animate-spin" /> : <Square size={16} fill="currentColor" />}
+          </button>
+        ) : (
+          <button onClick={onStart} disabled={isBusy} className="p-1.5 text-primary hover:bg-secondary rounded-md transition-colors" title={t('transfer.start')}>
+            {isBusy ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} fill="currentColor" />}
+          </button>
+        )}
       </div>
-    </section>
+
+      {serviceInfo && (
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 bg-secondary/50 border border-border/50 rounded-md p-1.5 text-xs">
+            <Link2 size={14} className="text-muted-foreground shrink-0" />
+            <span className="truncate flex-1 font-mono text-muted-foreground">{serviceInfo.url}</span>
+            <button onClick={onCopyUrl} className="p-1 hover:bg-background rounded text-foreground transition-colors shrink-0">
+              {copied ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+            </button>
+            <button onClick={() => setShowQr(!showQr)} className={cn("p-1 rounded transition-colors shrink-0", showQr ? "bg-background shadow-sm text-primary" : "hover:bg-background text-foreground")}>
+              <QrCode size={14} />
+            </button>
+          </div>
+          
+          {/* 二维码下拉面板 */}
+          {showQr && (
+            <div className="mt-1 p-3 bg-white rounded-lg border border-border shadow-sm flex items-center justify-center animate-in fade-in zoom-in-95 duration-200">
+              <div className="w-40 h-40 text-black">
+                <QrCodeSVG matrix={serviceInfo.qrMatrix} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

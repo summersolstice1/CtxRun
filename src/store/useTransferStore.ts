@@ -289,9 +289,22 @@ export const useTransferStore = create<TransferState>((set, get) => ({
 
       const unlistenFileReceived = await listen<TransferMessage>('transfer:file-received', (event) => {
         const message = event.payload;
-        set((state) => ({
-          chatHistories: appendHistoryMessage(state.chatHistories, message.deviceId, message),
-        }));
+        set((state) => {
+          const history = state.chatHistories[message.deviceId] ?? [];
+          const exists = history.some(m => m.fileId === message.fileId);
+          let newHistory;
+          if (exists) {
+            newHistory = history.map(m => m.fileId === message.fileId ? { ...m, ...message } : m);
+          } else {
+            newHistory = [...history, message];
+          }
+          return {
+            chatHistories: {
+              ...state.chatHistories,
+              [message.deviceId]: newHistory,
+            },
+          };
+        });
       });
 
       const unlistenFileProgress = await listen<FileProgressPayload>(
@@ -300,12 +313,32 @@ export const useTransferStore = create<TransferState>((set, get) => ({
           const progress = event.payload;
           set((state) => {
             const history = state.chatHistories[progress.deviceId] ?? [];
+            const exists = history.some(m => m.fileId === progress.fileId);
+            
+            let updatedHistory;
+            if (exists) {
+              updatedHistory = history.map((message) => applyFileProgress(message, progress));
+            } else {
+              const newMessage: TransferMessage = {
+                id: progress.fileId,
+                deviceId: progress.deviceId,
+                kind: 'file',
+                direction: progress.direction,
+                fileId: progress.fileId,
+                fileName: progress.fileName,
+                fileSize: progress.totalBytes,
+                status: progress.status,
+                progressPercent: progress.progressPercent,
+                timestampMs: Date.now(),
+                savedPath: progress.savedPath
+              };
+              updatedHistory = [...history, newMessage];
+            }
+
             return {
               chatHistories: {
                 ...state.chatHistories,
-                [progress.deviceId]: history.map((message) =>
-                  applyFileProgress(message, progress)
-                ),
+                [progress.deviceId]: updatedHistory,
               },
             };
           });

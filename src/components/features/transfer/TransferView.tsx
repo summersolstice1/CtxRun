@@ -11,44 +11,19 @@ import { ChatPanel } from './ChatPanel';
 
 export function TransferView() {
   const [
-    isRunning,
-    isBusy,
-    serviceInfo,
-    devices,
-    selectedDeviceId,
-    chatHistories,
-    lastError,
-    clearError,
-    startService,
-    stopService,
-    selectDevice,
-    sendMessage,
-    sendFile,
-    initListeners,
+    isRunning, isBusy, serviceInfo, devices, selectedDeviceId, chatHistories,
+    lastError, clearError, startService, stopService, selectDevice, sendMessage, sendFile, initListeners,
   ] = useTransferStore(
     useShallow((state) => [
-      state.isRunning,
-      state.isBusy,
-      state.serviceInfo,
-      state.devices,
-      state.selectedDeviceId,
-      state.chatHistories,
-      state.lastError,
-      state.clearError,
-      state.startService,
-      state.stopService,
-      state.selectDevice,
-      state.sendMessage,
-      state.sendFile,
-      state.initListeners,
+      state.isRunning, state.isBusy, state.serviceInfo, state.devices, state.selectedDeviceId,
+      state.chatHistories, state.lastError, state.clearError, state.startService, state.stopService,
+      state.selectDevice, state.sendMessage, state.sendFile, state.initListeners,
     ])
   );
 
   const [copied, setCopied] = useState(false);
   const [toastState, setToastState] = useState<{ show: boolean; message: string; type: ToastType }>({
-    show: false,
-    message: '',
-    type: 'info',
+    show: false, message: '', type: 'info',
   });
 
   useEffect(() => {
@@ -57,11 +32,7 @@ export function TransferView() {
 
   useEffect(() => {
     if (!lastError) return;
-    setToastState({
-      show: true,
-      message: lastError,
-      type: 'error',
-    });
+    setToastState({ show: true, message: lastError, type: 'error' });
     clearError();
   }, [lastError, clearError]);
 
@@ -70,30 +41,20 @@ export function TransferView() {
 
   const handleCopyUrl = async () => {
     if (!serviceInfo?.url) return;
-
     try {
       await writeText(serviceInfo.url);
       setCopied(true);
-      setToastState({ show: true, message: serviceInfo.url, type: 'success' });
+      setToastState({ show: true, message: "链接已复制", type: 'success' });
       window.setTimeout(() => setCopied(false), 1600);
     } catch (error) {
-      setToastState({
-        show: true,
-        message: String(error),
-        type: 'error',
-      });
+      setToastState({ show: true, message: String(error), type: 'error' });
     }
   };
 
   const handleAttachFile = async () => {
     try {
-      const selected = await openDialog({
-        multiple: false,
-        directory: false,
-      });
-      if (typeof selected === 'string') {
-        await sendFile(selected);
-      }
+      const selected = await openDialog({ multiple: false, directory: false });
+      if (typeof selected === 'string') await sendFile(selected);
     } catch (error) {
       setToastState({ show: true, message: String(error), type: 'error' });
     }
@@ -108,11 +69,9 @@ export function TransferView() {
   };
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(6,182,212,0.13),transparent_26%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.10),transparent_30%),linear-gradient(180deg,rgba(248,251,254,0.98)_0%,rgba(238,245,251,1)_100%)] dark:bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(59,130,246,0.12),transparent_30%),linear-gradient(180deg,#071120_0%,#040b16_100%)]" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.28] [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.05)_1px,transparent_1px)] [background-size:32px_32px] dark:opacity-[0.14] dark:[background-image:linear-gradient(rgba(148,163,184,0.14)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)]" />
-
-      <div className="relative flex min-h-0 flex-1 flex-col gap-4 p-4 md:p-5">
+    <div className="flex h-full min-h-0 overflow-hidden bg-background text-foreground animate-in fade-in duration-300">
+      {/* 左侧边栏：服务控制 + 设备列表 */}
+      <div className="w-64 xl:w-72 flex flex-col border-r border-border bg-secondary/10 shrink-0">
         <ServiceControls
           isRunning={isRunning}
           isBusy={isBusy}
@@ -123,25 +82,25 @@ export function TransferView() {
           onStop={() => void stopService()}
           onCopyUrl={() => void handleCopyUrl()}
         />
+        <DeviceSidebar
+          isRunning={isRunning}
+          devices={devices}
+          selectedDeviceId={selectedDeviceId}
+          onSelect={(deviceId) => void selectDevice(deviceId)}
+        />
+      </div>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-4 xl:flex-row">
-          <DeviceSidebar
-            isRunning={isRunning}
-            devices={devices}
-            selectedDeviceId={selectedDeviceId}
-            onSelect={(deviceId) => void selectDevice(deviceId)}
-          />
-
-          <ChatPanel
-            isRunning={isRunning}
-            isBusy={isBusy}
-            selectedDevice={selectedDevice}
-            messages={messages}
-            onSendMessage={sendMessage}
-            onAttachFile={handleAttachFile}
-            onOpenFolder={handleOpenFolder}
-          />
-        </div>
+      {/* 右侧主区域：聊天面板 */}
+      <div className="flex-1 flex min-w-0 bg-background">
+        <ChatPanel
+          isRunning={isRunning}
+          isBusy={isBusy}
+          selectedDevice={selectedDevice}
+          messages={messages}
+          onSendMessage={sendMessage}
+          onAttachFile={handleAttachFile}
+          onOpenFolder={handleOpenFolder}
+        />
       </div>
 
       <Toast

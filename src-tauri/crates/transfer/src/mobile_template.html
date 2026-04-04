@@ -1,774 +1,322 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <title>CtxRun Transfer</title>
-    <style>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=0" />
+  <title>CtxRun Transfer</title>
+  <style>
+    /* 自动适配白天/黑夜模式的极简配色系统 */
+    :root {
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-fg: #ffffff;
+      --bubble-in: #ffffff;
+      --bubble-out: #2563eb;
+      --bubble-out-text: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
       :root {
-        color-scheme: dark;
-        --bg: #040b16;
-        --panel: rgba(9, 19, 35, 0.9);
-        --panel-soft: rgba(255, 255, 255, 0.04);
-        --line: rgba(148, 163, 184, 0.14);
-        --line-strong: rgba(148, 163, 184, 0.2);
-        --text: #e8f0ff;
-        --muted: #92a2bc;
-        --accent: #38bdf8;
-        --accent-strong: #0ea5e9;
-        --accent-soft: rgba(56, 189, 248, 0.14);
-        --success: #4ade80;
-        --danger: #fb7185;
-        --bubble-in: rgba(255, 255, 255, 0.04);
-        --bubble-out: linear-gradient(135deg, rgba(34, 211, 238, 0.22), rgba(8, 17, 32, 0.9));
+        --bg: #0f111a;
+        --surface: #1e2230;
+        --border: #2a2f40;
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --primary: #3b82f6;
+        --bubble-in: #1e2230;
       }
+    }
 
-      * {
-        box-sizing: border-box;
-      }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg); color: var(--text); overflow: hidden;
+    }
 
-      html,
-      body {
-        margin: 0;
-        min-height: 100%;
-        font-family: "Segoe UI", "PingFang SC", "Noto Sans SC", system-ui, -apple-system, sans-serif;
-        background:
-          radial-gradient(circle at top left, rgba(34, 211, 238, 0.16), transparent 28%),
-          radial-gradient(circle at right center, rgba(59, 130, 246, 0.12), transparent 22%),
-          linear-gradient(180deg, #081120 0%, var(--bg) 100%);
-        color: var(--text);
-      }
+    .app { display: flex; flex-direction: column; height: 100%; }
 
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-        background-size: 28px 28px;
-        opacity: 0.12;
-        pointer-events: none;
-      }
+    /* 顶部导航栏 */
+    header {
+      flex-shrink: 0; height: 50px; background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; padding: 0 16px; padding-top: env(safe-area-inset-top);
+      z-index: 10;
+    }
+    .header-title { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #f59e0b; }
+    .status-dot.ready { background: #10b981; }
 
-      .app {
-        position: relative;
-        min-height: 100vh;
-        display: grid;
-        grid-template-rows: auto 1fr auto;
-      }
+    /* 消息区域 */
+    main {
+      flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .system-msg {
+      align-self: center; font-size: 11px; color: var(--muted); background: var(--border); padding: 4px 12px; border-radius: 12px;
+    }
+    .bubble-wrapper { display: flex; flex-direction: column; width: 100%; }
+    .bubble-wrapper.out { align-items: flex-end; }
+    .bubble-wrapper.in { align-items: flex-start; }
+    
+    .bubble {
+      max-width: 80%; padding: 10px 14px; font-size: 15px; line-height: 1.5; word-wrap: break-word;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .bubble.in { background: var(--bubble-in); color: var(--text); border-radius: 16px 16px 16px 4px; border: 1px solid var(--border); }
+    .bubble.out { background: var(--bubble-out); color: var(--bubble-out-text); border-radius: 16px 16px 4px 16px; }
+    .time { font-size: 10px; color: var(--muted); margin-top: 4px; margin-bottom: 4px; }
 
-      header {
-        position: relative;
-        padding: calc(18px + env(safe-area-inset-top)) 18px 18px;
-      }
+    /* 文件卡片 */
+    .file-card { display: flex; flex-direction: column; gap: 8px; min-width: 160px; }
+    .file-name { font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-meta { font-size: 12px; opacity: 0.8; }
+    .file-dl { margin-top: 4px; padding: 6px 0; background: rgba(255,255,255,0.2); text-align: center; border-radius: 8px; color: inherit; text-decoration: none; font-size: 13px; }
+    progress { width: 100%; height: 4px; appearance: none; border: none; border-radius: 2px; overflow: hidden; }
+    progress::-webkit-progress-bar { background: rgba(0,0,0,0.2); }
+    progress::-webkit-progress-value { background: #fff; }
 
-      .hero {
-        position: relative;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        border-radius: 28px;
-        padding: 18px;
-        background: linear-gradient(180deg, rgba(8, 17, 32, 0.88), rgba(4, 11, 22, 0.94));
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-        backdrop-filter: blur(20px);
-      }
+    /* 底部输入区 */
+    footer {
+      flex-shrink: 0; background: var(--surface); border-top: 1px solid var(--border);
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      display: flex; align-items: flex-end; gap: 10px;
+    }
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--muted);
+      font-size: 24px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .input-box {
+      flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 20px;
+      padding: 8px 14px; font-size: 15px; color: var(--text); resize: none; max-height: 100px;
+      outline: none; overflow-y: auto;
+    }
+    .btn-send {
+      width: 64px; height: 36px; border-radius: 18px; border: none; background: var(--primary); color: white;
+      font-size: 14px; font-weight: 600; flex-shrink: 0; transition: opacity 0.2s;
+    }
+    .btn-send:disabled { opacity: 0.5; }
 
-      .hero::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(circle at top left, rgba(56, 189, 248, 0.18), transparent 30%),
-          radial-gradient(circle at right, rgba(59, 130, 246, 0.12), transparent 22%);
-        pointer-events: none;
-      }
-
-      .hero-top {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 0.16em;
-        text-transform: uppercase;
-        color: rgba(232, 240, 255, 0.78);
-      }
-
-      .brand-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 999px;
-        background: var(--accent);
-        box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
-      }
-
-      .network-pill {
-        padding: 8px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(56, 189, 248, 0.18);
-        background: rgba(56, 189, 248, 0.1);
-        color: #d8f4ff;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        white-space: nowrap;
-      }
-
-      h1 {
-        position: relative;
-        margin: 18px 0 0;
-        font-size: 28px;
-        line-height: 1.1;
-        letter-spacing: -0.04em;
-      }
-
-      .hero-subtitle {
-        position: relative;
-        margin: 8px 0 0;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.7;
-      }
-
-      .hero-meta {
-        position: relative;
-        margin-top: 16px;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-      }
-
-      .status-pill,
-      .host-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border-radius: 999px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.04);
-        padding: 10px 14px;
-        font-size: 12px;
-        color: #dfe9fb;
-      }
-
-      .status-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: #f59e0b;
-        box-shadow: 0 0 12px rgba(245, 158, 11, 0.55);
-      }
-
-      .status-dot.ready {
-        background: var(--success);
-        box-shadow: 0 0 12px rgba(74, 222, 128, 0.7);
-      }
-
-      main {
-        min-height: 0;
-        padding: 0 18px 18px;
-      }
-
-      .main-shell {
-        position: relative;
-        height: 100%;
-        min-height: 0;
-        border: 1px solid var(--line);
-        border-radius: 28px;
-        background: linear-gradient(180deg, rgba(9, 19, 35, 0.88), rgba(4, 11, 22, 0.92));
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.26);
-        overflow: hidden;
-      }
-
-      .main-shell::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background:
-          radial-gradient(circle at top, rgba(34, 211, 238, 0.1), transparent 30%),
-          linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 34%);
-        pointer-events: none;
-      }
-
-      #emptyState {
-        position: absolute;
-        inset: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 28px 22px;
-        border: 1px dashed rgba(148, 163, 184, 0.2);
-        border-radius: 24px;
-        background: rgba(255, 255, 255, 0.025);
-      }
-
-      .empty-card {
-        max-width: 280px;
-      }
-
-      .empty-icon {
-        margin: 0 auto 14px;
-        width: 52px;
-        height: 52px;
-        border-radius: 18px;
-        border: 1px solid rgba(56, 189, 248, 0.18);
-        background: rgba(56, 189, 248, 0.1);
-        display: grid;
-        place-items: center;
-        color: #d7f2ff;
-        font-size: 20px;
-      }
-
-      .empty-title {
-        font-size: 18px;
-        font-weight: 700;
-      }
-
-      .empty-body {
-        margin-top: 10px;
-        font-size: 13px;
-        line-height: 1.8;
-        color: var(--muted);
-      }
-
-      #messages {
-        position: relative;
-        z-index: 1;
-        height: 100%;
-        overflow-y: auto;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-
-      .bubble {
-        max-width: 86%;
-        padding: 14px 16px;
-        border-radius: 22px;
-        border: 1px solid var(--line);
-        background: var(--bubble-in);
-        align-self: flex-start;
-        word-break: break-word;
-        box-shadow: 0 16px 38px rgba(0, 0, 0, 0.18);
-      }
-
-      .bubble.outgoing {
-        align-self: flex-end;
-        background: var(--bubble-out);
-        border-color: rgba(56, 189, 248, 0.14);
-      }
-
-      .bubble.system {
-        max-width: 100%;
-        align-self: center;
-        border: 0;
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--muted);
-        padding: 8px 14px;
-        font-size: 11px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-      }
-
-      .message-text {
-        font-size: 15px;
-        line-height: 1.75;
-      }
-
-      .meta {
-        margin-top: 10px;
-        font-size: 11px;
-        letter-spacing: 0.14em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-
-      .file-card {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .file-title {
-        font-size: 15px;
-        font-weight: 700;
-      }
-
-      .file-actions {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-      }
-
-      .file-actions a,
-      .file-actions button,
-      #sendBtn,
-      #pinSubmit {
-        appearance: none;
-        border: 1px solid transparent;
-        border-radius: 16px;
-        padding: 12px 16px;
-        background: var(--accent);
-        color: #05253a;
-        font-weight: 700;
-        text-decoration: none;
-      }
-
-      .file-actions button.secondary,
-      #attachBtn {
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--text);
-        border-color: var(--line);
-      }
-
-      .composer {
-        padding: 0 18px calc(18px + env(safe-area-inset-bottom));
-      }
-
-      .composer-shell {
-        display: grid;
-        grid-template-columns: 1fr auto auto;
-        gap: 10px;
-        border: 1px solid var(--line);
-        border-radius: 26px;
-        padding: 12px;
-        background: rgba(9, 19, 35, 0.92);
-        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
-        backdrop-filter: blur(18px);
-      }
-
-      textarea,
-      input[type="password"] {
-        width: 100%;
-        border-radius: 18px;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.04);
-        color: var(--text);
-        padding: 14px 16px;
-        font: inherit;
-      }
-
-      textarea {
-        min-height: 58px;
-        max-height: 140px;
-        resize: vertical;
-      }
-
-      textarea::placeholder,
-      input::placeholder {
-        color: #73839f;
-      }
-
-      .hidden {
-        display: none !important;
-      }
-
-      #pinGate {
-        position: fixed;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        background: rgba(4, 11, 22, 0.82);
-        backdrop-filter: blur(20px);
-        padding: 20px;
-        z-index: 20;
-      }
-
-      #pinCard {
-        width: min(100%, 360px);
-        border-radius: 26px;
-        padding: 20px;
-        background: linear-gradient(180deg, rgba(9, 19, 35, 0.96), rgba(4, 11, 22, 0.96));
-        border: 1px solid var(--line);
-        box-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
-      }
-
-      #pinCard h2 {
-        margin: 0;
-        font-size: 22px;
-      }
-
-      #pinCard p {
-        margin: 10px 0 14px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.8;
-      }
-
-      #pinError {
-        min-height: 20px;
-        margin: 10px 0 0;
-        color: var(--danger);
-        font-size: 12px;
-      }
-
-      progress {
-        width: 100%;
-        height: 8px;
-        appearance: none;
-        border: 0;
-      }
-
-      progress::-webkit-progress-bar {
-        background: rgba(255, 255, 255, 0.08);
-        border-radius: 999px;
-      }
-
-      progress::-webkit-progress-value {
-        background: linear-gradient(90deg, #67e8f9, #38bdf8);
-        border-radius: 999px;
-      }
-
-      progress::-moz-progress-bar {
-        background: linear-gradient(90deg, #67e8f9, #38bdf8);
-        border-radius: 999px;
-      }
-
-      @media (max-width: 560px) {
-        h1 {
-          font-size: 24px;
-        }
-
-        .composer-shell {
-          grid-template-columns: 1fr;
-        }
-
-        #sendBtn,
-        #attachBtn {
-          width: 100%;
-          justify-content: center;
-        }
-
-        .bubble {
-          max-width: 92%;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="app">
-      <header>
-        <div class="hero">
-          <div class="hero-top">
-            <div class="brand">
-              <span class="brand-dot"></span>
-              CtxRun Transfer
-            </div>
-            <div class="network-pill">LAN Session</div>
-          </div>
-
-          <h1 id="heroTitle">Nearby transfer</h1>
-          <p class="hero-subtitle" id="heroSubtitle">
-            Messages and files stay on your local network.
-          </p>
-
-          <div class="hero-meta">
-            <div class="status-pill">
-              <span id="statusDot" class="status-dot"></span>
-              <span id="statusText">Connecting...</span>
-            </div>
-            <div class="host-pill" id="sessionLabel">Waiting for handshake</div>
-          </div>
-        </div>
-      </header>
-
-      <main>
-        <div class="main-shell">
-          <div id="emptyState">
-            <div class="empty-card">
-              <div class="empty-icon">↔</div>
-              <div class="empty-title">Session ready</div>
-              <div class="empty-body">
-                Share text, photos, or files. This session opens only inside your current network.
-              </div>
-            </div>
-          </div>
-
-          <div id="messages"></div>
-        </div>
-      </main>
-
-      <div class="composer">
-        <div class="composer-shell">
-          <textarea id="composerInput" placeholder="Type a message..."></textarea>
-          <button id="attachBtn" class="secondary" type="button">Attach</button>
-          <button id="sendBtn" type="button">Send</button>
-          <input id="fileInput" class="hidden" type="file" />
-        </div>
+    /* 鉴权遮罩 */
+    #pinGate {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .pin-card { background: var(--surface); padding: 24px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; }
+    .pin-card input { width: 100%; padding: 12px; margin: 16px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; text-align: center; outline: none; }
+    .pin-card button { width: 100%; padding: 12px; border-radius: 8px; background: var(--primary); color: white; border: none; font-size: 16px; font-weight: 600; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="header-title">
+        <span id="statusDot" class="status-dot"></span>
+        <span id="headerText">CtxRun Transfer</span>
       </div>
-    </div>
+    </header>
 
-    <div id="pinGate" class="hidden">
-      <div id="pinCard">
-        <h2>PIN Required</h2>
-        <p>
-          Enter the PIN shown on the CtxRun desktop to join this transfer session.
-        </p>
-        <input id="pinInput" type="password" inputmode="numeric" placeholder="PIN" />
-        <button id="pinSubmit" type="button" style="margin-top: 14px; width: 100%">Connect</button>
-        <div id="pinError"></div>
-      </div>
-    </div>
+    <main id="messages">
+       <div class="system-msg">Session Started</div>
+    </main>
 
-    <script>
-      const bootstrap = {
-        wsPath: "__WS_PATH__",
-        pinRequired: __PIN_REQUIRED__,
-        cookieName: "__COOKIE_NAME__",
+    <footer>
+      <button class="btn-icon" id="attachBtn" aria-label="Attach File">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+      </button>
+      <textarea class="input-box" id="composerInput" rows="1" placeholder="Message..."></textarea>
+      <button class="btn-send" id="sendBtn" disabled>Send</button>
+      <input id="fileInput" class="hidden" type="file" multiple />
+    </footer>
+  </div>
+
+  <div id="pinGate" class="hidden">
+    <div class="pin-card">
+      <h2 style="margin:0 0 8px; font-size: 20px;">PIN Required</h2>
+      <p style="margin:0; font-size: 13px; color: var(--muted);">Check your PC for the PIN code.</p>
+      <input id="pinInput" type="number" placeholder="Enter PIN" />
+      <button id="pinSubmit">Connect</button>
+      <div id="pinError" style="color: var(--danger); font-size: 12px; margin-top: 12px; min-height: 14px;"></div>
+    </div>
+  </div>
+
+  <script>
+    const bootstrap = { wsPath: "__WS_PATH__", pinRequired: __PIN_REQUIRED__, cookieName: "__COOKIE_NAME__" };
+    const els = {
+      msgs: document.getElementById('messages'),
+      input: document.getElementById('composerInput'),
+      send: document.getElementById('sendBtn'),
+      attach: document.getElementById('attachBtn'),
+      fileInput: document.getElementById('fileInput'),
+      statusDot: document.getElementById('statusDot'),
+      headerText: document.getElementById('headerText'),
+      pinGate: document.getElementById('pinGate'),
+      pinInput: document.getElementById('pinInput'),
+      pinSubmit: document.getElementById('pinSubmit'),
+      pinError: document.getElementById('pinError')
+    };
+
+    const state = { ws: null, deviceId: null, reconnectTimer: null };
+
+    // 输入框自动撑高
+    els.input.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      els.send.disabled = this.value.trim().length === 0;
+    });
+
+    function formatTime(ts) {
+      return new Date(ts || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function scrollToBottom() {
+      els.msgs.scrollTop = els.msgs.scrollHeight;
+    }
+
+    function appendSysMsg(text) {
+      const el = document.createElement('div');
+      el.className = 'system-msg';
+      el.textContent = text;
+      els.msgs.appendChild(el);
+      scrollToBottom();
+    }
+
+    function appendMsg(text, isOut, ts) {
+      const wrapper = document.createElement('div');
+      wrapper.className = `bubble-wrapper ${isOut ? 'out' : 'in'}`;
+      
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${isOut ? 'out' : 'in'}`;
+      bubble.textContent = text;
+      
+      const time = document.createElement('div');
+      time.className = 'time';
+      time.textContent = formatTime(ts);
+      
+      wrapper.appendChild(bubble);
+      wrapper.appendChild(time);
+      els.msgs.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function appendFile(name, size, url) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'bubble-wrapper in';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble in';
+      
+      bubble.innerHTML = `
+        <div class="file-card">
+          <div class="file-name">${name}</div>
+          <div class="file-meta">${(size/1024/1024).toFixed(2)} MB</div>
+          <a class="file-dl" href="${url}" download="${name}">Download</a>
+        </div>
+      `;
+      wrapper.appendChild(bubble);
+      els.msgs.appendChild(wrapper);
+      scrollToBottom();
+    }
+
+    function connect() {
+      const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+      state.ws = new WebSocket(`${protocol}://${location.host}${bootstrap.wsPath}`);
+
+      state.ws.onopen = () => {
+        if (bootstrap.pinRequired) {
+          els.pinGate.classList.remove('hidden');
+        } else {
+          sendHello();
+        }
       };
 
-      const messagesEl = document.getElementById("messages");
-      const emptyState = document.getElementById("emptyState");
-      const inputEl = document.getElementById("composerInput");
-      const sendBtn = document.getElementById("sendBtn");
-      const attachBtn = document.getElementById("attachBtn");
-      const fileInput = document.getElementById("fileInput");
-      const statusText = document.getElementById("statusText");
-      const statusDot = document.getElementById("statusDot");
-      const sessionLabel = document.getElementById("sessionLabel");
-      const heroTitle = document.getElementById("heroTitle");
-      const heroSubtitle = document.getElementById("heroSubtitle");
-      const pinGate = document.getElementById("pinGate");
-      const pinInput = document.getElementById("pinInput");
-      const pinSubmit = document.getElementById("pinSubmit");
-      const pinError = document.getElementById("pinError");
-
-      const state = {
-        ws: null,
-        deviceId: null,
-        sessionToken: null,
-        pin: "",
+      state.ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        switch (msg.type) {
+          case 'session':
+            state.deviceId = msg.deviceId;
+            document.cookie = `${bootstrap.cookieName}=${msg.sessionToken}; path=/; max-age=3600; SameSite=Strict`;
+            els.pinGate.classList.add('hidden');
+            els.statusDot.classList.add('ready');
+            els.headerText.textContent = "Connected";
+            break;
+          case 'chat': appendMsg(msg.content, false, msg.timestampMs); break;
+          case 'file_offer': appendFile(msg.fileName, msg.fileSize, msg.downloadUrl); break;
+          case 'error': els.pinError.textContent = msg.message; break;
+          case 'system': appendSysMsg(msg.content); break;
+        }
       };
 
-      function syncEmptyState() {
-        emptyState.classList.toggle("hidden", messagesEl.children.length > 0);
-      }
+      state.ws.onclose = () => {
+        els.statusDot.classList.remove('ready');
+        els.headerText.textContent = "Disconnected";
+        // 断线重连机制
+        clearTimeout(state.reconnectTimer);
+        state.reconnectTimer = setTimeout(connect, 3000);
+      };
+    }
 
-      function nowLabel(timestampMs) {
-        const date = new Date(timestampMs || Date.now());
-        return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-      }
+    function sendHello(pin) {
+      state.ws.send(JSON.stringify({ type: "hello", userAgent: navigator.userAgent, pin }));
+    }
 
-      function appendSystem(text) {
-        const bubble = document.createElement("div");
-        bubble.className = "bubble system";
-        bubble.textContent = text;
-        messagesEl.appendChild(bubble);
-        syncEmptyState();
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      }
+    function handleSend() {
+      const val = els.input.value.trim();
+      if (!val || state.ws.readyState !== WebSocket.OPEN) return;
+      state.ws.send(JSON.stringify({ type: "chat", content: val }));
+      appendMsg(val, true);
+      els.input.value = '';
+      els.input.style.height = 'auto';
+      els.send.disabled = true;
+    }
 
-      function appendTextMessage(text, outgoing, timestampMs) {
-        const bubble = document.createElement("div");
-        bubble.className = `bubble ${outgoing ? "outgoing" : ""}`.trim();
+    function uploadFile(file) {
+      if (!file || !state.deviceId) return;
+      const fd = new FormData();
+      fd.append("file", file);
 
-        const body = document.createElement("div");
-        body.className = "message-text";
-        body.textContent = text;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'bubble-wrapper out';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble out';
+      bubble.innerHTML = `
+        <div class="file-card">
+          <div class="file-name">${file.name}</div>
+          <div class="file-meta upload-status">Uploading...</div>
+          <progress max="100" value="0"></progress>
+        </div>
+      `;
+      wrapper.appendChild(bubble);
+      els.msgs.appendChild(wrapper);
+      scrollToBottom();
 
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = nowLabel(timestampMs);
+      const prog = bubble.querySelector('progress');
+      const stat = bubble.querySelector('.upload-status');
 
-        bubble.appendChild(body);
-        bubble.appendChild(meta);
-        messagesEl.appendChild(bubble);
-        syncEmptyState();
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      }
-
-      function appendFileOffer(fileName, fileSize, downloadUrl) {
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
-
-        const card = document.createElement("div");
-        card.className = "file-card";
-
-        const title = document.createElement("div");
-        title.className = "file-title";
-        title.textContent = fileName;
-
-        const meta = document.createElement("div");
-        meta.className = "meta";
-        meta.textContent = `${(fileSize / 1024 / 1024).toFixed(2)} MB`;
-
-        const actions = document.createElement("div");
-        actions.className = "file-actions";
-
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.textContent = "Download";
-        link.download = fileName;
-
-        actions.appendChild(link);
-        card.appendChild(title);
-        card.appendChild(meta);
-        card.appendChild(actions);
-        bubble.appendChild(card);
-        messagesEl.appendChild(bubble);
-        syncEmptyState();
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-      }
-
-      function setReady(ready, text) {
-        statusDot.classList.toggle("ready", ready);
-        statusText.textContent = text;
-      }
-
-      function setCookie(value) {
-        document.cookie = `${bootstrap.cookieName}=${value}; path=/; max-age=3600; SameSite=Strict`;
-      }
-
-      function connect() {
-        const scheme = location.protocol === "https:" ? "wss" : "ws";
-        const wsUrl = `${scheme}://${location.host}${bootstrap.wsPath}`;
-        state.ws = new WebSocket(wsUrl);
-
-        sessionLabel.textContent = location.host;
-
-        state.ws.addEventListener("open", () => {
-          if (bootstrap.pinRequired) {
-            pinGate.classList.remove("hidden");
-            pinInput.focus();
-            return;
-          }
-          sendHello("");
-        });
-
-        state.ws.addEventListener("message", (event) => {
-          const message = JSON.parse(event.data);
-          switch (message.type) {
-            case "session":
-              state.deviceId = message.deviceId;
-              state.sessionToken = message.sessionToken;
-              setCookie(message.sessionToken);
-              pinGate.classList.add("hidden");
-              pinError.textContent = "";
-              setReady(true, `Connected as ${message.deviceName}`);
-              heroTitle.textContent = "CtxRun Transfer";
-              heroSubtitle.textContent = `Connected as ${message.deviceName}`;
-              sessionLabel.textContent = location.host;
-              appendSystem("Connected to CtxRun");
-              break;
-            case "chat":
-              appendTextMessage(message.content, false, message.timestampMs);
-              break;
-            case "file_offer":
-              appendFileOffer(message.fileName, message.fileSize, message.downloadUrl);
-              break;
-            case "error":
-              pinError.textContent = message.message || "Failed to connect.";
-              appendSystem(message.message || "Error");
-              break;
-            case "system":
-              appendSystem(message.content);
-              break;
-            default:
-              break;
-          }
-        });
-
-        state.ws.addEventListener("close", () => {
-          setReady(false, "Disconnected");
-          heroSubtitle.textContent = "Connection closed. Reopen the page to reconnect.";
-          appendSystem("Connection closed");
-        });
-      }
-
-      function sendHello(pin) {
-        if (!state.ws || state.ws.readyState !== WebSocket.OPEN) return;
-        state.ws.send(
-          JSON.stringify({
-            type: "hello",
-            userAgent: navigator.userAgent,
-            pin: pin || undefined,
-          })
-        );
-      }
-
-      function sendMessage() {
-        const value = inputEl.value.trim();
-        if (!value || !state.ws || state.ws.readyState !== WebSocket.OPEN) return;
-        state.ws.send(JSON.stringify({ type: "chat", content: value }));
-        appendTextMessage(value, true, Date.now());
-        inputEl.value = "";
-      }
-
-      function uploadFile(file) {
-        if (!file || !state.deviceId || !state.sessionToken) return;
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const bubble = document.createElement("div");
-        bubble.className = "bubble outgoing";
-        bubble.innerHTML = `
-          <div class="file-card">
-            <div class="file-title">${file.name}</div>
-            <div class="meta">Uploading...</div>
-            <progress max="100" value="0"></progress>
-          </div>
-        `;
-        const progressEl = bubble.querySelector("progress");
-        const metaEl = bubble.querySelector(".meta");
-        messagesEl.appendChild(bubble);
-        syncEmptyState();
-        messagesEl.scrollTop = messagesEl.scrollHeight;
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", `/api/upload/${encodeURIComponent(state.deviceId)}`);
-        xhr.setRequestHeader("x-ctxrun-file-size", String(file.size));
-        xhr.upload.addEventListener("progress", (event) => {
-          if (!event.lengthComputable) return;
-          const percent = Math.round((event.loaded / event.total) * 100);
-          progressEl.value = percent;
-          metaEl.textContent = `Uploading... ${percent}%`;
-        });
-        xhr.addEventListener("load", () => {
-          progressEl.value = 100;
-          metaEl.textContent = xhr.status >= 200 && xhr.status < 300 ? "Uploaded" : "Upload failed";
-        });
-        xhr.addEventListener("error", () => {
-          metaEl.textContent = "Upload failed";
-        });
-        xhr.send(formData);
-      }
-
-      sendBtn.addEventListener("click", sendMessage);
-      inputEl.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-          event.preventDefault();
-          sendMessage();
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", `/api/upload/${encodeURIComponent(state.deviceId)}`);
+      xhr.setRequestHeader("x-ctxrun-file-size", String(file.size));
+      xhr.upload.onprogress = e => {
+        if(e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          prog.value = pct; stat.textContent = `Uploading ${pct}%`;
         }
-      });
-      attachBtn.addEventListener("click", () => fileInput.click());
-      fileInput.addEventListener("change", (event) => {
-        const [file] = event.target.files || [];
-        uploadFile(file);
-        fileInput.value = "";
-      });
-      pinSubmit.addEventListener("click", () => {
-        const pin = pinInput.value.trim();
-        state.pin = pin;
-        sendHello(pin);
-      });
+      };
+      xhr.onload = () => { prog.value = 100; stat.textContent = "Sent"; };
+      xhr.onerror = () => { stat.textContent = "Failed"; };
+      xhr.send(fd);
+    }
 
-      connect();
-      syncEmptyState();
-    </script>
-  </body>
+    els.send.onclick = handleSend;
+    els.attach.onclick = () => els.fileInput.click();
+    els.fileInput.onchange = e => {
+      Array.from(e.target.files).forEach(uploadFile);
+      els.fileInput.value = '';
+    };
+    els.pinSubmit.onclick = () => sendHello(els.pinInput.value);
+
+    connect();
+  </script>
+</body>
 </html>

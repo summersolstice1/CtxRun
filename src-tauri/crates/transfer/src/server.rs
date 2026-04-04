@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 
 use axum::body::Body;
 use axum::extract::ws::WebSocketUpgrade;
-use axum::extract::{ConnectInfo, Multipart, Path, State};
+use axum::extract::{ConnectInfo, Multipart, Path, State, DefaultBodyLimit};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{get, post};
@@ -114,6 +114,7 @@ fn build_router<R: Runtime>(shared: RunningServiceShared<R>) -> Router {
         .route("/favicon.ico", get(favicon_handler))
         .route("/{token}", get(token_page::<R>))
         .route("/{token}/ws", get(token_ws_upgrade::<R>))
+        .layer(DefaultBodyLimit::disable())
         .with_state(shared)
 }
 

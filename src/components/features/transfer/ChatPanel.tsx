@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { FolderOpen, Paperclip, SendHorizonal, Sparkles } from 'lucide-react';
+import { FolderOpen, Paperclip, Send, FileText, MonitorSmartphone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TransferDevice, TransferMessage } from '@/types/transfer';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface ChatPanelProps {
@@ -19,33 +18,22 @@ function formatFileSize(value?: number | null) {
   if (!value) return '0 B';
   if (value < 1024) return `${value} B`;
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  if (value < 1024 * 1024 * 1024) return `${(value / 1024 / 1024).toFixed(1)} MB`;
-  return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
+  return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function formatClock(timestampMs: number) {
-  return new Date(timestampMs).toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return new Date(timestampMs).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-export function ChatPanel({
-  isRunning,
-  isBusy,
-  selectedDevice,
-  messages,
-  onSendMessage,
-  onAttachFile,
-  onOpenFolder,
-}: ChatPanelProps) {
+export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onOpenFolder }: ChatPanelProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages.length, selectedDevice?.id]);
 
   const handleSend = async () => {
@@ -57,183 +45,126 @@ export function ChatPanel({
 
   const canInteract = Boolean(selectedDevice && isRunning && !isBusy);
 
-  return (
-    <section className="flex min-w-0 flex-1 flex-col rounded-[30px] border border-border/70 bg-background/80 shadow-[0_24px_70px_rgba(148,163,184,0.16)] backdrop-blur-xl dark:border-white/10 dark:bg-[#081120]/80 dark:shadow-[0_24px_90px_rgba(0,0,0,0.28)]">
-      {selectedDevice ? (
-        <>
-          <div className="border-b border-border/60 px-5 py-5 dark:border-white/10 md:px-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex min-w-0 items-center gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/20 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/15 dark:bg-cyan-500/12 dark:text-cyan-100">
-                  {selectedDevice.name.slice(0, 1).toUpperCase()}
-                </div>
-                <div className="min-w-0">
-                  <div className="truncate text-xl font-semibold text-foreground dark:text-slate-50">{selectedDevice.name}</div>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground dark:text-slate-400">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-700 dark:border-emerald-400/20 dark:text-emerald-200">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      {t('transfer.online')}
-                    </span>
-                    <span>{selectedDevice.ipAddress}</span>
-                    <span className="text-muted-foreground/40 dark:text-slate-600">/</span>
-                    <span className="uppercase tracking-[0.2em] text-muted-foreground dark:text-slate-500">{selectedDevice.deviceType}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-sm text-muted-foreground dark:text-slate-400">
-                {t('transfer.sessionWorkspace')} · {messages.length}
-              </div>
-            </div>
-          </div>
-
-          <div
-            ref={scrollRef}
-            className="relative flex-1 overflow-y-auto px-4 py-5 custom-scrollbar md:px-6"
-          >
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(6,182,212,0.07),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.55),transparent_34%)] dark:bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.08),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_34%)]" />
-
-            <div className="relative space-y-4">
-              {messages.length === 0 ? (
-                <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-border/60 bg-background/60 px-8 text-center dark:border-white/12 dark:bg-white/[0.03]">
-                  <div className="max-w-md">
-                    <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-500/15 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/15 dark:text-cyan-100">
-                      <Sparkles size={20} />
-                    </div>
-                    <div className="mt-4 text-lg font-semibold text-foreground dark:text-slate-50">{t('transfer.emptyChat')}</div>
-                  </div>
-                </div>
-              ) : (
-                messages.map((message) => {
-                  if (message.kind === 'system') {
-                    return (
-                      <div key={message.id} className="flex justify-center">
-                          <div className="rounded-full border border-border/50 bg-background/70 px-4 py-1.5 text-center text-xs tracking-[0.16em] text-muted-foreground dark:border-white/8 dark:bg-white/[0.04] dark:text-slate-400">
-                            {message.content}
-                          </div>
-                      </div>
-                    );
-                  }
-
-                  const outgoing = message.direction === 'sent';
-                  return (
-                    <div key={message.id} className={cn('flex', outgoing ? 'justify-end' : 'justify-start')}>
-                      <div
-                        className={cn(
-                          'max-w-[82%] rounded-[24px] border px-4 py-4 shadow-[0_14px_40px_rgba(148,163,184,0.14)] dark:shadow-[0_14px_40px_rgba(0,0,0,0.18)]',
-                          outgoing
-                            ? 'border-cyan-500/20 bg-[linear-gradient(135deg,rgba(6,182,212,0.15),rgba(255,255,255,0.96))] dark:border-cyan-300/15 dark:bg-[linear-gradient(135deg,rgba(34,211,238,0.18),rgba(8,17,32,0.85))]'
-                            : 'border-border/60 bg-white/72 dark:border-white/10 dark:bg-white/[0.04]'
-                        )}
-                      >
-                        {message.kind === 'text' ? (
-                          <div className="whitespace-pre-wrap break-words text-[15px] leading-7 text-foreground dark:text-slate-50">
-                            {message.content}
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div className="flex items-start gap-3">
-                              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-border/60 bg-background/60 text-foreground dark:border-white/10 dark:bg-black/20 dark:text-slate-200">
-                                <Paperclip size={15} />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="truncate text-sm font-semibold text-foreground dark:text-slate-50">{message.fileName}</div>
-                                <div className="mt-1 text-xs text-muted-foreground dark:text-slate-400">
-                                  {formatFileSize(message.fileSize)} ·{' '}
-                                  {message.status ? t(`transfer.${message.status}`) : t('transfer.pending')}
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="space-y-2">
-                              <div className="h-1.5 overflow-hidden rounded-full bg-border/60 dark:bg-white/10">
-                                <div
-                                  className="h-full bg-gradient-to-r from-cyan-300 via-sky-400 to-blue-400 transition-all duration-200"
-                                  style={{ width: `${Math.max(message.progressPercent ?? 0, message.status === 'completed' ? 100 : 6)}%` }}
-                                />
-                              </div>
-                              <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.16em] text-muted-foreground dark:text-slate-500">
-                                <span>{message.status ? t(`transfer.${message.status}`) : t('transfer.pending')}</span>
-                                <span>{Math.round(message.progressPercent ?? (message.status === 'completed' ? 100 : 0))}%</span>
-                              </div>
-                            </div>
-
-                            {message.savedPath && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => void onOpenFolder(message.savedPath!)}
-                                className="gap-2 rounded-xl border-border/70 bg-background/60 text-foreground hover:border-cyan-500/25 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-cyan-300/25 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
-                              >
-                                <FolderOpen size={13} />
-                                {t('transfer.openFolder')}
-                              </Button>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="mt-3 text-[11px] uppercase tracking-[0.18em] text-muted-foreground dark:text-slate-500">
-                          {formatClock(message.timestampMs)}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          <div className="border-t border-border/60 px-4 py-4 dark:border-white/10 md:px-6 md:py-5">
-            <div className="rounded-[26px] border border-border/60 bg-background/60 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-white/10 dark:bg-black/15 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-              <div className="grid gap-3 lg:grid-cols-[1fr_auto_auto]">
-                <textarea
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter' && !event.shiftKey) {
-                      event.preventDefault();
-                      void handleSend();
-                    }
-                  }}
-                  disabled={!canInteract}
-                  placeholder={t('transfer.inputPlaceholder')}
-                  className="min-h-[72px] rounded-[20px] border border-border/70 bg-white/78 px-4 py-3 text-sm leading-6 text-foreground outline-none transition-colors placeholder:text-muted-foreground focus-visible:border-cyan-500/30 focus-visible:ring-2 focus-visible:ring-cyan-500/15 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-50 dark:placeholder:text-slate-500 dark:focus-visible:border-cyan-300/25 dark:focus-visible:ring-cyan-400/20"
-                />
-
-                <Button
-                  variant="outline"
-                  onClick={() => void onAttachFile()}
-                  disabled={!canInteract}
-                  className="h-auto min-h-[56px] gap-2 rounded-[20px] border-border/70 bg-background/60 px-4 text-foreground hover:border-cyan-500/25 hover:bg-cyan-500/10 hover:text-cyan-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:border-cyan-300/25 dark:hover:bg-cyan-500/10 dark:hover:text-cyan-50"
-                >
-                  <Paperclip size={15} />
-                  {t('transfer.attachFile')}
-                </Button>
-
-                <Button
-                  onClick={() => void handleSend()}
-                  disabled={!canInteract || !draft.trim()}
-                  className="h-auto min-h-[56px] gap-2 rounded-[20px] border border-cyan-300/15 bg-cyan-500 px-5 text-slate-950 shadow-[0_18px_50px_rgba(56,189,248,0.28)] hover:bg-cyan-400"
-                >
-                  <SendHorizonal size={15} />
-                  {t('transfer.send')}
-                </Button>
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div className="flex flex-1 items-center justify-center px-6 py-8">
-          <div className="max-w-xl rounded-[30px] border border-dashed border-border/60 bg-background/70 p-8 text-center dark:border-white/12 dark:bg-white/[0.03]">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-cyan-500/15 bg-cyan-500/10 text-cyan-700 dark:border-cyan-300/15 dark:text-cyan-100">
-              <Sparkles size={22} />
-            </div>
-            <div className="mt-5 text-2xl font-semibold tracking-tight text-foreground dark:text-slate-50">
-              {isRunning ? t('transfer.workspaceWaitingTitle') : t('transfer.workspaceIdleTitle')}
-            </div>
-          </div>
+  if (!selectedDevice) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-secondary/5">
+        <div className="text-center text-muted-foreground/50 flex flex-col items-center gap-3">
+          <MonitorSmartphone size={48} className="opacity-20" />
+          <p className="text-sm">{t('transfer.selectDevice')}</p>
         </div>
-      )}
-    </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex flex-col h-full bg-secondary/5">
+      {/* 顶部标题栏 */}
+      <div className="h-14 px-6 border-b border-border bg-background/50 backdrop-blur flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
+          <span className="font-semibold text-foreground">{selectedDevice.name}</span>
+          <span className="text-xs text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">{selectedDevice.ipAddress}</span>
+        </div>
+      </div>
+
+      {/* 消息流区域 */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+        {messages.length === 0 ? (
+          <div className="text-center text-xs text-muted-foreground mt-10">{t('transfer.emptyChat')}</div>
+        ) : (
+          messages.map((msg) => {
+            if (msg.kind === 'system') {
+              return (
+                <div key={msg.id} className="flex justify-center my-4">
+                  <span className="bg-secondary/50 text-muted-foreground text-[10px] px-3 py-1 rounded-full">{msg.content}</span>
+                </div>
+              );
+            }
+
+            const isOut = msg.direction === 'sent';
+            return (
+              <div key={msg.id} className={cn("flex w-full", isOut ? "justify-end" : "justify-start")}>
+                <div className={cn("flex flex-col max-w-[70%]", isOut ? "items-end" : "items-start")}>
+                  <div className={cn(
+                    "px-4 py-2.5 rounded-2xl shadow-sm text-[14px] leading-relaxed break-words whitespace-pre-wrap select-text",
+                    isOut 
+                      ? "bg-primary text-primary-foreground rounded-tr-sm" 
+                      : "bg-background border border-border text-foreground rounded-tl-sm"
+                  )}>
+                    {msg.kind === 'text' ? (
+                      msg.content
+                    ) : (
+                      // 文件卡片
+                      <div className="flex flex-col gap-3 min-w-[200px]">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("p-2 rounded-lg shrink-0", isOut ? "bg-primary-foreground/20" : "bg-secondary")}>
+                            <FileText size={20} className={isOut ? "text-primary-foreground" : "text-muted-foreground"} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium text-sm">{msg.fileName}</div>
+                            <div className="text-xs opacity-70 mt-0.5">{formatFileSize(msg.fileSize)}</div>
+                          </div>
+                        </div>
+
+                        {/* 极简进度条 */}
+                        <div className="w-full h-1 bg-black/10 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-current transition-all duration-300 opacity-50" 
+                            style={{ width: `${Math.max(msg.progressPercent ?? 0, msg.status === 'completed' ? 100 : 0)}%` }} 
+                          />
+                        </div>
+
+                        {msg.savedPath && msg.status === 'completed' && !isOut && (
+                          <button 
+                            onClick={() => msg.savedPath && onOpenFolder(msg.savedPath)}
+                            className="text-xs flex items-center gap-1 opacity-80 hover:opacity-100 hover:underline mt-1"
+                          >
+                            <FolderOpen size={12} /> {t('transfer.openFolder')}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground mt-1 mx-1">{formatClock(msg.timestampMs)}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* 底部输入法区域 (IM 风格) */}
+      <div className="h-40 border-t border-border bg-background flex flex-col shrink-0">
+        {/* 工具栏 */}
+        <div className="flex items-center gap-1 px-3 py-2">
+          <button onClick={onAttachFile} disabled={!canInteract} className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-secondary rounded-md transition-colors disabled:opacity-50" title={t('transfer.attachFile')}>
+            <Paperclip size={18} />
+          </button>
+        </div>
+        {/* 文本输入区 */}
+        <textarea
+          className="flex-1 w-full resize-none bg-transparent outline-none px-4 py-1 text-sm text-foreground placeholder:text-muted-foreground/40 custom-scrollbar"
+          placeholder={t('transfer.inputPlaceholder')}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          disabled={!canInteract}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
+        />
+        {/* 发送按钮栏 */}
+        <div className="flex justify-end px-4 py-2">
+          <button 
+            onClick={handleSend} 
+            disabled={!canInteract || !draft.trim()}
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-primary text-primary-foreground rounded-md text-xs font-medium hover:bg-primary/90 disabled:opacity-50 transition-all active:scale-95"
+          >
+            <Send size={14} /> {t('transfer.send')}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
