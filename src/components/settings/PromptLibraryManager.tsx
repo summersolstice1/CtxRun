@@ -54,7 +54,7 @@ export function PromptLibraryManager() {
   };
 
   const sourceInfo = getSourceInfo();
-  const installedLabel = language === 'zh' ? '已安装' : 'Installed';
+  const installedLabel = t('library.installed');
 
   return (
     <div className="flex flex-col h-full relative">

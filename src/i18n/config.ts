@@ -1,11 +1,13 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import { translations } from '@/lib/i18n';
+import en from '@/i18n/locales/en.json';
+import zh from '@/i18n/locales/zh.json';
 
-// Convert the translations object to i18next format
+export type LangKey = 'zh' | 'en';
+
 const resources = {
-  en: { translation: translations.en },
-  zh: { translation: translations.zh }
+  en: { translation: en },
+  zh: { translation: zh }
 };
 
 i18n

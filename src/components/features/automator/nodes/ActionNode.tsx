@@ -57,11 +57,11 @@ const ICONS: Record<AutomatorAction['type'], any> = {
 };
 
 const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
-  'MoveTo': 'moveTo',
-  'Click': 'clickLabel',
-  'DoubleClick': 'doubleClickLabel',
-  'Type': 'type',
-  'KeyPress': 'keyPress',
+  'MoveTo': 'moveMouse',
+  'Click': 'clickAction',
+  'DoubleClick': 'doubleClickAction',
+  'Type': 'inputText',
+  'KeyPress': 'pressKey',
   'Navigate': 'navigate',
   'NewTab': 'newTab',
   'SwitchTab': 'switchTab',
@@ -69,10 +69,10 @@ const TITLE_KEYS: Record<AutomatorAction['type'], string> = {
   'WaitForURL': 'waitForURL',
   'Fill': 'fill',
   'Assert': 'assert',
-  'Wait': 'wait',
+  'Wait': 'waitSleep',
   'Scroll': 'scroll',
-  'CheckColor': 'checkColorLabel',
-  'Iterate': 'loopIteratorLabel',
+  'CheckColor': 'checkColorAction',
+  'Iterate': 'loopIterator',
   'LaunchBrowser': 'launchBrowser',
 };
 
@@ -402,7 +402,7 @@ export const ActionNode = memo((props: NodeProps) => {
           </>
         ) : (
           <>
-            <div className="font-bold text-orange-500 mb-0.5">绝对坐标 (Coordinate)</div>
+            <div className="font-bold text-orange-500 mb-0.5">{t('automator.absoluteCoord')}</div>
             <div className="font-mono opacity-80">
               X: {target.x}, Y: {target.y}
             </div>
@@ -476,7 +476,7 @@ export const ActionNode = memo((props: NodeProps) => {
                 )}
               >
                 <Crosshair size={14} className={cn(isPickingCoords && "animate-spin")} />
-                {isPickingCoords ? "请将鼠标悬停在目标上..." : "智能拾取目标 (3秒延迟)"}
+                {isPickingCoords ? t('automator.hoverTarget') : t('automator.smartPickTarget')}
               </button>
             )}
           </div>
@@ -510,11 +510,11 @@ export const ActionNode = memo((props: NodeProps) => {
           <div className="space-y-2">
              {isWebMode ? (
                <div className="mb-2 px-2 py-1 bg-green-500/10 border border-green-500/20 rounded text-[9px] text-green-600 flex items-center gap-1">
-                 <Globe size={10}/> CDP 内核级按键 (无视焦点)
+                 <Globe size={10}/> {t('automator.cdpKeystroke')}
                </div>
              ) : (
                <div className="mb-2 px-2 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] text-blue-600 flex items-center gap-1">
-                 <MousePointer2 size={10}/> 系统级模拟 (需窗口焦点)
+                 <MousePointer2 size={10}/> {t('automator.desktopSimulation')}
                </div>
              )}
              <label className="text-[10px] text-muted-foreground block">{t('automator.pressKey')}</label>

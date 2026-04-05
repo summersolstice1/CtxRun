@@ -36,6 +36,7 @@ interface LaunchBrowserData {
 }
 
 export const LaunchBrowserNode = memo((props: NodeProps) => {
+  const { t } = useTranslation();
   const data = props.data as unknown as LaunchBrowserData;
   const { payload, onChange, isExecuting } = data;
 
@@ -51,13 +52,13 @@ export const LaunchBrowserNode = memo((props: NodeProps) => {
     )}>
       <div className="bg-purple-500/10 text-purple-600 px-3 py-2 text-[10px] font-bold border-b border-purple-500/20 flex items-center gap-2 rounded-t-lg">
         <Globe size={12} />
-        <span>启动浏览器 (CDP环境)</span>
+        <span>{t('automator.launchBrowserCdp')}</span>
         {isExecuting && <div className="ml-auto w-2 h-2 bg-purple-500 rounded-full animate-ping" />}
       </div>
 
       <div className="p-3 space-y-3 nodrag">
         <div className="space-y-1">
-          <label className="text-[9px] text-muted-foreground">浏览器类型</label>
+          <label className="text-[9px] text-muted-foreground">{t('automator.browserType')}</label>
           <div className="flex gap-2">
             <button
                 onClick={() => handleChange('browser', 'Chrome')}
@@ -71,7 +72,7 @@ export const LaunchBrowserNode = memo((props: NodeProps) => {
         </div>
 
         <div className="space-y-1">
-          <label className="text-[9px] text-muted-foreground">起始 URL</label>
+          <label className="text-[9px] text-muted-foreground">{t('automator.startUrl')}</label>
           <input
             className="w-full bg-background border border-border rounded px-2 py-1.5 text-xs font-mono"
             placeholder="https://www.google.com"
@@ -88,7 +89,7 @@ export const LaunchBrowserNode = memo((props: NodeProps) => {
                 id="use-temp"
             />
             <label htmlFor="use-temp" className="text-[9px] text-muted-foreground cursor-pointer">
-                使用独立环境 (推荐, 防冲突)
+                {t('automator.useTempProfile')}
             </label>
         </div>
       </div>

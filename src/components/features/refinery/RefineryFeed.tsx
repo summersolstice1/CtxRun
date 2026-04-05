@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { useImageLoader } from '@/hooks/useImageLoader';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { LangKey } from '@/lib/i18n';
+import type { LangKey } from '@/i18n/config';
 import { GroupedVirtuoso } from 'react-virtuoso';
 import { useMemo, useCallback, useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -118,7 +118,7 @@ export function RefineryFeed() {
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors"
             >
               <X size={12} />
-              {language === 'zh' ? '清除全部' : 'Clear all'}
+              {t('refinery.clearAll')}
             </button>
           </div>
         )}
@@ -295,7 +295,7 @@ function FeedCard({
             {item.isManual ? (
               <span className="text-[10px] bg-blue-500/10 text-blue-600 px-1.5 py-0.5 rounded border border-blue-500/20 flex items-center gap-1">
                 <PenTool size={8} />
-                {language === 'zh' ? '笔记' : 'Note'}
+                {t('refinery.note')}
               </span>
             ) : item.sourceApp ? (
               <span className="text-[10px] bg-secondary px-1.5 py-0.5 rounded text-muted-foreground/80 border border-border/30">
@@ -341,7 +341,7 @@ function FeedCard({
               copySuccess ? 'text-green-500' : 'text-muted-foreground',
               isCopying && 'opacity-100 cursor-wait'
             )}
-            title={language === 'zh' ? '复制' : 'Copy'}
+            title={t('common.copy')}
           >
             <div className="relative w-[14px] h-[14px] flex items-center justify-center">
               {isCopying ? (

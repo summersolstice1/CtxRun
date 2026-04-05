@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronUp, Layers } from 'lucide-react';
 import { RefineryItemUI } from '@/types/refinery';
-import { useAppStore } from '@/store/useAppStore';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 interface FeedCardProps {
@@ -32,7 +32,7 @@ const transitionConfig = {
 
 export function BundleCard({ items, activeId, onItemClick, onTogglePin, FeedCardComponent }: BundleCardPropsExtended) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const { language } = useAppStore();
+  const { t } = useTranslation();
 
   const coverItem = items[0];
   const count = items.length;
@@ -141,7 +141,7 @@ export function BundleCard({ items, activeId, onItemClick, onTogglePin, FeedCard
               onClick={() => handleToggle()} // 包装一层
               className="py-2 text-[10px] text-muted-foreground/50 hover:text-primary transition-colors flex items-center justify-center gap-1 uppercase font-bold"
             >
-              <ChevronUp size={12} /> {language === 'zh' ? '收起' : 'Collapse'}
+              <ChevronUp size={12} /> {t('refinery.collapse')}
             </motion.button>
           </motion.div>
         )}

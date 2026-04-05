@@ -88,9 +88,9 @@ export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: Clock
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
     
-    if (days > 0) return i18n.language === 'zh' ? `${days}天 ${hours}小时` : `${days}d ${hours}h`;
-    if (hours > 0) return i18n.language === 'zh' ? `${hours}小时 ${minutes}分钟` : `${hours}h ${minutes}m`;
-    return i18n.language === 'zh' ? `${minutes}分钟` : `${minutes}m`;
+    if (days > 0) return t('monitor.uptimeDaysHours', { days, hours });
+    if (hours > 0) return t('monitor.uptimeHoursMinutes', { hours, minutes });
+    return t('monitor.uptimeMinutes', { minutes });
   };
 
   const handleCopy = async (type: 'timestamp' | 'iso' | 'full') => {

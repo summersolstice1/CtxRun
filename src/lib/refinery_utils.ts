@@ -1,4 +1,5 @@
 import { RefineryMetadata } from "@/types/refinery";
+import i18n from "@/i18n/config";
 
 export function parseMetadata(jsonStr: string): RefineryMetadata {
   try {
@@ -8,7 +9,7 @@ export function parseMetadata(jsonStr: string): RefineryMetadata {
   }
 }
 
-export function formatTimeAgo(timestamp: number | string, lang?: string): string {
+export function formatTimeAgo(timestamp: number | string, _lang?: string): string {
   if (timestamp === null || timestamp === undefined) return '-';
   if (typeof timestamp === 'string' && timestamp === '') return '-';
 
@@ -42,19 +43,9 @@ export function formatTimeAgo(timestamp: number | string, lang?: string): string
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
-  const effectiveLang = lang === 'zh' || lang === 'en' ? lang : 'zh';
-
-  if (effectiveLang === 'zh') {
-    if (seconds < 60) return '刚刚';
-    if (minutes < 60) return `${minutes}分钟前`;
-    if (hours < 24) return `${hours}小时前`;
-    if (days < 7) return `${days}天前`;
-    return date.toLocaleDateString('zh-CN');
-  } else {
-    if (seconds < 60) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString('en-US');
-  }
+  if (seconds < 60) return i18n.t('common.justNow');
+  if (minutes < 60) return i18n.t('common.minutesAgo', { count: minutes });
+  if (hours < 24) return i18n.t('common.hoursAgo', { count: hours });
+  if (days < 7) return i18n.t('common.daysAgo', { count: days });
+  return date.toLocaleDateString(i18n.language === 'zh' ? 'zh-CN' : 'en-US');
 }

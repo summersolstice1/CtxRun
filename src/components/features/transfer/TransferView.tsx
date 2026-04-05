@@ -3,6 +3,7 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { invoke } from '@tauri-apps/api/core';
 import { useShallow } from 'zustand/react/shallow';
+import { useTranslation } from 'react-i18next';
 import { Toast, type ToastType } from '@/components/ui/Toast';
 import { useTransferStore } from '@/store/useTransferStore';
 import { usePreviewStore } from '@/store/usePreviewStore';
@@ -11,6 +12,7 @@ import { DeviceSidebar } from './DeviceSidebar';
 import { ChatPanel } from './ChatPanel';
 
 export function TransferView() {
+  const { t } = useTranslation();
   const openPreview = usePreviewStore((state) => state.openPreview);
   const [
     isRunning, isBusy, serviceInfo, devices, selectedDeviceId, chatHistories,
@@ -46,7 +48,7 @@ export function TransferView() {
     try {
       await writeText(serviceInfo.url);
       setCopied(true);
-      setToastState({ show: true, message: "链接已复制", type: 'success' });
+      setToastState({ show: true, message: t('transfer.copied'), type: 'success' });
       window.setTimeout(() => setCopied(false), 1600);
     } catch (error) {
       setToastState({ show: true, message: String(error), type: 'error' });

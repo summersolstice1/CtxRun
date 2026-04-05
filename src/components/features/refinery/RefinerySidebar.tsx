@@ -263,7 +263,7 @@ export function RefinerySidebar() {
           className="w-full flex items-center justify-center gap-2 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-colors text-xs font-medium"
         >
           <Plus size={14} />
-          {language === 'zh' ? '新建笔记' : 'New Note'}
+          {t('refinery.newNote')}
         </button>
       </div>
 
@@ -405,7 +405,7 @@ export function RefinerySidebar() {
             active={manualOnly}
             onClick={toggleManualOnly}
             icon={<PenTool size={14} />}
-            label={language === 'zh' ? '笔记' : 'Notes'}
+            label={t('refinery.notes')}
           />
           <NavBtn
             active={kindFilter === 'text'}

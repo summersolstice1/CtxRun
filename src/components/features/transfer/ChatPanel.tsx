@@ -153,19 +153,19 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
                               onClick={() => void onRespondFileRequest(msg.deviceId, fileId, true)}
                               className="flex-1 bg-green-500 text-white rounded py-1.5 text-xs font-medium hover:bg-green-600 transition-colors"
                             >
-                              接受 (Accept)
+                              {t('transfer.accept')}
                             </button>
                             <button
                               onClick={() => void onRespondFileRequest(msg.deviceId, fileId, false)}
                               className="flex-1 bg-white/20 text-current rounded py-1.5 text-xs font-medium hover:bg-white/30 transition-colors"
                             >
-                              拒绝 (Reject)
+                              {t('transfer.reject')}
                             </button>
                           </div>
                         )}
 
                         {msg.status === 'rejected' && (
-                          <div className="text-red-500/80 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">已拒收 (Rejected)</div>
+                          <div className="text-red-500/80 text-xs font-bold bg-red-500/10 px-2 py-1 rounded">{t('transfer.rejected')}</div>
                         )}
 
                         {canPreview && msg.savedPath && (

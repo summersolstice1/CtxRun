@@ -192,7 +192,7 @@ export function RefineryDrawer() {
                     "text-lg font-bold px-2 py-1 leading-tight break-words",
                     !activeItem.title && "text-muted-foreground/50 italic font-normal"
                   )}>
-                    {activeItem.title || (language === 'zh' ? '无标题' : 'Untitled Note')}
+                    {activeItem.title || t('refinery.untitledNote')}
                   </h2>
                 )}
               </div>
