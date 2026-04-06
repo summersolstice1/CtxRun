@@ -6140,7 +6140,7 @@
     "title": "steamos-select-branch - View the current branch",
     "content": "steamos-select-branch -c",
     "group": "Linux Ops",
-    "description": "steamos-select-branch: Select a SteamOS system release branch. (View the current branch)",
+    "description": "steamos-select-branch: Select a SteamOS system release branch. Note: This command is deprecated, use `atomupd-manager` instead. (View the current branch)",
     "tags": [
       "linux",
       "steamos-select-branch",
@@ -6155,7 +6155,7 @@
     "title": "steamos-select-branch - List all available branches",
     "content": "steamos-select-branch -l",
     "group": "Linux Ops",
-    "description": "steamos-select-branch: Select a SteamOS system release branch. (List all available branches)",
+    "description": "steamos-select-branch: Select a SteamOS system release branch. Note: This command is deprecated, use `atomupd-manager` instead. (List all available branches)",
     "tags": [
       "linux",
       "steamos-select-branch",
@@ -6170,7 +6170,7 @@
     "title": "steamos-select-branch - Switch to the beta branch",
     "content": "steamos-select-branch beta",
     "group": "Linux Ops",
-    "description": "steamos-select-branch: Select a SteamOS system release branch. (Switch to the beta branch)",
+    "description": "steamos-select-branch: Select a SteamOS system release branch. Note: This command is deprecated, use `atomupd-manager` instead. (Switch to the beta branch)",
     "tags": [
       "linux",
       "steamos-select-branch",
@@ -6185,7 +6185,7 @@
     "title": "steamos-select-branch - Switch back to the stable release",
     "content": "steamos-select-branch stable",
     "group": "Linux Ops",
-    "description": "steamos-select-branch: Select a SteamOS system release branch. (Switch back to the stable release)",
+    "description": "steamos-select-branch: Select a SteamOS system release branch. Note: This command is deprecated, use `atomupd-manager` instead. (Switch back to the stable release)",
     "tags": [
       "linux",
       "steamos-select-branch",
@@ -6200,7 +6200,7 @@
     "title": "steamos-select-branch - Switch to the bleeding edge branch",
     "content": "steamos-select-branch main",
     "group": "Linux Ops",
-    "description": "steamos-select-branch: Select a SteamOS system release branch. (Switch to the bleeding edge branch)",
+    "description": "steamos-select-branch: Select a SteamOS system release branch. Note: This command is deprecated, use `atomupd-manager` instead. (Switch to the bleeding edge branch)",
     "tags": [
       "linux",
       "steamos-select-branch",
@@ -8985,6 +8985,126 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-apptainer-capability-0",
+    "type": "command",
+    "title": "apptainer-capability - Show all available Linux capabilities",
+    "content": "apptainer capability avail",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (Show all available Linux capabilities)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-1",
+    "type": "command",
+    "title": "apptainer-capability - Show descriptions for specific capabilities",
+    "content": "apptainer capability avail {{cap_chown,cap_net_raw,...}}",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (Show descriptions for specific capabilities)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-2",
+    "type": "command",
+    "title": "apptainer-capability - List capabilities for all users and groups",
+    "content": "apptainer capability list",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (List capabilities for all users and groups)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-3",
+    "type": "command",
+    "title": "apptainer-capability - List capabilities for a specific user or group",
+    "content": "apptainer capability list {{username|groupname}}",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (List capabilities for a specific user or group)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-4",
+    "type": "command",
+    "title": "apptainer-capability - Add capabilities to a user",
+    "content": "sudo apptainer capability add {{[-u|--user]}} {{username}} {{cap_net_raw,cap_chown,...}}",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (Add capabilities to a user)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-5",
+    "type": "command",
+    "title": "apptainer-capability - Add capabilities to a group",
+    "content": "sudo apptainer capability add {{[-g|--group]}} {{groupname}} {{cap_net_raw,cap_chown,...}}",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (Add capabilities to a group)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-6",
+    "type": "command",
+    "title": "apptainer-capability - Remove capabilities from a user",
+    "content": "sudo apptainer capability drop {{[-u|--user]}} {{username}} {{cap_net_raw,cap_chown,...}}",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (Remove capabilities from a user)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-apptainer-capability-7",
+    "type": "command",
+    "title": "apptainer-capability - Remove all capabilities from a user",
+    "content": "sudo apptainer capability drop {{[-u|--user]}} {{username}} all",
+    "group": "Linux Ops",
+    "description": "apptainer-capability: Manage Linux capabilities for users and groups. (Remove all capabilities from a user)",
+    "tags": [
+      "linux",
+      "apptainer-capability",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-wpexec-0",
     "type": "command",
     "title": "wpexec - Run a WirePlumber script",
@@ -10416,6 +10536,21 @@
     "content": "wine winecfg",
     "group": "Linux Ops",
     "description": "wine: Run Windows executables on Unix-based systems. (Run the configuration tool)",
+    "tags": [
+      "linux",
+      "wine",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-wine-6",
+    "type": "command",
+    "title": "wine - Add a registry key",
+    "content": "wine reg add '{{path\\to\\registry_key}}' /v {{Value_name}} /t {{REG_SZ|REG_BINARY|REG_DWORD|...}} /d '{{data}}'",
+    "group": "Linux Ops",
+    "description": "wine: Run Windows executables on Unix-based systems. (Add a registry key)",
     "tags": [
       "linux",
       "wine",
@@ -22230,6 +22365,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-pw-encplay-0",
+    "type": "command",
+    "title": "pw-encplay - View documentation for the original command",
+    "content": "tldr pw-cat",
+    "group": "Linux Ops",
+    "description": "pw-encplay: This command is an alias of `pw-cat --playback --encoded`. (View documentation for the original command)",
+    "tags": [
+      "linux",
+      "pw-encplay",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-grub2-mkpasswd-pbkdf2-0",
     "type": "command",
     "title": "grub2-mkpasswd-pbkdf2 - Create a password hash for GRUB 2 using PBKDF2 and print it to `stdout`",
@@ -23405,7 +23555,7 @@
     "title": "steamos-update - Update the operating system",
     "content": "sudo steamos-update",
     "group": "Linux Ops",
-    "description": "steamos-update: Update SteamOS. (Update the operating system)",
+    "description": "steamos-update: Update SteamOS. Note: This command is deprecated, use `atomupd-manager` instead. (Update the operating system)",
     "tags": [
       "linux",
       "steamos-update",
@@ -23420,7 +23570,7 @@
     "title": "steamos-update - Check if there is an update available",
     "content": "sudo steamos-update check",
     "group": "Linux Ops",
-    "description": "steamos-update: Update SteamOS. (Check if there is an update available)",
+    "description": "steamos-update: Update SteamOS. Note: This command is deprecated, use `atomupd-manager` instead. (Check if there is an update available)",
     "tags": [
       "linux",
       "steamos-update",
@@ -23597,6 +23747,21 @@
   {
     "id": "tldr-en-linux-broot-3",
     "type": "command",
+    "title": "broot - Start sorting by size, showing ignored and hidden files",
+    "content": "broot {{[-w|--whale-spotting]}}",
+    "group": "Linux Ops",
+    "description": "broot: Navigate directory trees interactively. (Start sorting by size, showing ignored and hidden files)",
+    "tags": [
+      "linux",
+      "broot",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-broot-4",
+    "type": "command",
     "title": "broot - Start displaying permissions",
     "content": "broot {{[-p|--permissions]}}",
     "group": "Linux Ops",
@@ -23610,7 +23775,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-broot-4",
+    "id": "tldr-en-linux-broot-5",
     "type": "command",
     "title": "broot - Start displaying directories only",
     "content": "broot {{[-f|--only-folders]}}",
@@ -23625,7 +23790,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-broot-5",
+    "id": "tldr-en-linux-broot-6",
     "type": "command",
     "title": "broot - Start displaying hidden files and directories",
     "content": "broot {{[-h|--hidden]}}",
@@ -35567,8 +35732,53 @@
   {
     "id": "tldr-en-linux-pw-cat-1",
     "type": "command",
+    "title": "pw-cat - Play a MIDI file",
+    "content": "pw-cat {{[-p|--playback]}} {{[-m|--midi]}} {{path/to/file.mid}}",
+    "group": "Linux Ops",
+    "description": "pw-cat: Play and record audio files through PipeWire. (Play a MIDI file)",
+    "tags": [
+      "linux",
+      "pw-cat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pw-cat-2",
+    "type": "command",
+    "title": "pw-cat - Play a DSD file",
+    "content": "pw-cat {{[-p|--playback]}} {{[-d|--dsd]}} {{path/to/file.dsf}}",
+    "group": "Linux Ops",
+    "description": "pw-cat: Play and record audio files through PipeWire. (Play a DSD file)",
+    "tags": [
+      "linux",
+      "pw-cat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pw-cat-3",
+    "type": "command",
+    "title": "pw-cat - Play a compressed audio file using passthrough (requires FFmpeg integration)",
+    "content": "pw-cat {{[-p|--playback]}} {{[-o|--encoded]}} {{path/to/file.ac3}}",
+    "group": "Linux Ops",
+    "description": "pw-cat: Play and record audio files through PipeWire. (Play a compressed audio file using passthrough (requires FFmpeg integration))",
+    "tags": [
+      "linux",
+      "pw-cat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pw-cat-4",
+    "type": "command",
     "title": "pw-cat - Play a WAV file with a specified resampler quality (4 by default)",
-    "content": "pw-cat {{[-q|--quality]}} {{0..15}} {{[-p|--playback]}} {{path/to/file.wav}}",
+    "content": "pw-cat {{[-p|--playback]}} {{[-q|--quality]}} {{0..15}} {{path/to/file.wav}}",
     "group": "Linux Ops",
     "description": "pw-cat: Play and record audio files through PipeWire. (Play a WAV file with a specified resampler quality (4 by default))",
     "tags": [
@@ -35580,7 +35790,22 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-pw-cat-2",
+    "id": "tldr-en-linux-pw-cat-5",
+    "type": "command",
+    "title": "pw-cat - Record a MIDI file",
+    "content": "pw-cat {{[-r|--record]}} {{[-m|--midi]}} {{path/to/file.mid}}",
+    "group": "Linux Ops",
+    "description": "pw-cat: Play and record audio files through PipeWire. (Record a MIDI file)",
+    "tags": [
+      "linux",
+      "pw-cat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pw-cat-6",
     "type": "command",
     "title": "pw-cat - Record a sample recording at a volume level of 125%",
     "content": "pw-cat {{[-r|--record]}} --volume {{1.25}} {{path/to/file.wav}}",
@@ -35595,27 +35820,12 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-pw-cat-3",
+    "id": "tldr-en-linux-pw-cat-7",
     "type": "command",
     "title": "pw-cat - Record a sample recording using a different sample rate",
     "content": "pw-cat {{[-r|--record]}} --rate {{6000}} {{path/to/file.wav}}",
     "group": "Linux Ops",
     "description": "pw-cat: Play and record audio files through PipeWire. (Record a sample recording using a different sample rate)",
-    "tags": [
-      "linux",
-      "pw-cat",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-pw-cat-4",
-    "type": "command",
-    "title": "pw-cat - Display help",
-    "content": "pw-cat {{[-h|--help]}}",
-    "group": "Linux Ops",
-    "description": "pw-cat: Play and record audio files through PipeWire. (Display help)",
     "tags": [
       "linux",
       "pw-cat",
@@ -51234,6 +51444,81 @@
     "tags": [
       "linux",
       "bwa",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-awww-0",
+    "type": "command",
+    "title": "awww - Set wallpaper",
+    "content": "awww img {{path/to/image}}",
+    "group": "Linux Ops",
+    "description": "awww: Efficient animated wallpaper daemon for Wayland. (Set wallpaper)",
+    "tags": [
+      "linux",
+      "awww",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-awww-1",
+    "type": "command",
+    "title": "awww - Set wallpaper to specified outputs",
+    "content": "awww img {{[-o|--outputs]}} {{output1,output2,...}} {{path/to/image}}",
+    "group": "Linux Ops",
+    "description": "awww: Efficient animated wallpaper daemon for Wayland. (Set wallpaper to specified outputs)",
+    "tags": [
+      "linux",
+      "awww",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-awww-2",
+    "type": "command",
+    "title": "awww - Restore last wallpaper",
+    "content": "awww restore",
+    "group": "Linux Ops",
+    "description": "awww: Efficient animated wallpaper daemon for Wayland. (Restore last wallpaper)",
+    "tags": [
+      "linux",
+      "awww",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-awww-3",
+    "type": "command",
+    "title": "awww - Kill daemon",
+    "content": "awww kill",
+    "group": "Linux Ops",
+    "description": "awww: Efficient animated wallpaper daemon for Wayland. (Kill daemon)",
+    "tags": [
+      "linux",
+      "awww",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-awww-4",
+    "type": "command",
+    "title": "awww - Display output information",
+    "content": "awww query",
+    "group": "Linux Ops",
+    "description": "awww: Efficient animated wallpaper daemon for Wayland. (Display output information)",
+    "tags": [
+      "linux",
+      "awww",
       "tldr",
       "en"
     ],
@@ -74057,6 +74342,21 @@
   {
     "id": "tldr-en-linux-fbset-2",
     "type": "command",
+    "title": "fbset - Set the dimensions of the framebuffer",
+    "content": "sudo fbset -xset {{horizontal_pixels}} -yset {{vertical_pixels}}",
+    "group": "Linux Ops",
+    "description": "fbset: Show and modify frame buffer device settings. (Set the dimensions of the framebuffer)",
+    "tags": [
+      "linux",
+      "fbset",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-fbset-3",
+    "type": "command",
     "title": "fbset - Set an arbitrary framebuffer mode",
     "content": "sudo fbset {{[-g|--geometry]}} {{TTY_horizontal}} {{TTY_vertical}} {{monitor_horizontal}} {{monitor_vertical}} {{color_depth}}",
     "group": "Linux Ops",
@@ -84390,6 +84690,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-pw-dsdplay-0",
+    "type": "command",
+    "title": "pw-dsdplay - View documentation for the original command",
+    "content": "tldr pw-cat",
+    "group": "Linux Ops",
+    "description": "pw-dsdplay: This command is an alias of `pw-cat --playback --dsd`. (View documentation for the original command)",
+    "tags": [
+      "linux",
+      "pw-dsdplay",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-auditctl-0",
     "type": "command",
     "title": "auditctl - Display the [s]tatus of the audit system",
@@ -85157,70 +85472,10 @@
   {
     "id": "tldr-en-linux-swww-0",
     "type": "command",
-    "title": "swww - Set wallpaper",
-    "content": "swww img {{path/to/image}}",
+    "title": "swww - View documentation for the command under its current name",
+    "content": "tldr awww",
     "group": "Linux Ops",
-    "description": "swww: Efficient animated wallpaper daemon for Wayland. (Set wallpaper)",
-    "tags": [
-      "linux",
-      "swww",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-swww-1",
-    "type": "command",
-    "title": "swww - Set wallpaper to specified outputs",
-    "content": "swww img {{[-o|--outputs]}} {{output1,output2,...}} {{path/to/image}}",
-    "group": "Linux Ops",
-    "description": "swww: Efficient animated wallpaper daemon for Wayland. (Set wallpaper to specified outputs)",
-    "tags": [
-      "linux",
-      "swww",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-swww-2",
-    "type": "command",
-    "title": "swww - Restore last wallpaper",
-    "content": "swww restore",
-    "group": "Linux Ops",
-    "description": "swww: Efficient animated wallpaper daemon for Wayland. (Restore last wallpaper)",
-    "tags": [
-      "linux",
-      "swww",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-swww-3",
-    "type": "command",
-    "title": "swww - Kill daemon",
-    "content": "swww kill",
-    "group": "Linux Ops",
-    "description": "swww: Efficient animated wallpaper daemon for Wayland. (Kill daemon)",
-    "tags": [
-      "linux",
-      "swww",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-linux-swww-4",
-    "type": "command",
-    "title": "swww - Display output information",
-    "content": "swww query",
-    "group": "Linux Ops",
-    "description": "swww: Efficient animated wallpaper daemon for Wayland. (Display output information)",
+    "description": "swww: This command has been renamed to `awww`. (View documentation for the command under its current name)",
     "tags": [
       "linux",
       "swww",
@@ -99705,6 +99960,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-pw-midirecord-0",
+    "type": "command",
+    "title": "pw-midirecord - View documentation for the original command",
+    "content": "tldr pw-cat",
+    "group": "Linux Ops",
+    "description": "pw-midirecord: This command is an alias of `pw-cat --record --midi`. (View documentation for the original command)",
+    "tags": [
+      "linux",
+      "pw-midirecord",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-pacman-q-0",
     "type": "command",
     "title": "pacman-q - View documentation for the original command",
@@ -103374,6 +103644,21 @@
     "tags": [
       "linux",
       "lastlog",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-pw-midiplay-0",
+    "type": "command",
+    "title": "pw-midiplay - View documentation for the original command",
+    "content": "tldr pw-cat",
+    "group": "Linux Ops",
+    "description": "pw-midiplay: This command is an alias of `pw-cat --playback --midi`. (View documentation for the original command)",
+    "tags": [
+      "linux",
+      "pw-midiplay",
       "tldr",
       "en"
     ],
@@ -107775,6 +108060,36 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-linux-con2fbmap-0",
+    "type": "command",
+    "title": "con2fbmap - Display the framebuffer mapping of a console",
+    "content": "sudo con2fbmap {{console_number}}",
+    "group": "Linux Ops",
+    "description": "con2fbmap: Show and manage terminal to framebuffer mapping. (Display the framebuffer mapping of a console)",
+    "tags": [
+      "linux",
+      "con2fbmap",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-con2fbmap-1",
+    "type": "command",
+    "title": "con2fbmap - Map a console to a specific framebuffer",
+    "content": "sudo con2fbmap {{console_number}} {{framebuffer_number}}",
+    "group": "Linux Ops",
+    "description": "con2fbmap: Show and manage terminal to framebuffer mapping. (Map a console to a specific framebuffer)",
+    "tags": [
+      "linux",
+      "con2fbmap",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-linux-systemctl-edit-0",
     "type": "command",
     "title": "systemctl-edit - Overlay a unit file non-destructively",
@@ -110372,6 +110687,21 @@
   {
     "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-3",
     "type": "command",
+    "title": "gst-launch-1.0-pipewiresrc - Capture a screenshot from a video node",
+    "content": "gst-launch-1.0 pipewiresrc num-buffers=1 ! videoconvert ! {{pngenc}} ! filesink location={{path/to/file.png}}",
+    "group": "Linux Ops",
+    "description": "gst-launch-1.0-pipewiresrc: Read data from a PipeWire node. (Capture a screenshot from a video node)",
+    "tags": [
+      "linux",
+      "gst-launch-1.0-pipewiresrc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-4",
+    "type": "command",
     "title": "gst-launch-1.0-pipewiresrc - Record audio into a file",
     "content": "gst-launch-1.0 {{[-e|--eos-on-shutdown]}} pipewiresrc ! {{opusenc}} ! {{oggmux}} ! filesink location={{path/to/file.ogg}}",
     "group": "Linux Ops",
@@ -110385,7 +110715,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-4",
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-5",
     "type": "command",
     "title": "gst-launch-1.0-pipewiresrc - Record the monitor of a device",
     "content": "gst-launch-1.0 pipewiresrc target-object={{node_name}} stream-properties=props,stream.capture.sink=true ! {{audioconvert ! fakesink}}",
@@ -110400,7 +110730,7 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-5",
+    "id": "tldr-en-linux-gst-launch-1.0-pipewiresrc-6",
     "type": "command",
     "title": "gst-launch-1.0-pipewiresrc - Multiplex audio and video into a file",
     "content": "gst-launch-1.0 {{[-e|--eos-on-shutdown]}} pipewiresrc do-timestamp=true ! videoconvert ! {{x264enc}} ! {{h264parse}} ! {{mux}}. pipewiresrc do-timestamp=true ! {{opusenc}} ! {{mux}}. {{matroskamux}} name={{mux}} ! filesink location={{path/to/file.mkv}}",

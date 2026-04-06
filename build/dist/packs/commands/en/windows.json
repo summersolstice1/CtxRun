@@ -2552,10 +2552,10 @@
   {
     "id": "tldr-en-windows-wget-2",
     "type": "command",
-    "title": "wget - Display version",
+    "title": "wget - Check whether `wget` is properly installed by printing its version number. If this command evaluates into an error, PowerShell may have substituted this command with `Invoke-WebRequest`",
     "content": "wget --version",
     "group": "Windows",
-    "description": "wget: In PowerShell, this command may be an alias of `Invoke-WebRequest` when the original `wget` program () is not properly installed. Note: If version command returns an error, PowerShell may have substituted this command with `Invoke-WebRequest`. (Display version)",
+    "description": "wget: In PowerShell, this command may be an alias of `Invoke-WebRequest` when the original `wget` program () is not properly installed. Note: If version command returns an error, PowerShell may have substituted this command with `Invoke-WebRequest`. (Check whether `wget` is properly installed by printing its version number. If this command evaluates into an error, PowerShell may have substituted this command with `Invoke-WebRequest`)",
     "tags": [
       "windows",
       "wget",
@@ -3152,10 +3152,25 @@
   {
     "id": "tldr-en-windows-type-0",
     "type": "command",
+    "title": "type - View documentation of the equivalent PowerShell command",
+    "content": "tldr get-content",
+    "group": "Windows",
+    "description": "type: Display the contents of a file. In PowerShell, this command is an alias of `Get-Content`. This documentation is based on the Command Prompt (`cmd`) version of `type`. (View documentation of the equivalent PowerShell command)",
+    "tags": [
+      "windows",
+      "type",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-type-1",
+    "type": "command",
     "title": "type - Display the contents of a specific file",
     "content": "type {{path\\to\\file}}",
     "group": "Windows",
-    "description": "type: Display the contents of a file. (Display the contents of a specific file)",
+    "description": "type: Display the contents of a file. In PowerShell, this command is an alias of `Get-Content`. This documentation is based on the Command Prompt (`cmd`) version of `type`. (Display the contents of a specific file)",
     "tags": [
       "windows",
       "type",
@@ -6054,6 +6069,51 @@
     "tags": [
       "windows",
       "measure-object",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-gc-0",
+    "type": "command",
+    "title": "gc - View documentation for GraphViz's `gc` command",
+    "content": "tldr gc {{[-p|--platform]}} common",
+    "group": "Windows",
+    "description": "gc: In PowerShell, this command is an alias of `Get-Content` (equivalent to `cat`) when the original `gc` program () is not installed. (View documentation for GraphViz's `gc` command)",
+    "tags": [
+      "windows",
+      "gc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-gc-1",
+    "type": "command",
+    "title": "gc - View documentation for the PowerShell's `Get-Content` command",
+    "content": "tldr get-content",
+    "group": "Windows",
+    "description": "gc: In PowerShell, this command is an alias of `Get-Content` (equivalent to `cat`) when the original `gc` program () is not installed. (View documentation for the PowerShell's `Get-Content` command)",
+    "tags": [
+      "windows",
+      "gc",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-gc-2",
+    "type": "command",
+    "title": "gc - Determine whether `gc` is currently configured to GraphViz's `gc` or PowerShell's `Get-Content` by printing its help documentation",
+    "content": "gc -?",
+    "group": "Windows",
+    "description": "gc: In PowerShell, this command is an alias of `Get-Content` (equivalent to `cat`) when the original `gc` program () is not installed. (Determine whether `gc` is currently configured to GraphViz's `gc` or PowerShell's `Get-Content` by printing its help documentation)",
+    "tags": [
+      "windows",
+      "gc",
       "tldr",
       "en"
     ],
@@ -11880,6 +11940,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-en-windows-ii-0",
+    "type": "command",
+    "title": "ii - View documentation for the original command",
+    "content": "tldr invoke-item",
+    "group": "Windows",
+    "description": "ii: This command is an alias of `Invoke-Item`. (View documentation for the original command)",
+    "tags": [
+      "windows",
+      "ii",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-en-windows-gpupdate-0",
     "type": "command",
     "title": "gpupdate - Check and apply updated Group Policy settings",
@@ -13494,6 +13569,51 @@
     "tags": [
       "windows",
       "reg-export",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-help-0",
+    "type": "command",
+    "title": "help - View documentation of the equivalent PowerShell command",
+    "content": "tldr get-help",
+    "group": "Windows",
+    "description": "help: Get help on DOS-style standard commands in Command Prompt. In PowerShell, this command is an alias of `Get-Help`. This documentation is based on the Command Prompt (`cmd`) version of `help`. (View documentation of the equivalent PowerShell command)",
+    "tags": [
+      "windows",
+      "help",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-help-1",
+    "type": "command",
+    "title": "help - View a list of supported Command Prompt commands",
+    "content": "help",
+    "group": "Windows",
+    "description": "help: Get help on DOS-style standard commands in Command Prompt. In PowerShell, this command is an alias of `Get-Help`. This documentation is based on the Command Prompt (`cmd`) version of `help`. (View a list of supported Command Prompt commands)",
+    "tags": [
+      "windows",
+      "help",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-help-2",
+    "type": "command",
+    "title": "help - View help for a given Command Prompt command",
+    "content": "help {{command}}",
+    "group": "Windows",
+    "description": "help: Get help on DOS-style standard commands in Command Prompt. In PowerShell, this command is an alias of `Get-Help`. This documentation is based on the Command Prompt (`cmd`) version of `help`. (View help for a given Command Prompt command)",
+    "tags": [
+      "windows",
+      "help",
       "tldr",
       "en"
     ],
@@ -15399,6 +15519,51 @@
     "tags": [
       "windows",
       "tree",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-cat-0",
+    "type": "command",
+    "title": "cat - View documentation for the original `cat` command",
+    "content": "tldr cat {{[-p|--platform]}} common",
+    "group": "Windows",
+    "description": "cat: In PowerShell, this command may be an alias of `Get-Content` when the original `cat` program (part of `coreutils`) is not properly installed. (View documentation for the original `cat` command)",
+    "tags": [
+      "windows",
+      "cat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-cat-1",
+    "type": "command",
+    "title": "cat - View documentation for PowerShell's `Get-Content` command",
+    "content": "tldr get-content",
+    "group": "Windows",
+    "description": "cat: In PowerShell, this command may be an alias of `Get-Content` when the original `cat` program (part of `coreutils`) is not properly installed. (View documentation for PowerShell's `Get-Content` command)",
+    "tags": [
+      "windows",
+      "cat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-windows-cat-2",
+    "type": "command",
+    "title": "cat - Check whether `cat` is properly installed by printing its version number. If this command evaluates into an error, PowerShell may have substituted this command with `Get-Content`",
+    "content": "cat --version",
+    "group": "Windows",
+    "description": "cat: In PowerShell, this command may be an alias of `Get-Content` when the original `cat` program (part of `coreutils`) is not properly installed. (Check whether `cat` is properly installed by printing its version number. If this command evaluates into an error, PowerShell may have substituted this command with `Get-Content`)",
+    "tags": [
+      "windows",
+      "cat",
       "tldr",
       "en"
     ],
