@@ -47,6 +47,13 @@
 *   **📋 Refinery (Clipboard History)**: Comprehensive clipboard history manager supporting text and images. Features search/filtering, pinning important entries, note-taking, auto-cleanup, calendar view, and Spotlight quick paste integration.
 *   **🖱️ Automator (Workflow Automation)**: Visual workflow automation system with node graph orchestration and conditional branching. Integrates browser automation (headless_chrome), keyboard input simulation, mouse operations, color detection, loop control, and more. Features semantic UI element targeting via Windows UIAutomation API with physical input fallback.
 *   **⛏️ Model Miner (Web Content Mining)**: Intelligent web scraper that extracts clean content from web pages using Readability.js, converts to Markdown, and supports concurrent crawling with depth/page limits and hierarchical file storage.
+*   **📡 Transfer (LAN Transfer)**: LAN file transfer and instant chat. Starts a local HTTP server — other devices can connect by scanning a QR code. Supports file transfer progress tracking and real-time text chat.
+*   **🛡️ Guard (Idle Guard)**: Automatic screen lock on idle timeout. Uses Windows low-level hooks for global input interception. Unlock via a 1.5s long-press circular progress ring. Supports preventing system sleep.
+*   **🤖 Agent Tool Runtime (AI Tool Runtime)**: Invoke tools during AI conversations (file system operations, web search, content extraction). Supports sandbox security policies and an approval mechanism.
+*   **🔒 Exec Runtime (Command Execution Runtime)**: Secure command execution sandbox with approval, termination, and terminal interaction support.
+*   **👁️ Peek (Standalone Preview)**: Pop-up file preview window supporting DOCX/PDF/HTML/Markdown and more formats.
+*   **📡 Network Speed Test**: Integrated M-Lab NDT7 network speed testing.
+*   **📊 System Monitor Enhanced**: Battery info, disk details, network traffic, port and process monitoring.
 
 > ### 🚀 Want to learn how to use it?
 >
@@ -57,12 +64,18 @@
 Built with a modern **high-performance desktop application architecture**, balancing minimal resource usage with smooth user experience (~10MB install size, ~30MB memory footprint):
 
 *   **Core**: [Tauri 2](https://tauri.app/) (Rust + WebView2) - Native-level performance with minimal install size, multi-window support.
-*   **Frontend**: React 18 + TypeScript + Vite 6 - Modern frontend development experience.
-*   **State Management**: Zustand - Lightweight yet powerful state management.
+*   **Frontend**: React 19 + TypeScript + Vite 7 - Modern frontend development experience.
+*   **State Management**: Zustand 5 - Lightweight yet powerful state management.
+*   **Internationalization**: i18next + react-i18next - JSON-based multi-language support.
 *   **Styling**: Tailwind CSS + tailwindcss-animate - Beautiful UIs built fast.
 *   **Icons**: Lucide React.
 *   **Database**: SQLite (rusqlite) + Refinery - Local data persistence and migration management.
 *   **Editor**: Monaco Editor - VSCode-level code editing experience.
+*   **Testing**: Vitest + Testing Library - Fast unit and component testing.
+*   **Backend**: axum (HTTP server), tokio-util, qrcode, starship-battery - LAN transfer server, QR code generation, battery status.
+*   **Document Preview**: docx-preview, @wooorm/starry-night - DOCX rendering, syntax highlighting.
+*   **Interaction**: react-zoom-pan-pinch, @spaceymonk/react-radial-menu - Zoom/pan, radial menu for Guard unlock.
+*   **Network**: @m-lab/ndt7 - M-Lab NDT7 network speed testing.
 
 ---
 

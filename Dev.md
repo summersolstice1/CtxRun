@@ -7,15 +7,259 @@
 **CtxRun** 是一款专为开发者打造的 AI 辅助生产力工具，基于 Tauri 框架构建。
 
 ### 技术栈
-- **核心框架**: Tauri (Rust 1.80 + WebView2)
-- **前端**: React 18 + TypeScript + Vite 6
-- **状态管理**: Zustand
+- **核心框架**: Tauri 2 (Rust 1.91 + WebView2)
+- **前端**: React 19 + TypeScript + Vite 7
+- **状态管理**: Zustand 5
 - **样式**: Tailwind CSS + tailwindcss-animate
 - **编辑器**: Monaco Editor
+- **国际化**: i18next + react-i18next (JSON locale)
+- **测试**: Vitest + Testing Library
 
 ---
 
 ## 版本历史
+
+### v2.3.0 (2026-04-04) 📡 Transfer + 🛡️ Guard + 🖥️ 多窗口架构
+
+| 提交哈希 | 变更内容 | 详细说明 |
+|---------|---------|---------|
+| `525264d` | **发布** | 版本发布 2.3.0 |
+| `7acfa5d` | **优化翻译** | i18n 翻译质量优化 |
+| `12206f8` | **新增传输** | Transfer 局域网传输模块 |
+| `7dab26d` | **发布** | 版本发布 2.2.9 |
+| `fb792a0` | **新增网络** | 网络接口发现和工具集成 |
+| `739867d` | **优化电池** | 电池信息监控 |
+| `5c18c51` | **新增模块** | process-utils 和 env-probe 增强 |
+
+**v2.3.0 Transfer 文件传输模块文件变更**:
+```
+src-tauri/crates/transfer/Cargo.toml               | +28   新增 transfer crate
+src-tauri/crates/transfer/src/lib.rs               | +34   插件入口
+src-tauri/crates/transfer/src/commands.rs          | +332  Tauri 命令 (start/stop/send)
+src-tauri/crates/transfer/src/models.rs            | +246  数据模型
+src-tauri/crates/transfer/src/server.rs            | +408  Axum HTTP 服务器
+src-tauri/crates/transfer/src/network.rs           | +403  网络接口发现
+src-tauri/crates/transfer/src/ws.rs                | +321  WebSocket 实时通信
+src-tauri/crates/transfer/src/device.rs            | +222  设备管理
+src-tauri/crates/transfer/src/transfer.rs          | +138  文件传输逻辑
+src-tauri/crates/transfer/src/qr.rs                | +30   二维码生成
+src-tauri/crates/transfer/src/mobile.rs            | +11   移动端支持
+src-tauri/crates/transfer/src/mobile_template.html | +706  移动端 HTML 模板
+src/components/features/transfer/TransferView.tsx   | +120  主视图
+src/components/features/transfer/ChatPanel.tsx      | +233  聊天面板
+src/components/features/transfer/DeviceSidebar.tsx  | +59   设备侧边栏
+src/components/features/transfer/ServiceControls.tsx| +69   服务控制
+src/components/features/transfer/QrCodeSVG.tsx      | +30   二维码 SVG
+src/store/useTransferStore.ts                      | +414  状态管理
+src/types/transfer.ts                              | +89   类型定义
+```
+
+**v2.3.0 Guard 守护模块文件变更**:
+```
+src-tauri/src/guard.rs                              | +638  空闲锁屏守护核心
+src/windows/guard/GuardWindowApp.tsx                | +203  锁屏窗口前端
+src-tauri/capabilities/guard.json                   | +21   Guard 权限配置
+src-tauri/src/tray_support.rs                       | +19   托盘支持
+```
+
+**v2.3.0 多窗口架构重构文件变更**:
+```
+src/App.tsx              → src/windows/main/MainWindowApp.tsx          重命名迁移
+src/SpotlightApp.tsx     → src/windows/spotlight/SpotlightWindowApp.tsx 重构 (157行)
+src/PeekApp.tsx          → src/windows/peek/PeekWindowApp.tsx           重构迁移
+src/windows/spotlight/resizeMode.ts                  | +97  窗口尺寸调整模式
+```
+
+**v2.3.0 i18n 重构文件变更**:
+```
+src/lib/i18n.ts           | -1597  删除旧内联翻译
+src/i18n/locales/zh.json  | +879   中文翻译 JSON
+src/i18n/locales/en.json  | +879   英文翻译 JSON
+```
+
+**v2.3.0 监控增强文件变更**:
+```
+src-tauri/crates/env-probe/src/commands/monitoring.rs  | +1182  监控探测大幅增强
+src-tauri/crates/env-probe/src/commands/system_info.rs | +61   系统信息
+src/components/features/monitor/tabs/MonitorDashboard.tsx | +989  仪表盘重构
+src/types/monitor.ts                                   | +61   监控类型
+```
+
+**主要更新**:
+- 📡 **Transfer 局域网传输**: 全新局域网文件传输和即时聊天模块
+  - 基于 **Axum** HTTP 服务器 + **WebSocket** 实时通信
+  - 设备自动发现（网络接口扫描，虚拟网卡过滤）
+  - **二维码** 分享连接 URL，手机扫码即用
+  - 文件传输进度追踪、审批/拒绝
+  - 内置移动端 HTML 聊天界面
+- 🛡️ **Guard 空闲守护**: 空闲超时自动锁屏
+  - Windows 低级键盘/鼠标钩子全局拦截
+  - 后台线程每秒检测空闲时间
+  - 全屏覆盖锁屏窗口，长按 1.5s 圆形进度条解锁
+  - 支持防止系统休眠、保持屏幕常亮
+- 🖥️ **多窗口架构**: 从单入口迁移到多窗口
+  - `MainWindowApp` / `SpotlightWindowApp` / `PeekWindowApp` / `GuardWindowApp`
+  - 跨窗口状态同步 (`useCrossWindowAppStoreSync`)
+- 🌍 **i18n 迁移**: 从 `i18n.ts` 单文件迁移到 JSON locale (879 行/语言)
+- 📊 **系统监控大幅增强**: 电池、磁盘详情、网络流量、端口进程、网络测速
+
+---
+
+### v2.2.9 (2026-04-01) 🔋 系统监控增强
+
+**主要更新**:
+- 🔋 **电池信息**: 电量、健康度、功率、温度、充放电时间
+- 🌐 **网络接口详情**: MAC、MTU、网关、流量统计
+- 📊 **进程列表**: CPU/内存使用率、系统进程标识
+- 🛡️ **Guard 基础**: 空闲锁屏模块初步实现
+
+---
+
+### v2.2.8 (2026-03-28) 🔒 Exec Runtime + 👁️ Peek 窗口
+
+**v2.2.8 Exec Runtime 文件变更**:
+```
+src-tauri/crates/exec-runtime/Cargo.toml            | +新  新增 crate
+src-tauri/crates/exec-runtime/src/lib.rs            | +29  插件入口
+src-tauri/crates/exec-runtime/src/commands.rs       | +XX  request/approve/write/resize/terminate
+src-tauri/crates/exec-runtime/src/manager.rs        | +XX  进程管理器
+src-tauri/crates/exec-runtime/src/models.rs         | +XX  数据模型
+src-tauri/crates/exec-runtime/src/safety.rs         | +XX  安全策略 (沙箱)
+src-tauri/crates/exec-runtime/src/powershell_parser.ps1 | +XX  PowerShell 解析器
+src-tauri/crates/process-utils/Cargo.toml            | +新  进程工具 crate
+```
+
+**v2.2.8 Peek 预览窗口文件变更**:
+```
+src-tauri/src/peek.rs                               | +XX  Peek 窗口后端
+src-tauri/capabilities/peek.json                    | +XX  Peek 权限
+src/PeekApp.tsx                                     | +XX  前端入口
+src/components/features/hyperview/renderers/DocxRenderer.tsx   | +132  DOCX 渲染器
+src/components/features/hyperview/renderers/HtmlRenderer.tsx    | +XX  HTML 渲染器
+src/components/features/hyperview/renderers/MarkupRenderer.tsx  | +XX  Markdown 渲染器
+src/components/features/hyperview/renderers/PdfRenderer.tsx     | +XX  PDF 渲染器
+src/components/features/hyperview/renderers/StructuredTextRenderer.tsx | +XX  结构化文本
+```
+
+**v2.2.8 Spotlight 执行增强文件变更**:
+```
+src/components/features/spotlight/exec/ExecApprovalSheet.tsx    | +XX  执行审批面板
+src/components/features/spotlight/exec/ExecSessionCard.tsx      | +XX  执行会话卡片
+src/components/features/spotlight/trace/AssistantTraceTimeline.tsx | +XX  AI Trace 时间线
+src/components/features/spotlight/trace/ToolCallInlineBlock.tsx  | +XX  工具调用内联块
+src/lib/exec/client.ts                              | +XX  执行客户端
+src/store/useExecStore.ts                           | +XX  执行状态管理
+src/types/exec.ts                                   | +XX  执行类型
+```
+
+**v2.2.8 网络测速文件变更**:
+```
+src/components/features/monitor/network/mlabSpeedTest.ts | +XX  M-Lab NDT7 测速
+src/types/m-lab-ndt7.d.ts                                | +XX  类型声明
+```
+
+**主要更新**:
+- 🔒 **Exec Runtime**: 命令执行运行时
+  - 沙箱安全策略：命令白名单、路径限制
+  - 执行审批机制 (`request_exec` → `approve_exec` / `terminate_exec`)
+  - 终端尺寸调整和输入写入
+- 👁️ **Peek 独立预览窗口**: 弹出式文件预览
+  - 多格式渲染器：HTML、PDF、DOCX、Markdown、结构化文本
+  - 独立 Tauri 窗口
+- 🔧 **AI Trace 可视化**: 工具调用过程展示
+  - 时间线视图 + 内联工具调用块
+  - 运行中/成功/失败状态
+- 📡 **网络测速**: M-Lab NDT7 集成
+- 📄 **DOCX 预览**: Word 文档渲染
+
+---
+
+### v2.2.7 (2026-03-17) 🎡 轮盘导航
+
+**v2.2.7 新增文件变更**:
+```
+src/components/layout/ViewSwitcher.tsx   | +XX  视图切换轮盘
+src/components/ui/MarkdownContent.tsx    | +XX  统一 Markdown 渲染
+```
+
+**主要更新**:
+- 🎡 **ViewSwitcher 轮盘导航**: 替代侧边栏的轮盘式视图切换 (`@spaceymonk/react-radial-menu`)
+- 📝 **MarkdownContent**: 统一的 Markdown 内容渲染组件
+
+---
+
+### v2.2.6 (2026-03-12) 🏗️ 模块化重构 + ⚙️ 设置重构
+
+**v2.2.6 Crate 模块化重构文件变更**:
+```
+src-tauri/crates/env-probe/Cargo.toml              | +13  环境探测 crate (从 src/ 迁移)
+src-tauri/crates/env-probe/src/lib.rs              | +新  模块入口
+src-tauri/crates/hyperview/Cargo.toml              | +12  文件预览 crate (从 src/ 迁移)
+src-tauri/crates/hyperview/src/lib.rs              | +新  模块入口
+src-tauri/crates/workspace-tests/Cargo.toml        | +新  集成测试 crate
+src-tauri/crates/workspace-tests/tests/*.rs        | +XX  15+ 测试文件
+```
+
+**v2.2.6 设置页面重构文件变更**:
+```
+src/components/settings/sections/AISection.tsx               | +新  AI 配置页面
+src/components/settings/sections/DataMaintenanceSection.tsx  | +新  数据维护页面
+src/components/settings/sections/GeneralSection.tsx          | +新  通用设置页面
+src/components/settings/sections/SearchWorkspaceSection.tsx  | +新  搜索/工作区页面
+src/components/settings/sections/SecuritySection.tsx         | +新  安全设置页面
+src/components/settings/SettingsView.tsx                     | +新  新设置视图
+src/components/settings/SettingsNav.tsx                      | +新  导航栏
+src/components/settings/SettingsUi.tsx                       | +新  UI 容器
+src/components/layout/WorkspaceSwitcher.tsx                  | +新  工作区切换器
+src/lib/theme.ts                                             | +新  主题工具
+```
+
+**主要更新**:
+- 🏗️ **Crate 模块化**: env-probe / hyperview 从 `src/` 迁移为独立 crate
+- ⚙️ **设置页面重构**: 从 `SettingsModal` 拆分为 5 个独立页面
+- 🧪 **workspace-tests**: 新增 15+ 集成测试文件
+
+---
+
+### v2.2.5 (2026-03-05) 🤖 Agent Tool Runtime
+
+**v2.2.5 Tool Runtime 文件变更**:
+```
+src-tauri/crates/tool-runtime/Cargo.toml            | +新  新增 crate
+src-tauri/crates/tool-runtime/src/lib.rs            | +新  插件入口
+src-tauri/crates/tool-runtime/src/runtime.rs        | +新  运行时核心
+src-tauri/crates/tool-runtime/src/models.rs         | +新  ToolSpec/ToolCall 模型
+src-tauri/crates/tool-runtime/src/sandbox.rs        | +新  沙箱策略引擎
+src-tauri/crates/tool-runtime/src/fs_tools.rs       | +新  文件系统工具
+src-tauri/crates/tool-runtime/src/miner_tools.rs    | +新  Miner 工具集成
+src-tauri/crates/tool-runtime/src/agent_fs.rs       | +新  Agent 文件操作
+src-tauri/crates/tool-runtime/src/patch_tools.rs    | +新  补丁应用工具
+```
+
+**v2.2.5 前端 Agent 系统文件变更**:
+```
+src/lib/agent/index.ts       | +新  Agent 入口
+src/lib/agent/types.ts       | +新  Agent 类型 (ToolRiskLevel/AgentToolDefinition/AgentRuntimeCallbacks)
+src/lib/agent/policy.ts      | +新  工具策略 (allowAll/allowList/denyList)
+src/lib/agent/registry.ts    | +新  工具注册中心
+src/lib/agent/runtime.ts     | +新  Agent 运行时
+src/lib/agent/tools/fs.ts    | +新  文件系统工具
+src/lib/agent/tools/web.ts   | +新  Web 工具
+src/lib/chat_attachment.ts   | +新  聊天附件支持
+```
+
+**主要更新**:
+- 🤖 **Agent Tool Runtime**: 全新 AI 工具运行时
+  - `ToolSpec` 规范，`ToolCallRequest`/`ToolCallResponse` 模型
+  - 三种策略模式 (`allowAll`/`allowList`/`denyList`)，风险分级
+  - 沙箱安全引擎，审批拦截
+  - 内置工具：文件系统、Web 搜索/提取、Miner、补丁
+  - 架构灵感来自 OpenAI Codex CLI (codex-rs)
+- 📎 **聊天附件**: Spotlight AI 对话支持文件附件
+- ⛏️ **Miner 增强**: 单页提取、Web 搜索、后处理管线
+- 🔄 **底层替换**: AI 模型调用底层库替换
+
+---
 
 ### v2.2.4 (2026-02-25)
 Bug 修复和性能优化
@@ -926,7 +1170,7 @@ src/lib/i18n.ts                   | +-44 国际化支持
 | v1.5.0 | 笔记注释支持 |
 | v1.5.0 | 日历视图、自动清理 |
 
-### 6. Automator (自动点击器)
+### 6. Automator (工作流自动化)
 | 版本 | 功能 |
 |-----|------|
 | v2.0.0 | 左键/右键/中键点击 |
@@ -942,6 +1186,82 @@ src/lib/i18n.ts                   | +-44 国际化支持
 | v2.2.2 | HTML 转 Markdown |
 | v2.2.2 | 队列化任务处理 |
 | v2.2.2 | 挖掘范围管理 |
+| v2.2.5 | 单页提取 (`single_page`) |
+| v2.2.5 | Web 搜索集成 (`web_search`) |
+| v2.2.5 | 后处理管线 (`postprocess`) |
+
+### 8. Agent Tool Runtime (AI 工具运行时)
+| 版本 | 功能 |
+|-----|------|
+| v2.2.5 | ToolSpec 规范 + ToolCallRequest/Response 模型 |
+| v2.2.5 | 沙箱策略引擎 (sandbox.rs) |
+| v2.2.5 | 文件系统工具 (list_directory/search_files/read_file) |
+| v2.2.5 | Web 工具 (search/extract_page) |
+| v2.2.5 | Miner 工具集成 |
+| v2.2.5 | 补丁工具 (patch_tools) |
+| v2.2.5 | 前端 Agent 运行时 (registry/policy/runtime) |
+
+### 9. Exec Runtime (命令执行运行时)
+| 版本 | 功能 |
+|-----|------|
+| v2.2.8 | 进程管理器 (manager.rs) |
+| v2.2.8 | 沙箱安全策略 (safety.rs) |
+| v2.2.8 | 执行审批机制 (request/approve/terminate) |
+| v2.2.8 | PowerShell 参数解析器 |
+| v2.2.8 | 前端 ExecApprovalSheet 审批 UI |
+
+### 10. Transfer (局域网传输)
+| 版本 | 功能 |
+|-----|------|
+| v2.3.0 | Axum HTTP 服务器 + WebSocket |
+| v2.3.0 | 设备自动发现 (网络接口扫描) |
+| v2.3.0 | 二维码分享 (QR 生成) |
+| v2.3.0 | 文件传输 + 进度追踪 |
+| v2.3.0 | 即时聊天 (文本消息) |
+| v2.3.0 | 移动端 HTML 界面 |
+
+### 11. Guard (空闲守护)
+| 版本 | 功能 |
+|-----|------|
+| v2.2.9 | 空闲超时检测 (默认 180s) |
+| v2.3.0 | Windows 低级键盘/鼠标钩子全局拦截 |
+| v2.3.0 | 全屏覆盖锁屏 + 长按 1.5s 解锁 |
+| v2.3.0 | 防止系统休眠 |
+| v2.3.0 | 保持屏幕常亮 |
+
+### 12. Peek (独立预览窗口)
+| 版本 | 功能 |
+|-----|------|
+| v2.2.8 | 独立 Tauri 预览窗口 |
+| v2.2.8 | DOCX 渲染器 (docx-preview) |
+| v2.2.8 | PDF 渲染器 |
+| v2.2.8 | HTML 渲染器 |
+| v2.2.8 | Markdown 渲染器 (starry-night 语法高亮) |
+| v2.2.8 | 结构化文本渲染器 |
+
+### 13. System Monitor (系统监控)
+| 版本 | 功能 |
+|-----|------|
+| v1.1.0 | 标题栏时钟 |
+| v1.1.1 | 系统信息面板 |
+| v2.2.6 | env-probe crate 模块化 |
+| v2.2.8 | 网络测速 (M-Lab NDT7) |
+| v2.2.9 | 电池信息 (starship-battery) |
+| v2.3.0 | 监控探测大幅增强 (1182行 monitoring.rs) |
+| v2.3.0 | 磁盘详情 (HDD/SSD 类型、可移除性) |
+| v2.3.0 | 网络流量统计 (收发速率) |
+| v2.3.0 | 端口占用进程 (Windows RestartManager) |
+| v2.3.0 | 进程列表 (CPU/内存使用率) |
+| v2.3.0 | 仪表盘 UI 全面重构 |
+
+### 14. Spotlight AI 增强
+| 版本 | 功能 |
+|-----|------|
+| v2.2.5 | 聊天附件支持 (chat_attachment) |
+| v2.2.5 | Agent 工具调用 (fs/web/miner) |
+| v2.2.8 | AI Trace 时间线可视化 |
+| v2.2.8 | ToolCallInlineBlock 工具调用内联展示 |
+| v2.2.8 | ExecApprovalSheet 执行审批面板 |
 
 ---
 
@@ -1009,8 +1329,7 @@ src/lib/i18n.ts                   | +-44 国际化支持
 ### 当前构建状态
 | 平台 | 安装包大小 | 运行内存 |
 |-----|-----------|---------|
-| Windows | ~10 MB | ~30 MB |
-| macOS | ~15 MB | ~35 MB |
+| Windows | ~10 MB | ~30-50 MB |
 
 ---
 
@@ -1019,42 +1338,77 @@ src/lib/i18n.ts                   | +-44 国际化支持
 ```
 ctxrun/
 ├── src/                          # React 前端源码
+│   ├── windows/                # 多窗口入口 (v2.3.0+)
+│   │   ├── main/              # 主窗口 (MainWindowApp)
+│   │   ├── spotlight/         # Spotlight 窗口 (SpotlightWindowApp)
+│   │   ├── peek/              # 预览窗口 (PeekWindowApp)
+│   │   └── guard/             # 锁屏窗口 (GuardWindowApp)
 │   ├── components/                # UI 组件
 │   │   ├── features/            # 功能组件
 │   │   │   ├── automator/       # 自动点击器
 │   │   │   ├── context/         # 上下文组装
 │   │   │   ├── miner/           # 内容挖掘 (v2.2.2+)
+│   │   │   ├── monitor/         # 系统监控
 │   │   │   ├── patch/           # 代码对比
 │   │   │   ├── prompts/         # 提示词管理
-│   │   │   └── refinery/        # 剪贴板历史 (v1.5.0+)
+│   │   │   ├── refinery/        # 剪贴板历史 (v1.5.0+)
+│   │   │   ├── spotlight/       # Spotlight 全局终端
+│   │   │   │   ├── exec/        # 执行管理 (v2.2.8+)
+│   │   │   │   └── trace/       # AI Trace 可视化 (v2.2.8+)
+│   │   │   └── transfer/        # 局域网传输 (v2.3.0+)
+│   │   ├── hyperview/           # 文件预览渲染器 (v1.3.9+)
+│   │   │   └── renderers/       # DOCX/PDF/HTML/Markdown/结构化文本
 │   │   ├── layout/             # 布局组件
-│   │   ├── settings/           # 设置界面
+│   │   │   └── ViewSwitcher.tsx # 轮盘导航 (v2.2.7+)
+│   │   ├── settings/           # 设置界面 (v2.2.6+ 重构为独立页面)
+│   │   │   └── sections/       # AI/通用/安全/数据维护/搜索工作区
 │   │   └── ui/                # 基础 UI
-│   ├── i18n/                    # 国际化 (v2.2.0+)
+│   ├── i18n/                    # 国际化 (v2.3.0 迁移到 JSON)
 │   │   ├── config.ts           # i18n 配置
-│   │   └── resources.ts        # 翻译资源
+│   │   └── locales/            # JSON 翻译文件
+│   │       ├── zh.json         # 中文 (879 行)
+│   │       └── en.json         # 英文 (879 行)
 │   ├── lib/                     # 工具函数
+│   │   ├── agent/              # Agent 工具系统 (v2.2.5+)
+│   │   │   ├── runtime.ts      # Agent 运行时
+│   │   │   ├── policy.ts       # 工具策略
+│   │   │   ├── registry.ts     # 工具注册
+│   │   │   └── tools/          # fs.ts / web.ts
+│   │   ├── exec/               # 命令执行客户端 (v2.2.8+)
+│   │   ├── markdown/           # Markdown 增强 (starry-night)
+│   │   └── hooks/              # 跨窗口状态同步等
 │   ├── store/                   # Zustand 状态管理
 │   └── types/                   # TypeScript 类型
 ├── src-tauri/                    # Rust 后端
 │   ├── crates/                   # 多 crates 架构 (v2.0.0+)
 │   │   ├── automator/           # 自动点击器模块
+│   │   ├── browser-utils/       # 浏览器工具 (v2.2.5+)
 │   │   ├── context/             # 上下文处理模块
 │   │   ├── db/                  # 数据库模块
+│   │   ├── env-probe/           # 环境探测 (v2.2.6 从 src/ 迁移)
+│   │   ├── exec-runtime/        # 命令执行运行时 (v2.2.8+)
 │   │   ├── git/                 # Git 操作模块
+│   │   ├── hyperview/           # 文件预览 (v2.2.6 从 src/ 迁移)
 │   │   ├── miner/               # 内容挖掘模块 (v2.2.2+)
-│   │   └── refinery/            # Refinery 模块
-│   ├── src/                     # 遗留代码 (逐步迁移)
-│   │   ├── hyperview/           # 文件预览
-│   │   ├── env_probe/           # 环境探测
+│   │   ├── process-utils/       # 进程工具 (v2.2.8+)
+│   │   ├── refinery/            # Refinery 模块
+│   │   ├── tool-runtime/        # AI 工具运行时 (v2.2.5+)
+│   │   ├── transfer/            # 局域网传输 (v2.3.0+)
+│   │   └── workspace-tests/     # 集成测试 (v2.2.6+)
+│   ├── src/                     # 主入口
+│   │   ├── guard.rs             # 空闲守护 (v2.3.0+)
+│   │   ├── peek.rs              # 预览窗口后端 (v2.2.8+)
+│   │   ├── fs_commands.rs       # 文件操作命令
+│   │   ├── tray_support.rs      # 托盘支持 (v2.3.0+)
+│   │   ├── app_config.rs        # 应用配置 (v2.2.8+)
 │   │   └── main.rs             # 入口
 │   └── Cargo.toml
 ├── build/dist/                   # 预构建资源
-│   └── packs/                    # 提示词数据包
+│   └── commands/                 # 提示词/命令数据包
 └── models/                       # LLM 模型配置
 ```
 
 ---
 
-*文档最后更新: 2026-02-27*
+*文档最后更新: 2026-04-07*
 *基于 git 提交历史和代码 diff 分析编写*

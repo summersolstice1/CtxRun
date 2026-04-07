@@ -26,7 +26,6 @@ CtxRun is distributed under the **GNU General Public License v3.0 (GPL-3.0)**. S
 | **React Markdown** | MIT | Espen Hovlandsdal |
 | **remark-gfm** | MIT | Titus Wormer |
 | **Tailwind Merge** | MIT | dcastil |
-| **Class Variance Authority** | MIT | Mateusz Burzyński |
 | **UUID** | MIT | Robert Kieffer |
 | **i18next** | MIT | Jan Mühlemann |
 | **react-i18next** | MIT | Jan Mühlemann |
@@ -35,10 +34,20 @@ CtxRun is distributed under the **GNU General Public License v3.0 (GPL-3.0)**. S
 | **react-virtuoso** | MIT | Petyo Ivanov |
 | **react-window** | MIT | Brian Vaughn |
 | **react-virtualized-auto-sizer** | MIT | bvaughn |
-| **strip-comments** | MIT | Brandon Mills |
 | **react-icons** | MIT | Gonçalo Marques |
-| **react-syntax-highlighter** | MIT | Connor Taylor |
 | **tailwindcss-animate** | MIT | Hero Labs |
+| **@m-lab/ndt7** | Apache-2.0 | Measurement Lab |
+| **@spaceymonk/react-radial-menu** | MIT | spaceymonk |
+| **docx-preview** | MIT | Volodymyr Bay |
+| **github-markdown-css** | MIT | Sindre Sorhus |
+| **hast-util-to-jsx-runtime** | MIT | Titus Wormer |
+| **papaparse** | MIT | Matthew Holt |
+| **react-zoom-pan-pinch** | MIT | Przemyslaw Zyla |
+| **rehype-autolink-headings** | MIT | Titus Wormer |
+| **rehype-slug** | MIT | Titus Wormer |
+| **@wooorm/starry-night** | MIT | Titus Wormer |
+| **vscode-oniguruma** | MIT | Microsoft Corporation |
+| **xml-formatter** | MIT | Cheton Wu |
 
 ### Backend Dependencies (Rust)
 
@@ -61,7 +70,6 @@ CtxRun is distributed under the **GNU General Public License v3.0 (GPL-3.0)**. S
 | **ignore** | MIT OR Apache-2.0 | .gitignore parsing |
 | **tiktoken-rs** | MIT | OpenAI token counting |
 | **which** | MIT | Find executable in PATH |
-| **once_cell** | MIT OR Apache-2.0 | Lazy static initialization |
 | **uuid** | MIT OR Apache-2.0 | UUID generation |
 | **chrono** | MIT OR Apache-2.0 | Date and time |
 | **clipboard-rs** | MIT OR Apache-2.0 | Clipboard monitoring |
@@ -83,11 +91,15 @@ CtxRun is distributed under the **GNU General Public License v3.0 (GPL-3.0)**. S
 | **futures** | MIT OR Apache-2.0 | Future utilities |
 | **similar** | MIT | Text diffing |
 | **thiserror** | MIT OR Apache-2.0 | Error handling |
-| **git2** | MIT OR Apache-2.0 | Git library |
 | **headless_chrome** | MIT OR Apache-2.0 | Headless Chrome control |
 | **sanitize-filename** | MIT | Filename sanitization |
 | **xcap** | MIT OR Apache-2.0 | Screen capture |
 | **uiautomation** | MIT | Windows UI Automation bindings |
+| **axum** | MIT | HTTP framework (Transfer server) |
+| **tokio-util** | MIT | Async utilities (io, rt) |
+| **qrcode** | MIT OR Apache-2.0 | QR code generation |
+| **starship-battery** | ISC | Battery information |
+| **serde_rusqlite** | MIT | Serde integration for rusqlite |
 
 ---
 
@@ -157,4 +169,4 @@ We thank all the maintainers and contributors of the open source projects that m
 
 ---
 
-*This document was last updated on 2026-03-05.*
+*This document was last updated on 2026-04-07.*

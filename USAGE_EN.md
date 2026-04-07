@@ -12,8 +12,11 @@ This document provides detailed usage instructions, configuration guides, and ke
 6.  [Automator (Workflow Automation)](#6-automator-workflow-automation)
 7.  [Refinery (Clipboard History)](#7-refinery-clipboard-history)
 8.  [System Monitor (System Monitoring)](#8-system-monitor-system-monitoring)
-9.  [Setup Guide](#9-setup-guide)
-10. [Common Keyboard Shortcuts Reference](#10-common-keyboard-shortcuts-reference)
+9.  [Transfer (LAN Transfer)](#9-transfer-lan-transfer)
+10. [Peek (Standalone Preview)](#10-peek-standalone-preview)
+11. [Guard (Idle Guard)](#11-guard-idle-guard)
+12. [Setup Guide](#12-setup-guide)
+13. [Common Keyboard Shortcuts Reference](#13-common-keyboard-shortcuts-reference)
 
 ---
 
@@ -132,6 +135,21 @@ Chat with AI directly without switching browsers.
 *   Press `Ctrl + K` (Windows) or `Cmd + K` (macOS) to clear current temporary session
 *   Chat history is only saved in memory
 *   Automatically clears after restart, keeping it lightweight
+
+**AI Tool Calling:**
+*   AI can automatically invoke tools during conversations to accomplish complex tasks
+*   Tool calls are displayed as **inline tool call blocks** within the chat flow
+*   Supported tool types:
+    *   **File System Operations**: List directory (`fs.list_directory`), search files (`fs.search_files`), read file (`fs.read_file`)
+    *   **Web Operations**: Web search (`web.search`), web page content extraction (`web.extract_page`)
+*   Each tool call block displays:
+    *   Tool name and status (running/completed/failed)
+    *   Arguments preview and result preview
+    *   Execution duration
+*   **Execution Approval Panel**: High-risk operations (such as executing commands) trigger an approval panel
+    *   One-click **approve** or **reject** execution
+    *   Supports auto-allow by command prefix rules
+    *   Rejection can include an optional reason note
 
 ---
 
@@ -462,12 +480,33 @@ Real-time monitoring of system status and development environment.
 *   **System Uptime**: Displays time since system started
 *   **Performance Metrics**: Visual display of key performance data
 
+**Battery Information:**
+*   Battery percentage and charging state (charging/discharging/full/empty)
+*   Battery health, power (W), voltage (V)
+*   Battery temperature (Celsius)
+*   Estimated time to full/to empty
+*   Battery technology type and vendor info
+
+**Disk Details:**
+*   Disk type identification: **SSD** / **HDD** auto-detection
+*   Usage percentage visualization
+*   Total space, used space, available space
+*   File system type
+*   Whether the disk is removable or read-only
+
+**Network Traffic:**
+*   Real-time send/receive rate per network interface (bytes/sec)
+*   Cumulative total sent/received
+*   Interface type identification (virtual/physical adapter)
+*   MAC address, IP address, MTU, default gateway info
+
 #### Ports Monitoring
 
 *   View all active network ports
 *   Shows listening process for each port
 *   Displays process ID and name
 *   Supports killing processes occupying ports
+*   **Windows Enhancement**: Uses RestartManager API to find processes locking files, precisely identifying port occupation sources
 
 #### Environment Detection
 
@@ -482,17 +521,155 @@ Real-time monitoring of system status and development environment.
 *   Latency detection
 *   Connection quality assessment
 
+**Network Speed Test:**
+*   Integrated **M-Lab NDT7** open-source speed testing tool
+*   One-click download/upload speed test
+*   Displays test server information (name, location)
+*   Real-time speed curve chart
+*   Speed test results cached locally for historical comparison
+*   First-time use requires accepting the M-Lab data policy
+
 ---
 
-### 9. Setup Guide
+### 9. Transfer (LAN Transfer)
+
+LAN file transfer and instant messaging tool for quickly sharing files and messages between devices on the same network.
+
+#### Core Features
+
+**Service Startup:**
+1.  Click the "Start Service" button to launch the local HTTP/WebSocket server
+2.  Automatically detects physical network interface IP addresses, filters virtual adapters
+3.  Generates local access URL (e.g., `http://192.168.1.100:5173`)
+4.  Displays a **QR code** for mobile or other devices to scan and connect
+5.  Supports one-click copy URL to clipboard
+
+**Device Management:**
+*   Connected devices automatically appear in the left **device list**
+*   Displays device name, IP address, and device type icon (phone/computer)
+*   Click a device to enter the chat interface
+
+**Instant Chat:**
+*   Select a device to enter a one-on-one chat interface
+*   Supports plain text messaging
+*   Messages are ordered chronologically with timestamps
+
+**File Transfer:**
+*   Click the **attachment button** (paperclip icon) to select a local file to send
+*   The file recipient receives a file request notification and can **approve** or **reject** it
+*   During transfer, **progress info** is displayed (transfer speed, completion percentage)
+*   Completed files can be opened in the file manager with one click
+*   Image files support **inline preview**
+
+#### Network Configuration
+
+*   Automatically detects and uses physical network interfaces, filters virtual network adapters
+*   Service port is auto-assigned
+
+#### Notes
+
+*   All devices must be on the **same local network**
+*   File transfers require recipient confirmation before starting
+*   Stopping the service disconnects all connected devices
+
+---
+
+### 10. Peek (Standalone Preview)
+
+A standalone file preview popup window, upgraded from the HyperView embedded preview for a better preview experience.
+
+#### Core Features
+
+*   File previews open in an **independent popup window**, not blocking the main interface
+*   Supports **multi-tab** preview, quick switching between multiple files
+*   Provides previous/next navigation buttons to browse other files in the same directory
+*   Window auto-closes on focus loss (prevents interference), paused during drag operations
+
+#### Supported File Types
+
+*   **Code files**: Syntax highlighting, supports multiple programming languages
+*   **Markdown / HTML**: Rendered preview
+*   **Images**: PNG, JPG, GIF, WebP, BMP, SVG, AVIF
+*   **Video / Audio**: Embedded player
+*   **DOCX Documents**: Word document preview (new)
+*   **PDF Documents**: PDF file preview (new)
+*   **Archives**: Archive file browsing
+
+#### Preview Mode Switching
+
+For files supporting multiple preview modes, a **mode switch bar** is provided at the top:
+
+*   **Default**: Automatically selects the best preview method
+*   **Source**: Displays raw text content
+*   **Rendered**: Rendered effect (e.g., Markdown)
+*   **Formatted**: Formatted code view
+*   **Table**: Displays structured data in table format
+
+---
+
+### 11. Guard (Idle Guard)
+
+Automatic screen lock on idle timeout to protect your computer.
+
+#### Core Features
+
+When the computer is idle beyond the configured timeout, the screen is automatically locked and requires manual unlock to resume.
+
+#### Configuration
+
+Configure in **Settings > Security > Guard**:
+
+*   **Enable/Disable**: Turn idle guard on or off
+*   **Idle Timeout**: Set the idle duration before screen lock triggers
+    *   Range: 1 minute to 30 minutes (minimum 15 seconds, default 180 seconds)
+    *   Adjustable via slider
+*   **Prevent System Sleep**: Blocks OS from entering sleep state when guard is active
+*   **Keep Display On**: Keeps the monitor from turning off when guard is active (requires "Prevent System Sleep" to be enabled first)
+
+#### Unlock Method
+
+*   The lock screen displays a **circular progress button**
+*   **Press and hold the button for 1.5 seconds** to unlock
+*   While holding, the circular progress ring gradually fills up; when full, unlock succeeds
+*   Releasing midway resets the progress
+
+#### Notes
+
+*   **Windows only** (depends on Windows platform APIs)
+*   When active, the guard covers the entire screen, preventing interaction with other windows
+*   Configuration changes take effect immediately, no restart required
+
+---
+
+### 12. Setup Guide
+
+The settings page has been refactored from a popup dialog into a **standalone page**, accessible via the settings icon at the bottom of the sidebar. The settings page features a navigation panel on the left and configuration content on the right, supporting categorized browsing.
+
+#### Settings Page Navigation
+
+The settings page is organized into the following sections:
+
+*   **General**: Theme, language, shortcuts, window settings
+*   **Search/Workspace**: Search engine, global filter rules
+*   **AI (AI Configuration)**: Model providers, API configuration
+*   **Library**: Prompt import/export, official pack downloads
+*   **Data Maintenance**: Data management, clipboard cleanup
+*   **Security**: Sensitive information scanning, Guard idle protection
+*   **About**: Version information
+
+#### Radial View Switcher (ViewSwitcher)
+
+The main interface provides a **radial menu** on the left side for quickly switching between feature views:
+*   Hover or click the center button to open the radial menu
+*   Feature icons are arranged on the radial menu (prompts, file assembly, patch, clipboard, automation, miner, transfer)
+*   Click an icon to quickly navigate to the target feature page
 
 #### AI Configuration
 
 To use Spotlight's AI chat feature, you need to configure model providers.
 
-1.  Click the **Settings** icon at the bottom of left sidebar
-2.  Go to **AI Configuration** tab
-3.  Fill in API information:
+1.  Go to **Settings > AI** page
+2.  Fill in API information:
     *   **Provider**: Select provider (only for icon distinction, does not limit usage)
         *   DeepSeek: Recommended, cost-effective
         *   OpenAI: GPT series models
@@ -511,17 +688,15 @@ To use Spotlight's AI chat feature, you need to configure model providers.
 *   **Cost-effective**: DeepSeek models
 *   **High Quality**: GPT-4o or Claude 3.5 Sonnet
 
-#### Spotlight Settings
+#### General Settings
 
-*   **Global Shortcut**: Customize global shortcut
-    *   Default: `Alt + S`
-    *   Can be changed to any key combination
-*   **Window Size**: Adjust Spotlight window size
-*   **Rest Reminder**: Rest reminder feature
-    *   Enable/disable reminders
-    *   Set reminder interval
+*   **Theme**: Select light, dark, or black theme
+*   **Language**: Select interface language (Chinese/English)
+*   **Spotlight Shortcut**: Customize Spotlight global shortcut (default `Alt + S`)
+*   **Automator Shortcut**: Customize Automator shortcut (default `Alt + F1`)
+*   **Window Destroy Delay**: Window destruction delay time
 
-#### Search Settings
+#### Search/Workspace Settings
 
 *   **Default Engine**: Select default search engine
     *   Google: Global search engine
@@ -531,39 +706,35 @@ To use Spotlight's AI chat feature, you need to configure model providers.
 *   **Custom URL**: Configure custom search address
     *   Use `%s` as search keyword placeholder
     *   Example: `https://www.google.com/search?q=%s`
-
-#### Appearance
-
-*   **Theme**: Select light or dark theme
-*   **Language**: Select interface language (Chinese/English)
-*   **Sidebar**: Sidebar expand/collapse settings
-*   **Context Panel Width**: Adjust panel width
-
-#### Global Filters
-
-Configure files and folders to ignore across all features:
-
-*   **Ignore Files**: Filename patterns (like `*.log`)
-*   **Ignore Folders**: Folder names (like `node_modules`)
-*   **Ignore Extensions**: File extensions (like `.png`)
+*   **Global Filters**: Global filter rules
+    *   Ignore Files: Filename patterns (like `*.log`)
+    *   Ignore Folders: Folder names (like `node_modules`)
+    *   Ignore Extensions: File extensions (like `.png`)
 
 #### Security
 
 *   **Secret Scanning**: Sensitive information scanning toggle
 *   **Whitelist**: Manage ignored sensitive information rules
 *   **Gitleaks Rules**: Detection rules based on Gitleaks
+*   **Guard**: Idle guard configuration (see [Guard section](#11-guard-idle-guard))
 
-#### Library
+#### Data Maintenance
 
 *   **Export Configuration**: Export application configuration (including prompts, settings, etc.)
 *   **Import Configuration**: Import configuration file
 *   **Download Official Packs**: Download official prompt packs
 *   **Export Prompts**: Export prompts to CSV
 *   **Import Prompts**: Import prompts from CSV
+*   **Clipboard Cleanup**: Configure auto-cleanup rules and buffer threshold
+
+#### Library
+
+*   Download and manage official prompt packs
+*   Automatically updates official prompt library
 
 ---
 
-### 10. Common Keyboard Shortcuts Reference
+### 13. Common Keyboard Shortcuts Reference
 
 #### Global Shortcuts
 

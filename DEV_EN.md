@@ -7,15 +7,259 @@
 **CtxRun** is an AI-powered productivity tool for developers, built on the Tauri framework.
 
 ### Tech Stack
-- **Core Framework**: Tauri (Rust 1.80 + WebView2)
-- **Frontend**: React 18 + TypeScript + Vite 6
-- **State Management**: Zustand
+- **Core Framework**: Tauri 2 (Rust 1.91 + WebView2)
+- **Frontend**: React 19 + TypeScript + Vite 7
+- **State Management**: Zustand 5
 - **Styling**: Tailwind CSS + tailwindcss-animate
 - **Editor**: Monaco Editor
+- **Internationalization**: i18next + react-i18next (JSON locale)
+- **Testing**: Vitest + Testing Library
 
 ---
 
 ## Version History
+
+### v2.3.0 (2026-04-04) Transfer + Guard + Multi-window Architecture
+
+| Commit Hash | Change | Description |
+|-------------|--------|-------------|
+| `525264d` | **Release** | Version 2.3.0 |
+| `7acfa5d` | **Translation Optimization** | i18n translation quality optimization |
+| `12206f8` | **Add Transfer** | Transfer LAN transfer module |
+| `7dab26d` | **Release** | Version 2.2.9 |
+| `fb792a0` | **Add Network** | Network interface discovery and tool integration |
+| `739867d` | **Optimize Battery** | Battery info monitoring |
+| `5c18c51` | **Add Module** | process-utils and env-probe enhancements |
+
+**v2.3.0 Transfer File Transfer Module File Changes**:
+```
+src-tauri/crates/transfer/Cargo.toml               | +28   New transfer crate
+src-tauri/crates/transfer/src/lib.rs               | +34   Plugin entry
+src-tauri/crates/transfer/src/commands.rs          | +332  Tauri commands (start/stop/send)
+src-tauri/crates/transfer/src/models.rs            | +246  Data models
+src-tauri/crates/transfer/src/server.rs            | +408  Axum HTTP server
+src-tauri/crates/transfer/src/network.rs           | +403  Network interface discovery
+src-tauri/crates/transfer/src/ws.rs                | +321  WebSocket real-time communication
+src-tauri/crates/transfer/src/device.rs            | +222  Device management
+src-tauri/crates/transfer/src/transfer.rs          | +138  File transfer logic
+src-tauri/crates/transfer/src/qr.rs                | +30   QR code generation
+src-tauri/crates/transfer/src/mobile.rs            | +11   Mobile support
+src-tauri/crates/transfer/src/mobile_template.html | +706  Mobile HTML template
+src/components/features/transfer/TransferView.tsx   | +120  Main view
+src/components/features/transfer/ChatPanel.tsx      | +233  Chat panel
+src/components/features/transfer/DeviceSidebar.tsx  | +59   Device sidebar
+src/components/features/transfer/ServiceControls.tsx| +69   Service controls
+src/components/features/transfer/QrCodeSVG.tsx      | +30   QR code SVG
+src/store/useTransferStore.ts                      | +414  State management
+src/types/transfer.ts                              | +89   Type definitions
+```
+
+**v2.3.0 Guard Module File Changes**:
+```
+src-tauri/src/guard.rs                              | +638  Idle lock screen guard core
+src/windows/guard/GuardWindowApp.tsx                | +203  Lock screen window frontend
+src-tauri/capabilities/guard.json                   | +21   Guard permissions config
+src-tauri/src/tray_support.rs                       | +19   Tray support
+```
+
+**v2.3.0 Multi-window Architecture Refactor File Changes**:
+```
+src/App.tsx              -> src/windows/main/MainWindowApp.tsx          Rename migration
+src/SpotlightApp.tsx     -> src/windows/spotlight/SpotlightWindowApp.tsx Refactor (157 lines)
+src/PeekApp.tsx          -> src/windows/peek/PeekWindowApp.tsx           Refactor migration
+src/windows/spotlight/resizeMode.ts                  | +97  Window resize mode
+```
+
+**v2.3.0 i18n Refactor File Changes**:
+```
+src/lib/i18n.ts           | -1597  Remove old inline translations
+src/i18n/locales/zh.json  | +879   Chinese translation JSON
+src/i18n/locales/en.json  | +879   English translation JSON
+```
+
+**v2.3.0 Monitoring Enhancement File Changes**:
+```
+src-tauri/crates/env-probe/src/commands/monitoring.rs  | +1182  Major monitoring probe enhancement
+src-tauri/crates/env-probe/src/commands/system_info.rs | +61   System info
+src/components/features/monitor/tabs/MonitorDashboard.tsx | +989  Dashboard refactor
+src/types/monitor.ts                                   | +61   Monitoring types
+```
+
+**Major Updates**:
+- **Transfer LAN Transfer**: All-new LAN file transfer and instant chat module
+  - Based on **Axum** HTTP server + **WebSocket** real-time communication
+  - Auto device discovery (network interface scanning, virtual NIC filtering)
+  - **QR Code** sharing connection URL, mobile scan-to-use
+  - File transfer progress tracking, approval/rejection
+  - Built-in mobile HTML chat interface
+- **Guard Idle Guard**: Idle timeout auto lock screen
+  - Windows low-level keyboard/mouse hooks for global interception
+  - Background thread per-second idle time detection
+  - Full-screen overlay lock screen, long-press 1.5s circular progress bar to unlock
+  - Support preventing system sleep, keeping screen on
+- **Multi-window Architecture**: Migrated from single entry to multi-window
+  - `MainWindowApp` / `SpotlightWindowApp` / `PeekWindowApp` / `GuardWindowApp`
+  - Cross-window state sync (`useCrossWindowAppStoreSync`)
+- **i18n Migration**: From single-file `i18n.ts` to JSON locale (879 lines/language)
+- **System Monitoring Major Enhancement**: Battery, disk details, network traffic, port processes, network speed test
+
+---
+
+### v2.2.9 (2026-04-01) System Monitor Enhancement
+
+**Major Updates**:
+- **Battery Info**: Charge level, health, power, temperature, charge/discharge time
+- **Network Interface Details**: MAC, MTU, gateway, traffic statistics
+- **Process List**: CPU/memory usage, system process identification
+- **Guard Basics**: Idle lock screen module initial implementation
+
+---
+
+### v2.2.8 (2026-03-28) Exec Runtime + Peek Window
+
+**v2.2.8 Exec Runtime File Changes**:
+```
+src-tauri/crates/exec-runtime/Cargo.toml            | +New  New crate
+src-tauri/crates/exec-runtime/src/lib.rs            | +29   Plugin entry
+src-tauri/crates/exec-runtime/src/commands.rs       | +XX   request/approve/write/resize/terminate
+src-tauri/crates/exec-runtime/src/manager.rs        | +XX   Process manager
+src-tauri/crates/exec-runtime/src/models.rs         | +XX   Data models
+src-tauri/crates/exec-runtime/src/safety.rs         | +XX   Safety policy (sandbox)
+src-tauri/crates/exec-runtime/src/powershell_parser.ps1 | +XX  PowerShell parser
+src-tauri/crates/process-utils/Cargo.toml            | +New  Process utils crate
+```
+
+**v2.2.8 Peek Preview Window File Changes**:
+```
+src-tauri/src/peek.rs                               | +XX   Peek window backend
+src-tauri/capabilities/peek.json                    | +XX   Peek permissions
+src/PeekApp.tsx                                     | +XX   Frontend entry
+src/components/features/hyperview/renderers/DocxRenderer.tsx   | +132  DOCX renderer
+src/components/features/hyperview/renderers/HtmlRenderer.tsx    | +XX   HTML renderer
+src/components/features/hyperview/renderers/MarkupRenderer.tsx  | +XX   Markdown renderer
+src/components/features/hyperview/renderers/PdfRenderer.tsx     | +XX   PDF renderer
+src/components/features/hyperview/renderers/StructuredTextRenderer.tsx | +XX  Structured text
+```
+
+**v2.2.8 Spotlight Execution Enhancement File Changes**:
+```
+src/components/features/spotlight/exec/ExecApprovalSheet.tsx    | +XX   Execution approval panel
+src/components/features/spotlight/exec/ExecSessionCard.tsx      | +XX   Execution session card
+src/components/features/spotlight/trace/AssistantTraceTimeline.tsx | +XX  AI Trace timeline
+src/components/features/spotlight/trace/ToolCallInlineBlock.tsx  | +XX  Tool call inline block
+src/lib/exec/client.ts                              | +XX   Execution client
+src/store/useExecStore.ts                           | +XX   Execution state management
+src/types/exec.ts                                   | +XX   Execution types
+```
+
+**v2.2.8 Network Speed Test File Changes**:
+```
+src/components/features/monitor/network/mlabSpeedTest.ts | +XX  M-Lab NDT7 speed test
+src/types/m-lab-ndt7.d.ts                                | +XX  Type declarations
+```
+
+**Major Updates**:
+- **Exec Runtime**: Command execution runtime
+  - Sandbox safety policy: command whitelist, path restrictions
+  - Execution approval mechanism (`request_exec` -> `approve_exec` / `terminate_exec`)
+  - Terminal resize and input write
+- **Peek Standalone Preview Window**: Pop-up file preview
+  - Multi-format renderers: HTML, PDF, DOCX, Markdown, structured text
+  - Independent Tauri window
+- **AI Trace Visualization**: Tool call process display
+  - Timeline view + inline tool call blocks
+  - Running/success/failure states
+- **Network Speed Test**: M-Lab NDT7 integration
+- **DOCX Preview**: Word document rendering
+
+---
+
+### v2.2.7 (2026-03-17) Radial Menu Navigation
+
+**v2.2.7 New File Changes**:
+```
+src/components/layout/ViewSwitcher.tsx   | +XX   View switcher radial menu
+src/components/ui/MarkdownContent.tsx    | +XX   Unified Markdown rendering
+```
+
+**Major Updates**:
+- **ViewSwitcher Radial Navigation**: Radial-style view switching replacing sidebar (`@spaceymonk/react-radial-menu`)
+- **MarkdownContent**: Unified Markdown content rendering component
+
+---
+
+### v2.2.6 (2026-03-12) Crate Modularization + Settings Refactor
+
+**v2.2.6 Crate Modularization Refactor File Changes**:
+```
+src-tauri/crates/env-probe/Cargo.toml              | +13  Environment probe crate (migrated from src/)
+src-tauri/crates/env-probe/src/lib.rs              | +New Module entry
+src-tauri/crates/hyperview/Cargo.toml              | +12  File preview crate (migrated from src/)
+src-tauri/crates/hyperview/src/lib.rs              | +New Module entry
+src-tauri/crates/workspace-tests/Cargo.toml        | +New Integration test crate
+src-tauri/crates/workspace-tests/tests/*.rs        | +XX  15+ test files
+```
+
+**v2.2.6 Settings Page Refactor File Changes**:
+```
+src/components/settings/sections/AISection.tsx               | +New AI config page
+src/components/settings/sections/DataMaintenanceSection.tsx  | +New Data maintenance page
+src/components/settings/sections/GeneralSection.tsx          | +New General settings page
+src/components/settings/sections/SearchWorkspaceSection.tsx  | +New Search/workspace page
+src/components/settings/sections/SecuritySection.tsx         | +New Security settings page
+src/components/settings/SettingsView.tsx                     | +New New settings view
+src/components/settings/SettingsNav.tsx                      | +New Navigation bar
+src/components/settings/SettingsUi.tsx                       | +New UI container
+src/components/layout/WorkspaceSwitcher.tsx                  | +New Workspace switcher
+src/lib/theme.ts                                             | +New Theme utilities
+```
+
+**Major Updates**:
+- **Crate Modularization**: env-probe / hyperview migrated from `src/` to independent crates
+- **Settings Page Refactor**: Split from `SettingsModal` into 5 independent pages
+- **workspace-tests**: Added 15+ integration test files
+
+---
+
+### v2.2.5 (2026-03-05) Agent Tool Runtime
+
+**v2.2.5 Tool Runtime File Changes**:
+```
+src-tauri/crates/tool-runtime/Cargo.toml            | +New  New crate
+src-tauri/crates/tool-runtime/src/lib.rs            | +New Plugin entry
+src-tauri/crates/tool-runtime/src/runtime.rs        | +New Runtime core
+src-tauri/crates/tool-runtime/src/models.rs         | +New ToolSpec/ToolCall models
+src-tauri/crates/tool-runtime/src/sandbox.rs        | +New Sandbox policy engine
+src-tauri/crates/tool-runtime/src/fs_tools.rs       | +New File system tools
+src-tauri/crates/tool-runtime/src/miner_tools.rs    | +New Miner tool integration
+src-tauri/crates/tool-runtime/src/agent_fs.rs       | +New Agent file operations
+src-tauri/crates/tool-runtime/src/patch_tools.rs    | +New Patch apply tools
+```
+
+**v2.2.5 Frontend Agent System File Changes**:
+```
+src/lib/agent/index.ts       | +New Agent entry
+src/lib/agent/types.ts       | +New Agent types (ToolRiskLevel/AgentToolDefinition/AgentRuntimeCallbacks)
+src/lib/agent/policy.ts      | +New Tool policy (allowAll/allowList/denyList)
+src/lib/agent/registry.ts    | +New Tool registry
+src/lib/agent/runtime.ts     | +New Agent runtime
+src/lib/agent/tools/fs.ts    | +New File system tools
+src/lib/agent/tools/web.ts   | +New Web tools
+src/lib/chat_attachment.ts   | +New Chat attachment support
+```
+
+**Major Updates**:
+- **Agent Tool Runtime**: All-new AI tool runtime
+  - `ToolSpec` specification, `ToolCallRequest`/`ToolCallResponse` models
+  - Three policy modes (`allowAll`/`allowList`/`denyList`), risk-level classification
+  - Sandbox safety engine, approval interception
+  - Built-in tools: file system, web search/extract, Miner, patch
+  - Architecture inspired by OpenAI Codex CLI (codex-rs)
+- **Chat Attachments**: Spotlight AI conversation supports file attachments
+- **Miner Enhancement**: Single-page extraction, web search, post-processing pipeline
+- **Underlying Replacement**: AI model invocation underlying library replacement
+
+---
 
 ### v2.2.4 (2026-02-25)
 Bug fixes and performance optimization
@@ -1059,6 +1303,82 @@ src/lib/i18n.ts                   | +-44 i18n support
 | v2.2.2 | HTML to Markdown conversion |
 | v2.2.2 | Queue-based task processing |
 | v2.2.2 | Mining scope management |
+| v2.2.5 | Single-page extraction (`single_page`) |
+| v2.2.5 | Web search integration (`web_search`) |
+| v2.2.5 | Post-processing pipeline (`postprocess`) |
+
+### 8. Agent Tool Runtime (AI Tool Runtime)
+| Version | Feature |
+|---------|---------|
+| v2.2.5 | ToolSpec specification + ToolCallRequest/Response models |
+| v2.2.5 | Sandbox policy engine (sandbox.rs) |
+| v2.2.5 | File system tools (list_directory/search_files/read_file) |
+| v2.2.5 | Web tools (search/extract_page) |
+| v2.2.5 | Miner tool integration |
+| v2.2.5 | Patch tools (patch_tools) |
+| v2.2.5 | Frontend Agent runtime (registry/policy/runtime) |
+
+### 9. Exec Runtime (Command Execution Runtime)
+| Version | Feature |
+|---------|---------|
+| v2.2.8 | Process manager (manager.rs) |
+| v2.2.8 | Sandbox safety policy (safety.rs) |
+| v2.2.8 | Execution approval mechanism (request/approve/terminate) |
+| v2.2.8 | PowerShell argument parser |
+| v2.2.8 | Frontend ExecApprovalSheet approval UI |
+
+### 10. Transfer (LAN Transfer)
+| Version | Feature |
+|---------|---------|
+| v2.3.0 | Axum HTTP server + WebSocket |
+| v2.3.0 | Auto device discovery (network interface scanning) |
+| v2.3.0 | QR code sharing (QR generation) |
+| v2.3.0 | File transfer + progress tracking |
+| v2.3.0 | Instant chat (text messages) |
+| v2.3.0 | Mobile HTML interface |
+
+### 11. Guard (Idle Guard)
+| Version | Feature |
+|---------|---------|
+| v2.2.9 | Idle timeout detection (default 180s) |
+| v2.3.0 | Windows low-level keyboard/mouse hooks global interception |
+| v2.3.0 | Full-screen overlay lock screen + long-press 1.5s unlock |
+| v2.3.0 | Prevent system sleep |
+| v2.3.0 | Keep screen on |
+
+### 12. Peek (Standalone Preview Window)
+| Version | Feature |
+|---------|---------|
+| v2.2.8 | Standalone Tauri preview window |
+| v2.2.8 | DOCX renderer (docx-preview) |
+| v2.2.8 | PDF renderer |
+| v2.2.8 | HTML renderer |
+| v2.2.8 | Markdown renderer (starry-night syntax highlighting) |
+| v2.2.8 | Structured text renderer |
+
+### 13. System Monitor (System Monitoring)
+| Version | Feature |
+|---------|---------|
+| v1.1.0 | Title bar clock |
+| v1.1.1 | System info panel |
+| v2.2.6 | env-probe crate modularization |
+| v2.2.8 | Network speed test (M-Lab NDT7) |
+| v2.2.9 | Battery info (starship-battery) |
+| v2.3.0 | Major monitoring probe enhancement (1182 lines monitoring.rs) |
+| v2.3.0 | Disk details (HDD/SSD type, removability) |
+| v2.3.0 | Network traffic statistics (send/receive rate) |
+| v2.3.0 | Port occupancy process (Windows RestartManager) |
+| v2.3.0 | Process list (CPU/memory usage) |
+| v2.3.0 | Dashboard UI complete refactor |
+
+### 14. Spotlight AI Enhancement
+| Version | Feature |
+|---------|---------|
+| v2.2.5 | Chat attachment support (chat_attachment) |
+| v2.2.5 | Agent tool calls (fs/web/miner) |
+| v2.2.8 | AI Trace timeline visualization |
+| v2.2.8 | ToolCallInlineBlock tool call inline display |
+| v2.2.8 | ExecApprovalSheet execution approval panel |
 
 ---
 
@@ -1126,8 +1446,7 @@ Commit: github-actions[bot]
 ### Current Build Status
 | Platform | Install Size | Memory |
 |----------|--------------|--------|
-| Windows | ~10 MB | ~30 MB |
-| macOS | ~15 MB | ~35 MB |
+| Windows | ~10 MB | ~30-50 MB |
 
 ---
 
@@ -1136,42 +1455,77 @@ Commit: github-actions[bot]
 ```
 ctxrun/
 ├── src/                          # React frontend source
+│   ├── windows/                # Multi-window entry (v2.3.0+)
+│   │   ├── main/              # Main window (MainWindowApp)
+│   │   ├── spotlight/         # Spotlight window (SpotlightWindowApp)
+│   │   ├── peek/              # Preview window (PeekWindowApp)
+│   │   └── guard/             # Lock screen window (GuardWindowApp)
 │   ├── components/                # UI components
 │   │   ├── features/            # Feature components
 │   │   │   ├── automator/       # Auto-clicker
 │   │   │   ├── context/         # Context assembly
 │   │   │   ├── miner/           # Content mining (v2.2.2+)
+│   │   │   ├── monitor/         # System monitoring
 │   │   │   ├── patch/           # Code diff
 │   │   │   ├── prompts/         # Prompt management
-│   │   │   └── refinery/        # Clipboard history (v1.5.0+)
+│   │   │   ├── refinery/        # Clipboard history (v1.5.0+)
+│   │   │   ├── spotlight/       # Spotlight global terminal
+│   │   │   │   ├── exec/        # Execution management (v2.2.8+)
+│   │   │   │   └── trace/       # AI Trace visualization (v2.2.8+)
+│   │   │   └── transfer/        # LAN transfer (v2.3.0+)
+│   │   ├── hyperview/           # File preview renderers (v1.3.9+)
+│   │   │   └── renderers/       # DOCX/PDF/HTML/Markdown/Structured text
 │   │   ├── layout/             # Layout components
-│   │   ├── settings/           # Settings UI
+│   │   │   └── ViewSwitcher.tsx # Radial navigation (v2.2.7+)
+│   │   ├── settings/           # Settings UI (v2.2.6+ refactored to independent pages)
+│   │   │   └── sections/       # AI/General/Security/Data maintenance/Search workspace
 │   │   └── ui/                # Base UI
-│   ├── i18n/                    # Internationalization (v2.2.0+)
+│   ├── i18n/                    # Internationalization (v2.3.0 migrated to JSON)
 │   │   ├── config.ts           # i18n configuration
-│   │   └── resources.ts        # Translation resources
+│   │   └── locales/            # JSON translation files
+│   │       ├── zh.json         # Chinese (879 lines)
+│   │       └── en.json         # English (879 lines)
 │   ├── lib/                     # Utilities
+│   │   ├── agent/              # Agent tool system (v2.2.5+)
+│   │   │   ├── runtime.ts      # Agent runtime
+│   │   │   ├── policy.ts       # Tool policy
+│   │   │   ├── registry.ts     # Tool registry
+│   │   │   └── tools/          # fs.ts / web.ts
+│   │   ├── exec/               # Command execution client (v2.2.8+)
+│   │   ├── markdown/           # Markdown enhancement (starry-night)
+│   │   └── hooks/              # Cross-window state sync, etc.
 │   ├── store/                   # Zustand state management
 │   └── types/                   # TypeScript types
 ├── src-tauri/                    # Rust backend
 │   ├── crates/                   # Multi-crates architecture (v2.0.0+)
 │   │   ├── automator/           # Auto-clicker module
+│   │   ├── browser-utils/       # Browser utilities (v2.2.5+)
 │   │   ├── context/             # Context processing module
 │   │   ├── db/                  # Database module
+│   │   ├── env-probe/           # Environment probe (v2.2.6 migrated from src/)
+│   │   ├── exec-runtime/        # Command execution runtime (v2.2.8+)
 │   │   ├── git/                 # Git operations module
+│   │   ├── hyperview/           # File preview (v2.2.6 migrated from src/)
 │   │   ├── miner/               # Content mining module (v2.2.2+)
-│   │   └── refinery/            # Refinery module
-│   ├── src/                     # Legacy code (gradually migrating)
-│   │   ├── hyperview/           # File preview
-│   │   ├── env_probe/           # Environment detection
+│   │   ├── process-utils/       # Process utilities (v2.2.8+)
+│   │   ├── refinery/            # Refinery module
+│   │   ├── tool-runtime/        # AI tool runtime (v2.2.5+)
+│   │   ├── transfer/            # LAN transfer (v2.3.0+)
+│   │   └── workspace-tests/     # Integration tests (v2.2.6+)
+│   ├── src/                     # Main entry
+│   │   ├── guard.rs             # Idle guard (v2.3.0+)
+│   │   ├── peek.rs              # Preview window backend (v2.2.8+)
+│   │   ├── fs_commands.rs       # File operation commands
+│   │   ├── tray_support.rs      # Tray support (v2.3.0+)
+│   │   ├── app_config.rs        # App configuration (v2.2.8+)
 │   │   └── main.rs             # Entry point
 │   └── Cargo.toml
 ├── build/dist/                   # Pre-built resources
-│   └── packs/                    # Prompt data packs
+│   └── commands/                 # Prompt/command data packs
 └── models/                       # LLM model configurations
 ```
 
 ---
 
-*Document last updated: 2026-02-27*
+*Document last updated: 2026-04-07*
 *Compiled based on git commit history and code diff analysis*

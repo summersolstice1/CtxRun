@@ -57,6 +57,13 @@
 *   **📋 Refinery (剪贴板历史)**: 全面的剪贴板历史管理器，支持文本和图片。具备搜索/筛选、收藏重要条目、添加笔记、自动清理、日历视图以及 Spotlight 快捷粘贴集成。
 *   **🖱️ Automator (工作流自动化)**: 可视化工作流自动化系统，支持节点图编排和条件分支执行。集成浏览器自动化（headless_chrome）、键盘输入模拟、鼠标操作、颜色检测、循环控制等动作。支持通过 Windows UIAutomation API 进行语义化 UI 元素定位，支持物理输入降级兜底。
 *   **⛏️ Model Miner (网页内容挖掘)**: 智能网页爬虫，使用 Readability.js 提取页面核心内容，自动转换为 Markdown，支持多线程并发爬取、深度/页数限制和层次化文件存储。
+*   **📡 Transfer (局域网传输)**: 局域网文件传输和即时聊天。启动本地 HTTP 服务，其他设备扫码即可连接，支持文件传输进度追踪和文本聊天。
+*   **🛡️ Guard (空闲守护)**: 空闲超时自动锁屏，Windows 低级钩子全局拦截输入，长按 1.5s 圆形进度条解锁，支持防止系统休眠。
+*   **🤖 Agent Tool Runtime (AI 工具运行时)**: AI 对话中可调用工具（文件系统操作、Web 搜索、内容提取），支持沙箱安全策略和审批机制。
+*   **🔒 Exec Runtime (命令执行运行时)**: 安全的命令执行沙箱，支持审批、终止、终端交互。
+*   **👁️ Peek (独立预览)**: 弹出式文件预览窗口，支持 DOCX/PDF/HTML/Markdown 等多格式。
+*   **📡 网络测速**: 集成 M-Lab NDT7 网络速度测试。
+*   **📊 系统监控增强**: 电池信息、磁盘详情、网络流量、端口进程监控。
 
 > ### 🚀 想要了解如何使用？(Want to learn how to use it?)
 >
@@ -67,12 +74,18 @@
 本项目采用现代化的**高性能桌面应用架构**构建，兼顾了极小的资源占用与流畅的用户体验，整体大小为10MB左右，运行内存占用约30MB：
 
 *   **Core**: [Tauri 2](https://tauri.app/) (Rust + WebView2) - 提供原生级的性能与超小的安装包体积，支持多窗口。
-*   **Frontend**: React 18 + TypeScript + Vite 6 - 现代化的前端开发体验。
-*   **State Management**: Zustand - 轻量且强大的状态管理。
+*   **Frontend**: React 19 + TypeScript + Vite 7 - 现代化的前端开发体验。
+*   **State Management**: Zustand 5 - 轻量且强大的状态管理。
+*   **Internationalization**: i18next + react-i18next - 基于 JSON 的多语言支持。
 *   **Styling**: Tailwind CSS + tailwindcss-animate - 快速构建美观的 UI。
 *   **Icons**: Lucide React.
 *   **Database**: SQLite (rusqlite) + Refinery - 本地数据持久化与迁移管理。
 *   **Editor**: Monaco Editor - VSCode 级别的代码编辑体验。
+*   **Testing**: Vitest + Testing Library - 快速的单元测试和组件测试。
+*   **Backend**: axum (HTTP 服务器)、tokio-util、qrcode、starship-battery - 局域网传输服务器、二维码生成、电池状态。
+*   **Document Preview**: docx-preview、@wooorm/starry-night - DOCX 渲染、语法高亮。
+*   **Interaction**: react-zoom-pan-pinch、@spaceymonk/react-radial-menu - 缩放/平移、Guard 解锁径向菜单。
+*   **Network**: @m-lab/ndt7 - M-Lab NDT7 网络速度测试。
 
 ---
 
