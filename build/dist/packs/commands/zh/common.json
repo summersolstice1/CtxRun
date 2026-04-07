@@ -7023,7 +7023,7 @@
     "id": "tldr-zh-common-btm-1",
     "type": "command",
     "title": "btm - 开启基础模式，关闭图表和高亮（接近于 `top`）",
-    "content": "btm --basic",
+    "content": "btm {{[-b|--basic]}}",
     "group": "通用工具 (Common)",
     "description": "btm: 命令行`top`的替代品。 比 `top` 更轻便，支持跨平台、图表更丰富。 另请参阅：`btop`, `glances`, `atop`, `htop`, `top`。 (开启基础模式，关闭图表和高亮（接近于 `top`）)",
     "tags": [
@@ -7038,7 +7038,7 @@
     "id": "tldr-zh-common-btm-2",
     "type": "command",
     "title": "btm - 将图表中的小点换成大点",
-    "content": "btm --dot_marker",
+    "content": "btm {{[-m|--dot_marker]}}",
     "group": "通用工具 (Common)",
     "description": "btm: 命令行`top`的替代品。 比 `top` 更轻便，支持跨平台、图表更丰富。 另请参阅：`btop`, `glances`, `atop`, `htop`, `top`。 (将图表中的小点换成大点)",
     "tags": [
@@ -7068,7 +7068,7 @@
     "id": "tldr-zh-common-btm-4",
     "type": "command",
     "title": "btm - 设置图表刷新间隔和留存数据的时长",
-    "content": "btm --rate 250 --default_time_value 30000",
+    "content": "btm {{[-r|--rate]}} 250 {{[-t|--default_time_value]}} 30000",
     "group": "通用工具 (Common)",
     "description": "btm: 命令行`top`的替代品。 比 `top` 更轻便，支持跨平台、图表更丰富。 另请参阅：`btop`, `glances`, `atop`, `htop`, `top`。 (设置图表刷新间隔和留存数据的时长)",
     "tags": [
@@ -7128,7 +7128,7 @@
     "id": "tldr-zh-common-kill-2",
     "type": "command",
     "title": "kill - 使用 SIGHUP（挂起）信号终止一个程序。许多守护进程接收到此信号后会重新加载而不是终止",
-    "content": "kill -{{1|HUP}} {{进程ID}}",
+    "content": "kill {{[-1|-HUP]}} {{进程ID}}",
     "group": "通用工具 (Common)",
     "description": "kill: 向进程发送信号，通常用于停止进程。 除了 SIGKILL 和 SIGSTOP，所有信号都可以被进程拦截，以便进行正常退出。 (使用 SIGHUP（挂起）信号终止一个程序。许多守护进程接收到此信号后会重新加载而不是终止)",
     "tags": [
@@ -7143,7 +7143,7 @@
     "id": "tldr-zh-common-kill-3",
     "type": "command",
     "title": "kill - 使用 SIGINT（中断）信号终止一个程序。通常由用户按下 `<Ctrl c>` 发起",
-    "content": "kill -{{2|INT}} {{进程ID}}",
+    "content": "kill {{[-2|-INT]}} {{进程ID}}",
     "group": "通用工具 (Common)",
     "description": "kill: 向进程发送信号，通常用于停止进程。 除了 SIGKILL 和 SIGSTOP，所有信号都可以被进程拦截，以便进行正常退出。 (使用 SIGINT（中断）信号终止一个程序。通常由用户按下 `<Ctrl c>` 发起)",
     "tags": [
@@ -7158,7 +7158,7 @@
     "id": "tldr-zh-common-kill-4",
     "type": "command",
     "title": "kill - 向操作系统发送信号，立即终止一个程序（程序无机会捕获信号）",
-    "content": "kill -{{9|KILL}} {{进程ID}}",
+    "content": "kill {{[-9|-KILL]}} {{进程ID}}",
     "group": "通用工具 (Common)",
     "description": "kill: 向进程发送信号，通常用于停止进程。 除了 SIGKILL 和 SIGSTOP，所有信号都可以被进程拦截，以便进行正常退出。 (向操作系统发送信号，立即终止一个程序（程序无机会捕获信号）)",
     "tags": [
@@ -7173,7 +7173,7 @@
     "id": "tldr-zh-common-kill-5",
     "type": "command",
     "title": "kill - 向操作系统发送信号，暂停一个程序，直到收到 SIGCONT（继续）信号",
-    "content": "kill -{{17|STOP}} {{进程ID}}",
+    "content": "kill {{[-19|-STOP]}} {{进程ID}}",
     "group": "通用工具 (Common)",
     "description": "kill: 向进程发送信号，通常用于停止进程。 除了 SIGKILL 和 SIGSTOP，所有信号都可以被进程拦截，以便进行正常退出。 (向操作系统发送信号，暂停一个程序，直到收到 SIGCONT（继续）信号)",
     "tags": [
@@ -7188,7 +7188,7 @@
     "id": "tldr-zh-common-kill-6",
     "type": "command",
     "title": "kill - 向所有具有指定 GID（组ID）的进程发送 `SIGUSR1` 信号",
-    "content": "kill -{{SIGUSR1}} -{{组ID}}",
+    "content": "kill -SIGUSR1 -{{组ID}}",
     "group": "通用工具 (Common)",
     "description": "kill: 向进程发送信号，通常用于停止进程。 除了 SIGKILL 和 SIGSTOP，所有信号都可以被进程拦截，以便进行正常退出。 (向所有具有指定 GID（组ID）的进程发送 `SIGUSR1` 信号)",
     "tags": [
@@ -7428,7 +7428,7 @@
     "id": "tldr-zh-common-age-keygen-0",
     "type": "command",
     "title": "age-keygen - 生成密钥对，将其保存到未加密文件，并将公钥打印到标准输出",
-    "content": "age-keygen --output {{路径/到/文件}}",
+    "content": "age-keygen {{[-o|--output]}} {{路径/到/文件}}",
     "group": "通用工具 (Common)",
     "description": "age-keygen: 生成 `age` 密钥对。 另请参阅：`age`。 (生成密钥对，将其保存到未加密文件，并将公钥打印到标准输出)",
     "tags": [
@@ -9048,7 +9048,7 @@
     "id": "tldr-zh-common-wget-2",
     "type": "command",
     "title": "wget - 以每三秒一个请求的速度下载一个网页和其所有资源（脚本，样式表，图片等等）",
-    "content": "wget {{[-p|--page-requisites]}} {{[-k|--convert-links]}} {{[-w|--wait]}} 3 {{https://example.com/somepage.html}}",
+    "content": "wget {{[-pkw|--page-requisites --convert-links --wait]}} 3 {{https://example.com/somepage.html}}",
     "group": "通用工具 (Common)",
     "description": "wget: 从网络上下载文件。 支持 HTTP，HTTPS 和 FTP。 另请参阅：`wcurl`, `curl`。 (以每三秒一个请求的速度下载一个网页和其所有资源（脚本，样式表，图片等等）)",
     "tags": [
@@ -9063,7 +9063,7 @@
     "id": "tldr-zh-common-wget-3",
     "type": "command",
     "title": "wget - 从一个目录中下载所有列出的文件和其所有子文件夹（不下载内嵌网页）",
-    "content": "wget {{[-m|--mirror]}} {{[-np|--no-parent]}} {{https://example.com/somepath/}}",
+    "content": "wget {{[-mnp|--mirror --no-parent]}} {{https://example.com/somepath/}}",
     "group": "通用工具 (Common)",
     "description": "wget: 从网络上下载文件。 支持 HTTP，HTTPS 和 FTP。 另请参阅：`wcurl`, `curl`。 (从一个目录中下载所有列出的文件和其所有子文件夹（不下载内嵌网页）)",
     "tags": [
@@ -11439,6 +11439,21 @@
     "tags": [
       "common",
       "seq",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-common-codium-0",
+    "type": "command",
+    "title": "codium - 查看原命令的文档",
+    "content": "tldr code",
+    "group": "通用工具 (Common)",
+    "description": "codium: 此命令为 `code` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "codium",
       "tldr",
       "zh"
     ],
@@ -15165,6 +15180,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-impacket-getst-0",
+    "type": "command",
+    "title": "impacket-getst - 查看原命令的文档",
+    "content": "tldr getST.py",
+    "group": "通用工具 (Common)",
+    "description": "impacket-getst: 此命令为 `getST.py` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "impacket-getst",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-cargo-fmt-0",
     "type": "command",
     "title": "cargo-fmt - 格式化所有源文件",
@@ -15888,7 +15918,7 @@
     "id": "tldr-zh-common-gvpack-0",
     "type": "command",
     "title": "gvpack - 将多个具有布局信息的图形布局组合在一起",
-    "content": "gvpack {{路径/到/布局1.gv}} {{路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "gvpack {{路径/到/布局1.gv 路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "gvpack: 将多个具有布局信息的图形布局组合在一起。 Graphviz 过滤器: `acyclic`, `bcomps`, `comps`, `edgepaint`, `gvcolor`, `gvpack`, `mingle`, `nop`, `sccmap`, `tred` 和 `unflatten`。 (将多个具有布局信息的图形布局组合在一起)",
     "tags": [
@@ -15903,7 +15933,7 @@
     "id": "tldr-zh-common-gvpack-1",
     "type": "command",
     "title": "gvpack - 在图形层面上将多个图形布局组合在一起，保持图形分开",
-    "content": "gvpack -g {{路径/到/布局1.gv}} {{路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "gvpack -g {{路径/到/布局1.gv 路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "gvpack: 将多个具有布局信息的图形布局组合在一起。 Graphviz 过滤器: `acyclic`, `bcomps`, `comps`, `edgepaint`, `gvcolor`, `gvpack`, `mingle`, `nop`, `sccmap`, `tred` 和 `unflatten`。 (在图形层面上将多个图形布局组合在一起，保持图形分开)",
     "tags": [
@@ -15918,7 +15948,7 @@
     "id": "tldr-zh-common-gvpack-2",
     "type": "command",
     "title": "gvpack - 在节点层面上将多个图形布局组合在一起，忽略簇",
-    "content": "gvpack -n {{路径/到/布局1.gv}} {{路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "gvpack -n {{路径/到/布局1.gv 路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "gvpack: 将多个具有布局信息的图形布局组合在一起。 Graphviz 过滤器: `acyclic`, `bcomps`, `comps`, `edgepaint`, `gvcolor`, `gvpack`, `mingle`, `nop`, `sccmap`, `tred` 和 `unflatten`。 (在节点层面上将多个图形布局组合在一起，忽略簇)",
     "tags": [
@@ -15933,7 +15963,7 @@
     "id": "tldr-zh-common-gvpack-3",
     "type": "command",
     "title": "gvpack - 将多个图形布局组合在一起而不进行打包",
-    "content": "gvpack -u {{路径/到/布局1.gv}} {{路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "gvpack -u {{路径/到/布局1.gv 路径/到/布局2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "gvpack: 将多个具有布局信息的图形布局组合在一起。 Graphviz 过滤器: `acyclic`, `bcomps`, `comps`, `edgepaint`, `gvcolor`, `gvpack`, `mingle`, `nop`, `sccmap`, `tred` 和 `unflatten`。 (将多个图形布局组合在一起而不进行打包)",
     "tags": [
@@ -18095,7 +18125,7 @@
     "title": "asciinema - 将本地安装的 `asciinema` 与 asciinema.org 账号关联",
     "content": "asciinema auth",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (将本地安装的 `asciinema` 与 asciinema.org 账号关联)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (将本地安装的 `asciinema` 与 asciinema.org 账号关联)",
     "tags": [
       "common",
       "asciinema",
@@ -18110,7 +18140,7 @@
     "title": "asciinema - 新建录制并保存到本地文件（按 `<Ctrl d>` 或输入 `exit` 结束）",
     "content": "asciinema rec {{路径/到/录制文件.cast}}",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (新建录制并保存到本地文件（按 `<Ctrl d>` 或输入 `exit` 结束）)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (新建录制并保存到本地文件（按 `<Ctrl d>` 或输入 `exit` 结束）)",
     "tags": [
       "common",
       "asciinema",
@@ -18125,7 +18155,7 @@
     "title": "asciinema - 从本地文件回放终端录制",
     "content": "asciinema play {{路径/到/录制文件.cast}}",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (从本地文件回放终端录制)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (从本地文件回放终端录制)",
     "tags": [
       "common",
       "asciinema",
@@ -18140,7 +18170,7 @@
     "title": "asciinema - 回放托管在 <https://asciinema.org> 的终端录制",
     "content": "asciinema play https://asciinema.org/a/{{文件 ID}}",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (回放托管在 <https://asciinema.org> 的终端录制)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (回放托管在 <https://asciinema.org> 的终端录制)",
     "tags": [
       "common",
       "asciinema",
@@ -18155,7 +18185,7 @@
     "title": "asciinema - 新建录制，限制空闲时间最多 2.5 秒",
     "content": "asciinema rec {{[-i|--idle-time-limit]}} 2.5",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (新建录制，限制空闲时间最多 2.5 秒)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (新建录制，限制空闲时间最多 2.5 秒)",
     "tags": [
       "common",
       "asciinema",
@@ -18170,7 +18200,7 @@
     "title": "asciinema - 打印本地保存录制的完整输出",
     "content": "asciinema cat {{路径/到/录制文件.cast}}",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (打印本地保存录制的完整输出)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (打印本地保存录制的完整输出)",
     "tags": [
       "common",
       "asciinema",
@@ -18185,7 +18215,7 @@
     "title": "asciinema - 上传本地保存的终端录制到 asciinema.org",
     "content": "asciinema upload {{路径/到/录制文件.cast}}",
     "group": "通用工具 (Common)",
-    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`。 (上传本地保存的终端录制到 asciinema.org)",
+    "description": "asciinema: 录制和回放终端会话，并可选分享到 。 另请参阅：`terminalizer`, `agg`。 (上传本地保存的终端录制到 asciinema.org)",
     "tags": [
       "common",
       "asciinema",
@@ -18890,7 +18920,7 @@
     "title": "ping - Ping 主机",
     "content": "ping {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (Ping 主机)",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (Ping 主机)",
     "tags": [
       "common",
       "ping",
@@ -18905,7 +18935,7 @@
     "title": "ping - 仅 Ping 主机特定次数",
     "content": "ping -c {{次数}} {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (仅 Ping 主机特定次数)",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (仅 Ping 主机特定次数)",
     "tags": [
       "common",
       "ping",
@@ -18920,7 +18950,7 @@
     "title": "ping - Ping 主机，指定请求之间的间隔（以秒为单位）（默认为 1 秒）",
     "content": "ping -i {{间隔秒数}} {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (Ping 主机，指定请求之间的间隔（以秒为单位）（默认为 1 秒）)",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (Ping 主机，指定请求之间的间隔（以秒为单位）（默认为 1 秒）)",
     "tags": [
       "common",
       "ping",
@@ -18935,7 +18965,7 @@
     "title": "ping - Ping 主机而不尝试查找地址的符号名称",
     "content": "ping -n {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (Ping 主机而不尝试查找地址的符号名称)",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (Ping 主机而不尝试查找地址的符号名称)",
     "tags": [
       "common",
       "ping",
@@ -18950,7 +18980,7 @@
     "title": "ping - Ping 主机并在收到数据包时响铃（如果您的终端支持）",
     "content": "ping -a {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (Ping 主机并在收到数据包时响铃（如果您的终端支持）)",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (Ping 主机并在收到数据包时响铃（如果您的终端支持）)",
     "tags": [
       "common",
       "ping",
@@ -18965,7 +18995,7 @@
     "title": "ping - 如果没有收到响应，也显示一条消息",
     "content": "ping -O {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (如果没有收到响应，也显示一条消息)",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (如果没有收到响应，也显示一条消息)",
     "tags": [
       "common",
       "ping",
@@ -18980,7 +19010,7 @@
     "title": "ping - Ping 主机，指定 ping 次数、每个数据包的响应超时 (`-W`)和整个 ping 运行的总时间限制 (`-w`)",
     "content": "ping -c {{次数}} -W {{响应超时秒数}} -w {{总的等待超时秒数}} {{主机地址}}",
     "group": "通用工具 (Common)",
-    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 (Ping 主机，指定 ping 次数、每个数据包的响应超时 (`-W`)和整个 ping 运行的总时间限制 (`-w`))",
+    "description": "ping: 向网络主机发送 ICMP (ECHO_REQUEST) 数据包。 另请参阅：`mtr`。 (Ping 主机，指定 ping 次数、每个数据包的响应超时 (`-W`)和整个 ping 运行的总时间限制 (`-w`))",
     "tags": [
       "common",
       "ping",
@@ -28155,6 +28185,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-argospm-0",
+    "type": "command",
+    "title": "argospm - 查看原命令的文档",
+    "content": "tldr argos-translate",
+    "group": "通用工具 (Common)",
+    "description": "argospm: 此命令为 `argos-translate` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "argospm",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-ssh-add-0",
     "type": "command",
     "title": "ssh-add - 将 `~/.ssh` 中的默认 SSH 密钥添加到 SSH 代理",
@@ -30905,7 +30950,7 @@
     "title": "stty - 显示当前终端的所有设置",
     "content": "stty {{[-a|--all]}}",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (显示当前终端的所有设置)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (显示当前终端的所有设置)",
     "tags": [
       "common",
       "stty",
@@ -30920,7 +30965,7 @@
     "title": "stty - 设置行数或列数",
     "content": "stty {{rows|cols}} {{数量}}",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (设置行数或列数)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (设置行数或列数)",
     "tags": [
       "common",
       "stty",
@@ -30935,7 +30980,7 @@
     "title": "stty - 获取设备的实际传输速度",
     "content": "stty {{[-F|--file]}} {{路径/到/设备文件}} speed",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (获取设备的实际传输速度)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (获取设备的实际传输速度)",
     "tags": [
       "common",
       "stty",
@@ -30950,7 +30995,7 @@
     "title": "stty - 重置所有模式为当前终端的合理默认值",
     "content": "stty sane",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (重置所有模式为当前终端的合理默认值)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (重置所有模式为当前终端的合理默认值)",
     "tags": [
       "common",
       "stty",
@@ -30965,7 +31010,7 @@
     "title": "stty - 在原始模式和普通模式之间切换",
     "content": "stty {{raw|cooked}}",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (在原始模式和普通模式之间切换)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (在原始模式和普通模式之间切换)",
     "tags": [
       "common",
       "stty",
@@ -30980,7 +31025,7 @@
     "title": "stty - 关闭或开启字符回显",
     "content": "stty {{-echo|echo}}",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (关闭或开启字符回显)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (关闭或开启字符回显)",
     "tags": [
       "common",
       "stty",
@@ -30995,7 +31040,7 @@
     "title": "stty - 显示帮助",
     "content": "stty --help",
     "group": "通用工具 (Common)",
-    "description": "stty: 设置终端设备接口的选项。 (显示帮助)",
+    "description": "stty: 设置终端设备接口的选项。 另请参阅：`tput`。 (显示帮助)",
     "tags": [
       "common",
       "stty",
@@ -32103,7 +32148,7 @@
     "id": "tldr-zh-common-sccmap-0",
     "type": "command",
     "title": "sccmap - 从一个或多个有向图中提取强连通分量",
-    "content": "sccmap -S {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "sccmap -S {{路径/到/输入1.gv 路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "sccmap: 提取有向图的强连通分量。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (从一个或多个有向图中提取强连通分量)",
     "tags": [
@@ -32118,7 +32163,7 @@
     "id": "tldr-zh-common-sccmap-1",
     "type": "command",
     "title": "sccmap - 打印一个图形的统计信息，不生成输出图形",
-    "content": "sccmap -v -s {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}}",
+    "content": "sccmap -v -s {{路径/到/输入1.gv 路径/到/输入2.gv ...}}",
     "group": "通用工具 (Common)",
     "description": "sccmap: 提取有向图的强连通分量。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (打印一个图形的统计信息，不生成输出图形)",
     "tags": [
@@ -32808,7 +32853,7 @@
     "id": "tldr-zh-common-ugrep-0",
     "type": "command",
     "title": "ugrep - 启动查询 TUI，在当前目录中递归搜索文件（按 `<Ctrl z>` 获取帮助）",
-    "content": "ugrep --query",
+    "content": "ugrep {{[-Q|--query]}}",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (启动查询 TUI，在当前目录中递归搜索文件（按 `<Ctrl z>` 获取帮助）)",
     "tags": [
@@ -32838,7 +32883,7 @@
     "id": "tldr-zh-common-ugrep-2",
     "type": "command",
     "title": "ugrep - 在特定文件或特定目录中的所有文件中搜索，并显示匹配的行号",
-    "content": "ugrep --line-number \"{{search_pattern}}\" {{路径/到/文件或目录}}",
+    "content": "ugrep {{[-n|--line-number]}} \"{{search_pattern}}\" {{路径/到/文件或目录}}",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (在特定文件或特定目录中的所有文件中搜索，并显示匹配的行号)",
     "tags": [
@@ -32853,7 +32898,7 @@
     "id": "tldr-zh-common-ugrep-3",
     "type": "command",
     "title": "ugrep - 递归搜索当前目录中的所有文件，并打印每个匹配文件的名称",
-    "content": "ugrep --files-with-matches \"{{search_pattern}}\"",
+    "content": "ugrep {{[-l|--files-with-matches]}} \"{{search_pattern}}\"",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (递归搜索当前目录中的所有文件，并打印每个匹配文件的名称)",
     "tags": [
@@ -32868,7 +32913,7 @@
     "id": "tldr-zh-common-ugrep-4",
     "type": "command",
     "title": "ugrep - 模糊搜索文件，允许模式中多达 3 个额外、缺失或不匹配的字符",
-    "content": "ugrep --fuzzy={{3}} \"{{search_pattern}}\"",
+    "content": "ugrep {{[-Z|--fuzzy=]}}{{3}} \"{{search_pattern}}\"",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (模糊搜索文件，允许模式中多达 3 个额外、缺失或不匹配的字符)",
     "tags": [
@@ -32883,7 +32928,7 @@
     "id": "tldr-zh-common-ugrep-5",
     "type": "command",
     "title": "ugrep - 也递归搜索压缩文件、Zip 和 `.tar` 存档",
-    "content": "ugrep --decompress \"{{search_pattern}}\"",
+    "content": "ugrep {{[-z|--decompress]}} \"{{search_pattern}}\"",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (也递归搜索压缩文件、Zip 和 `.tar` 存档)",
     "tags": [
@@ -32898,7 +32943,7 @@
     "id": "tldr-zh-common-ugrep-6",
     "type": "command",
     "title": "ugrep - 仅搜索文件名匹配特定 glob 模式的文件",
-    "content": "ugrep --glob=\"{{glob_pattern}}\" \"{{search_pattern}}\"",
+    "content": "ugrep {{[-g |--glob=]}}\"{{glob_pattern}}\" \"{{search_pattern}}\"",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (仅搜索文件名匹配特定 glob 模式的文件)",
     "tags": [
@@ -32913,7 +32958,7 @@
     "id": "tldr-zh-common-ugrep-7",
     "type": "command",
     "title": "ugrep - 仅搜索 C++ 源文件（使用 `--file-type=list` 列出所有文件类型）",
-    "content": "ugrep --file-type=cpp \"{{search_pattern}}\"",
+    "content": "ugrep {{[-t |--file-type=]}}cpp \"{{search_pattern}}\"",
     "group": "通用工具 (Common)",
     "description": "ugrep: 超快速搜索工具，带有查询 TUI。 (仅搜索 C++ 源文件（使用 `--file-type=list` 列出所有文件类型）)",
     "tags": [
@@ -33288,7 +33333,7 @@
     "id": "tldr-zh-common-ccomps-0",
     "type": "command",
     "title": "ccomps - 将一个或多个图形分解为它们的连通分量",
-    "content": "ccomps {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "ccomps {{路径/到/输入1.gv 路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "ccomps: 将图形分解为它们的连通分量。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (将一个或多个图形分解为它们的连通分量)",
     "tags": [
@@ -33303,7 +33348,7 @@
     "id": "tldr-zh-common-ccomps-1",
     "type": "command",
     "title": "ccomps - 打印一个或多个图形中的节点、边和连通分量的数量",
-    "content": "ccomps -v -s {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}}",
+    "content": "ccomps -v -s {{路径/到/输入1.gv 路径/到/输入2.gv ...}}",
     "group": "通用工具 (Common)",
     "description": "ccomps: 将图形分解为它们的连通分量。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (打印一个或多个图形中的节点、边和连通分量的数量)",
     "tags": [
@@ -33318,7 +33363,7 @@
     "id": "tldr-zh-common-ccomps-2",
     "type": "command",
     "title": "ccomps - 根据 `输出.gv` 将每个连通分量写入多个有编号的文件中",
-    "content": "ccomps -x -o {{路径/到/输出.gv}} {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}}",
+    "content": "ccomps -x -o {{路径/到/输出.gv}} {{路径/到/输入1.gv 路径/到/输入2.gv ...}}",
     "group": "通用工具 (Common)",
     "description": "ccomps: 将图形分解为它们的连通分量。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (根据 `输出.gv` 将每个连通分量写入多个有编号的文件中)",
     "tags": [
@@ -34023,7 +34068,7 @@
     "id": "tldr-zh-common-bc-1",
     "type": "command",
     "title": "bc - 启动交互式会话并启用标准数学库",
-    "content": "bc --interactive --mathlib",
+    "content": "bc {{[-i|--interactive]}} {{[-l|--mathlib]}}",
     "group": "通用工具 (Common)",
     "description": "bc: 任意精度的计算器语言。 另请参阅：`dc`, `qalc`。 (启动交互式会话并启用标准数学库)",
     "tags": [
@@ -34083,7 +34128,7 @@
     "id": "tldr-zh-common-bc-5",
     "type": "command",
     "title": "bc - 使用 `mathlib` 计算正弦/余弦/反正切/自然对数/指数函数",
-    "content": "echo '{{s|c|a|l|e}}({{1}})' | bc --mathlib",
+    "content": "echo '{{s|c|a|l|e}}({{1}})' | bc {{[-l|--mathlib]}}",
     "group": "通用工具 (Common)",
     "description": "bc: 任意精度的计算器语言。 另请参阅：`dc`, `qalc`。 (使用 `mathlib` 计算正弦/余弦/反正切/自然对数/指数函数)",
     "tags": [
@@ -34233,7 +34278,7 @@
     "id": "tldr-zh-common-mysql-5",
     "type": "command",
     "title": "mysql - 从`mysqldump`创建的备份文件中恢复单个数据库（系统将提示用户输入密码）",
-    "content": "mysql {{[-u|--user]}} {{用户名}} {{[-p|--password]}} {{数据库名}} < {{路径/到/备份文件.sql}}",
+    "content": "mysql < {{路径/到/备份文件.sql}} {{[-u|--user]}} {{用户名}} {{[-p|--password]}} {{数据库名}}",
     "group": "通用工具 (Common)",
     "description": "mysql: MySQL 命令行工具。 (从`mysqldump`创建的备份文件中恢复单个数据库（系统将提示用户输入密码）)",
     "tags": [
@@ -34248,7 +34293,7 @@
     "id": "tldr-zh-common-mysql-6",
     "type": "command",
     "title": "mysql - 从备份中恢复所有数据库（系统将提示用户输入密码）",
-    "content": "mysql {{[-u|--user]}} {{用户名}} {{[-p|--password]}} < {{路径/到/备份文件.sql}}",
+    "content": "mysql < {{路径/到/备份文件.sql}} {{[-u|--user]}} {{用户名}} {{[-p|--password]}}",
     "group": "通用工具 (Common)",
     "description": "mysql: MySQL 命令行工具。 (从备份中恢复所有数据库（系统将提示用户输入密码）)",
     "tags": [
@@ -36738,7 +36783,7 @@
     "id": "tldr-zh-common-nop-0",
     "type": "command",
     "title": "nop - 漂亮地打印一个或多个规范格式的图形",
-    "content": "nop {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "nop {{路径/到/输入1.gv 路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "nop: 检查有效性并以规范的格式漂亮地打印图形。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (漂亮地打印一个或多个规范格式的图形)",
     "tags": [
@@ -36753,7 +36798,7 @@
     "id": "tldr-zh-common-nop-1",
     "type": "command",
     "title": "nop - 检查一个或多个图形的有效性，不生成输出图形",
-    "content": "nop -p {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}}",
+    "content": "nop -p {{路径/到/输入1.gv 路径/到/输入2.gv ...}}",
     "group": "通用工具 (Common)",
     "description": "nop: 检查有效性并以规范的格式漂亮地打印图形。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (检查一个或多个图形的有效性，不生成输出图形)",
     "tags": [
@@ -37863,7 +37908,7 @@
     "id": "tldr-zh-common-bash-7",
     "type": "command",
     "title": "bash - 启动一个限制的 shell 会话",
-    "content": "bash -r",
+    "content": "bash {{[-r|--restricted]}}",
     "group": "通用工具 (Common)",
     "description": "bash: Bourne-Again SHell，兼容 `sh` 的命令行解释器。 另请参阅：`zsh`, `!`。 (启动一个限制的 shell 会话)",
     "tags": [
@@ -41538,7 +41583,7 @@
     "id": "tldr-zh-common-glow-2",
     "type": "command",
     "title": "glow - 使用分页器查看 Markdown 文件",
-    "content": "glow -p {{路径/到/文件}}",
+    "content": "glow {{[-p|--pager]}} {{路径/到/文件}}",
     "group": "通用工具 (Common)",
     "description": "glow: 在终端渲染 Markdown。 (使用分页器查看 Markdown 文件)",
     "tags": [
@@ -44370,6 +44415,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-impacket-reg-0",
+    "type": "command",
+    "title": "impacket-reg - 查看原命令的文档",
+    "content": "tldr reg.py",
+    "group": "通用工具 (Common)",
+    "description": "impacket-reg: 此命令为 `reg.py` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "impacket-reg",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-magick-mogrify-0",
     "type": "command",
     "title": "magick-mogrify - 将当前目录下所有 JPEG 图片的尺寸都调整至原尺寸的 50%",
@@ -45780,6 +45840,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-common-impacket-dumpntlminfo-0",
+    "type": "command",
+    "title": "impacket-dumpntlminfo - 查看原命令的文档",
+    "content": "tldr DumpNTLMInfo.py",
+    "group": "通用工具 (Common)",
+    "description": "impacket-dumpntlminfo: 此命令为 `DumpNTLMInfo.py` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "common",
+      "impacket-dumpntlminfo",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-common-ps-0",
     "type": "command",
     "title": "ps - 列出所有正在运行的进程",
@@ -45888,7 +45963,7 @@
     "id": "tldr-zh-common-tred-0",
     "type": "command",
     "title": "tred - 构建一个或多个有向图的传递闭包约简",
-    "content": "tred {{路径/到/输入1.gv}} {{路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
+    "content": "tred {{路径/到/输入1.gv 路径/到/输入2.gv ...}} > {{路径/到/输出.gv}}",
     "group": "通用工具 (Common)",
     "description": "tred: 计算有向图的传递闭包约简。 Graphviz 过滤器：`acyclic`、`bcomps`、`comps`、`edgepaint`、`gvcolor`、`gvpack`、`mingle`、`nop`、`sccmap`、`tred` 和 `unflatten`。 (构建一个或多个有向图的传递闭包约简)",
     "tags": [
@@ -50883,7 +50958,7 @@
     "id": "tldr-zh-common-pnpm-1",
     "type": "command",
     "title": "pnpm - 下载 `package.json` 中列出的所有依赖包",
-    "content": "pnpm install",
+    "content": "pnpm {{[i|install]}}",
     "group": "通用工具 (Common)",
     "description": "pnpm: 快速、节省磁盘空间的 Node.js 包管理器。 管理 Node.js 项目和其模块依赖。 (下载 `package.json` 中列出的所有依赖包)",
     "tags": [
@@ -50913,7 +50988,7 @@
     "id": "tldr-zh-common-pnpm-3",
     "type": "command",
     "title": "pnpm - 下载包并添加至 `package.json` 的开发依赖列表",
-    "content": "pnpm add {{[-D|--save-dev]}} {{模块名}}",
+    "content": "pnpm add {{模块名}} {{[-D|--save-dev]}}",
     "group": "通用工具 (Common)",
     "description": "pnpm: 快速、节省磁盘空间的 Node.js 包管理器。 管理 Node.js 项目和其模块依赖。 (下载包并添加至 `package.json` 的开发依赖列表)",
     "tags": [
@@ -50928,7 +51003,7 @@
     "id": "tldr-zh-common-pnpm-4",
     "type": "command",
     "title": "pnpm - 下载并全局安装包",
-    "content": "pnpm add {{[-g|--global]}} {{模块名}}",
+    "content": "pnpm add {{模块名}} {{[-g|--global]}}",
     "group": "通用工具 (Common)",
     "description": "pnpm: 快速、节省磁盘空间的 Node.js 包管理器。 管理 Node.js 项目和其模块依赖。 (下载并全局安装包)",
     "tags": [
@@ -50943,7 +51018,7 @@
     "id": "tldr-zh-common-pnpm-5",
     "type": "command",
     "title": "pnpm - 卸载包并将其从 `package.json` 的依赖列表删除",
-    "content": "pnpm remove {{模块名}}",
+    "content": "pnpm {{[rm|remove]}} {{模块名}}",
     "group": "通用工具 (Common)",
     "description": "pnpm: 快速、节省磁盘空间的 Node.js 包管理器。 管理 Node.js 项目和其模块依赖。 (卸载包并将其从 `package.json` 的依赖列表删除)",
     "tags": [
@@ -50958,7 +51033,7 @@
     "id": "tldr-zh-common-pnpm-6",
     "type": "command",
     "title": "pnpm - 打印本地安装的模块树",
-    "content": "pnpm list",
+    "content": "pnpm {{[ls|list]}}",
     "group": "通用工具 (Common)",
     "description": "pnpm: 快速、节省磁盘空间的 Node.js 包管理器。 管理 Node.js 项目和其模块依赖。 (打印本地安装的模块树)",
     "tags": [
@@ -50973,7 +51048,7 @@
     "id": "tldr-zh-common-pnpm-7",
     "type": "command",
     "title": "pnpm - 列出顶级全局安装的模块",
-    "content": "pnpm list {{[-g|--global]}} --depth {{0}}",
+    "content": "pnpm {{[ls|list]}} {{[-g|--global]}} --depth {{0}}",
     "group": "通用工具 (Common)",
     "description": "pnpm: 快速、节省磁盘空间的 Node.js 包管理器。 管理 Node.js 项目和其模块依赖。 (列出顶级全局安装的模块)",
     "tags": [
@@ -52368,7 +52443,7 @@
     "id": "tldr-zh-common-age-0",
     "type": "command",
     "title": "age - 生成一个可以用密码短语（passphrase）解密的加密文件",
-    "content": "age --passphrase --output {{路径/到/已加密文件}} {{路径/到/未加密文件}}",
+    "content": "age {{[-p|--passphrase]}} {{[-o|--output]}} {{路径/到/已加密文件}} {{路径/到/未加密文件}}",
     "group": "通用工具 (Common)",
     "description": "age: 一个简单、现代、安全的文件加密工具。 另请参阅：`age-keygen`。 (生成一个可以用密码短语（passphrase）解密的加密文件)",
     "tags": [
@@ -52383,7 +52458,7 @@
     "id": "tldr-zh-common-age-1",
     "type": "command",
     "title": "age - 用一个或多个公钥加密一个文件，这些公钥以字面形式输入",
-    "content": "age --recipient {{公钥}} --output {{路径/到/已加密文件}} {{路径/到/未加密文件}}",
+    "content": "age {{[-r|--recipient]}} {{公钥}} {{[-o|--output]}} {{路径/到/已加密文件}} {{路径/到/未加密文件}}",
     "group": "通用工具 (Common)",
     "description": "age: 一个简单、现代、安全的文件加密工具。 另请参阅：`age-keygen`。 (用一个或多个公钥加密一个文件，这些公钥以字面形式输入)",
     "tags": [
@@ -52398,7 +52473,7 @@
     "id": "tldr-zh-common-age-2",
     "type": "command",
     "title": "age - 用收件人文件中指定的一个或多个公钥来加密一个文件",
-    "content": "age --recipients-file {{路径/到/收件人文件}} --output {{路径/到/已加密文件}} {{路径/到/未加密文件}}",
+    "content": "age {{[-R|--recipients-file]}} {{路径/到/收件人文件}} {{[-o|--output]}} {{路径/到/已加密文件}} {{路径/到/未加密文件}}",
     "group": "通用工具 (Common)",
     "description": "age: 一个简单、现代、安全的文件加密工具。 另请参阅：`age-keygen`。 (用收件人文件中指定的一个或多个公钥来加密一个文件)",
     "tags": [
@@ -52413,7 +52488,7 @@
     "id": "tldr-zh-common-age-3",
     "type": "command",
     "title": "age - 用密码短语解密一个文件",
-    "content": "age --decrypt --output {{路径/到/已解密文件}} {{路径/到/已加密文件}}",
+    "content": "age {{[-d|--decrypt]}} {{[-o|--output]}} {{路径/到/已解密文件}} {{路径/到/已加密文件}}",
     "group": "通用工具 (Common)",
     "description": "age: 一个简单、现代、安全的文件加密工具。 另请参阅：`age-keygen`。 (用密码短语解密一个文件)",
     "tags": [
@@ -52428,7 +52503,7 @@
     "id": "tldr-zh-common-age-4",
     "type": "command",
     "title": "age - 用私钥文件解密一个文件",
-    "content": "age --decrypt --identity {{路径/到/私钥文件}} --output {{路径/到/已解密文件}} {{路径/到/已加密文件}}",
+    "content": "age {{[-d|--decrypt]}} {{[-i|--identity]}} {{路径/到/私钥文件}} {{[-o|--output]}} {{路径/到/已解密文件}} {{路径/到/已加密文件}}",
     "group": "通用工具 (Common)",
     "description": "age: 一个简单、现代、安全的文件加密工具。 另请参阅：`age-keygen`。 (用私钥文件解密一个文件)",
     "tags": [

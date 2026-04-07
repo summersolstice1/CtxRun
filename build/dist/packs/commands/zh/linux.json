@@ -6153,7 +6153,7 @@
     "id": "tldr-zh-linux-aurman-0",
     "type": "command",
     "title": "aurman - 同步并更新所有包",
-    "content": "aurman --sync --refresh --sysupgrade",
+    "content": "aurman {{[-S|--sync]}} {{[-y|--refresh]}} {{[-u|--sysupgrade]}}",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (同步并更新所有包)",
     "tags": [
@@ -6168,7 +6168,7 @@
     "id": "tldr-zh-linux-aurman-1",
     "type": "command",
     "title": "aurman - 同步并更新所有包但不显示 `PKGBUILD` 文件的变动",
-    "content": "aurman --sync --refresh --sysupgrade --noedit",
+    "content": "aurman {{[-S|--sync]}} {{[-y|--refresh]}} {{[-u|--sysupgrade]}} --noedit",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (同步并更新所有包但不显示 `PKGBUILD` 文件的变动)",
     "tags": [
@@ -6183,7 +6183,7 @@
     "id": "tldr-zh-linux-aurman-2",
     "type": "command",
     "title": "aurman - 安装一个新包",
-    "content": "aurman --sync {{包名}}",
+    "content": "aurman {{[-S|--sync]}} {{包名}}",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (安装一个新包)",
     "tags": [
@@ -6198,7 +6198,7 @@
     "id": "tldr-zh-linux-aurman-3",
     "type": "command",
     "title": "aurman - 安装一个新包但不显示 `PKGBUILD` 文件的变动",
-    "content": "aurman --sync --noedit {{包名}}",
+    "content": "aurman {{[-S|--sync]}} --noedit {{包名}}",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (安装一个新包但不显示 `PKGBUILD` 文件的变动)",
     "tags": [
@@ -6213,7 +6213,7 @@
     "id": "tldr-zh-linux-aurman-4",
     "type": "command",
     "title": "aurman - 无确认提示安装一个新包",
-    "content": "aurman --sync --noedit --noconfirm {{包名}}",
+    "content": "aurman {{[-S|--sync]}} --noedit --noconfirm {{包名}}",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (无确认提示安装一个新包)",
     "tags": [
@@ -6228,7 +6228,7 @@
     "id": "tldr-zh-linux-aurman-5",
     "type": "command",
     "title": "aurman - 在官方仓库和 AUR 的包数据库中查找关键字",
-    "content": "aurman --sync --search {{关键字}}",
+    "content": "aurman {{[-S|--sync]}} {{[-s|--search]}} {{关键字}}",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (在官方仓库和 AUR 的包数据库中查找关键字)",
     "tags": [
@@ -6258,7 +6258,7 @@
     "id": "tldr-zh-linux-aurman-7",
     "type": "command",
     "title": "aurman - 清除包缓存（用两次 `--clean` 参数清除所有包缓存）",
-    "content": "aurman --sync --clean",
+    "content": "aurman {{[-S|--sync]}} {{[-c|--clean]}}",
     "group": "Linux 运维",
     "description": "aurman: 用来构建和安装 AUR 包的 Arch Linux 实用工具。 另请参阅：`pacman`。 (清除包缓存（用两次 `--clean` 参数清除所有包缓存）)",
     "tags": [
@@ -6828,7 +6828,7 @@
     "id": "tldr-zh-linux-bmon-0",
     "type": "command",
     "title": "bmon - 显示所有接口的列表",
-    "content": "bmon -a",
+    "content": "bmon {{[-a|--show-all]}}",
     "group": "Linux 运维",
     "description": "bmon: 监控带宽并捕获网络相关统计信息。 (显示所有接口的列表)",
     "tags": [
@@ -6843,7 +6843,7 @@
     "id": "tldr-zh-linux-bmon-1",
     "type": "command",
     "title": "bmon - 以每秒位数显示数据传输速率",
-    "content": "bmon -b",
+    "content": "bmon {{[-b|--use-bit]}}",
     "group": "Linux 运维",
     "description": "bmon: 监控带宽并捕获网络相关统计信息。 (以每秒位数显示数据传输速率)",
     "tags": [
@@ -6858,7 +6858,7 @@
     "id": "tldr-zh-linux-bmon-2",
     "type": "command",
     "title": "bmon - 设置策略以定义显示哪些网络接口",
-    "content": "bmon -p {{interface_1,interface_2,interface_3}}",
+    "content": "bmon {{[-p|--policy]}} {{interface_1,interface_2,interface_3}}",
     "group": "Linux 运维",
     "description": "bmon: 监控带宽并捕获网络相关统计信息。 (设置策略以定义显示哪些网络接口)",
     "tags": [
@@ -6873,7 +6873,7 @@
     "id": "tldr-zh-linux-bmon-3",
     "type": "command",
     "title": "bmon - 设置计算每个计数器速率的间隔（以秒为单位）",
-    "content": "bmon -R {{2.0}}",
+    "content": "bmon {{[-R|--rate-interval]}} {{2.0}}",
     "group": "Linux 运维",
     "description": "bmon: 监控带宽并捕获网络相关统计信息。 (设置计算每个计数器速率的间隔（以秒为单位）)",
     "tags": [
@@ -8445,6 +8445,21 @@
     "source": "official"
   },
   {
+    "id": "tldr-zh-linux-genisoimage-0",
+    "type": "command",
+    "title": "genisoimage - 查看原命令的文档",
+    "content": "tldr mkisofs",
+    "group": "Linux 运维",
+    "description": "genisoimage: 此命令为 `mkisofs` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "linux",
+      "genisoimage",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
     "id": "tldr-zh-linux-flameshot-0",
     "type": "command",
     "title": "flameshot - 全屏截图",
@@ -9978,7 +9993,7 @@
     "id": "tldr-zh-linux-aurvote-2",
     "type": "command",
     "title": "aurvote - 为一个或多个 AUR 包取消投票",
-    "content": "aurvote --unvote {{package1 package2 ...}}",
+    "content": "aurvote {{[-u|--unvote]}} {{package1 package2 ...}}",
     "group": "Linux 运维",
     "description": "aurvote: 为 AUR 中的包投票。 为了投票成功，文件 `~/.config/aurvote` 必须存在并包含你的 AUR 身份凭证。 (为一个或多个 AUR 包取消投票)",
     "tags": [
@@ -9993,7 +10008,7 @@
     "id": "tldr-zh-linux-aurvote-3",
     "type": "command",
     "title": "aurvote - 检查一个或多个 AUR 包是否已投票",
-    "content": "aurvote --check {{package1 package2 ...}}",
+    "content": "aurvote {{[-c|--check]}} {{package1 package2 ...}}",
     "group": "Linux 运维",
     "description": "aurvote: 为 AUR 中的包投票。 为了投票成功，文件 `~/.config/aurvote` 必须存在并包含你的 AUR 身份凭证。 (检查一个或多个 AUR 包是否已投票)",
     "tags": [
@@ -10008,7 +10023,7 @@
     "id": "tldr-zh-linux-aurvote-4",
     "type": "command",
     "title": "aurvote - 查看 `aurvote` 的帮助信息",
-    "content": "aurvote --help",
+    "content": "aurvote {{[-h|--help]}}",
     "group": "Linux 运维",
     "description": "aurvote: 为 AUR 中的包投票。 为了投票成功，文件 `~/.config/aurvote` 必须存在并包含你的 AUR 身份凭证。 (查看 `aurvote` 的帮助信息)",
     "tags": [
@@ -10764,6 +10779,21 @@
     "tags": [
       "linux",
       "debootstrap",
+      "tldr",
+      "zh"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-zh-linux-wodim-0",
+    "type": "command",
+    "title": "wodim - 查看原命令的文档",
+    "content": "tldr cdrecord",
+    "group": "Linux 运维",
+    "description": "wodim: 此命令为 `cdrecord` 的别名。 (查看原命令的文档)",
+    "tags": [
+      "linux",
+      "wodim",
       "tldr",
       "zh"
     ],
