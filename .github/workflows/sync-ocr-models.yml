@@ -31,12 +31,14 @@ jobs:
       - name: Sync upstream models
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           set -euo pipefail
 
           upstream_dir="$(mktemp -d)"
           release_dir="$(mktemp -d)"
           release_models_dir="${release_dir}/ocr"
+          gitee_dir="$(mktemp -d)"
 
           git clone --depth 1 --branch next https://github.com/zibo-chen/rust-paddle-ocr.git "${upstream_dir}"
           mkdir -p "${release_models_dir}"
@@ -56,6 +58,7 @@ jobs:
           export UPSTREAM_COMMIT_AT="${upstream_commit_at}"
           export GENERATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           export REPOSITORY_URL="https://github.com/${GITHUB_REPOSITORY}"
+          export GITEE_RELEASE_BASE_URL="https://gitee.com/winriseF/models/raw/master/models/ocr/releases/${release_tag}"
 
           python <<'PY'
           import hashlib
@@ -68,10 +71,10 @@ jobs:
           release_tag = os.environ["RELEASE_TAG"]
           generated_at = os.environ["GENERATED_AT"]
           repo_url = os.environ["REPOSITORY_URL"]
+          gitee_release_base_url = os.environ["GITEE_RELEASE_BASE_URL"]
           upstream_commit = os.environ["UPSTREAM_COMMIT"]
           upstream_commit_at = os.environ["UPSTREAM_COMMIT_AT"]
 
-          asset_base_url = f"{repo_url}/releases/download/{release_tag}"
           files = []
 
           for path in sorted(models_dir.iterdir()):
@@ -83,7 +86,7 @@ jobs:
                 "name": path.name,
                 "size": path.stat().st_size,
                 "sha256": digest,
-                "url": f"{asset_base_url}/{path.name}",
+                "url": f"{gitee_release_base_url}/{path.name}",
               }
             )
 
@@ -128,9 +131,35 @@ jobs:
           git commit -m "chore(models): sync OCR manifest to ${release_tag}"
           git push
 
+          if [ -z "${GITEE_TOKEN}" ]; then
+            echo "❌ Error: GITEE_TOKEN is not set."
+            exit 1
+          fi
+
+          echo "📥 Cloning Gitee repo..."
+          git clone https://oauth2:${GITEE_TOKEN}@gitee.com/winriseF/models.git "${gitee_dir}"
+
+          echo "🧹 Updating OCR files in Gitee workspace..."
+          mkdir -p "${gitee_dir}/models/ocr/releases/${release_tag}"
+          cp "${release_dir}/ocr.json" "${gitee_dir}/models/ocr/ocr.json"
+          cp "${release_models_dir}"/* "${gitee_dir}/models/ocr/releases/${release_tag}/"
+
+          cd "${gitee_dir}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add models/ocr
+
+          if git diff --staged --quiet; then
+            echo "✅ Gitee: OCR models unchanged."
+          else
+            git commit -m "chore(sync): sync OCR models ${release_tag} [skip ci]"
+            git push https://oauth2:${GITEE_TOKEN}@gitee.com/winriseF/models.git master
+            echo "🚀 Gitee: OCR models synced."
+          fi
+
+          cd "${GITHUB_WORKSPACE}"
           gh release create "${release_tag}" \
             "${release_models_dir}"/* \
             "${release_dir}/ocr.json" \
             --title "${release_title}" \
             --notes "Synchronized OCR models from zibo-chen/rust-paddle-ocr@${upstream_commit}."
-

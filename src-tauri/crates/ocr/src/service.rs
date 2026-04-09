@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
@@ -9,7 +10,7 @@ use tauri::{AppHandle, Runtime};
 use crate::download;
 use crate::error::{OcrServiceError, Result};
 use crate::models::{OcrBoundingBox, OcrLine, OcrPoint, OcrRecognitionResponse, OcrStatus};
-use crate::paths::{OCR_PROFILE, OcrModelPaths};
+use crate::paths::{OCR_PROFILE, OcrPackagePaths, OcrStoragePaths, required_model_files};
 use ctxrun_runtime_utils::IdleTracker;
 
 const OCR_IDLE_TTL: Duration = Duration::from_secs(120);
@@ -17,7 +18,9 @@ const OCR_IDLE_REAPER_INTERVAL: Duration = Duration::from_secs(30);
 
 struct OcrServiceInner {
     engine: Mutex<Option<Arc<OcrEngine>>>,
+    prepare_lock: Mutex<()>,
     init_lock: Mutex<()>,
+    preparing: AtomicBool,
     idle: IdleTracker,
 }
 
@@ -31,7 +34,9 @@ impl OcrService {
         Self {
             inner: Arc::new(OcrServiceInner {
                 engine: Mutex::new(None),
+                prepare_lock: Mutex::new(()),
                 init_lock: Mutex::new(()),
+                preparing: AtomicBool::new(false),
                 idle: IdleTracker::new(OCR_IDLE_TTL),
             }),
         }
@@ -42,15 +47,39 @@ impl OcrService {
     }
 
     pub fn status<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrStatus> {
-        let model_paths = OcrModelPaths::from_app(app)?;
+        let storage = OcrStoragePaths::from_app(app)?;
+        storage.ensure_root_dirs()?;
         let idle_snapshot = self.inner.idle.snapshot();
+        let active_package = download::read_active_package(&storage)?;
+        let (active_release, model_dir, installed, missing_files) = match active_package {
+            Some(active) => {
+                let package = storage.package(active.release_tag.clone());
+                (
+                    Some(active.release_tag),
+                    package.package_dir.to_string_lossy().to_string(),
+                    package.is_complete(),
+                    package.missing_files(),
+                )
+            }
+            None => (
+                None,
+                storage.packages_dir.to_string_lossy().to_string(),
+                false,
+                required_model_files()
+                    .iter()
+                    .map(|file| (*file).to_string())
+                    .collect(),
+            ),
+        };
 
         Ok(OcrStatus {
             active_model: OCR_PROFILE.to_string(),
-            model_dir: model_paths.profile_dir.to_string_lossy().to_string(),
-            installed: model_paths.is_complete(),
+            active_release,
+            model_dir,
+            installed,
             loaded: self.is_loaded(),
-            missing_files: model_paths.missing_files(),
+            preparing: self.inner.preparing.load(Ordering::Relaxed),
+            missing_files,
             idle_ttl_secs: idle_snapshot.ttl.as_secs(),
             idle_expires_in_ms: idle_snapshot
                 .expires_in
@@ -59,8 +88,7 @@ impl OcrService {
     }
 
     pub fn prepare<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrStatus> {
-        let _lease = self.inner.idle.begin_use();
-        let _ = self.ensure_engine_ready(app)?;
+        let _ = self.ensure_models_prepared(app)?;
         self.status(app)
     }
 
@@ -146,25 +174,55 @@ impl OcrService {
         Ok(engine)
     }
 
-    fn ensure_models_ready<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrModelPaths> {
-        let model_paths = OcrModelPaths::from_app(app)?;
-        model_paths.ensure_profile_dir()?;
+    fn ensure_models_ready<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrPackagePaths> {
+        self.ensure_models_prepared(app)
+    }
 
-        if model_paths.is_complete() {
-            return Ok(model_paths);
+    fn ensure_models_prepared<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrPackagePaths> {
+        if let Some(package) = self.resolve_active_package(app)? {
+            return Ok(package);
         }
 
-        download::ensure_models_downloaded(app, &model_paths.profile_dir)?;
+        let _guard = lock_recover(&self.inner.prepare_lock);
+        if let Some(package) = self.resolve_active_package(app)? {
+            return Ok(package);
+        }
 
-        let missing_files = model_paths.missing_files();
-        if !missing_files.is_empty() {
+        self.inner.preparing.store(true, Ordering::SeqCst);
+        let result = match OcrStoragePaths::from_app(app) {
+            Ok(storage) => download::ensure_models_downloaded(app, &storage),
+            Err(err) => Err(err),
+        };
+        self.inner.preparing.store(false, Ordering::SeqCst);
+
+        let package = result?;
+        if !package.is_complete() {
             return Err(OcrServiceError::missing_models(
-                model_paths.profile_dir.to_string_lossy().to_string(),
-                missing_files,
+                package.package_dir.to_string_lossy().to_string(),
+                package.missing_files(),
             ));
         }
 
-        Ok(model_paths)
+        Ok(package)
+    }
+
+    fn resolve_active_package<R: Runtime>(
+        &self,
+        app: &AppHandle<R>,
+    ) -> Result<Option<OcrPackagePaths>> {
+        let storage = OcrStoragePaths::from_app(app)?;
+        storage.ensure_root_dirs()?;
+
+        let Some(active) = download::read_active_package(&storage)? else {
+            return Ok(None);
+        };
+
+        let package = storage.package(active.release_tag);
+        if package.is_complete() {
+            Ok(Some(package))
+        } else {
+            Ok(None)
+        }
     }
 
     fn cached_engine(&self) -> Option<Arc<OcrEngine>> {

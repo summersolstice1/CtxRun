@@ -11,10 +11,14 @@ ignored = ["tauri-plugin"]
 [dependencies]
 tauri = { workspace = true }
 serde = { workspace = true }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 image = { workspace = true }
 ocr-rs = { workspace = true }
+reqwest = { workspace = true }
+chrono = { workspace = true }
 ctxrun-runtime-utils = { workspace = true }
+sha2 = "0.10"
 
 [build-dependencies]
 tauri-plugin = { workspace = true, features = ["build"] }

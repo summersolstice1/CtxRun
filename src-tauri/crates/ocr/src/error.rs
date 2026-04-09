@@ -14,8 +14,24 @@ pub enum OcrServiceError {
         missing: Vec<String>,
     },
 
-    #[error("OCR model download is not implemented yet for {0}")]
-    ModelDownloadNotImplemented(String),
+    #[error("OCR manifest fetch failed: {0}")]
+    ManifestFetchFailed(String),
+
+    #[error("OCR manifest is invalid: {0}")]
+    ManifestInvalid(String),
+
+    #[error("OCR model metadata is invalid: {0}")]
+    ActivePackageInvalid(String),
+
+    #[error("OCR model download failed for {file}: {reason}")]
+    DownloadFailed { file: String, reason: String },
+
+    #[error("OCR model checksum mismatch for {file}: expected {expected}, got {actual}")]
+    ChecksumMismatch {
+        file: String,
+        expected: String,
+        actual: String,
+    },
 
     #[error("OCR engine initialization failed: {0}")]
     EngineInitFailed(String),
@@ -56,6 +72,12 @@ impl From<image::ImageError> for OcrServiceError {
 
 impl From<std::io::Error> for OcrServiceError {
     fn from(value: std::io::Error) -> Self {
+        Self::Message(value.to_string())
+    }
+}
+
+impl From<serde_json::Error> for OcrServiceError {
+    fn from(value: serde_json::Error) -> Self {
         Self::Message(value.to_string())
     }
 }
