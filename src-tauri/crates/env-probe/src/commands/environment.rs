@@ -104,9 +104,9 @@ pub async fn get_env_info(
 
 #[tauri::command]
 pub async fn get_ai_context(project_path: String) -> crate::error::Result<AiContextReport> {
-    Ok(tauri::async_runtime::spawn_blocking(move || {
+    tauri::async_runtime::spawn_blocking(move || {
         env_probe::scan_logic::scan_ai_context(&project_path)
     })
     .await
-    .map_err(|e| e.to_string())?)
+    .map_err(|e| e.to_string())
 }

@@ -84,6 +84,7 @@ ctxrun-env-probe = { path = "crates/env-probe" }
 # Hyperview preview utilities
 ctxrun-hyperview = { path = "crates/hyperview" }
 ctxrun-process-utils = { path = "crates/process-utils" }
+ctxrun-runtime-utils = { path = "crates/runtime-utils" }
 
 [build-dependencies]
 tauri-build = { workspace = true }

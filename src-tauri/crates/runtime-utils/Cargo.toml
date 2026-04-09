@@ -1,0 +1,8 @@
+[package]
+name = "ctxrun-runtime-utils"
+version = "0.1.0"
+edition = "2024"
+description = "Shared backend timing and runtime helpers for CtxRun"
+
+[dependencies]
+tokio = { workspace = true }

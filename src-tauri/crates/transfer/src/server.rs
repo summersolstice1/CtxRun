@@ -251,22 +251,23 @@ async fn upload_handler<R: Runtime>(
             output.write_all(&chunk).await?;
             written += chunk.len() as u64;
 
-            if let Some(total_bytes) = upload_size_hint {
-                if total_bytes > 0 && last_emit.elapsed() >= Duration::from_millis(100) {
-                    emit_upload_progress(
-                        &shared,
-                        &device_id,
-                        &file_id,
-                        &file_name,
-                        written,
-                        total_bytes,
-                        TransferFileStatus::Transferring,
-                        None,
-                        started_at,
-                    )
-                    .await;
-                    last_emit = Instant::now();
-                }
+            if let Some(total_bytes) = upload_size_hint
+                && total_bytes > 0
+                && last_emit.elapsed() >= Duration::from_millis(100)
+            {
+                emit_upload_progress(UploadProgress {
+                    shared: &shared,
+                    device_id: &device_id,
+                    file_id: &file_id,
+                    file_name: &file_name,
+                    transferred_bytes: written,
+                    total_bytes,
+                    status: TransferFileStatus::Transferring,
+                    saved_path: None,
+                    started_at,
+                })
+                .await;
+                last_emit = Instant::now();
             }
         }
 
@@ -288,17 +289,17 @@ async fn upload_handler<R: Runtime>(
             .await;
         shared.emit(EVENT_FILE_RECEIVED, &message);
 
-        emit_upload_progress(
-            &shared,
-            &device_id,
-            &file_id,
-            &file_name,
-            written,
-            upload_size_hint.unwrap_or(written).max(written),
-            TransferFileStatus::Completed,
-            Some(saved_path),
+        emit_upload_progress(UploadProgress {
+            shared: &shared,
+            device_id: &device_id,
+            file_id: &file_id,
+            file_name: &file_name,
+            transferred_bytes: written,
+            total_bytes: upload_size_hint.unwrap_or(written).max(written),
+            status: TransferFileStatus::Completed,
+            saved_path: Some(saved_path),
             started_at,
-        )
+        })
         .await;
         saved_any = true;
     }
@@ -312,17 +313,30 @@ async fn upload_handler<R: Runtime>(
     Ok(StatusCode::OK)
 }
 
-async fn emit_upload_progress<R: Runtime>(
-    shared: &RunningServiceShared<R>,
-    device_id: &str,
-    file_id: &str,
-    file_name: &str,
+struct UploadProgress<'a, R: Runtime> {
+    shared: &'a RunningServiceShared<R>,
+    device_id: &'a str,
+    file_id: &'a str,
+    file_name: &'a str,
     transferred_bytes: u64,
     total_bytes: u64,
     status: TransferFileStatus,
     saved_path: Option<String>,
     started_at: Instant,
-) {
+}
+
+async fn emit_upload_progress<R: Runtime>(args: UploadProgress<'_, R>) {
+    let UploadProgress {
+        shared,
+        device_id,
+        file_id,
+        file_name,
+        transferred_bytes,
+        total_bytes,
+        status,
+        saved_path,
+        started_at,
+    } = args;
     let elapsed_secs = started_at.elapsed().as_secs_f64().max(0.001);
     let payload = FileProgressPayload {
         device_id: device_id.to_string(),

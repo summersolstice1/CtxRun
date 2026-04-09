@@ -100,17 +100,16 @@ pub async fn handle_socket<R: tauri::Runtime>(
                     .pin
                     .as_ref()
                     .filter(|pin| !pin.trim().is_empty())
+                    && pin.as_deref().map(str::trim) != Some(expected_pin.trim())
                 {
-                    if pin.as_deref().map(str::trim) != Some(expected_pin.trim()) {
-                        let _ = send_direct(
-                            &mut sender,
-                            &ServerWsMessage::Error {
-                                message: "Invalid PIN.".to_string(),
-                            },
-                        )
-                        .await;
-                        return;
-                    }
+                    let _ = send_direct(
+                        &mut sender,
+                        &ServerWsMessage::Error {
+                            message: "Invalid PIN.".to_string(),
+                        },
+                    )
+                    .await;
+                    return;
                 }
                 user_agent
             }
