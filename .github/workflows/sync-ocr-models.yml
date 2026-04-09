@@ -1,0 +1,136 @@
+name: Sync OCR Models
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-ocr-models
+  cancel-in-progress: false
+
+jobs:
+  sync-ocr-models:
+    name: Sync OCR Models
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Sync upstream models
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          upstream_dir="$(mktemp -d)"
+          release_dir="$(mktemp -d)"
+          release_models_dir="${release_dir}/ocr"
+
+          git clone --depth 1 --branch next https://github.com/zibo-chen/rust-paddle-ocr.git "${upstream_dir}"
+          mkdir -p "${release_models_dir}"
+          cp -R "${upstream_dir}/models/." "${release_models_dir}/"
+
+          upstream_commit="$(git -C "${upstream_dir}" rev-parse HEAD)"
+          upstream_short="${upstream_commit:0:7}"
+          upstream_commit_at="$(git -C "${upstream_dir}" show -s --format=%cI HEAD)"
+          release_tag="ocr-models-$(date -u +%Y%m%d)-${upstream_short}"
+          release_title="OCR Models ${release_tag}"
+
+          export RELEASE_DIR="${release_dir}"
+          export RELEASE_MODELS_DIR="${release_models_dir}"
+          export RELEASE_TAG="${release_tag}"
+          export RELEASE_TITLE="${release_title}"
+          export UPSTREAM_COMMIT="${upstream_commit}"
+          export UPSTREAM_COMMIT_AT="${upstream_commit_at}"
+          export GENERATED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export REPOSITORY_URL="https://github.com/${GITHUB_REPOSITORY}"
+
+          python <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          release_dir = Path(os.environ["RELEASE_DIR"])
+          models_dir = Path(os.environ["RELEASE_MODELS_DIR"])
+          release_tag = os.environ["RELEASE_TAG"]
+          generated_at = os.environ["GENERATED_AT"]
+          repo_url = os.environ["REPOSITORY_URL"]
+          upstream_commit = os.environ["UPSTREAM_COMMIT"]
+          upstream_commit_at = os.environ["UPSTREAM_COMMIT_AT"]
+
+          asset_base_url = f"{repo_url}/releases/download/{release_tag}"
+          files = []
+
+          for path in sorted(models_dir.iterdir()):
+            if not path.is_file():
+              continue
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            files.append(
+              {
+                "name": path.name,
+                "size": path.stat().st_size,
+                "sha256": digest,
+                "url": f"{asset_base_url}/{path.name}",
+              }
+            )
+
+          manifest = {
+            "schema_version": 1,
+            "profile_id": "ocr-all-models",
+            "title": "OCR model bundle",
+            "version": release_tag,
+            "generated_at": generated_at,
+            "source": {
+              "repository": "zibo-chen/rust-paddle-ocr",
+              "branch": "next",
+              "path": "models",
+              "commit": upstream_commit,
+              "committed_at": upstream_commit_at,
+            },
+            "release": {
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "tag": release_tag,
+              "url": f"{repo_url}/releases/tag/{release_tag}",
+            },
+            "files": files,
+          }
+
+          output_path = release_dir / "ocr.json"
+          output_path.write_text(json.dumps(manifest, ensure_ascii=True, indent=2) + "\n", encoding="utf-8")
+          PY
+
+          mkdir -p models/ocr
+
+          if cmp -s "${release_dir}/ocr.json" models/ocr/ocr.json; then
+            echo "No OCR model changes detected."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          cp "${release_dir}/ocr.json" models/ocr/ocr.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models/ocr/ocr.json
+          git commit -m "chore(models): sync OCR manifest to ${release_tag}"
+          git push
+
+          gh release create "${release_tag}" \
+            "${release_models_dir}"/* \
+            "${release_dir}/ocr.json" \
+            --title "${release_title}" \
+            --notes "Synchronized OCR models from zibo-chen/rust-paddle-ocr@${upstream_commit}."
+

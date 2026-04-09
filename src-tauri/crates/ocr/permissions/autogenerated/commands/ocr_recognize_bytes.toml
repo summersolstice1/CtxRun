@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-ocr-recognize-bytes"
+description = "Enables the ocr_recognize_bytes command without any pre-configured scope."
+commands.allow = ["ocr_recognize_bytes"]
+
+[[permission]]
+identifier = "deny-ocr-recognize-bytes"
+description = "Denies the ocr_recognize_bytes command without any pre-configured scope."
+commands.deny = ["ocr_recognize_bytes"]

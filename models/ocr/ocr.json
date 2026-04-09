@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "profile_id": "ocr-all-models",
+  "title": "OCR model bundle",
+  "version": "bootstrap",
+  "generated_at": "1970-01-01T00:00:00Z",
+  "source": {
+    "repository": "zibo-chen/rust-paddle-ocr",
+    "branch": "next",
+    "path": "models",
+    "commit": "",
+    "committed_at": ""
+  },
+  "release": {
+    "repository": "WinriseF/CtxRun",
+    "tag": "",
+    "url": ""
+  },
+  "files": []
+}

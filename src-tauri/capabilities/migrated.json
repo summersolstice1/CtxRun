@@ -117,6 +117,11 @@
     "ctxrun-plugin-exec-runtime:allow-approve-exec",
     "ctxrun-plugin-exec-runtime:allow-write-exec",
     "ctxrun-plugin-exec-runtime:allow-resize-exec",
-    "ctxrun-plugin-exec-runtime:allow-terminate-exec"
+    "ctxrun-plugin-exec-runtime:allow-terminate-exec",
+    "ctxrun-plugin-ocr:allow-ocr-get-status",
+    "ctxrun-plugin-ocr:allow-ocr-prepare",
+    "ctxrun-plugin-ocr:allow-ocr-recognize-file",
+    "ctxrun-plugin-ocr:allow-ocr-recognize-bytes",
+    "ctxrun-plugin-ocr:allow-ocr-release"
   ]
 }

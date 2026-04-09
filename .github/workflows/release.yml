@@ -62,6 +62,8 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            clang \
+            libclang-dev \
             libgtk-3-dev \
             libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
@@ -79,6 +81,33 @@ jobs:
             libxdamage-dev \
             libxrandr-dev \
             libasound2-dev
+
+      - name: Install LLVM (macOS only)
+        if: matrix.platform == 'macos-latest'
+        run: brew install llvm
+
+      - name: Install LLVM (Windows only)
+        if: matrix.platform == 'windows-latest'
+        run: choco install llvm --yes
+
+      - name: Configure libclang
+        shell: bash
+        run: |
+          case "${{ matrix.platform }}" in
+            ubuntu-24.04)
+              echo "LIBCLANG_PATH=/usr/lib/llvm-18/lib" >> "$GITHUB_ENV"
+              echo "CLANG_PATH=/usr/bin/clang" >> "$GITHUB_ENV"
+              ;;
+            macos-latest)
+              LLVM_PREFIX="$(brew --prefix llvm)"
+              echo "LIBCLANG_PATH=${LLVM_PREFIX}/lib" >> "$GITHUB_ENV"
+              echo "CLANG_PATH=${LLVM_PREFIX}/bin/clang" >> "$GITHUB_ENV"
+              ;;
+            windows-latest)
+              echo "LIBCLANG_PATH=C:\Program Files\LLVM\bin" >> "$GITHUB_ENV"
+              echo "CLANG_PATH=C:\Program Files\LLVM\bin\clang.exe" >> "$GITHUB_ENV"
+              ;;
+          esac
 
       - name: Install frontend dependencies
         run: npm install

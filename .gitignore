@@ -27,7 +27,11 @@ coverage
 Future.md
 /.claude/
 
-/models/
+/models/*
+!/models/models.json
+!/models/ocr/
+/models/ocr/*
+!/models/ocr/ocr.json
 gen/
 icons/
 target/
@@ -36,3 +40,4 @@ Analysis/
 /.npm-cache
 /Doc
 /.codex_research
+vendor/

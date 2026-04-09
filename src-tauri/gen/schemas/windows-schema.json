@@ -4731,6 +4731,66 @@
           "markdownDescription": "Denies the stop_mining command without any pre-configured scope."
         },
         {
+          "description": "Enables the ocr_get_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:allow-ocr-get-status",
+          "markdownDescription": "Enables the ocr_get_status command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ocr_prepare command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:allow-ocr-prepare",
+          "markdownDescription": "Enables the ocr_prepare command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ocr_recognize_bytes command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:allow-ocr-recognize-bytes",
+          "markdownDescription": "Enables the ocr_recognize_bytes command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ocr_recognize_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:allow-ocr-recognize-file",
+          "markdownDescription": "Enables the ocr_recognize_file command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the ocr_release command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:allow-ocr-release",
+          "markdownDescription": "Enables the ocr_release command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ocr_get_status command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:deny-ocr-get-status",
+          "markdownDescription": "Denies the ocr_get_status command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ocr_prepare command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:deny-ocr-prepare",
+          "markdownDescription": "Denies the ocr_prepare command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ocr_recognize_bytes command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:deny-ocr-recognize-bytes",
+          "markdownDescription": "Denies the ocr_recognize_bytes command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ocr_recognize_file command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:deny-ocr-recognize-file",
+          "markdownDescription": "Denies the ocr_recognize_file command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the ocr_release command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-ocr:deny-ocr-release",
+          "markdownDescription": "Denies the ocr_release command without any pre-configured scope."
+        },
+        {
           "description": "Enables the clear_refinery_history command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-refinery:allow-clear-refinery-history",

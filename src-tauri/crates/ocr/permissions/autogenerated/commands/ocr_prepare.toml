@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-ocr-prepare"
+description = "Enables the ocr_prepare command without any pre-configured scope."
+commands.allow = ["ocr_prepare"]
+
+[[permission]]
+identifier = "deny-ocr-prepare"
+description = "Denies the ocr_prepare command without any pre-configured scope."
+commands.deny = ["ocr_prepare"]

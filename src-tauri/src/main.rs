@@ -147,6 +147,7 @@ fn main() {
         .plugin(ctxrun_plugin_git::init())
         .plugin(ctxrun_plugin_refinery::init())
         .plugin(ctxrun_plugin_miner::init())
+        .plugin(ctxrun_plugin_ocr::init())
         .plugin(ctxrun_plugin_transfer::init())
         .plugin(ctxrun_plugin_tool_runtime::init())
         .plugin(ctxrun_plugin_exec_runtime::init())

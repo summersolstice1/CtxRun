@@ -56,6 +56,7 @@ arboard = "3.6"
 regex = "1.12"
 once_cell = "1.21"
 entropy = "0.4"
+ocr-rs = "2.2.2"
 
 # db
 rusqlite = { version = "0.37", features = ["bundled"] }
@@ -96,6 +97,7 @@ ctxrun-plugin-context = { path = "crates/context" }
 ctxrun-plugin-git = { path = "crates/git" }
 ctxrun-plugin-refinery = { path = "crates/refinery" }
 ctxrun-plugin-miner = { path = "crates/miner" }
+ctxrun-plugin-ocr = { path = "crates/ocr" }
 ctxrun-plugin-tool-runtime = { path = "crates/tool-runtime" }
 ctxrun-plugin-exec-runtime = { path = "crates/exec-runtime" }
 ctxrun-plugin-transfer = { path = "crates/transfer" }

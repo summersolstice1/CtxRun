@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-ocr-release"
+description = "Enables the ocr_release command without any pre-configured scope."
+commands.allow = ["ocr_release"]
+
+[[permission]]
+identifier = "deny-ocr-release"
+description = "Denies the ocr_release command without any pre-configured scope."
+commands.deny = ["ocr_release"]
