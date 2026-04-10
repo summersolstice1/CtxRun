@@ -155,10 +155,20 @@ export function PreviewModal() {
                 ) : activeFile ? (
                   <PreviewOcrSplitLayout
                     showPanel={showOcrPanel}
-                    preview={<PreviewContent meta={activeFile} mode={activeMode} />}
+                    preview={
+                      <PreviewContent
+                        meta={activeFile}
+                        mode={activeMode}
+                        ocrResult={previewOcr.result}
+                        selectedOcrLineIndex={previewOcr.selectedLineIndex}
+                        onSelectOcrLine={previewOcr.selectLine}
+                      />
+                    }
                     panel={
                       <PreviewOcrPanel
                         state={previewOcr}
+                        onHighlightLine={previewOcr.highlightLine}
+                        onSelectLine={previewOcr.selectLine}
                       />
                     }
                   />

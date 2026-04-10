@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 import { FileMeta, PreviewMode } from '@/types/hyperview';
+import type { OcrRecognitionResponse } from '@/types/ocr';
 
 import { BinaryRenderer } from './renderers/BinaryRenderer';
 import { MediaRenderer } from './renderers/MediaRenderer';
@@ -37,9 +38,15 @@ function PreviewFallback() {
 export function PreviewContent({
   meta,
   mode = meta.defaultMode,
+  ocrResult,
+  selectedOcrLineIndex,
+  onSelectOcrLine,
 }: {
   meta: FileMeta;
   mode?: PreviewMode;
+  ocrResult?: OcrRecognitionResponse | null;
+  selectedOcrLineIndex?: number | null;
+  onSelectOcrLine?: (index: number) => void;
 }) {
   const reduceMotion = useReducedMotion();
   const transition = reduceMotion
@@ -52,7 +59,13 @@ export function PreviewContent({
     case 'image':
       content = (
         <Suspense fallback={<PreviewFallback />}>
-          <ImageRenderer key={meta.path} meta={meta} />
+          <ImageRenderer
+            key={meta.path}
+            meta={meta}
+            ocrResult={ocrResult}
+            selectedOcrLineIndex={selectedOcrLineIndex}
+            onSelectOcrLine={onSelectOcrLine}
+          />
         </Suspense>
       );
       break;

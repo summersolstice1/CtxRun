@@ -9,6 +9,8 @@ export interface PreviewOcrState {
   needsSetup: boolean;
   status: OcrStatus | null;
   result: OcrRecognitionResponse | null;
+  selectedLineIndex: number | null;
+  selectionRequestId: number;
   error: string | null;
 }
 
@@ -18,6 +20,8 @@ const INITIAL_PREVIEW_OCR_STATE: PreviewOcrState = {
   needsSetup: false,
   status: null,
   result: null,
+  selectedLineIndex: null,
+  selectionRequestId: 0,
   error: null,
 };
 
@@ -61,6 +65,8 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
         needsSetup: false,
         status: null,
         result: null,
+        selectedLineIndex: null,
+        selectionRequestId: 0,
         error: null,
       });
     });
@@ -79,6 +85,8 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
             needsSetup: true,
             status,
             result: null,
+            selectedLineIndex: null,
+            selectionRequestId: 0,
             error: null,
           });
         });
@@ -97,6 +105,8 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
           needsSetup: false,
           status,
           result,
+          selectedLineIndex: null,
+          selectionRequestId: 0,
           error: null,
         });
       });
@@ -113,16 +123,82 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
           needsSetup,
           status: previous.status,
           result: null,
+          selectedLineIndex: null,
+          selectionRequestId: 0,
           error: needsSetup ? null : normalizeOcrError(error),
         }));
       });
     }
   }, [activeFile, onAutoPin]);
 
+  const highlightLine = useCallback((index: number | null) => {
+    startTransition(() => {
+      setState((previous) => {
+        if (!previous.result) {
+          return previous;
+        }
+
+        if (index === null) {
+          if (previous.selectedLineIndex === null) {
+            return previous;
+          }
+
+          return {
+            ...previous,
+            selectedLineIndex: null,
+          };
+        }
+
+        if (index < 0 || index >= previous.result.lines.length || previous.selectedLineIndex === index) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          selectedLineIndex: index,
+        };
+      });
+    });
+  }, []);
+
+  const selectLine = useCallback((index: number | null) => {
+    startTransition(() => {
+      setState((previous) => {
+        if (!previous.result) {
+          return previous;
+        }
+
+        if (index === null) {
+          if (previous.selectedLineIndex === null) {
+            return previous;
+          }
+
+          return {
+            ...previous,
+            selectedLineIndex: null,
+            selectionRequestId: previous.selectionRequestId + 1,
+          };
+        }
+
+        if (index < 0 || index >= previous.result.lines.length) {
+          return previous;
+        }
+
+        return {
+          ...previous,
+          selectedLineIndex: index,
+          selectionRequestId: previous.selectionRequestId + 1,
+        };
+      });
+    });
+  }, []);
+
   return {
     ...state,
     canUseOcr: Boolean(isImageFile),
     closePanel,
+    highlightLine,
     runOcr,
+    selectLine,
   };
 }
