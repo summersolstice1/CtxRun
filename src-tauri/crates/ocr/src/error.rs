@@ -14,6 +14,9 @@ pub enum OcrServiceError {
         missing: Vec<String>,
     },
 
+    #[error("OCR models are not prepared yet")]
+    ModelsNotPrepared,
+
     #[error("OCR manifest fetch failed: {0}")]
     ManifestFetchFailed(String),
 

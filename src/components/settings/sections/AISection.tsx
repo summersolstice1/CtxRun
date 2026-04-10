@@ -8,6 +8,7 @@ import {
 } from '@/components/settings/SettingsUi';
 import { cn } from '@/lib/utils';
 import type { AIProviderConfig, AIProviderSetting } from '@/types/model';
+import { OcrServiceCard } from '@/components/settings/sections/OcrServiceCard';
 
 interface AISectionProps {
   aiConfig: AIProviderConfig;
@@ -223,6 +224,8 @@ export function AISection({
             onChange={(event) => setAIConfig({ modelId: event.target.value })}
           />
         </SettingsSurface>
+
+        <OcrServiceCard />
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
-import { ChevronLeft, ChevronRight, Eye, FileText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, FileText, Pin, PinOff } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
@@ -63,25 +63,29 @@ export default function PeekApp() {
     activeMode,
     isLoading,
     error,
+    isPinned,
     openSession,
     next,
     previous,
     setActiveMode,
+    togglePinned,
     clear,
   } = usePeekStore(
     useShallow((state) => ({
       paths: state.paths,
       activeIndex: state.activeIndex,
       activeFile: state.activeFile,
-      activeMode: state.activeMode,
-      isLoading: state.isLoading,
-      error: state.error,
-      openSession: state.openSession,
-      next: state.next,
-      previous: state.previous,
-      setActiveMode: state.setActiveMode,
-      clear: state.clear,
-    }))
+        activeMode: state.activeMode,
+        isLoading: state.isLoading,
+        error: state.error,
+        isPinned: state.isPinned,
+        openSession: state.openSession,
+        next: state.next,
+        previous: state.previous,
+        setActiveMode: state.setActiveMode,
+        togglePinned: state.togglePinned,
+        clear: state.clear,
+      }))
   );
 
   useEffect(() => {
@@ -132,11 +136,19 @@ export default function PeekApp() {
     };
 
     const scheduleBlurClose = (delayMs: number) => {
+      if (usePeekStore.getState().isPinned) {
+        return;
+      }
+
       cancelPendingBlurClose();
       blurCloseTimerRef.current = window.setTimeout(() => {
         blurCloseTimerRef.current = null;
 
         if (document.hasFocus()) {
+          return;
+        }
+
+        if (usePeekStore.getState().isPinned) {
           return;
         }
 
@@ -189,6 +201,9 @@ export default function PeekApp() {
       }
 
       if (event.key === 'Escape') {
+        if (usePeekStore.getState().isPinned) {
+          return;
+        }
         event.preventDefault();
         void closePeekWindow();
         return;
@@ -199,6 +214,9 @@ export default function PeekApp() {
       }
 
       if (event.key === ' ') {
+        if (usePeekStore.getState().isPinned) {
+          return;
+        }
         event.preventDefault();
         void closePeekWindow();
         return;
@@ -269,7 +287,14 @@ export default function PeekApp() {
           {canNavigate && (
             <span>{currentPosition}/{paths.length}</span>
           )}
-          <span className="hidden sm:inline">Space / Esc</span>
+          <button
+            type="button"
+            onClick={togglePinned}
+            className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
+            title={isPinned ? t('peek.unpinPreview') : t('peek.pinPreview')}
+          >
+            {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
+          </button>
         </div>
       </header>
 

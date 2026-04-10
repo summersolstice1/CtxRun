@@ -13,11 +13,14 @@ interface PeekState {
   activeMode: PreviewMode;
   isLoading: boolean;
   error: string | null;
+  isPinned: boolean;
   openSession: (payload: PeekOpenPayload) => Promise<void>;
   showIndex: (index: number) => Promise<void>;
   next: () => Promise<void>;
   previous: () => Promise<void>;
   setActiveMode: (mode: PreviewMode) => void;
+  setPinned: (pinned: boolean) => void;
+  togglePinned: () => void;
   clear: () => void;
 }
 
@@ -87,6 +90,7 @@ export const usePeekStore = create<PeekState>((set, get) => ({
   activeMode: 'default',
   isLoading: false,
   error: null,
+  isPinned: false,
   openSession: async (payload) => {
     set({
       sessionId: payload.sessionId,
@@ -96,6 +100,7 @@ export const usePeekStore = create<PeekState>((set, get) => ({
       activeMode: 'default',
       isLoading: payload.paths.length > 0,
       error: null,
+      isPinned: false,
     });
 
     await loadIndex(payload.activeIndex, set, get);
@@ -129,6 +134,12 @@ export const usePeekStore = create<PeekState>((set, get) => ({
 
     set({ activeMode: mode });
   },
+  setPinned: (pinned) => {
+    set({ isPinned: pinned });
+  },
+  togglePinned: () => {
+    set((state) => ({ isPinned: !state.isPinned }));
+  },
   clear: () => {
     activeRequestId += 1;
     set({
@@ -139,6 +150,7 @@ export const usePeekStore = create<PeekState>((set, get) => ({
       activeMode: 'default',
       isLoading: false,
       error: null,
+      isPinned: false,
     });
   },
 }));

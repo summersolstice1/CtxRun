@@ -16,6 +16,12 @@ use ctxrun_runtime_utils::IdleTracker;
 const OCR_IDLE_TTL: Duration = Duration::from_secs(120);
 const OCR_IDLE_REAPER_INTERVAL: Duration = Duration::from_secs(30);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum IdleReaperAction {
+    Continue,
+    Stop,
+}
+
 struct OcrServiceInner {
     engine: Mutex<Option<Arc<OcrEngine>>>,
     prepare_lock: Mutex<()>,
@@ -123,6 +129,18 @@ impl OcrService {
         self.release()
     }
 
+    pub fn idle_reaper_tick(&self) -> IdleReaperAction {
+        if !self.is_loaded() {
+            return IdleReaperAction::Stop;
+        }
+
+        if self.release_if_idle() {
+            return IdleReaperAction::Stop;
+        }
+
+        IdleReaperAction::Continue
+    }
+
     fn recognize_image<R: Runtime>(
         &self,
         app: &AppHandle<R>,
@@ -157,7 +175,7 @@ impl OcrService {
             return Ok(engine);
         }
 
-        let model_paths = self.ensure_models_ready(app)?;
+        let model_paths = self.require_prepared_models(app)?;
         let config = build_engine_config();
         let engine = OcrEngineBuilder::new()
             .with_det_model_path(&model_paths.det_model)
@@ -172,10 +190,6 @@ impl OcrService {
         *lock_recover(&self.inner.engine) = Some(engine.clone());
         self.inner.idle.touch();
         Ok(engine)
-    }
-
-    fn ensure_models_ready<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrPackagePaths> {
-        self.ensure_models_prepared(app)
     }
 
     fn ensure_models_prepared<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrPackagePaths> {
@@ -206,6 +220,25 @@ impl OcrService {
         Ok(package)
     }
 
+    fn require_prepared_models<R: Runtime>(&self, app: &AppHandle<R>) -> Result<OcrPackagePaths> {
+        let storage = OcrStoragePaths::from_app(app)?;
+        storage.ensure_root_dirs()?;
+
+        let Some(active) = download::read_active_package(&storage)? else {
+            return Err(OcrServiceError::ModelsNotPrepared);
+        };
+
+        let package = storage.package(active.release_tag);
+        if package.is_complete() {
+            Ok(package)
+        } else {
+            Err(OcrServiceError::missing_models(
+                package.package_dir.to_string_lossy().to_string(),
+                package.missing_files(),
+            ))
+        }
+    }
+
     fn resolve_active_package<R: Runtime>(
         &self,
         app: &AppHandle<R>,
@@ -229,7 +262,7 @@ impl OcrService {
         lock_recover(&self.inner.engine).clone()
     }
 
-    fn is_loaded(&self) -> bool {
+    pub fn is_loaded(&self) -> bool {
         lock_recover(&self.inner.engine).is_some()
     }
 }

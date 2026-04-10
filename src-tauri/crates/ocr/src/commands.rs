@@ -32,9 +32,17 @@ pub async fn ocr_recognize_file<R: Runtime>(
     request: OcrRecognizeFileRequest,
 ) -> Result<OcrRecognitionResponse> {
     let service = state.service();
-    tauri::async_runtime::spawn_blocking(move || service.recognize_file(&app, request.path))
+    let worker_service = service.clone();
+    let result =
+        tauri::async_runtime::spawn_blocking(move || worker_service.recognize_file(&app, request.path))
         .await
-        .map_err(|err| OcrServiceError::JoinError(err.to_string()))?
+        .map_err(|err| OcrServiceError::JoinError(err.to_string()))?;
+
+    if service.is_loaded() {
+        state.ensure_idle_reaper_started();
+    }
+
+    result
 }
 
 #[tauri::command]
@@ -44,12 +52,22 @@ pub async fn ocr_recognize_bytes<R: Runtime>(
     request: OcrRecognizeBytesRequest,
 ) -> Result<OcrRecognitionResponse> {
     let service = state.service();
-    tauri::async_runtime::spawn_blocking(move || service.recognize_bytes(&app, &request.bytes))
+    let worker_service = service.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        worker_service.recognize_bytes(&app, &request.bytes)
+    })
         .await
-        .map_err(|err| OcrServiceError::JoinError(err.to_string()))?
+        .map_err(|err| OcrServiceError::JoinError(err.to_string()))?;
+
+    if service.is_loaded() {
+        state.ensure_idle_reaper_started();
+    }
+
+    result
 }
 
 #[tauri::command]
 pub fn ocr_release(state: State<'_, OcrState>) -> bool {
+    state.stop_idle_reaper();
     state.service().release()
 }

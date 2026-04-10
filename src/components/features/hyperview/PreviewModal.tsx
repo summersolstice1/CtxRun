@@ -3,7 +3,7 @@ import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
 import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { usePreviewStore } from '@/store/usePreviewStore';
-import { X, FileText } from 'lucide-react';
+import { FileText, Pin, PinOff, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PreviewContent } from './PreviewContent';
 import { PreviewModeSwitch } from './PreviewModeSwitch';
@@ -23,21 +23,30 @@ function formatBytes(value: number) {
 
 export function PreviewModal() {
   const { t } = useTranslation();
-  const { isOpen, activeFile, activeMode, isLoading, error, closePreview, setActiveMode } = usePreviewStore();
+  const {
+    isOpen,
+    activeFile,
+    activeMode,
+    isLoading,
+    error,
+    isPinned,
+    closePreview,
+    setActiveMode,
+    togglePinned,
+  } = usePreviewStore();
   const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
 
-  // 监听 ESC 关闭
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape' && isOpen && !isPinned) {
         e.preventDefault();
         e.stopPropagation();
         closePreview();
       }
     };
-    window.addEventListener('keydown', handleKeyDown, true); // Capture phase
+    window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isOpen, closePreview]);
+  }, [isOpen, isPinned, closePreview]);
 
   return (
     <AnimatePresence>
@@ -48,7 +57,7 @@ export function PreviewModal() {
           exit={{ opacity: 0, scale: 0.95 }}
           transition={{ duration: 0.15 }}
           className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm p-8"
-          onClick={closePreview}
+          onClick={isPinned ? undefined : closePreview}
         >
           <div
             className="w-full max-w-5xl h-[80vh] bg-background border border-border rounded-xl shadow-2xl overflow-hidden flex flex-col relative"
@@ -73,6 +82,13 @@ export function PreviewModal() {
                           onChange={setActiveMode}
                         />
                     )}
+                    <button
+                      onClick={togglePinned}
+                      className="rounded p-1.5 transition-colors hover:bg-secondary/70"
+                      title={isPinned ? t('peek.unpinPreview') : t('peek.pinPreview')}
+                    >
+                        {isPinned ? <PinOff size={18} /> : <Pin size={18} />}
+                    </button>
                     <button onClick={closePreview} className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded transition-colors">
                         <X size={18} />
                     </button>

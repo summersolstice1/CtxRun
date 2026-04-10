@@ -9,9 +9,12 @@ interface PreviewState {
   activeFile: FileMeta | null;
   activeMode: PreviewMode;
   error: string | null;
+  isPinned: boolean;
 
   openPreview: (path: string) => Promise<void>;
   setActiveMode: (mode: PreviewMode) => void;
+  setPinned: (pinned: boolean) => void;
+  togglePinned: () => void;
   closePreview: () => void;
 }
 
@@ -21,9 +24,17 @@ export const usePreviewStore = create<PreviewState>((set) => ({
   activeFile: null,
   activeMode: 'default',
   error: null,
+  isPinned: false,
 
   openPreview: async (path: string) => {
-    set({ isOpen: true, isLoading: true, error: null, activeFile: null, activeMode: 'default' });
+    set({
+      isOpen: true,
+      isLoading: true,
+      error: null,
+      activeFile: null,
+      activeMode: 'default',
+      isPinned: false,
+    });
 
     try {
       const meta = await invoke<FileMeta>('get_file_meta', { path });
@@ -52,7 +63,21 @@ export const usePreviewStore = create<PreviewState>((set) => ({
     });
   },
 
+  setPinned: (pinned) => {
+    set({ isPinned: pinned });
+  },
+
+  togglePinned: () => {
+    set((state) => ({ isPinned: !state.isPinned }));
+  },
+
   closePreview: () => {
-    set({ isOpen: false, activeFile: null, activeMode: 'default', error: null });
+    set({
+      isOpen: false,
+      activeFile: null,
+      activeMode: 'default',
+      error: null,
+      isPinned: false,
+    });
   }
 }));

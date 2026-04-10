@@ -6,7 +6,7 @@ use std::time::Duration;
 use chrono::Utc;
 use reqwest::blocking::Client;
 use sha2::{Digest, Sha256};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Emitter, Runtime};
 
 use crate::error::{OcrServiceError, Result};
 use crate::models::{OcrActivePackage, OcrManifest, OcrManifestFile, OcrPrepareProgress};

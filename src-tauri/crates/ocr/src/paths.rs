@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use tauri::{AppHandle, Runtime};
+use tauri::{AppHandle, Manager, Runtime};
 
 use crate::error::{OcrServiceError, Result};
 
