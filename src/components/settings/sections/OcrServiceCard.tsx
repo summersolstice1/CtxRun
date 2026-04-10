@@ -2,22 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertCircle, CheckCircle2, Cpu, Download, HardDrive, Loader2, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SettingsSurface } from '@/components/settings/SettingsUi';
+import { formatBytes } from '@/lib/utils';
 import { getOcrStatus, listenToOcrPrepareProgress, prepareOcr, releaseOcr } from '@/lib/ocr';
 import type { OcrPrepareProgress, OcrStatus } from '@/types/ocr';
-
-function formatBytes(bytes: number) {
-  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB'];
-  let value = bytes;
-  let unitIndex = 0;
-
-  while (value >= 1024 && unitIndex < units.length - 1) {
-    value /= 1024;
-    unitIndex += 1;
-  }
-
-  return `${value >= 10 || unitIndex === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unitIndex]}`;
-}
 
 function buildStatusTone(status: OcrStatus | null) {
   if (!status) {
@@ -79,9 +66,8 @@ export function OcrServiceCard() {
         unlisten();
       }
       setIsPreparingAction(false);
-      await loadStatus();
     }
-  }, [loadStatus]);
+  }, []);
 
   const handleRelease = useCallback(async () => {
     setIsReleasing(true);

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
-import { cn } from '@/lib/utils';
+import { cn, formatBytes } from '@/lib/utils';
 import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { usePreviewStore } from '@/store/usePreviewStore';
 import { FileText, Pin, PinOff, ScanText, X } from 'lucide-react';
@@ -11,19 +11,6 @@ import { PreviewOcrPanel } from './PreviewOcrPanel';
 import { PreviewOcrSplitLayout } from './PreviewOcrSplitLayout';
 import { PreviewModeSwitch } from './PreviewModeSwitch';
 import { usePreviewOcr } from './usePreviewOcr';
-
-function formatBytes(value: number) {
-  if (value >= 1024 * 1024 * 1024) {
-    return `${(value / 1024 / 1024 / 1024).toFixed(1)} GB`;
-  }
-  if (value >= 1024 * 1024) {
-    return `${(value / 1024 / 1024).toFixed(1)} MB`;
-  }
-  if (value >= 1024) {
-    return `${(value / 1024).toFixed(1)} KB`;
-  }
-  return `${value} B`;
-}
 
 export function PreviewModal() {
   const { t } = useTranslation();

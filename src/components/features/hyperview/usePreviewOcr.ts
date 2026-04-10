@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { getOcrStatus, isOcrModelsNotPreparedError, normalizeOcrError, recognizeOcrFile } from '@/lib/ocr';
 import type { FileMeta } from '@/types/hyperview';
 import type { OcrRecognitionResponse, OcrStatus } from '@/types/ocr';
@@ -37,7 +37,7 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
 
   useEffect(() => {
     activeRequestIdRef.current += 1;
-    startTransition(() => setState(INITIAL_PREVIEW_OCR_STATE));
+    setState(INITIAL_PREVIEW_OCR_STATE);
   }, [activeFile?.path, isImageFile]);
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
 
   const closePanel = useCallback(() => {
     activeRequestIdRef.current += 1;
-    startTransition(() => setState(INITIAL_PREVIEW_OCR_STATE));
+    setState(INITIAL_PREVIEW_OCR_STATE);
   }, []);
 
   const runOcr = useCallback(async () => {
@@ -58,17 +58,15 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
 
     const requestId = ++activeRequestIdRef.current;
     onAutoPin();
-    startTransition(() => {
-      setState({
-        isOpen: true,
-        isBusy: true,
-        needsSetup: false,
-        status: null,
-        result: null,
-        selectedLineIndex: null,
-        selectionRequestId: 0,
-        error: null,
-      });
+    setState({
+      isOpen: true,
+      isBusy: true,
+      needsSetup: false,
+      status: null,
+      result: null,
+      selectedLineIndex: null,
+      selectionRequestId: 0,
+      error: null,
     });
 
     try {
@@ -78,17 +76,15 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
       }
 
       if (status.preparing || !status.installed) {
-        startTransition(() => {
-          setState({
-            isOpen: true,
-            isBusy: false,
-            needsSetup: true,
-            status,
-            result: null,
-            selectedLineIndex: null,
-            selectionRequestId: 0,
-            error: null,
-          });
+        setState({
+          isOpen: true,
+          isBusy: false,
+          needsSetup: true,
+          status,
+          result: null,
+          selectedLineIndex: null,
+          selectionRequestId: 0,
+          error: null,
         });
         return;
       }
@@ -98,17 +94,15 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
         return;
       }
 
-      startTransition(() => {
-        setState({
-          isOpen: true,
-          isBusy: false,
-          needsSetup: false,
-          status,
-          result,
-          selectedLineIndex: null,
-          selectionRequestId: 0,
-          error: null,
-        });
+      setState({
+        isOpen: true,
+        isBusy: false,
+        needsSetup: false,
+        status,
+        result,
+        selectedLineIndex: null,
+        selectionRequestId: 0,
+        error: null,
       });
     } catch (error) {
       if (requestId !== activeRequestIdRef.current) {
@@ -116,80 +110,74 @@ export function usePreviewOcr({ activeFile, onAutoPin }: UsePreviewOcrOptions) {
       }
 
       const needsSetup = isOcrModelsNotPreparedError(error);
-      startTransition(() => {
-        setState((previous) => ({
-          isOpen: true,
-          isBusy: false,
-          needsSetup,
-          status: previous.status,
-          result: null,
-          selectedLineIndex: null,
-          selectionRequestId: 0,
-          error: needsSetup ? null : normalizeOcrError(error),
-        }));
-      });
+      setState((previous) => ({
+        isOpen: true,
+        isBusy: false,
+        needsSetup,
+        status: previous.status,
+        result: null,
+        selectedLineIndex: null,
+        selectionRequestId: 0,
+        error: needsSetup ? null : normalizeOcrError(error),
+      }));
     }
   }, [activeFile, onAutoPin]);
 
   const highlightLine = useCallback((index: number | null) => {
-    startTransition(() => {
-      setState((previous) => {
-        if (!previous.result) {
-          return previous;
-        }
+    setState((previous) => {
+      if (!previous.result) {
+        return previous;
+      }
 
-        if (index === null) {
-          if (previous.selectedLineIndex === null) {
-            return previous;
-          }
-
-          return {
-            ...previous,
-            selectedLineIndex: null,
-          };
-        }
-
-        if (index < 0 || index >= previous.result.lines.length || previous.selectedLineIndex === index) {
+      if (index === null) {
+        if (previous.selectedLineIndex === null) {
           return previous;
         }
 
         return {
           ...previous,
-          selectedLineIndex: index,
+          selectedLineIndex: null,
         };
-      });
+      }
+
+      if (index < 0 || index >= previous.result.lines.length || previous.selectedLineIndex === index) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        selectedLineIndex: index,
+      };
     });
   }, []);
 
   const selectLine = useCallback((index: number | null) => {
-    startTransition(() => {
-      setState((previous) => {
-        if (!previous.result) {
-          return previous;
-        }
+    setState((previous) => {
+      if (!previous.result) {
+        return previous;
+      }
 
-        if (index === null) {
-          if (previous.selectedLineIndex === null) {
-            return previous;
-          }
-
-          return {
-            ...previous,
-            selectedLineIndex: null,
-            selectionRequestId: previous.selectionRequestId + 1,
-          };
-        }
-
-        if (index < 0 || index >= previous.result.lines.length) {
+      if (index === null) {
+        if (previous.selectedLineIndex === null) {
           return previous;
         }
 
         return {
           ...previous,
-          selectedLineIndex: index,
+          selectedLineIndex: null,
           selectionRequestId: previous.selectionRequestId + 1,
         };
-      });
+      }
+
+      if (index < 0 || index >= previous.result.lines.length) {
+        return previous;
+      }
+
+      return {
+        ...previous,
+        selectedLineIndex: index,
+        selectionRequestId: previous.selectionRequestId + 1,
+      };
     });
   }, []);
 
