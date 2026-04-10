@@ -11,6 +11,7 @@ import {
 } from '@/types/exec';
 
 const OUTPUT_CHAR_CAP = 16_000;
+const MAX_TERMINAL_SESSIONS = 60;
 let listenersInitInFlight = false;
 const completionResolvers = new Map<string, Array<(session: ExecSessionRecord) => void>>();
 
@@ -43,6 +44,54 @@ function resolveCompletion(session: ExecSessionRecord) {
   if (!resolvers) return;
   completionResolvers.delete(session.id);
   resolvers.forEach((resolve) => resolve(session));
+}
+
+function pruneExecSessions(
+  sessions: Record<string, ExecSessionRecord>,
+  toolCallToSessionId: Record<string, string>,
+) {
+  const entries = Object.entries(sessions);
+  const activeEntries = entries.filter(([, session]) => !isTerminalState(session.state));
+  const terminalEntries = entries
+    .filter(([, session]) => isTerminalState(session.state))
+    .sort((left, right) => right[1].updatedAtMs - left[1].updatedAtMs)
+    .slice(0, MAX_TERMINAL_SESSIONS);
+
+  if (activeEntries.length + terminalEntries.length === entries.length) {
+    return { sessions, toolCallToSessionId };
+  }
+
+  const nextSessions = Object.fromEntries([...activeEntries, ...terminalEntries]);
+  const keptSessionIds = new Set(Object.keys(nextSessions));
+  const nextToolCallToSessionId = Object.fromEntries(
+    Object.entries(toolCallToSessionId).filter(([, sessionId]) => keptSessionIds.has(sessionId)),
+  );
+
+  return {
+    sessions: nextSessions,
+    toolCallToSessionId: nextToolCallToSessionId,
+  };
+}
+
+function buildExecSessionUpdate(
+  state: Pick<ExecStoreState, 'sessions' | 'toolCallToSessionId'>,
+  session: ExecSessionRecord,
+  toolCallId?: string,
+  forceToolCallMapping = false,
+) {
+  const nextSessions = {
+    ...state.sessions,
+    [session.id]: session,
+  };
+  const nextToolCallToSessionId =
+    toolCallId && (forceToolCallMapping || !state.toolCallToSessionId[toolCallId])
+      ? {
+          ...state.toolCallToSessionId,
+          [toolCallId]: session.id,
+        }
+      : state.toolCallToSessionId;
+
+  return pruneExecSessions(nextSessions, nextToolCallToSessionId);
 }
 
 export const useExecStore = create<ExecStoreState>((set, get) => ({
@@ -94,19 +143,7 @@ export const useExecStore = create<ExecStoreState>((set, get) => ({
             combinedOutput: appendCapped(base.combinedOutput, payload.text, OUTPUT_CHAR_CAP * 4),
             updatedAtMs: Date.now(),
           };
-          return {
-            sessions: {
-              ...state.sessions,
-              [payload.sessionId]: nextSession,
-            },
-            toolCallToSessionId:
-              payload.toolCallId && !state.toolCallToSessionId[payload.toolCallId]
-                ? {
-                    ...state.toolCallToSessionId,
-                    [payload.toolCallId]: payload.sessionId,
-                  }
-                : state.toolCallToSessionId,
-          };
+          return buildExecSessionUpdate(state, nextSession, payload.toolCallId);
         });
       });
 
@@ -129,23 +166,15 @@ export const useExecStore = create<ExecStoreState>((set, get) => ({
               stderr: '',
               combinedOutput: '',
             };
-          return {
-            sessions: {
-              ...state.sessions,
-              [payload.sessionId]: {
-                ...base,
-                state: payload.state,
-                updatedAtMs: Date.now(),
-              },
+          return buildExecSessionUpdate(
+            state,
+            {
+              ...base,
+              state: payload.state,
+              updatedAtMs: Date.now(),
             },
-            toolCallToSessionId:
-              payload.toolCallId && !state.toolCallToSessionId[payload.toolCallId]
-                ? {
-                    ...state.toolCallToSessionId,
-                    [payload.toolCallId]: payload.sessionId,
-                  }
-                : state.toolCallToSessionId,
-          };
+            payload.toolCallId,
+          );
         });
       });
 
@@ -182,19 +211,7 @@ export const useExecStore = create<ExecStoreState>((set, get) => ({
             updatedAtMs: Date.now(),
           };
           resolveCompletion({ ...nextSession });
-          return {
-            sessions: {
-              ...state.sessions,
-              [payload.sessionId]: nextSession,
-            },
-            toolCallToSessionId:
-              payload.toolCallId && !state.toolCallToSessionId[payload.toolCallId]
-                ? {
-                    ...state.toolCallToSessionId,
-                    [payload.toolCallId]: payload.sessionId,
-                  }
-                : state.toolCallToSessionId,
-          };
+          return buildExecSessionUpdate(state, nextSession, payload.toolCallId);
         });
       });
 
@@ -209,31 +226,25 @@ export const useExecStore = create<ExecStoreState>((set, get) => ({
     set((state) => {
       const existing = state.sessions[session.id];
       const keepExistingTerminal = existing && isTerminalState(existing.state);
-      return {
-        sessions: {
-          ...state.sessions,
-          [session.id]: {
-            ...existing,
-            ...session,
-            state: keepExistingTerminal ? existing.state : session.state,
-            exitCode: keepExistingTerminal ? existing.exitCode : session.exitCode,
-            exitReason: keepExistingTerminal ? existing.exitReason : session.exitReason,
-            stdoutPreview: existing?.stdoutPreview || session.stdoutPreview,
-            stderrPreview: existing?.stderrPreview || session.stderrPreview,
-            stdout: existing?.stdout ?? session.stdoutPreview,
-            stderr: existing?.stderr ?? session.stderrPreview,
-            combinedOutput:
-              existing?.combinedOutput ?? [session.stdoutPreview, session.stderrPreview].filter(Boolean).join('\n'),
-            durationMs: existing?.durationMs,
-          },
+      return buildExecSessionUpdate(
+        state,
+        {
+          ...existing,
+          ...session,
+          state: keepExistingTerminal ? existing.state : session.state,
+          exitCode: keepExistingTerminal ? existing.exitCode : session.exitCode,
+          exitReason: keepExistingTerminal ? existing.exitReason : session.exitReason,
+          stdoutPreview: existing?.stdoutPreview || session.stdoutPreview,
+          stderrPreview: existing?.stderrPreview || session.stderrPreview,
+          stdout: existing?.stdout ?? session.stdoutPreview,
+          stderr: existing?.stderr ?? session.stderrPreview,
+          combinedOutput:
+            existing?.combinedOutput ?? [session.stdoutPreview, session.stderrPreview].filter(Boolean).join('\n'),
+          durationMs: existing?.durationMs,
         },
-        toolCallToSessionId: session.toolCallId
-          ? {
-              ...state.toolCallToSessionId,
-              [session.toolCallId]: session.id,
-            }
-          : state.toolCallToSessionId,
-      };
+        session.toolCallId,
+        true,
+      );
     }),
   markPendingApproval: (toolCallId, payload) =>
     set((state) => ({

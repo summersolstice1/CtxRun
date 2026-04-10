@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect, cloneElement, memo, type CSSProperties } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useShallow } from 'zustand/react/shallow';
 
 const CONTEXT_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-context|';
 import {
@@ -89,7 +90,21 @@ export function TokenDashboard({
   isActive
 }: TokenDashboardProps) {
   const { t } = useTranslation();
-  const { removeComments, setRemoveComments, toggleSelect, detectSecrets, setDetectSecrets } = useContextStore();
+  const {
+    removeComments,
+    setRemoveComments,
+    toggleSelect,
+    detectSecrets,
+    setDetectSecrets,
+  } = useContextStore(
+    useShallow((state) => ({
+      removeComments: state.removeComments,
+      setRemoveComments: state.setRemoveComments,
+      toggleSelect: state.toggleSelect,
+      detectSecrets: state.detectSecrets,
+      setDetectSecrets: state.setDetectSecrets,
+    })),
+  );
 
   const [stats, setStats] = useState<ContextStats>({ file_count: 0, total_size: 0, total_tokens: 0 });
   const [isCalculating, setIsCalculating] = useState(false);

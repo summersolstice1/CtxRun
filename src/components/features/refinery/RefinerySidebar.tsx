@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Hash, Star, Type, Image as ImageIcon, Trash2, ChevronLeft, ChevronRight, Search, X, Loader2, Plus, PenTool } from 'lucide-react';
 import { useRefineryStore } from '@/store/useRefineryStore';
 import { useAppStore } from '@/store/useAppStore';
@@ -13,12 +14,35 @@ export function RefinerySidebar() {
     calendarMonth, calendarYear, dateRange,
     navigateMonth, setRangeStart, setRangeEnd, resetDateFilter,
     statistics, statisticsLoading,
-    createNote
-  } = useRefineryStore();
-  const { language } = useAppStore();
+    createNote,
+    searchQuery,
+    setSearchQuery,
+  } = useRefineryStore(
+    useShallow((state) => ({
+      kindFilter: state.kindFilter,
+      setKindFilter: state.setKindFilter,
+      pinnedOnly: state.pinnedOnly,
+      togglePinnedOnly: state.togglePinnedOnly,
+      manualOnly: state.manualOnly,
+      toggleManualOnly: state.toggleManualOnly,
+      clearHistory: state.clearHistory,
+      calendarMonth: state.calendarMonth,
+      calendarYear: state.calendarYear,
+      dateRange: state.dateRange,
+      navigateMonth: state.navigateMonth,
+      setRangeStart: state.setRangeStart,
+      setRangeEnd: state.setRangeEnd,
+      resetDateFilter: state.resetDateFilter,
+      statistics: state.statistics,
+      statisticsLoading: state.statisticsLoading,
+      createNote: state.createNote,
+      searchQuery: state.searchQuery,
+      setSearchQuery: state.setSearchQuery,
+    })),
+  );
+  const language = useAppStore((state) => state.language);
 
   const [localSearch, setLocalSearch] = useState('');
-  const { searchQuery, setSearchQuery } = useRefineryStore();
 
   // 拖动选择状态
   const [isDragging, setIsDragging] = useState(false);

@@ -10,8 +10,9 @@ import {
   resolveMonacoPreviewLanguage,
 } from "@/lib/monaco";
 import { useAppStore } from "@/store/useAppStore";
+import { createStringLruCache } from "./previewTextCache";
 
-const codeContentCache = new Map<string, string>();
+const codeContentCache = createStringLruCache();
 
 interface CodeRendererProps {
   meta: FileMeta;
@@ -27,10 +28,14 @@ export function CodeRenderer({ meta, content: providedContent, language }: CodeR
   const monacoRef = useRef<any>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (providedContent !== undefined) {
       setContent(providedContent);
       setLoading(false);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const cacheKey = `${meta.path}:${meta.size}`;
@@ -38,29 +43,38 @@ export function CodeRenderer({ meta, content: providedContent, language }: CodeR
     if (cachedContent) {
       setContent(cachedContent);
       setLoading(false);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     setLoading(true);
 
     const load = async () => {
       try {
-        if (meta.size > 1024 * 1024 * 5) {
-             const largeFileContent = "// File too large for simple preview.\n// Coming in Stage 2: Streaming Reader.";
-             codeContentCache.set(cacheKey, largeFileContent);
-             setContent(largeFileContent);
-        } else {
-             const text = await readTextFile(meta.path);
-             codeContentCache.set(cacheKey, text);
-             setContent(text);
+        const nextContent =
+          meta.size > 1024 * 1024 * 5
+            ? "// File too large for simple preview.\n// Coming in Stage 2: Streaming Reader."
+            : await readTextFile(meta.path);
+        codeContentCache.set(cacheKey, nextContent);
+        if (!cancelled) {
+          setContent(nextContent);
         }
       } catch (e) {
-        setContent(`Error reading file: ${e}`);
+        if (!cancelled) {
+          setContent(`Error reading file: ${e}`);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    load();
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [meta.path, meta.size, providedContent]);
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { Download, Trash2, RefreshCw, Box, Check, Loader2, Globe, Sparkles, Terminal, AlertCircle, ExternalLink } from 'lucide-react';
 import { usePromptStore } from '@/store/usePromptStore';
 import { useAppStore } from '@/store/useAppStore';
@@ -12,16 +13,25 @@ export function PromptLibraryManager() {
   const {
     manifest, fetchManifest, installPack, uninstallPack,
     installedPackIds, isStoreLoading
-  } = usePromptStore();
+  } = usePromptStore(
+    useShallow((state) => ({
+      manifest: state.manifest,
+      fetchManifest: state.fetchManifest,
+      installPack: state.installPack,
+      uninstallPack: state.uninstallPack,
+      installedPackIds: state.installedPackIds,
+      isStoreLoading: state.isStoreLoading,
+    })),
+  );
 
-  const { language } = useAppStore();
+  const language = useAppStore((state) => state.language);
   const [activeTab, setActiveTab] = useState<'prompt' | 'command'>('prompt');
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchManifest();
-  }, []);
+    void fetchManifest();
+  }, [fetchManifest]);
 
   const handleInstall = async (pack: any) => {
       try {

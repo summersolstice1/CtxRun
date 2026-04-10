@@ -18,6 +18,8 @@ interface PreviewState {
   closePreview: () => void;
 }
 
+let activePreviewRequestId = 0;
+
 export const usePreviewStore = create<PreviewState>((set) => ({
   isOpen: false,
   isLoading: false,
@@ -27,6 +29,7 @@ export const usePreviewStore = create<PreviewState>((set) => ({
   isPinned: false,
 
   openPreview: async (path: string) => {
+    const requestId = ++activePreviewRequestId;
     set({
       isOpen: true,
       isLoading: true,
@@ -38,6 +41,10 @@ export const usePreviewStore = create<PreviewState>((set) => ({
 
     try {
       const meta = await invoke<FileMeta>('get_file_meta', { path });
+      if (requestId !== activePreviewRequestId) {
+        return;
+      }
+
       if (meta.size > MAX_INLINE_PREVIEW_BYTES) {
         set({
           activeFile: meta,
@@ -49,6 +56,10 @@ export const usePreviewStore = create<PreviewState>((set) => ({
       }
       set({ activeFile: meta, activeMode: meta.defaultMode, isLoading: false });
     } catch (err: any) {
+      if (requestId !== activePreviewRequestId) {
+        return;
+      }
+
       set({ error: String(err), isLoading: false });
     }
   },
@@ -72,6 +83,7 @@ export const usePreviewStore = create<PreviewState>((set) => ({
   },
 
   closePreview: () => {
+    activePreviewRequestId += 1;
     set({
       isOpen: false,
       activeFile: null,

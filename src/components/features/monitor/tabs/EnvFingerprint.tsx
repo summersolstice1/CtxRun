@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 
 export function EnvFingerprint() {
   const { t } = useTranslation();
-  const { projectRoot } = useContextStore(); 
+  const projectRoot = useContextStore((state) => state.projectRoot); 
   
   const [data, setData] = useState<EnvReport | null>(null);
   const [loading, setLoading] = useState(false);

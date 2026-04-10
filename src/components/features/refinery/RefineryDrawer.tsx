@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   X, Copy, Trash2, Star, Calendar, Monitor, Globe,
@@ -22,8 +23,19 @@ export function RefineryDrawer() {
   const {
     activeId, items, isDrawerOpen, setDrawerOpen,
     deleteItem, togglePin, updateNote, loadItemDetail
-  } = useRefineryStore();
-  const { language } = useAppStore();
+  } = useRefineryStore(
+    useShallow((state) => ({
+      activeId: state.activeId,
+      items: state.items,
+      isDrawerOpen: state.isDrawerOpen,
+      setDrawerOpen: state.setDrawerOpen,
+      deleteItem: state.deleteItem,
+      togglePin: state.togglePin,
+      updateNote: state.updateNote,
+      loadItemDetail: state.loadItemDetail,
+    })),
+  );
+  const language = useAppStore((state) => state.language);
 
   const activeItem = items.find((i) => i.id === activeId);
   const imagePath = activeItem?.kind === 'image' ? activeItem.content : null;
@@ -87,8 +99,10 @@ export function RefineryDrawer() {
 
   const handleSave = async () => {
     if (!activeItem) return;
-    await updateNote(activeItem.id, editContent, editTitle);
-    setIsEditing(false);
+    const didSave = await updateNote(activeItem.id, editContent, editTitle);
+    if (didSave) {
+      setIsEditing(false);
+    }
   };
 
   const handleCancel = () => {
@@ -141,8 +155,10 @@ export function RefineryDrawer() {
                     <>
                       <ActionBtn onClick={() => setIsEditing(true)} icon={<Edit2 size={16} />} title="Edit" />
                       <div className="h-4 w-px bg-border/60 mx-1" />
-                      <ActionBtn
-                        onClick={() => togglePin(activeItem.id)}
+                        <ActionBtn
+                          onClick={() => {
+                            void togglePin(activeItem.id);
+                          }}
                         active={activeItem.isPinned}
                         icon={<Star size={16} className={activeItem.isPinned ? 'fill-current' : ''} />}
                         animated

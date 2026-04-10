@@ -23,7 +23,7 @@ interface ClockPopoverProps {
 }
 
 export function ClockPopover({ currentTime, isOpen, onClose, triggerRef }: ClockPopoverProps) {
-  const { setMonitorOpen } = useAppStore();
+  const setMonitorOpen = useAppStore((state) => state.setMonitorOpen);
   const { t } = useTranslation();
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [copiedType, setCopiedType] = useState<string | null>(null);

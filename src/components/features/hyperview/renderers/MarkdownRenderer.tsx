@@ -3,8 +3,9 @@ import { FileMeta } from "@/types/hyperview";
 import { readTextFile } from "@tauri-apps/plugin-fs";
 import { Loader2 } from "lucide-react";
 import { MarkdownContent } from "@/components/ui/MarkdownContent";
+import { createStringLruCache } from "./previewTextCache";
 
-const markdownContentCache = new Map<string, string>();
+const markdownContentCache = createStringLruCache();
 
 interface MarkdownRendererProps {
   meta: FileMeta;
@@ -16,10 +17,14 @@ export function MarkdownRenderer({ meta, content: providedContent }: MarkdownRen
   const [loading, setLoading] = useState(providedContent === undefined);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (providedContent !== undefined) {
       setContent(providedContent);
       setLoading(false);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     const cacheKey = `${meta.path}:${meta.size}`;
@@ -27,29 +32,38 @@ export function MarkdownRenderer({ meta, content: providedContent }: MarkdownRen
     if (cachedContent) {
       setContent(cachedContent);
       setLoading(false);
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
 
     setLoading(true);
 
     const load = async () => {
       try {
-        if (meta.size > 1024 * 1024 * 2) { // > 2MB
-             const largeFileContent = "# File too large\n\nPreviewing large markdown files is disabled for performance.";
-             markdownContentCache.set(cacheKey, largeFileContent);
-             setContent(largeFileContent);
-        } else {
-             const text = await readTextFile(meta.path);
-             markdownContentCache.set(cacheKey, text);
-             setContent(text);
+        const nextContent =
+          meta.size > 1024 * 1024 * 2
+            ? "# File too large\n\nPreviewing large markdown files is disabled for performance."
+            : await readTextFile(meta.path);
+        markdownContentCache.set(cacheKey, nextContent);
+        if (!cancelled) {
+          setContent(nextContent);
         }
       } catch (e) {
-        setContent(`# Error\n\nCould not read file: ${e}`);
+        if (!cancelled) {
+          setContent(`# Error\n\nCould not read file: ${e}`);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    load();
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
   }, [meta.path, meta.size, providedContent]);
 
   if (loading) return <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-muted-foreground"/></div>;

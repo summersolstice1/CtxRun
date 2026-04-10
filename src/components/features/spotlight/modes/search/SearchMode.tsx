@@ -25,7 +25,7 @@ export function SearchMode({ results, selectedIndex, setSelectedIndex, onSelect,
   const { t } = useTranslation();
   const { setQuery, inputRef, setSearchScope } = useSpotlight();
 
-  const { projectRoot } = useContextStore();
+  const projectRoot = useContextStore((state) => state.projectRoot);
   const listRef = useRef<HTMLDivElement>(null);
   const loaderRef = useRef<HTMLDivElement>(null); // 哨兵元素
 

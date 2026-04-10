@@ -16,7 +16,7 @@ interface PromptDetailTooltipProps {
 }
 
 export function PromptDetailTooltip({ prompt, anchorRect, isOpen, onMouseEnter, onMouseLeave }: PromptDetailTooltipProps) {
-  const { language } = useAppStore();
+  const language = useAppStore((state) => state.language);
   const { t } = useTranslation();
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const [isPositioned, setIsPositioned] = useState(false);

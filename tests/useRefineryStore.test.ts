@@ -379,10 +379,7 @@ describe('useRefineryStore', () => {
     expect(useRefineryStore.getState().calendarMonth).toBe(0);
     expect(useRefineryStore.getState().calendarYear).toBe(2025);
     expect(useRefineryStore.getState().dateRange).toEqual({ start: null, end: null });
-    expect(invokeMock).toHaveBeenCalledWith(
-      'plugin:ctxrun-plugin-refinery|get_refinery_history',
-      expect.objectContaining({ page: 1 })
-    );
+    expect(invokeMock).not.toHaveBeenCalled();
   });
 
   it('adjusts date ranges when start and end are selected out of order', async () => {

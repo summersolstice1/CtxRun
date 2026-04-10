@@ -22,8 +22,8 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
   const { t } = useTranslation();
-  const { theme } = useAppStore();
-  const { removeComments } = useContextStore();
+  const theme = useAppStore((state) => state.theme);
+  const removeComments = useContextStore((state) => state.removeComments);
 
   const editorRef = useRef<any>(null);
   const monacoRef = useRef<any>(null);

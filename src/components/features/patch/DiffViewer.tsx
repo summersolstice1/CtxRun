@@ -15,7 +15,7 @@ interface DiffViewerProps {
 }
 
 export function DiffViewer({ original, modified, fileName = '', placeholder }: DiffViewerProps) {
-  const { theme } = useAppStore();
+  const theme = useAppStore((state) => state.theme);
   const [renderSideBySide, setRenderSideBySide] = useState(true);
   const { t } = useTranslation();
   const monacoRef = useRef<any>(null);

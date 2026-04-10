@@ -1,11 +1,19 @@
 import { AlertTriangle, Info, XCircle, Check } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { useConfirmStore } from '@/store/useConfirmStore';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 export function GlobalConfirmDialog() {
   const { t } = useTranslation();
-  const { isOpen, options, handleConfirm, handleCancel } = useConfirmStore();
+  const { isOpen, options, handleConfirm, handleCancel } = useConfirmStore(
+    useShallow((state) => ({
+      isOpen: state.isOpen,
+      options: state.options,
+      handleConfirm: state.handleConfirm,
+      handleCancel: state.handleCancel,
+    })),
+  );
 
   if (!isOpen) return null;
 

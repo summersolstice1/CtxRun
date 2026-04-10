@@ -3,18 +3,17 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
-import { ChevronLeft, ChevronRight, Eye, FileText, Pin, PinOff, ScanText } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
-import { PreviewContent } from '@/components/features/hyperview/PreviewContent';
-import { PreviewOcrPanel } from '@/components/features/hyperview/PreviewOcrPanel';
-import { PreviewOcrSplitLayout } from '@/components/features/hyperview/PreviewOcrSplitLayout';
+import { PreviewQuickActions } from '@/components/features/hyperview/PreviewQuickActions';
 import { PreviewModeSwitch } from '@/components/features/hyperview/PreviewModeSwitch';
+import { PreviewViewport } from '@/components/features/hyperview/PreviewViewport';
 import { usePreviewOcr } from '@/components/features/hyperview/usePreviewOcr';
 import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { applyThemeToDocument } from '@/lib/theme';
-import { cn } from '@/lib/utils';
+import { formatBytes } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { usePeekStore } from '@/store/usePeekStore';
 import type { PeekOpenPayload } from '@/types/peek';
@@ -35,17 +34,6 @@ const INTERACTIVE_KEYBOARD_TARGETS = [
   '[role="button"]',
   '.monaco-editor',
 ].join(', ');
-
-function formatSize(bytes: number) {
-  if (bytes === 0) return '0 B';
-
-  const units = ['B', 'KB', 'MB', 'GB'];
-  const base = Math.floor(Math.log(bytes) / Math.log(1024));
-  const unit = units[Math.min(base, units.length - 1)];
-  const value = bytes / Math.pow(1024, Math.min(base, units.length - 1));
-
-  return `${value.toFixed(value >= 10 || unit === 'B' ? 0 : 1)} ${unit}`;
-}
 
 function targetOwnsKeyboard(event: KeyboardEvent) {
   const nodes = [event.target, document.activeElement].filter(
@@ -236,9 +224,16 @@ export default function PeekApp() {
 
   const canNavigate = paths.length > 1;
   const currentPosition = paths.length > 0 ? activeIndex + 1 : 0;
-  const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
   const canUseOcr = Boolean(activeFile && !error && activeFile.previewType === 'image');
   const showOcrPanel = canUseOcr && previewOcr.isOpen;
+  const handleToggleOcr = () => {
+    if (previewOcr.isOpen) {
+      previewOcr.closePanel();
+      return;
+    }
+
+    void previewOcr.runOcr();
+  };
 
   return (
     <div className="peek-window flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
@@ -259,7 +254,7 @@ export default function PeekApp() {
             </div>
             <div className="truncate text-xs text-muted-foreground">
               {activeFile
-                ? `${activeFile.mime} · ${formatSize(activeFile.size)}`
+                ? `${activeFile.mime} · ${formatBytes(activeFile.size)}`
                 : t('peek.subtitle')}
             </div>
           </div>
@@ -277,97 +272,74 @@ export default function PeekApp() {
           {canNavigate && (
             <span>{currentPosition}/{paths.length}</span>
           )}
-          {canUseOcr && (
-            <button
-              type="button"
-              onClick={() => {
-                if (previewOcr.isOpen) {
-                  previewOcr.closePanel();
-                  return;
-                }
-
-                void previewOcr.runOcr();
-              }}
-              className={cn(
-                'inline-flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground',
-                previewOcr.isOpen && 'bg-secondary/70 text-foreground'
-              )}
-              title={previewOcr.isOpen ? t('peek.ocrClosePanel') : t('peek.ocrRun')}
-            >
-              <ScanText size={16} />
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={togglePinned}
-            className="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
-            title={isPinned ? t('peek.unpinPreview') : t('peek.pinPreview')}
-          >
-            {isPinned ? <PinOff size={16} /> : <Pin size={16} />}
-          </button>
+          <PreviewQuickActions
+            canUseOcr={canUseOcr}
+            isOcrOpen={previewOcr.isOpen}
+            isPinned={isPinned}
+            onToggleOcr={handleToggleOcr}
+            onTogglePinned={togglePinned}
+            ocrRunTitle={t('peek.ocrRun')}
+            ocrCloseTitle={t('peek.ocrClosePanel')}
+            pinTitle={t('peek.pinPreview')}
+            unpinTitle={t('peek.unpinPreview')}
+            buttonClassName="inline-flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground"
+            activeButtonClassName="bg-secondary/70 text-foreground"
+            iconSize={16}
+          />
         </div>
       </header>
 
       <main className="relative flex-1 overflow-hidden bg-transparent">
-        {isLoading ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground">
-            <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground/60" />
-            <p className="text-sm">{t('peek.loading')}</p>
-          </div>
-        ) : error ? (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
-            <FileText size={22} className="text-destructive" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                {isOversizedPreview ? t('peek.oversizedTitle') : t('peek.failed')}
-              </p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {isOversizedPreview
-                  ? t('peek.oversizedDescription', { limit: formatSize(MAX_INLINE_PREVIEW_BYTES) })
-                  : error}
-              </p>
+        <PreviewViewport
+          activeFile={activeFile}
+          activeMode={activeMode}
+          isLoading={isLoading}
+          error={error}
+          showOcrPanel={showOcrPanel}
+          previewOcr={previewOcr}
+          onHighlightOcrLine={previewOcr.highlightLine}
+          onSelectOcrLine={previewOcr.selectLine}
+          oversizedError={OVERSIZED_PREVIEW_ERROR}
+          renderLoading={() => (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted-foreground">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-border border-t-foreground/60" />
+              <p className="text-sm">{t('peek.loading')}</p>
             </div>
-            {isOversizedPreview && activeFile && (
-              <button
-                type="button"
-                onClick={() => void open(activeFile.path).catch((openError) => {
-                  console.error('[Peek] Failed to open oversized file with default app:', openError);
-                })}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-              >
-                {t('peek.openExternal')}
-              </button>
-            )}
-          </div>
-        ) : activeFile ? (
-          <PreviewOcrSplitLayout
-            showPanel={showOcrPanel}
-            preview={
-              <PreviewContent
-                meta={activeFile}
-                mode={activeMode}
-                ocrResult={previewOcr.result}
-                selectedOcrLineIndex={previewOcr.selectedLineIndex}
-                onSelectOcrLine={previewOcr.selectLine}
-              />
-            }
-            panel={
-              <PreviewOcrPanel
-                state={previewOcr}
-                onHighlightLine={previewOcr.highlightLine}
-                onSelectLine={previewOcr.selectLine}
-              />
-            }
-          />
-        ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
-            <Eye size={22} />
-            <div>
-              <p className="text-sm font-semibold text-foreground">{t('peek.emptyTitle')}</p>
-              <p className="mt-1 text-sm">{t('peek.emptyDescription')}</p>
+          )}
+          renderError={({ error: currentError, isOversizedPreview, activeFile: currentFile, openExternal }) => (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center">
+              <FileText size={22} className="text-destructive" />
+              <div>
+                <p className="text-sm font-semibold text-foreground">
+                  {isOversizedPreview ? t('peek.oversizedTitle') : t('peek.failed')}
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {isOversizedPreview
+                    ? t('peek.oversizedDescription', { limit: formatBytes(MAX_INLINE_PREVIEW_BYTES) })
+                    : currentError}
+                </p>
+              </div>
+              {isOversizedPreview && currentFile && (
+                <button
+                  type="button"
+                  onClick={openExternal}
+                  className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                >
+                  {t('peek.openExternal')}
+                </button>
+              )}
             </div>
-          </div>
-        )}
+          )}
+          renderEmpty={() => (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
+              <Eye size={22} />
+              <div>
+                <p className="text-sm font-semibold text-foreground">{t('peek.emptyTitle')}</p>
+                <p className="mt-1 text-sm">{t('peek.emptyDescription')}</p>
+              </div>
+            </div>
+          )}
+        />
       </main>
 
       <footer className="flex items-center justify-between px-5 py-3 text-xs text-muted-foreground">

@@ -221,7 +221,7 @@ interface MetricCardProps {
 
 export function MonitorDashboard() {
   const { t } = useTranslation();
-  const confirm = useConfirmStore();
+  const askForConfirmation = useConfirmStore((state) => state.ask);
   
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [processes, setProcesses] = useState<ProcessInfo[]>([]);
@@ -295,7 +295,7 @@ export function MonitorDashboard() {
   const handleKillProcess = async (proc: ProcessInfo) => {
       if (proc.is_system) return;
 
-      const confirmed = await confirm.ask({
+      const confirmed = await askForConfirmation({
           title: t('monitor.confirmKill'),
           message: t('monitor.killMsg', { name: proc.name, pid: proc.pid.toString() }),
           type: 'danger',

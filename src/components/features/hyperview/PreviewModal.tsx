@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
-import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
-import { cn, formatBytes } from '@/lib/utils';
+import { useShallow } from 'zustand/react/shallow';
+
+import { formatBytes } from '@/lib/utils';
 import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { usePreviewStore } from '@/store/usePreviewStore';
-import { FileText, Pin, PinOff, ScanText, X } from 'lucide-react';
+import { FileText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { PreviewContent } from './PreviewContent';
-import { PreviewOcrPanel } from './PreviewOcrPanel';
-import { PreviewOcrSplitLayout } from './PreviewOcrSplitLayout';
+import { PreviewQuickActions } from './PreviewQuickActions';
 import { PreviewModeSwitch } from './PreviewModeSwitch';
+import { PreviewViewport } from './PreviewViewport';
 import { usePreviewOcr } from './usePreviewOcr';
 
 export function PreviewModal() {
@@ -25,14 +25,34 @@ export function PreviewModal() {
     setActiveMode,
     setPinned,
     togglePinned,
-  } = usePreviewStore();
-  const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
+  } = usePreviewStore(
+    useShallow((state) => ({
+      isOpen: state.isOpen,
+      activeFile: state.activeFile,
+      activeMode: state.activeMode,
+      isLoading: state.isLoading,
+      error: state.error,
+      isPinned: state.isPinned,
+      closePreview: state.closePreview,
+      setActiveMode: state.setActiveMode,
+      setPinned: state.setPinned,
+      togglePinned: state.togglePinned,
+    })),
+  );
   const previewOcr = usePreviewOcr({
     activeFile,
     onAutoPin: () => setPinned(true),
   });
   const canUseOcr = Boolean(activeFile && !error && activeFile.previewType === 'image');
   const showOcrPanel = canUseOcr && previewOcr.isOpen;
+  const handleToggleOcr = () => {
+    if (previewOcr.isOpen) {
+      previewOcr.closePanel();
+      return;
+    }
+
+    void previewOcr.runOcr();
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -80,33 +100,19 @@ export function PreviewModal() {
                           onChange={setActiveMode}
                         />
                     )}
-                    {canUseOcr && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (previewOcr.isOpen) {
-                            previewOcr.closePanel();
-                            return;
-                          }
-
-                          void previewOcr.runOcr();
-                        }}
-                        className={cn(
-                          'rounded p-1.5 transition-colors hover:bg-secondary/70',
-                          previewOcr.isOpen && 'bg-secondary/70 text-foreground'
-                        )}
-                        title={previewOcr.isOpen ? t('peek.ocrClosePanel') : t('peek.ocrRun')}
-                      >
-                        <ScanText size={18} />
-                      </button>
-                    )}
-                    <button
-                      onClick={togglePinned}
-                      className="rounded p-1.5 transition-colors hover:bg-secondary/70"
-                      title={isPinned ? t('peek.unpinPreview') : t('peek.pinPreview')}
-                    >
-                        {isPinned ? <PinOff size={18} /> : <Pin size={18} />}
-                    </button>
+                    <PreviewQuickActions
+                      canUseOcr={canUseOcr}
+                      isOcrOpen={previewOcr.isOpen}
+                      isPinned={isPinned}
+                      onToggleOcr={handleToggleOcr}
+                      onTogglePinned={togglePinned}
+                      ocrRunTitle={t('peek.ocrRun')}
+                      ocrCloseTitle={t('peek.ocrClosePanel')}
+                      pinTitle={t('peek.pinPreview')}
+                      unpinTitle={t('peek.unpinPreview')}
+                      buttonClassName="rounded p-1.5 transition-colors hover:bg-secondary/70"
+                      activeButtonClassName="bg-secondary/70 text-foreground"
+                    />
                     <button onClick={closePreview} className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded transition-colors">
                         <X size={18} />
                     </button>
@@ -115,51 +121,43 @@ export function PreviewModal() {
 
             {/* Content Body */}
             <div className="flex-1 bg-card relative overflow-hidden">
-                {isLoading ? (
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                        {t('peek.loading')}
-                    </div>
-                ) : error ? (
-                    <div className="absolute inset-0 flex items-center justify-center px-6 text-destructive flex-col gap-3 text-center">
-                        <p className="font-bold">
-                          {isOversizedPreview ? t('peek.oversizedTitle') : t('peek.failed')}
-                        </p>
-                        <p className="max-w-xl text-sm opacity-80">
-                          {isOversizedPreview
-                            ? t('peek.oversizedDescription', { limit: formatBytes(MAX_INLINE_PREVIEW_BYTES) })
-                            : error}
-                        </p>
-                        {isOversizedPreview && activeFile && (
-                          <button
-                            type="button"
-                            onClick={() => void open(activeFile.path).catch(() => undefined)}
-                            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                          >
-                            {t('peek.openExternal')}
-                          </button>
-                        )}
-                    </div>
-                ) : activeFile ? (
-                  <PreviewOcrSplitLayout
-                    showPanel={showOcrPanel}
-                    preview={
-                      <PreviewContent
-                        meta={activeFile}
-                        mode={activeMode}
-                        ocrResult={previewOcr.result}
-                        selectedOcrLineIndex={previewOcr.selectedLineIndex}
-                        onSelectOcrLine={previewOcr.selectLine}
-                      />
-                    }
-                    panel={
-                      <PreviewOcrPanel
-                        state={previewOcr}
-                        onHighlightLine={previewOcr.highlightLine}
-                        onSelectLine={previewOcr.selectLine}
-                      />
-                    }
-                  />
-                ) : null}
+              <PreviewViewport
+                activeFile={activeFile}
+                activeMode={activeMode}
+                isLoading={isLoading}
+                error={error}
+                showOcrPanel={showOcrPanel}
+                previewOcr={previewOcr}
+                onHighlightOcrLine={previewOcr.highlightLine}
+                onSelectOcrLine={previewOcr.selectLine}
+                oversizedError={OVERSIZED_PREVIEW_ERROR}
+                renderLoading={() => (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    {t('peek.loading')}
+                  </div>
+                )}
+                renderError={({ error: currentError, isOversizedPreview, activeFile: currentFile, openExternal }) => (
+                  <div className="absolute inset-0 flex items-center justify-center px-6 text-destructive flex-col gap-3 text-center">
+                    <p className="font-bold">
+                      {isOversizedPreview ? t('peek.oversizedTitle') : t('peek.failed')}
+                    </p>
+                    <p className="max-w-xl text-sm opacity-80">
+                      {isOversizedPreview
+                        ? t('peek.oversizedDescription', { limit: formatBytes(MAX_INLINE_PREVIEW_BYTES) })
+                        : currentError}
+                    </p>
+                    {isOversizedPreview && currentFile && (
+                      <button
+                        type="button"
+                        onClick={openExternal}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                      >
+                        {t('peek.openExternal')}
+                      </button>
+                    )}
+                  </div>
+                )}
+              />
             </div>
           </div>
         </motion.div>

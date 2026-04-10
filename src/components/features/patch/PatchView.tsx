@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { save } from '@tauri-apps/plugin-dialog';
 import { writeText as writeClipboard } from '@tauri-apps/plugin-clipboard-manager';
+import { useShallow } from 'zustand/react/shallow';
 import { useAppStore } from '@/store/useAppStore';
 import { useTranslation } from 'react-i18next';
 import { parseMultiFilePatch } from '@/lib/patch_parser';
@@ -52,7 +53,12 @@ interface PatchPreviewFile {
 }
 
 export function PatchView() {
-  const { aiConfig, projectRoot: globalProjectRoot } = useAppStore();
+  const { aiConfig, projectRoot: globalProjectRoot } = useAppStore(
+    useShallow((state) => ({
+      aiConfig: state.aiConfig,
+      projectRoot: state.projectRoot,
+    })),
+  );
   const { t } = useTranslation();
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

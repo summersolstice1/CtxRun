@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { readTextFile } from '@tauri-apps/plugin-fs';
 
 import type { FileMeta } from '@/types/hyperview';
+import { createStringLruCache } from './previewTextCache';
 
-const textPreviewCache = new Map<string, string>();
+const textPreviewCache = createStringLruCache();
 
 interface UseTextPreviewContentOptions {
   enabled?: boolean;

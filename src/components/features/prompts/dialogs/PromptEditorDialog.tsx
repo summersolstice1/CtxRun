@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useShallow } from 'zustand/react/shallow';
 import { X, Save, Tag, FileText, Folder, Check, Plus, Sparkles, Terminal, Loader2, AlertTriangle, RefreshCw, MessageSquare } from 'lucide-react';
 import { usePromptStore } from '@/store/usePromptStore';
 import { Prompt, DEFAULT_GROUP, ShellType } from '@/types/prompt';
@@ -23,7 +24,13 @@ const SHELL_OPTIONS: { value: ShellType; label: string }[] = [
 ];
 
 export function PromptEditorDialog({ isOpen, onClose, initialData }: PromptEditorDialogProps) {
-  const { groups, addPrompt, updatePrompt } = usePromptStore();
+  const { groups, addPrompt, updatePrompt } = usePromptStore(
+    useShallow((state) => ({
+      groups: state.groups,
+      addPrompt: state.addPrompt,
+      updatePrompt: state.updatePrompt,
+    })),
+  );
   const { t } = useTranslation();
 
   const [title, setTitle] = useState('');

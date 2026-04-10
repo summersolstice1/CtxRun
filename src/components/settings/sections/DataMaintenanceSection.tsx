@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
 import {
@@ -8,6 +9,7 @@ import {
   Download,
   FileSpreadsheet,
   FolderCog,
+  Loader2,
   RefreshCw,
   Upload,
 } from 'lucide-react';
@@ -33,10 +35,22 @@ export function DataMaintenanceSection({
   setRefinerySettings,
 }: DataMaintenanceSectionProps) {
   const { t } = useTranslation();
-  const { loadPrompts, refreshGroups, refreshCounts } = usePromptStore();
+  const { loadPrompts, refreshGroups, refreshCounts } = usePromptStore(
+    useShallow((state) => ({
+      loadPrompts: state.loadPrompts,
+      refreshGroups: state.refreshGroups,
+      refreshCounts: state.refreshCounts,
+    })),
+  );
   const [importStatus, setImportStatus] = useState('');
+  const [busyAction, setBusyAction] = useState<
+    'exportCsv' | 'importCsv' | 'exportJson' | 'importJson' | 'cleanup' | null
+  >(null);
+  const isBusy = busyAction !== null;
 
   const handleExport = async () => {
+    if (busyAction) return;
+    setBusyAction('exportCsv');
     try {
       const filePath = await save({
         filters: [{ name: 'CSV File', extensions: ['csv'] }],
@@ -50,10 +64,14 @@ export function DataMaintenanceSection({
     } catch (error) {
       console.error(error);
       setImportStatus(`Export failed: ${error}`);
+    } finally {
+      setBusyAction(null);
     }
   };
 
   const handleImport = async () => {
+    if (busyAction) return;
+    setBusyAction('importCsv');
     try {
       const filePath = await open({
         filters: [{ name: 'CSV File', extensions: ['csv'] }],
@@ -76,10 +94,14 @@ export function DataMaintenanceSection({
     } catch (error) {
       console.error(error);
       setImportStatus(`Import failed: ${error}`);
+    } finally {
+      setBusyAction(null);
     }
   };
 
   const handleExportProjectConfigs = async () => {
+    if (busyAction) return;
+    setBusyAction('exportJson');
     try {
       const filePath = await save({
         filters: [{ name: 'JSON Config', extensions: ['json'] }],
@@ -93,10 +115,14 @@ export function DataMaintenanceSection({
     } catch (error) {
       console.error(error);
       setImportStatus(`Export failed: ${error}`);
+    } finally {
+      setBusyAction(null);
     }
   };
 
   const handleImportProjectConfigs = async () => {
+    if (busyAction) return;
+    setBusyAction('importJson');
     try {
       const filePath = await open({
         filters: [{ name: 'JSON Config', extensions: ['json'] }],
@@ -115,15 +141,21 @@ export function DataMaintenanceSection({
     } catch (error) {
       console.error(error);
       setImportStatus(`Import failed: ${error}`);
+    } finally {
+      setBusyAction(null);
     }
   };
 
   const handleManualCleanup = async () => {
+    if (busyAction) return;
+    setBusyAction('cleanup');
     try {
       const count = await invoke<number>(`${REFINERY_PLUGIN_PREFIX}manual_cleanup`);
       setImportStatus(t('settings.cleanupSuccess').replace('{count}', count.toString()));
     } catch (error) {
       setImportStatus(t('settings.cleanupFailed').replace('{error}', String(error)));
+    } finally {
+      setBusyAction(null);
     }
   };
 
@@ -154,16 +186,18 @@ export function DataMaintenanceSection({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               onClick={handleExport}
-              className="flex items-center justify-center gap-2 rounded-md border border-border bg-background py-2 text-xs font-medium transition-all shadow-sm hover:border-primary/50 hover:text-primary"
+              disabled={isBusy}
+              className="flex items-center justify-center gap-2 rounded-md border border-border bg-background py-2 text-xs font-medium transition-all shadow-sm hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Download size={14} />
+              {busyAction === 'exportCsv' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
               {t('settings.btnExportCsv')}
             </button>
             <button
               onClick={handleImport}
-              className="flex items-center justify-center gap-2 rounded-md bg-primary py-2 text-xs font-medium text-primary-foreground transition-all shadow-sm hover:bg-primary/90"
+              disabled={isBusy}
+              className="flex items-center justify-center gap-2 rounded-md bg-primary py-2 text-xs font-medium text-primary-foreground transition-all shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Upload size={14} />
+              {busyAction === 'importCsv' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
               {t('settings.btnImportCsv')}
             </button>
           </div>
@@ -202,16 +236,18 @@ export function DataMaintenanceSection({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <button
               onClick={handleExportProjectConfigs}
-              className="flex items-center justify-center gap-2 rounded-md border border-border bg-background py-2 text-xs font-medium transition-all shadow-sm hover:border-primary/50 hover:text-primary"
+              disabled={isBusy}
+              className="flex items-center justify-center gap-2 rounded-md border border-border bg-background py-2 text-xs font-medium transition-all shadow-sm hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Download size={14} />
+              {busyAction === 'exportJson' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
               {t('settings.btnExportJson')}
             </button>
             <button
               onClick={handleImportProjectConfigs}
-              className="flex items-center justify-center gap-2 rounded-md border border-border bg-background py-2 text-xs font-medium transition-all shadow-sm hover:border-primary/50 hover:text-primary"
+              disabled={isBusy}
+              className="flex items-center justify-center gap-2 rounded-md border border-border bg-background py-2 text-xs font-medium transition-all shadow-sm hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
             >
-              <Upload size={14} />
+              {busyAction === 'importJson' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
               {t('settings.btnImportJson')}
             </button>
           </div>
@@ -410,9 +446,10 @@ export function DataMaintenanceSection({
                 </div>
                 <button
                   onClick={handleManualCleanup}
-                  className="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-all shadow-sm hover:bg-primary/90"
+                  disabled={isBusy}
+                  className="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-all shadow-sm hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <RefreshCw size={14} />
+                  {busyAction === 'cleanup' ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                 </button>
               </div>
             </div>

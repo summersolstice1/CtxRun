@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { invoke } from '@tauri-apps/api/core';
 import { Prompt } from '@/types/prompt';
 import { SpotlightItem } from '@/types/spotlight';
@@ -78,7 +79,12 @@ const SEARCH_TEMPLATES: Record<string, { name: string; url: string; color: strin
 
 export function useSpotlightSearch(t: TFunction) {
   const { query, mode, searchScope } = useSpotlight();
-  const { searchSettings, language } = useAppStore();
+  const { searchSettings, language } = useAppStore(
+    useShallow((state) => ({
+      searchSettings: state.searchSettings,
+      language: state.language,
+    })),
+  );
   const debouncedQuery = useDebounce(query, 100);
 
   const [results, setResults] = useState<SpotlightItem[]>([]);

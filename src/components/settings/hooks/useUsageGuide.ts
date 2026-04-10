@@ -7,7 +7,7 @@ const memoryCache: Record<string, string> = {};
 
 export function useUsageGuide() {
   const { t } = useTranslation();
-  const { language } = useAppStore();
+  const language = useAppStore((state) => state.language);
   const [content, setContent] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

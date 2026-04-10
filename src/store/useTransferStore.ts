@@ -15,6 +15,7 @@ import type {
 
 const PLUGIN_PREFIX = 'plugin:ctxrun-plugin-transfer|';
 let listenersInitInFlight = false;
+const CHAT_HISTORY_LIMIT_PER_DEVICE = 200;
 
 interface TransferState {
   isRunning: boolean;
@@ -53,9 +54,10 @@ function appendHistoryMessage(
   deviceId: string,
   message: TransferMessage
 ) {
+  const currentHistory = histories[deviceId] ?? [];
   return {
     ...histories,
-    [deviceId]: [...(histories[deviceId] ?? []), message],
+    [deviceId]: [...currentHistory, message].slice(-CHAT_HISTORY_LIMIT_PER_DEVICE),
   };
 }
 
@@ -255,7 +257,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       set((state) => ({
         chatHistories: {
           ...state.chatHistories,
-          [deviceId]: history,
+          [deviceId]: history.slice(-CHAT_HISTORY_LIMIT_PER_DEVICE),
         },
       }));
     } catch (error) {
@@ -328,7 +330,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
           return {
             chatHistories: {
               ...state.chatHistories,
-              [message.deviceId]: newHistory,
+              [message.deviceId]: newHistory.slice(-CHAT_HISTORY_LIMIT_PER_DEVICE),
             },
           };
         });
@@ -365,7 +367,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
             return {
               chatHistories: {
                 ...state.chatHistories,
-                [progress.deviceId]: updatedHistory,
+                [progress.deviceId]: updatedHistory.slice(-CHAT_HISTORY_LIMIT_PER_DEVICE),
               },
             };
           });

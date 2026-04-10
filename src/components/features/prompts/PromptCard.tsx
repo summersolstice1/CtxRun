@@ -15,8 +15,8 @@ interface PromptCardProps {
 }
 
 function PromptCardComponent({ prompt, onEdit, onDelete, onTrigger }: PromptCardProps) {
-  const { toggleFavorite } = usePromptStore();
-  const { language } = useAppStore();
+  const toggleFavorite = usePromptStore((state) => state.toggleFavorite);
+  const language = useAppStore((state) => state.language);
   const { t } = useTranslation();
   const [isHovered, setIsHovered] = useState(false);
   

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useCallback, CSSProperties, memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { usePromptStore } from '@/store/usePromptStore';
 import { useAppStore } from '@/store/useAppStore';
 import { Search, Plus, Folder, Star, Hash, Trash2, Layers, PanelLeft, AlertTriangle, Terminal, Sparkles, Loader2 } from 'lucide-react';
@@ -88,10 +89,34 @@ export function PromptView() {
     initStore, loadPrompts, isLoading, hasMore,
     deleteGroup, deletePrompt,
     counts,
-  } = usePromptStore();
+  } = usePromptStore(
+    useShallow((state) => ({
+      prompts: state.prompts,
+      groups: state.groups,
+      activeGroup: state.activeGroup,
+      setActiveGroup: state.setActiveGroup,
+      activeCategory: state.activeCategory,
+      setActiveCategory: state.setActiveCategory,
+      searchQuery: state.searchQuery,
+      setSearchQuery: state.setSearchQuery,
+      initStore: state.initStore,
+      loadPrompts: state.loadPrompts,
+      isLoading: state.isLoading,
+      hasMore: state.hasMore,
+      deleteGroup: state.deleteGroup,
+      deletePrompt: state.deletePrompt,
+      counts: state.counts,
+    })),
+  );
 
-  const { isPromptSidebarOpen, setPromptSidebarOpen, language } = useAppStore();
-  const { projectRoot } = useContextStore();
+  const { isPromptSidebarOpen, setPromptSidebarOpen, language } = useAppStore(
+    useShallow((state) => ({
+      isPromptSidebarOpen: state.isPromptSidebarOpen,
+      setPromptSidebarOpen: state.setPromptSidebarOpen,
+      language: state.language,
+    })),
+  );
+  const projectRoot = useContextStore((state) => state.projectRoot);
   const { t } = useTranslation(); 
 
   const [localSearchInput, setLocalSearchInput] = useState('');

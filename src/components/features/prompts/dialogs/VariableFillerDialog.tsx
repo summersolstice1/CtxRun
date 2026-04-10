@@ -23,7 +23,7 @@ export function VariableFillerDialog({
   confirmText,
   onConfirm
 }: VariableFillerDialogProps) {
-  const { language } = useAppStore();
+  const language = useAppStore((state) => state.language);
   const { t } = useTranslation();
   
   const [values, setValues] = useState<Record<string, string>>({});

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search as SearchIcon, Bot, Zap, AppWindow, Terminal, Sparkles, X, MessageSquare, CornerDownRight, Calculator, ClipboardList, Paperclip, FileText, FolderOpen, Image as ImageIcon, MoreVertical } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from './SpotlightContext';
@@ -86,8 +87,15 @@ export function SearchBar({ onKeyDown, isResizeMode = false }: SearchBarProps) {
     attachments, attachmentErrors, addAttachments, removeAttachment, clearAttachmentError
   } = useSpotlight();
 
-  const { aiConfig, setAIConfig, savedProviderSettings, searchSettings } = useAppStore();
-  const { chatTemplates } = usePromptStore();
+  const { aiConfig, setAIConfig, savedProviderSettings, searchSettings } = useAppStore(
+    useShallow((state) => ({
+      aiConfig: state.aiConfig,
+      setAIConfig: state.setAIConfig,
+      savedProviderSettings: state.savedProviderSettings,
+      searchSettings: state.searchSettings,
+    })),
+  );
+  const chatTemplates = usePromptStore((state) => state.chatTemplates);
 
   const [menuSelectedIndex, setMenuSelectedIndex] = useState(0);
   const [folderImportStats, setFolderImportStats] = useState<FolderImportStats | null>(null);

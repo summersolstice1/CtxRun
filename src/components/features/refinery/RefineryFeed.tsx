@@ -12,6 +12,7 @@ import { useMemo, useCallback, useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { motion } from 'framer-motion';
+import { useShallow } from 'zustand/react/shallow';
 import { bundleItems, FeedItemType } from '@/lib/bundler';
 import { BundleCard } from './BundleCard';
 
@@ -24,8 +25,28 @@ export function RefineryFeed() {
     searchQuery, dateRange, kindFilter, pinnedOnly, manualOnly,
     setSearchQuery, resetDateFilter, setKindFilter, togglePinnedOnly, toggleManualOnly,
     loadHistory
-  } = useRefineryStore();
-  const { language } = useAppStore();
+  } = useRefineryStore(
+    useShallow((state) => ({
+      items: state.items,
+      setActiveId: state.setActiveId,
+      activeId: state.activeId,
+      togglePin: state.togglePin,
+      isLoading: state.isLoading,
+      hasMore: state.hasMore,
+      searchQuery: state.searchQuery,
+      dateRange: state.dateRange,
+      kindFilter: state.kindFilter,
+      pinnedOnly: state.pinnedOnly,
+      manualOnly: state.manualOnly,
+      setSearchQuery: state.setSearchQuery,
+      resetDateFilter: state.resetDateFilter,
+      setKindFilter: state.setKindFilter,
+      togglePinnedOnly: state.togglePinnedOnly,
+      toggleManualOnly: state.toggleManualOnly,
+      loadHistory: state.loadHistory,
+    })),
+  );
+  const language = useAppStore((state) => state.language);
 
   // 判断是否有活跃的筛选
   const hasActiveFilter = searchQuery.trim() !== '' || dateRange.start !== null || dateRange.end !== null || kindFilter !== 'all' || pinnedOnly || manualOnly;
@@ -163,19 +184,21 @@ export function RefineryFeed() {
                       <FeedCard
                         item={feedItem.item}
                         isActive={activeId === feedItem.item.id}
-                        onClick={() => setActiveId(feedItem.item.id)}
-                        onTogglePin={(e) => {
-                          e.stopPropagation();
-                          togglePin(feedItem.item.id);
-                        }}
-                      />
+                          onClick={() => setActiveId(feedItem.item.id)}
+                          onTogglePin={(e) => {
+                            e.stopPropagation();
+                            void togglePin(feedItem.item.id);
+                          }}
+                        />
                     ) : (
                       <BundleCard
                         key={feedItem.id}
                         items={feedItem.items}
                         activeId={activeId}
                         onItemClick={setActiveId}
-                        onTogglePin={togglePin}
+                        onTogglePin={(id) => {
+                          void togglePin(id);
+                        }}
                         FeedCardComponent={FeedCard}
                       />
                     )}
@@ -217,8 +240,8 @@ function FeedCard({
   className?: string;
 }) {
   const { t } = useTranslation();
-  const { language } = useAppStore();
-  const { loadItemDetail } = useRefineryStore();
+  const language = useAppStore((state) => state.language);
+  const loadItemDetail = useRefineryStore((state) => state.loadItemDetail);
   // 智能判断图片路径：image 类型取 content，mixed 类型取 metaParsed.image_path
   const imagePath = item.kind === 'image' ? item.content : item.metaParsed?.image_path;
   const isImageOrMixed = item.kind === 'image' || item.kind === 'mixed';

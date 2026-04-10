@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { invoke } from '@tauri-apps/api/core';
 import { Minus, X, Maximize2, Copy, Clock, Settings } from 'lucide-react';
+import { useShallow } from 'zustand/react/shallow';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { ClockPopover } from '@/components/ui/ClockPopover';
@@ -18,7 +19,14 @@ export function TitleBar() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isClockPopoverOpen, setIsClockPopoverOpen] = useState(false);
   const clockTriggerRef = useRef<HTMLDivElement>(null);
-  const { language, windowDestroyDelay, currentView, setView } = useAppStore();
+  const { language, windowDestroyDelay, currentView, setView } = useAppStore(
+    useShallow((state) => ({
+      language: state.language,
+      windowDestroyDelay: state.windowDestroyDelay,
+      currentView: state.currentView,
+      setView: state.setView,
+    })),
+  );
   const lastPrimaryViewRef = useRef<PrimaryAppView>('prompts');
 
   useEffect(() => {

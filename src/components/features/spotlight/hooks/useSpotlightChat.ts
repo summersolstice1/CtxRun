@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { ChatAssistantTraceItem, ChatContentPart, ChatMessage, ChatMessageAttachment, ChatRequestMessage, ChatToolCallTrace } from '@/lib/llm';
 import { useAppStore } from '@/store/useAppStore';
 import { useSpotlight } from '../core/SpotlightContext';
@@ -289,7 +290,12 @@ export function useSpotlightChat() {
     clearAttachments,
     clearAttachmentError
   } = useSpotlight();
-  const { aiConfig: uiAiConfig, setAIConfig } = useAppStore();
+  const { aiConfig: uiAiConfig, setAIConfig } = useAppStore(
+    useShallow((state) => ({
+      aiConfig: state.aiConfig,
+      setAIConfig: state.setAIConfig,
+    })),
+  );
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);

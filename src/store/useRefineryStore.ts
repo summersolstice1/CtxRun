@@ -8,6 +8,7 @@ import { useAppStore } from './useAppStore';
 const REFINERY_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-refinery|';
 
 const PAGE_SIZE = 20;
+let activeHistoryRequestId = 0;
 
 interface RefineryStatistics {
   totalEntries: number;
@@ -64,12 +65,12 @@ interface RefineryState {
   setRangeEnd: (day: number) => void;
   resetDateFilter: () => void;
 
-  togglePin: (id: string) => Promise<void>;
+  togglePin: (id: string) => Promise<boolean>;
   deleteItem: (id: string) => Promise<void>;
   clearHistory: (days?: number) => Promise<void>;
 
   createNote: () => Promise<void>;
-  updateNote: (id: string, content?: string, title?: string) => Promise<void>;
+  updateNote: (id: string, content?: string, title?: string) => Promise<boolean>;
 }
 
 const transformItem = (item: RefineryItem): RefineryItemUI => ({
@@ -151,9 +152,10 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   },
 
   loadHistory: async (reset = false) => {
-    const { page, searchQuery, kindFilter, pinnedOnly, manualOnly, dateRange, items, isLoading } = get();
+    const { page, searchQuery, kindFilter, pinnedOnly, manualOnly, dateRange, isLoading } = get();
     if (isLoading && !reset) return;
 
+    const requestId = ++activeHistoryRequestId;
     set({ isLoading: true });
 
     const currentPage = reset ? 1 : page;
@@ -179,15 +181,23 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         endDate
       });
 
+      if (requestId !== activeHistoryRequestId) {
+        return;
+      }
+
       const mappedRes = res.map(transformItem);
 
-      set({
-        items: reset ? mappedRes : [...items, ...mappedRes],
+      set((state) => ({
+        items: reset ? mappedRes : [...state.items, ...mappedRes],
         page: currentPage + 1,
         hasMore: res.length === PAGE_SIZE,
         isLoading: false
-      });
+      }));
     } catch (e) {
+      if (requestId !== activeHistoryRequestId) {
+        return;
+      }
+
       set({ isLoading: false });
     }
   },
@@ -222,28 +232,22 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
 
   setSearchQuery: (q) => {
     set({ searchQuery: q });
-    get().loadHistory(true);
+    void get().loadHistory(true);
   },
 
   setKindFilter: (k) => {
     set({ kindFilter: k });
-    get().loadHistory(true);
+    void get().loadHistory(true);
   },
 
   togglePinnedOnly: () => {
-    set(state => {
-        const next = !state.pinnedOnly;
-        setTimeout(() => get().loadHistory(true), 0);
-        return { pinnedOnly: next };
-    });
+    set((state) => ({ pinnedOnly: !state.pinnedOnly }));
+    void get().loadHistory(true);
   },
 
   toggleManualOnly: () => {
-    set(state => {
-        const next = !state.manualOnly;
-        setTimeout(() => get().loadHistory(true), 0);
-        return { manualOnly: next };
-    });
+    set((state) => ({ manualOnly: !state.manualOnly }));
+    void get().loadHistory(true);
   },
 
   setCalendarMonth: (month) => set({ calendarMonth: month }),
@@ -263,9 +267,14 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         newYear -= 1;
       }
 
-      get().resetDateFilter();
       return { calendarMonth: newMonth, calendarYear: newYear };
     });
+
+    const { start, end } = get().dateRange;
+    if (start !== null || end !== null) {
+      set({ dateRange: { start: null, end: null } });
+      void get().loadHistory(true);
+    }
   },
 
   setRangeStart: (day) => {
@@ -281,7 +290,7 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     }
 
     set({ dateRange: { start: newStart, end: newEnd } });
-    get().loadHistory(true);
+    void get().loadHistory(true);
   },
 
   setRangeEnd: (day) => {
@@ -297,15 +306,20 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
     }
 
     set({ dateRange: { start: newStart, end: newEnd } });
-    get().loadHistory(true);
+    void get().loadHistory(true);
   },
 
   resetDateFilter: () => {
     set({ dateRange: { start: null, end: null } });
-    get().loadHistory(true);
+    void get().loadHistory(true);
   },
 
   togglePin: async (id) => {
+    const previousItem = get().items.find((item) => item.id === id);
+    if (!previousItem) {
+      return false;
+    }
+
     try {
       set(state => ({
         items: state.items.map(item =>
@@ -313,8 +327,14 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         )
       }));
       await invoke(`${REFINERY_PLUGIN_PREFIX}toggle_refinery_pin`, { id });
-      get().loadStatistics();
+      void get().loadStatistics();
+      return true;
     } catch (e) {
+      console.error('Failed to toggle refinery pin:', e);
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? previousItem : item)),
+      }));
+      return false;
     }
   },
 
@@ -373,6 +393,11 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
   },
 
   updateNote: async (id, content, title) => {
+    const previousItem = get().items.find((item) => item.id === id);
+    if (!previousItem) {
+      return false;
+    }
+
     try {
       set(state => ({
         items: state.items.map(item => {
@@ -392,7 +417,13 @@ export const useRefineryStore = create<RefineryState>((set, get) => ({
         content: content || null,
         title: title || null
       });
+      return true;
     } catch (e) {
+      console.error('Failed to update refinery note:', e);
+      set((state) => ({
+        items: state.items.map((item) => (item.id === id ? previousItem : item)),
+      }));
+      return false;
     }
   }
 }));

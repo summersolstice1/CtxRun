@@ -5,7 +5,8 @@ import { RefineryDrawer } from './RefineryDrawer';
 import { useRefineryStore } from '@/store/useRefineryStore';
 
 export function RefineryView() {
-  const { init, unlisten } = useRefineryStore();
+  const init = useRefineryStore((state) => state.init);
+  const unlisten = useRefineryStore((state) => state.unlisten);
 
   useEffect(() => {
     init();

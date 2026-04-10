@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Cpu, Download, HardDrive, Loader2, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SettingsSurface } from '@/components/settings/SettingsUi';
@@ -21,6 +21,7 @@ function buildStatusTone(status: OcrStatus | null) {
 
 export function OcrServiceCard() {
   const { t } = useTranslation();
+  const isMountedRef = useRef(true);
   const [status, setStatus] = useState<OcrStatus | null>(null);
   const [progress, setProgress] = useState<OcrPrepareProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -28,16 +29,34 @@ export function OcrServiceCard() {
   const [isPreparingAction, setIsPreparingAction] = useState(false);
   const [isReleasing, setIsReleasing] = useState(false);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const loadStatus = useCallback(async () => {
+    if (!isMountedRef.current) {
+      return;
+    }
+
     setIsLoadingStatus(true);
     try {
       const nextStatus = await getOcrStatus();
+      if (!isMountedRef.current) {
+        return;
+      }
+
       setStatus(nextStatus);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
-      setIsLoadingStatus(false);
+      if (isMountedRef.current) {
+        setIsLoadingStatus(false);
+      }
     }
   }, []);
 
@@ -54,18 +73,26 @@ export function OcrServiceCard() {
 
     try {
       unlisten = await listenToOcrPrepareProgress((event) => {
-        setProgress(event);
+        if (isMountedRef.current) {
+          setProgress(event);
+        }
       });
 
       const nextStatus = await prepareOcr();
-      setStatus(nextStatus);
+      if (isMountedRef.current) {
+        setStatus(nextStatus);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
       if (unlisten) {
         unlisten();
       }
-      setIsPreparingAction(false);
+      if (isMountedRef.current) {
+        setIsPreparingAction(false);
+      }
     }
   }, []);
 
@@ -76,8 +103,14 @@ export function OcrServiceCard() {
     try {
       await releaseOcr();
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
     } finally {
+      if (!isMountedRef.current) {
+        return;
+      }
+
       setIsReleasing(false);
       await loadStatus();
     }

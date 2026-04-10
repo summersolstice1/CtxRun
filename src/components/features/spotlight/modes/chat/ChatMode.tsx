@@ -251,7 +251,7 @@ interface ChatModeProps {
 
 export function ChatMode({ messages, isStreaming, chatEndRef, containerRef, onScrollPositionChange }: ChatModeProps) {
   const { t } = useTranslation();
-  const { aiConfig } = useAppStore();
+  const aiConfig = useAppStore((state) => state.aiConfig);
   const [isUserAtBottom, setIsUserAtBottom] = useState(true);
 
   // 监听滚动事件，判断用户是否在底部
