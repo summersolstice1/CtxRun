@@ -3,14 +3,18 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
-import { ChevronLeft, ChevronRight, Eye, FileText, Pin, PinOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, FileText, Pin, PinOff, ScanText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useShallow } from 'zustand/react/shallow';
 
 import { PreviewContent } from '@/components/features/hyperview/PreviewContent';
+import { PreviewOcrPanel } from '@/components/features/hyperview/PreviewOcrPanel';
+import { PreviewOcrSplitLayout } from '@/components/features/hyperview/PreviewOcrSplitLayout';
 import { PreviewModeSwitch } from '@/components/features/hyperview/PreviewModeSwitch';
+import { usePreviewOcr } from '@/components/features/hyperview/usePreviewOcr';
 import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { applyThemeToDocument } from '@/lib/theme';
+import { cn } from '@/lib/utils';
 import { useAppStore } from '@/store/useAppStore';
 import { usePeekStore } from '@/store/usePeekStore';
 import type { PeekOpenPayload } from '@/types/peek';
@@ -68,6 +72,7 @@ export default function PeekApp() {
     next,
     previous,
     setActiveMode,
+    setPinned,
     togglePinned,
     clear,
   } = usePeekStore(
@@ -83,10 +88,15 @@ export default function PeekApp() {
         next: state.next,
         previous: state.previous,
         setActiveMode: state.setActiveMode,
+        setPinned: state.setPinned,
         togglePinned: state.togglePinned,
         clear: state.clear,
       }))
   );
+  const previewOcr = usePreviewOcr({
+    activeFile,
+    onAutoPin: () => setPinned(true),
+  });
 
   useEffect(() => {
     applyThemeToDocument(theme);
@@ -201,9 +211,6 @@ export default function PeekApp() {
       }
 
       if (event.key === 'Escape') {
-        if (usePeekStore.getState().isPinned) {
-          return;
-        }
         event.preventDefault();
         void closePeekWindow();
         return;
@@ -214,9 +221,6 @@ export default function PeekApp() {
       }
 
       if (event.key === ' ') {
-        if (usePeekStore.getState().isPinned) {
-          return;
-        }
         event.preventDefault();
         void closePeekWindow();
         return;
@@ -249,6 +253,8 @@ export default function PeekApp() {
   const canNavigate = paths.length > 1;
   const currentPosition = paths.length > 0 ? activeIndex + 1 : 0;
   const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
+  const canUseOcr = Boolean(activeFile && !error && activeFile.previewType === 'image');
+  const showOcrPanel = canUseOcr && previewOcr.isOpen;
 
   return (
     <div className="peek-window flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground">
@@ -286,6 +292,21 @@ export default function PeekApp() {
           )}
           {canNavigate && (
             <span>{currentPosition}/{paths.length}</span>
+          )}
+          {canUseOcr && (
+            <button
+              type="button"
+              onClick={() => void previewOcr.runOcr()}
+              disabled={previewOcr.isBusy}
+              className={cn(
+                'inline-flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground',
+                previewOcr.isOpen && 'bg-secondary/70 text-foreground',
+                previewOcr.isBusy && 'cursor-wait opacity-70'
+              )}
+              title={t('peek.ocrRun')}
+            >
+              <ScanText size={16} />
+            </button>
           )}
           <button
             type="button"
@@ -330,7 +351,18 @@ export default function PeekApp() {
             )}
           </div>
         ) : activeFile ? (
-          <PreviewContent meta={activeFile} mode={activeMode} />
+          <PreviewOcrSplitLayout
+            showPanel={showOcrPanel}
+            preview={<PreviewContent meta={activeFile} mode={activeMode} />}
+            panel={
+              <PreviewOcrPanel
+                fileName={activeFile.name}
+                state={previewOcr}
+                onClose={previewOcr.closePanel}
+                onRetry={() => void previewOcr.runOcr()}
+              />
+            }
+          />
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center text-muted-foreground">
             <Eye size={22} />

@@ -37,7 +37,6 @@ const SETTINGS_SECTION_WIDTH: Record<SettingsSection, SettingsContentWidth> = {
 };
 
 export function SettingsView() {
-  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
   const { t } = useTranslation();
 
   const [
@@ -93,6 +92,7 @@ export function SettingsView() {
       state.setGuardSettings,
     ]),
   );
+  const [activeSection, setActiveSection] = useState<SettingsSection>('general');
 
   useEffect(() => {
     void invoke(`${REFINERY_PLUGIN_PREFIX}update_cleanup_config`, {

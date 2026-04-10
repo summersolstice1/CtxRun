@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
 import { MAX_INLINE_PREVIEW_BYTES, OVERSIZED_PREVIEW_ERROR } from '@/lib/previewLimits';
 import { usePreviewStore } from '@/store/usePreviewStore';
-import { FileText, Pin, PinOff, X } from 'lucide-react';
+import { FileText, Pin, PinOff, ScanText, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { PreviewContent } from './PreviewContent';
+import { PreviewOcrPanel } from './PreviewOcrPanel';
+import { PreviewOcrSplitLayout } from './PreviewOcrSplitLayout';
 import { PreviewModeSwitch } from './PreviewModeSwitch';
+import { usePreviewOcr } from './usePreviewOcr';
 
 function formatBytes(value: number) {
   if (value >= 1024 * 1024 * 1024) {
@@ -32,13 +36,20 @@ export function PreviewModal() {
     isPinned,
     closePreview,
     setActiveMode,
+    setPinned,
     togglePinned,
   } = usePreviewStore();
   const isOversizedPreview = error === OVERSIZED_PREVIEW_ERROR;
+  const previewOcr = usePreviewOcr({
+    activeFile,
+    onAutoPin: () => setPinned(true),
+  });
+  const canUseOcr = Boolean(activeFile && !error && activeFile.previewType === 'image');
+  const showOcrPanel = canUseOcr && previewOcr.isOpen;
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen && !isPinned) {
+      if (e.key === 'Escape' && isOpen) {
         e.preventDefault();
         e.stopPropagation();
         closePreview();
@@ -82,6 +93,21 @@ export function PreviewModal() {
                           onChange={setActiveMode}
                         />
                     )}
+                    {canUseOcr && (
+                      <button
+                        type="button"
+                        onClick={() => void previewOcr.runOcr()}
+                        disabled={previewOcr.isBusy}
+                        className={cn(
+                          'rounded p-1.5 transition-colors hover:bg-secondary/70',
+                          previewOcr.isOpen && 'bg-secondary/70 text-foreground',
+                          previewOcr.isBusy && 'cursor-wait opacity-70'
+                        )}
+                        title={t('peek.ocrRun')}
+                      >
+                        <ScanText size={18} />
+                      </button>
+                    )}
                     <button
                       onClick={togglePinned}
                       className="rounded p-1.5 transition-colors hover:bg-secondary/70"
@@ -122,7 +148,18 @@ export function PreviewModal() {
                         )}
                     </div>
                 ) : activeFile ? (
-                   <PreviewContent meta={activeFile} mode={activeMode} />
+                  <PreviewOcrSplitLayout
+                    showPanel={showOcrPanel}
+                    preview={<PreviewContent meta={activeFile} mode={activeMode} />}
+                    panel={
+                      <PreviewOcrPanel
+                        fileName={activeFile.name}
+                        state={previewOcr}
+                        onClose={previewOcr.closePanel}
+                        onRetry={() => void previewOcr.runOcr()}
+                      />
+                    }
+                  />
                 ) : null}
             </div>
           </div>

@@ -583,7 +583,27 @@
     "formatFallback": "格式化预览不可用，已回退为源码。",
     "oversizedTitle": "已禁用内联预览",
     "oversizedDescription": "超过 {{limit}} 的文件会改为外部打开，以保证应用稳定性。",
-    "openExternal": "默认应用打开"
+    "openExternal": "默认应用打开",
+    "ocrTitle": "图片 OCR",
+    "ocrRun": "识别图片文本",
+    "ocrClosePanel": "关闭 OCR 面板",
+    "ocrRunningTitle": "正在识别图片文本",
+    "ocrRunningDescription": "识别完成后，结果会显示在右侧面板中。",
+    "ocrSetupTitle": "OCR 尚未初始化",
+    "ocrSetupDescription": "当前设备还没有准备好 OCR 模型，暂时无法识别这张图片。",
+    "ocrPreparingDescription": "OCR 模型正在初始化中，请稍后再试。",
+    "ocrSettingsOnlyHint": "OCR 只能在 设置 -> AI -> OCR 服务 中初始化。",
+    "ocrErrorTitle": "OCR 识别失败",
+    "ocrRetry": "重新识别",
+    "ocrLineCount": "识别行数",
+    "ocrElapsed": "耗时",
+    "ocrExtractedText": "提取文本",
+    "ocrEmptyText": "未识别到可用文本。",
+    "ocrLineDetails": "逐行结果",
+    "ocrResolution": "{{width}} × {{height}}",
+    "ocrEmptyLine": "空白结果",
+    "ocrIdleTitle": "准备开始 OCR",
+    "ocrIdleDescription": "点击上方 OCR 按钮后，这里会显示图片识别结果。"
   },
   "guard": {
     "holdAction": "长按解锁"
