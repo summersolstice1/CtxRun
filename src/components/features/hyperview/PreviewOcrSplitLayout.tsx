@@ -46,9 +46,7 @@ export function PreviewOcrSplitLayout({
         style={{ pointerEvents: showPanel ? 'auto' : 'none' }}
         className="min-w-0 shrink-0 overflow-hidden"
       >
-        <div className="h-full w-full">
-          {panel}
-        </div>
+        {panel}
       </motion.div>
     </div>
   );

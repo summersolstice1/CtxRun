@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
@@ -80,23 +80,39 @@ export default function PeekApp() {
       paths: state.paths,
       activeIndex: state.activeIndex,
       activeFile: state.activeFile,
-        activeMode: state.activeMode,
-        isLoading: state.isLoading,
-        error: state.error,
-        isPinned: state.isPinned,
-        openSession: state.openSession,
-        next: state.next,
-        previous: state.previous,
-        setActiveMode: state.setActiveMode,
-        setPinned: state.setPinned,
-        togglePinned: state.togglePinned,
-        clear: state.clear,
-      }))
+      activeMode: state.activeMode,
+      isLoading: state.isLoading,
+      error: state.error,
+      isPinned: state.isPinned,
+      openSession: state.openSession,
+      next: state.next,
+      previous: state.previous,
+      setActiveMode: state.setActiveMode,
+      setPinned: state.setPinned,
+      togglePinned: state.togglePinned,
+      clear: state.clear,
+    }))
   );
   const previewOcr = usePreviewOcr({
     activeFile,
     onAutoPin: () => setPinned(true),
   });
+
+  const closePeekWindow = useCallback(async () => {
+    clear();
+
+    try {
+      await invoke('peek_clear_request');
+    } catch (error) {
+      console.error('[Peek] Failed to clear pending request:', error);
+    }
+
+    try {
+      await appWindow.close();
+    } catch (error) {
+      console.error('[Peek] Failed to close window:', error);
+    }
+  }, [clear]);
 
   useEffect(() => {
     applyThemeToDocument(theme);
@@ -118,22 +134,6 @@ export default function PeekApp() {
   }, [openSession]);
 
   useEffect(() => {
-    const closePeekWindow = async () => {
-      clear();
-
-      try {
-        await invoke('peek_clear_request');
-      } catch (error) {
-        console.error('[Peek] Failed to clear pending request:', error);
-      }
-
-      try {
-        await appWindow.close();
-      } catch (error) {
-        console.error('[Peek] Failed to close window:', error);
-      }
-    };
-
     const unlistenPromise = listen<PeekOpenPayload>('peek:open', (event) => {
       void openSession(event.payload);
     });
@@ -186,25 +186,9 @@ export default function PeekApp() {
       unlistenPromise.then((unlisten) => unlisten());
       focusListener.then((unlisten) => unlisten());
     };
-  }, [clear, openSession]);
+  }, [clear, openSession, closePeekWindow]);
 
   useEffect(() => {
-    const closePeekWindow = async () => {
-      clear();
-
-      try {
-        await invoke('peek_clear_request');
-      } catch (error) {
-        console.error('[Peek] Failed to clear pending request:', error);
-      }
-
-      try {
-        await appWindow.close();
-      } catch (error) {
-        console.error('[Peek] Failed to close window:', error);
-      }
-    };
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.isComposing || event.defaultPrevented) {
         return;
@@ -248,7 +232,7 @@ export default function PeekApp() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeFile, clear, next, previous]);
+  }, [activeFile, closePeekWindow, next, previous]);
 
   const canNavigate = paths.length > 1;
   const currentPosition = paths.length > 0 ? activeIndex + 1 : 0;

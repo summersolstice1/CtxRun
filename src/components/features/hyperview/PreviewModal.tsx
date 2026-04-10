@@ -44,7 +44,7 @@ export function PreviewModal() {
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isOpen, isPinned, closePreview]);
+  }, [isOpen, closePreview]);
 
   return (
     <AnimatePresence>
