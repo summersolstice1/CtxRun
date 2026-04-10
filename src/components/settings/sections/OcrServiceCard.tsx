@@ -114,7 +114,6 @@ export function OcrServiceCard() {
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-1.5">
           <h4 className="text-sm font-semibold text-foreground">{t('settings.ocrTitle')}</h4>
-          <p className="text-xs text-muted-foreground">{t('settings.ocrDesc')}</p>
         </div>
 
         <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${buildStatusTone(status)}`}>
@@ -249,10 +248,6 @@ export function OcrServiceCard() {
           {isReleasing ? <Loader2 size={16} className="animate-spin" /> : <Cpu size={16} />}
           <span>{t('settings.ocrReleaseAction')}</span>
         </button>
-      </div>
-
-      <div className="rounded-xl border border-border/60 bg-background/40 px-4 py-3 text-xs text-muted-foreground">
-        {t('settings.ocrFeatureHint')}
       </div>
 
       {error && (

@@ -296,14 +296,19 @@ export default function PeekApp() {
           {canUseOcr && (
             <button
               type="button"
-              onClick={() => void previewOcr.runOcr()}
-              disabled={previewOcr.isBusy}
+              onClick={() => {
+                if (previewOcr.isOpen) {
+                  previewOcr.closePanel();
+                  return;
+                }
+
+                void previewOcr.runOcr();
+              }}
               className={cn(
                 'inline-flex items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-secondary/70 hover:text-foreground',
-                previewOcr.isOpen && 'bg-secondary/70 text-foreground',
-                previewOcr.isBusy && 'cursor-wait opacity-70'
+                previewOcr.isOpen && 'bg-secondary/70 text-foreground'
               )}
-              title={t('peek.ocrRun')}
+              title={previewOcr.isOpen ? t('peek.ocrClosePanel') : t('peek.ocrRun')}
             >
               <ScanText size={16} />
             </button>
@@ -356,10 +361,7 @@ export default function PeekApp() {
             preview={<PreviewContent meta={activeFile} mode={activeMode} />}
             panel={
               <PreviewOcrPanel
-                fileName={activeFile.name}
                 state={previewOcr}
-                onClose={previewOcr.closePanel}
-                onRetry={() => void previewOcr.runOcr()}
               />
             }
           />

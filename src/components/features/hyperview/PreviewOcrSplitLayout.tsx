@@ -24,7 +24,7 @@ export function PreviewOcrSplitLayout({
     <div className="flex h-full overflow-hidden">
       <motion.div
         initial={false}
-        animate={{ width: showPanel ? '75%' : '100%' }}
+        animate={{ width: showPanel ? '60%' : '100%' }}
         transition={transition}
         className="min-w-0 shrink-0 overflow-hidden"
       >
@@ -36,8 +36,8 @@ export function PreviewOcrSplitLayout({
         animate={
           showPanel
             ? reduceMotion
-              ? { width: '25%', opacity: 1 }
-              : { width: '25%', opacity: 1, x: 0, filter: 'blur(0px)' }
+              ? { width: '40%', opacity: 1 }
+              : { width: '40%', opacity: 1, x: 0, filter: 'blur(0px)' }
             : reduceMotion
               ? { width: '0%', opacity: 0 }
               : { width: '0%', opacity: 0, x: 18, filter: 'blur(6px)' }

@@ -96,14 +96,19 @@ export function PreviewModal() {
                     {canUseOcr && (
                       <button
                         type="button"
-                        onClick={() => void previewOcr.runOcr()}
-                        disabled={previewOcr.isBusy}
+                        onClick={() => {
+                          if (previewOcr.isOpen) {
+                            previewOcr.closePanel();
+                            return;
+                          }
+
+                          void previewOcr.runOcr();
+                        }}
                         className={cn(
                           'rounded p-1.5 transition-colors hover:bg-secondary/70',
-                          previewOcr.isOpen && 'bg-secondary/70 text-foreground',
-                          previewOcr.isBusy && 'cursor-wait opacity-70'
+                          previewOcr.isOpen && 'bg-secondary/70 text-foreground'
                         )}
-                        title={t('peek.ocrRun')}
+                        title={previewOcr.isOpen ? t('peek.ocrClosePanel') : t('peek.ocrRun')}
                       >
                         <ScanText size={18} />
                       </button>
@@ -153,10 +158,7 @@ export function PreviewModal() {
                     preview={<PreviewContent meta={activeFile} mode={activeMode} />}
                     panel={
                       <PreviewOcrPanel
-                        fileName={activeFile.name}
                         state={previewOcr}
-                        onClose={previewOcr.closePanel}
-                        onRetry={() => void previewOcr.runOcr()}
                       />
                     }
                   />
