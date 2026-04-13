@@ -72,7 +72,7 @@ pub async fn start_service<R: Runtime>(
     eprintln!("[transfer] Server listening on {lan_address}:{port}");
 
     let route_token = match config.url_mode {
-        UrlMode::Random => Some(generate_token(12)),
+        UrlMode::Random => Some(generate_numeric_token(8)),
         UrlMode::Fixed => None,
     };
     let route_path = route_token
@@ -311,7 +311,7 @@ pub async fn respond_connection_request<R: Runtime>(
             .device_manager
             .approve_pending(&device_id)
             .await
-            .ok_or_else(|| TransferError::DeviceNotFound(device_id))?;
+            .ok_or(TransferError::DeviceNotFound(device_id))?;
     } else {
         shared
             .device_manager
@@ -348,7 +348,9 @@ fn resolve_save_dir(configured: Option<&str>) -> Result<PathBuf> {
     Ok(base.join("CtxRun Transfer"))
 }
 
-fn generate_token(length: usize) -> String {
-    let raw = uuid::Uuid::new_v4().simple().to_string();
-    raw[..length.min(raw.len())].to_string()
+fn generate_numeric_token(length: usize) -> String {
+    let length = length.clamp(1, 19);
+    let upper_bound = 10u128.pow(length as u32);
+    let value = uuid::Uuid::new_v4().as_u128() % upper_bound;
+    format!("{value:0length$}")
 }

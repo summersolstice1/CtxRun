@@ -181,9 +181,9 @@ impl DeviceManager {
             .write()
             .await
             .remove(device_id)
-            .and_then(|pending| {
+            .map(|pending| {
                 let _ = pending.approval_tx.send(true);
-                Some(pending.device)
+                pending.device
             })
     }
 

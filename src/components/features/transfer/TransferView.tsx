@@ -57,10 +57,22 @@ export function TransferView() {
     }
   };
 
+  const handleSendFiles = async (paths: string[]) => {
+    for (const filePath of paths) {
+      await sendFile(filePath);
+    }
+  };
+
   const handleAttachFile = async () => {
     try {
-      const selected = await openDialog({ multiple: false, directory: false });
-      if (typeof selected === 'string') await sendFile(selected);
+      const selected = await openDialog({ multiple: true, directory: false });
+      if (typeof selected === 'string') {
+        await handleSendFiles([selected]);
+        return;
+      }
+      if (Array.isArray(selected)) {
+        await handleSendFiles(selected);
+      }
     } catch (error) {
       setToastState({ show: true, message: String(error), type: 'error' });
     }
@@ -107,6 +119,7 @@ export function TransferView() {
           messages={messages}
           onSendMessage={sendMessage}
           onAttachFile={handleAttachFile}
+          onDropFiles={handleSendFiles}
           onOpenFolder={handleOpenFolder}
           onPreviewFile={openPreview}
           onRespondFileRequest={respondFileRequest}

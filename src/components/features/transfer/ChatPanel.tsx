@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { FolderOpen, Paperclip, Send, FileText, MonitorSmartphone, Eye } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { getCurrentWebview } from '@tauri-apps/api/webview';
 import type { TransferDevice, TransferMessage } from '@/types/transfer';
 import { cn } from '@/lib/utils';
 import { buildPreviewUrl } from '@/lib/previewUrl';
+import transferDropIllustration from '@/assets/transfer-drop-illustration.svg';
 
 interface ChatPanelProps {
   isRunning: boolean;
@@ -12,6 +14,7 @@ interface ChatPanelProps {
   messages: TransferMessage[];
   onSendMessage: (content: string) => Promise<void>;
   onAttachFile: () => Promise<void>;
+  onDropFiles: (paths: string[]) => Promise<void>;
   onOpenFolder: (path: string) => Promise<void>;
   onPreviewFile: (path: string) => Promise<void>;
   onRespondFileRequest: (deviceId: string, fileId: string, accept: boolean) => Promise<void>;
@@ -39,10 +42,15 @@ function isImageFile(path?: string | null, fileName?: string | null) {
   return /\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(target);
 }
 
-export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onOpenFolder, onPreviewFile, onRespondFileRequest }: ChatPanelProps) {
+export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendMessage, onAttachFile, onDropFiles, onOpenFolder, onPreviewFile, onRespondFileRequest }: ChatPanelProps) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState('');
+  const [isDragActive, setIsDragActive] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const canInteractRef = useRef(false);
+  const onDropFilesRef = useRef(onDropFiles);
+  onDropFilesRef.current = onDropFiles;
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -58,6 +66,59 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
   };
 
   const canInteract = Boolean(selectedDevice && isRunning && !isBusy);
+  canInteractRef.current = canInteract;
+
+  // Hide overlay when interaction is disabled mid-drag
+  useEffect(() => {
+    if (!canInteract) setIsDragActive(false);
+  }, [canInteract]);
+
+  // Listen to Tauri native drag-drop events (provides file system paths)
+  useEffect(() => {
+    const webview = getCurrentWebview();
+    let dragActive = false;
+
+    const unlistenPromise = webview.onDragDropEvent((event) => {
+      const payload = event.payload;
+
+      if (payload.type === 'enter') {
+        if (!canInteractRef.current || !panelRef.current) return;
+        const rect = panelRef.current.getBoundingClientRect();
+        const scale = window.devicePixelRatio;
+        const x = payload.position.x / scale;
+        const y = payload.position.y / scale;
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+          dragActive = true;
+          setIsDragActive(true);
+        }
+      } else if (payload.type === 'over') {
+        if (!canInteractRef.current || !panelRef.current) {
+          if (dragActive) { dragActive = false; setIsDragActive(false); }
+          return;
+        }
+        const rect = panelRef.current.getBoundingClientRect();
+        const scale = window.devicePixelRatio;
+        const x = payload.position.x / scale;
+        const y = payload.position.y / scale;
+        const inPanel = x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        if (inPanel !== dragActive) {
+          dragActive = inPanel;
+          setIsDragActive(inPanel);
+        }
+      } else if (payload.type === 'drop') {
+        if (dragActive && canInteractRef.current && payload.paths.length > 0) {
+          onDropFilesRef.current(payload.paths);
+        }
+        dragActive = false;
+        setIsDragActive(false);
+      } else if (payload.type === 'leave') {
+        dragActive = false;
+        setIsDragActive(false);
+      }
+    });
+
+    return () => { unlistenPromise.then((fn) => fn()); };
+  }, []);
 
   if (!selectedDevice) {
     return (
@@ -71,7 +132,28 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-secondary/5">
+    <div
+      ref={panelRef}
+      className={cn(
+        "relative flex-1 flex flex-col h-full bg-secondary/5 transition-colors duration-200",
+        isDragActive && "bg-[radial-gradient(circle_at_top,rgba(34,197,94,0.12),transparent_55%),linear-gradient(180deg,rgba(15,23,42,0.02),rgba(34,197,94,0.08))]"
+      )}
+    >
+      {isDragActive && (
+        <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-none bg-[linear-gradient(180deg,rgba(15,23,42,0.08),rgba(15,23,42,0.12))]">
+          <div className="absolute inset-0 border border-emerald-500/18 bg-[radial-gradient(circle_at_top,rgba(74,222,128,0.10),transparent_34%),linear-gradient(180deg,rgba(240,253,244,0.50),rgba(236,253,245,0.46)_46%,rgba(220,252,231,0.50))]" />
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(187,247,208,0.18),transparent_24%,transparent_76%,rgba(167,243,208,0.18))]" />
+          <div className="relative flex h-full items-center justify-center px-10 py-12">
+            <img
+              src={transferDropIllustration}
+              alt=""
+              className="h-auto max-h-[58vh] w-[380px] max-w-[78%] select-none opacity-95 saturate-[0.92] drop-shadow-[0_32px_60px_rgba(15,23,42,0.16)]"
+              draggable={false}
+            />
+          </div>
+        </div>
+      )}
+
       {/* 顶部标题栏 */}
       <div className="h-14 px-6 border-b border-border bg-background/50 backdrop-blur flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
