@@ -1,314 +1,164 @@
 [
   {
-    "id": "tldr-en-freebsd-ypchpass-0",
+    "id": "tldr-en-freebsd-chpass-0",
     "type": "command",
-    "title": "ypchpass - View documentation for the original command",
+    "title": "chpass - Add or change user database information for the current user interactively",
+    "content": "su -c chpass",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Add or change user database information for the current user interactively)",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chpass-1",
+    "type": "command",
+    "title": "chpass - Set a specific login [s]hell for the current user",
+    "content": "chpass -s {{path/to/shell}}",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Set a specific login [s]hell for the current user)",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chpass-2",
+    "type": "command",
+    "title": "chpass - Set a login [s]hell for a specific user",
+    "content": "chpass -s {{path/to/shell}} {{username}}",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Set a login [s]hell for a specific user)",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chpass-3",
+    "type": "command",
+    "title": "chpass - Change the account [e]xpire time (in seconds from the epoch, UTC)",
+    "content": "su -c 'chpass -e {{time}} {{username}}'",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Change the account [e]xpire time (in seconds from the epoch, UTC))",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chpass-4",
+    "type": "command",
+    "title": "chpass - Change a user's password",
+    "content": "su -c 'chpass -p {{encrypted_password}} {{username}}'",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Change a user's password)",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chpass-5",
+    "type": "command",
+    "title": "chpass - Specify the [h]ostname or address of an NIS server to query",
+    "content": "su -c 'chpass -h {{hostname}} {{username}}'",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Specify the [h]ostname or address of an NIS server to query)",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chpass-6",
+    "type": "command",
+    "title": "chpass - Specify a particular NIS [d]omain (system domain name by default)",
+    "content": "su -c 'chpass -d {{domain}} {{username}}'",
+    "group": "Freebsd",
+    "description": "chpass: Add or change user database information, including login shell and password. (Specify a particular NIS [d]omain (system domain name by default))",
+    "tags": [
+      "freebsd",
+      "chpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-ypchfn-0",
+    "type": "command",
+    "title": "ypchfn - View documentation for the original command",
     "content": "tldr chpass",
     "group": "Freebsd",
-    "description": "ypchpass: This command is an alias of `chpass`. (View documentation for the original command)",
+    "description": "ypchfn: This command is an alias of `chpass`. (View documentation for the original command)",
     "tags": [
       "freebsd",
-      "ypchpass",
+      "ypchfn",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-ypchsh-0",
+    "id": "tldr-en-freebsd-ipmitool-0",
     "type": "command",
-    "title": "ypchsh - View documentation for the original command",
-    "content": "tldr chpass",
+    "title": "ipmitool - Load the IPMI kernel module for local connections",
+    "content": "kldload ipmi.ko",
     "group": "Freebsd",
-    "description": "ypchsh: This command is an alias of `chpass`. (View documentation for the original command)",
+    "description": "ipmitool: Interface with the Intelligent Platform Management Interface (IPMI). (Load the IPMI kernel module for local connections)",
     "tags": [
       "freebsd",
-      "ypchsh",
+      "ipmitool",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-base64-0",
+    "id": "tldr-en-freebsd-ipmitool-1",
     "type": "command",
-    "title": "base64 - Encode a file to `stdout`",
-    "content": "base64 {{[-i|--input]}} {{path/to/file}}",
+    "title": "ipmitool - Open IPMI shell on the local hardware",
+    "content": "ipmitool shell",
     "group": "Freebsd",
-    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Encode a file to `stdout`)",
+    "description": "ipmitool: Interface with the Intelligent Platform Management Interface (IPMI). (Open IPMI shell on the local hardware)",
     "tags": [
       "freebsd",
-      "base64",
+      "ipmitool",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-base64-1",
+    "id": "tldr-en-freebsd-ipmitool-2",
     "type": "command",
-    "title": "base64 - Encode a file to the specified output file",
-    "content": "base64 {{[-i|--input]}} {{path/to/input_file}} {{[-o|--output]}} {{path/to/output_file}}",
+    "title": "ipmitool - Open IPMI shell on a remote host",
+    "content": "ipmitool -H {{ip_address}} -U {{user_name}} shell",
     "group": "Freebsd",
-    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Encode a file to the specified output file)",
+    "description": "ipmitool: Interface with the Intelligent Platform Management Interface (IPMI). (Open IPMI shell on a remote host)",
     "tags": [
       "freebsd",
-      "base64",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-base64-2",
-    "type": "command",
-    "title": "base64 - Wrap encoded output at a specific width (`0` disables wrapping)",
-    "content": "base64 {{[-b|--break]}} {{0|76|...}} {{path/to/file}}",
-    "group": "Freebsd",
-    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Wrap encoded output at a specific width (`0` disables wrapping))",
-    "tags": [
-      "freebsd",
-      "base64",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-base64-3",
-    "type": "command",
-    "title": "base64 - Decode a file to `stdout`",
-    "content": "base64 {{[-d|--decode]}} {{[-i|--input]}} {{path/to/file}}",
-    "group": "Freebsd",
-    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Decode a file to `stdout`)",
-    "tags": [
-      "freebsd",
-      "base64",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-base64-4",
-    "type": "command",
-    "title": "base64 - Encode from `stdin` to `stdout`",
-    "content": "{{command}} | base64",
-    "group": "Freebsd",
-    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Encode from `stdin` to `stdout`)",
-    "tags": [
-      "freebsd",
-      "base64",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-base64-5",
-    "type": "command",
-    "title": "base64 - Decode from `stdin` to `stdout`",
-    "content": "{{command}} | base64 {{[-d|--decode]}}",
-    "group": "Freebsd",
-    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Decode from `stdin` to `stdout`)",
-    "tags": [
-      "freebsd",
-      "base64",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chfn-0",
-    "type": "command",
-    "title": "chfn - View documentation for the original command",
-    "content": "tldr chpass",
-    "group": "Freebsd",
-    "description": "chfn: This command is an alias of `chpass`. (View documentation for the original command)",
-    "tags": [
-      "freebsd",
-      "chfn",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-sed-0",
-    "type": "command",
-    "title": "sed - Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in all input lines and print the result to `stdout`",
-    "content": "{{command}} | sed 's/apple/mango/g'",
-    "group": "Freebsd",
-    "description": "sed: Edit text in a scriptable manner. (Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in all input lines and print the result to `stdout`)",
-    "tags": [
-      "freebsd",
-      "sed",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-sed-1",
-    "type": "command",
-    "title": "sed - Execute a specific script [f]ile and print the result to `stdout`",
-    "content": "{{command}} | sed -f {{path/to/script.sed}}",
-    "group": "Freebsd",
-    "description": "sed: Edit text in a scriptable manner. (Execute a specific script [f]ile and print the result to `stdout`)",
-    "tags": [
-      "freebsd",
-      "sed",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-sed-2",
-    "type": "command",
-    "title": "sed - Delay opening each file until a command containing the related `w` function or flag is applied to a line of input",
-    "content": "{{command}} | sed -fa {{path/to/script.sed}}",
-    "group": "Freebsd",
-    "description": "sed: Edit text in a scriptable manner. (Delay opening each file until a command containing the related `w` function or flag is applied to a line of input)",
-    "tags": [
-      "freebsd",
-      "sed",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-sed-3",
-    "type": "command",
-    "title": "sed - Replace all `apple` (extended `regex`) occurrences with `APPLE` (extended `regex`) in all input lines and print the result to `stdout`",
-    "content": "{{command}} | sed -E 's/(apple)/\\U\\1/g'",
-    "group": "Freebsd",
-    "description": "sed: Edit text in a scriptable manner. (Replace all `apple` (extended `regex`) occurrences with `APPLE` (extended `regex`) in all input lines and print the result to `stdout`)",
-    "tags": [
-      "freebsd",
-      "sed",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-sed-4",
-    "type": "command",
-    "title": "sed - Print just a first line to `stdout`",
-    "content": "{{command}} | sed -n '1p'",
-    "group": "Freebsd",
-    "description": "sed: Edit text in a scriptable manner. (Print just a first line to `stdout`)",
-    "tags": [
-      "freebsd",
-      "sed",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-sed-5",
-    "type": "command",
-    "title": "sed - Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in a specific file and overwrite the original file in place",
-    "content": "sed -i 's/apple/mango/g' {{path/to/file}}",
-    "group": "Freebsd",
-    "description": "sed: Edit text in a scriptable manner. (Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in a specific file and overwrite the original file in place)",
-    "tags": [
-      "freebsd",
-      "sed",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-pkg-0",
-    "type": "command",
-    "title": "pkg - Install a new package",
-    "content": "pkg install {{package}}",
-    "group": "Freebsd",
-    "description": "pkg: FreeBSD package manager. (Install a new package)",
-    "tags": [
-      "freebsd",
-      "pkg",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-pkg-1",
-    "type": "command",
-    "title": "pkg - Delete a package",
-    "content": "pkg delete {{package}}",
-    "group": "Freebsd",
-    "description": "pkg: FreeBSD package manager. (Delete a package)",
-    "tags": [
-      "freebsd",
-      "pkg",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-pkg-2",
-    "type": "command",
-    "title": "pkg - Upgrade all packages",
-    "content": "pkg upgrade",
-    "group": "Freebsd",
-    "description": "pkg: FreeBSD package manager. (Upgrade all packages)",
-    "tags": [
-      "freebsd",
-      "pkg",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-pkg-3",
-    "type": "command",
-    "title": "pkg - Search for a package",
-    "content": "pkg search {{keyword}}",
-    "group": "Freebsd",
-    "description": "pkg: FreeBSD package manager. (Search for a package)",
-    "tags": [
-      "freebsd",
-      "pkg",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-pkg-4",
-    "type": "command",
-    "title": "pkg - List installed packages",
-    "content": "pkg info",
-    "group": "Freebsd",
-    "description": "pkg: FreeBSD package manager. (List installed packages)",
-    "tags": [
-      "freebsd",
-      "pkg",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-pkg-5",
-    "type": "command",
-    "title": "pkg - Remove unneeded dependencies",
-    "content": "pkg autoremove",
-    "group": "Freebsd",
-    "description": "pkg: FreeBSD package manager. (Remove unneeded dependencies)",
-    "tags": [
-      "freebsd",
-      "pkg",
+      "ipmitool",
       "tldr",
       "en"
     ],
@@ -369,66 +219,6 @@
     "tags": [
       "freebsd",
       "look",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-procstat-0",
-    "type": "command",
-    "title": "procstat - Display file descriptors of a specific process",
-    "content": "procstat fds {{pid}}",
-    "group": "Freebsd",
-    "description": "procstat: Display detailed information about processes in FreeBSD. (Display file descriptors of a specific process)",
-    "tags": [
-      "freebsd",
-      "procstat",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-procstat-1",
-    "type": "command",
-    "title": "procstat - Show virtual memory mappings of a process",
-    "content": "procstat vm {{pid}}",
-    "group": "Freebsd",
-    "description": "procstat: Display detailed information about processes in FreeBSD. (Show virtual memory mappings of a process)",
-    "tags": [
-      "freebsd",
-      "procstat",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-procstat-2",
-    "type": "command",
-    "title": "procstat - Display process arguments",
-    "content": "procstat arguments {{pid}}",
-    "group": "Freebsd",
-    "description": "procstat: Display detailed information about processes in FreeBSD. (Display process arguments)",
-    "tags": [
-      "freebsd",
-      "procstat",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-procstat-3",
-    "type": "command",
-    "title": "procstat - Show resource limits of a process",
-    "content": "procstat rlimit {{pid}}",
-    "group": "Freebsd",
-    "description": "procstat: Display detailed information about processes in FreeBSD. (Show resource limits of a process)",
-    "tags": [
-      "freebsd",
-      "procstat",
       "tldr",
       "en"
     ],
@@ -534,6 +324,321 @@
     "tags": [
       "freebsd",
       "cal",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-0",
+    "type": "command",
+    "title": "df - Display all filesystems and their disk usage (using 512-byte units)",
+    "content": "df",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Display all filesystems and their disk usage (using 512-byte units))",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-1",
+    "type": "command",
+    "title": "df - Use [h]uman-readable units (based on powers of 1024) and display a grand total",
+    "content": "df -h -c",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Use [h]uman-readable units (based on powers of 1024) and display a grand total)",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-2",
+    "type": "command",
+    "title": "df - Use [H]uman-readable units (based on powers of 1000)",
+    "content": "df -{{-si|H}}",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Use [H]uman-readable units (based on powers of 1000))",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-3",
+    "type": "command",
+    "title": "df - Display the filesystem containing the specified file or directory",
+    "content": "df {{path/to/file_or_directory}}",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Display the filesystem containing the specified file or directory)",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-4",
+    "type": "command",
+    "title": "df - Include statistics on the number of free and used [i]nodes, including the filesystem [T]ypes",
+    "content": "df -iT",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Include statistics on the number of free and used [i]nodes, including the filesystem [T]ypes)",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-5",
+    "type": "command",
+    "title": "df - Use [k]ibibyte (1024 byte) units when showing size figures",
+    "content": "df -k",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Use [k]ibibyte (1024 byte) units when showing size figures)",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-df-6",
+    "type": "command",
+    "title": "df - Display information in a [P]ortable way",
+    "content": "df -P",
+    "group": "Freebsd",
+    "description": "df: Display an overview of the filesystem disk space usage. (Display information in a [P]ortable way)",
+    "tags": [
+      "freebsd",
+      "df",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chsh-0",
+    "type": "command",
+    "title": "chsh - View documentation for the original command",
+    "content": "tldr chpass",
+    "group": "Freebsd",
+    "description": "chsh: This command is an alias of `chpass`. (View documentation for the original command)",
+    "tags": [
+      "freebsd",
+      "chsh",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-procstat-0",
+    "type": "command",
+    "title": "procstat - Display file descriptors of a specific process",
+    "content": "procstat fds {{pid}}",
+    "group": "Freebsd",
+    "description": "procstat: Display detailed information about processes in FreeBSD. (Display file descriptors of a specific process)",
+    "tags": [
+      "freebsd",
+      "procstat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-procstat-1",
+    "type": "command",
+    "title": "procstat - Show virtual memory mappings of a process",
+    "content": "procstat vm {{pid}}",
+    "group": "Freebsd",
+    "description": "procstat: Display detailed information about processes in FreeBSD. (Show virtual memory mappings of a process)",
+    "tags": [
+      "freebsd",
+      "procstat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-procstat-2",
+    "type": "command",
+    "title": "procstat - Display process arguments",
+    "content": "procstat arguments {{pid}}",
+    "group": "Freebsd",
+    "description": "procstat: Display detailed information about processes in FreeBSD. (Display process arguments)",
+    "tags": [
+      "freebsd",
+      "procstat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-procstat-3",
+    "type": "command",
+    "title": "procstat - Show resource limits of a process",
+    "content": "procstat rlimit {{pid}}",
+    "group": "Freebsd",
+    "description": "procstat: Display detailed information about processes in FreeBSD. (Show resource limits of a process)",
+    "tags": [
+      "freebsd",
+      "procstat",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-pkg-0",
+    "type": "command",
+    "title": "pkg - Install a new package",
+    "content": "pkg install {{package}}",
+    "group": "Freebsd",
+    "description": "pkg: FreeBSD package manager. (Install a new package)",
+    "tags": [
+      "freebsd",
+      "pkg",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-pkg-1",
+    "type": "command",
+    "title": "pkg - Delete a package",
+    "content": "pkg delete {{package}}",
+    "group": "Freebsd",
+    "description": "pkg: FreeBSD package manager. (Delete a package)",
+    "tags": [
+      "freebsd",
+      "pkg",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-pkg-2",
+    "type": "command",
+    "title": "pkg - Upgrade all packages",
+    "content": "pkg upgrade",
+    "group": "Freebsd",
+    "description": "pkg: FreeBSD package manager. (Upgrade all packages)",
+    "tags": [
+      "freebsd",
+      "pkg",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-pkg-3",
+    "type": "command",
+    "title": "pkg - Search for a package",
+    "content": "pkg search {{keyword}}",
+    "group": "Freebsd",
+    "description": "pkg: FreeBSD package manager. (Search for a package)",
+    "tags": [
+      "freebsd",
+      "pkg",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-pkg-4",
+    "type": "command",
+    "title": "pkg - List installed packages",
+    "content": "pkg info",
+    "group": "Freebsd",
+    "description": "pkg: FreeBSD package manager. (List installed packages)",
+    "tags": [
+      "freebsd",
+      "pkg",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-pkg-5",
+    "type": "command",
+    "title": "pkg - Remove unneeded dependencies",
+    "content": "pkg autoremove",
+    "group": "Freebsd",
+    "description": "pkg: FreeBSD package manager. (Remove unneeded dependencies)",
+    "tags": [
+      "freebsd",
+      "pkg",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-ypchsh-0",
+    "type": "command",
+    "title": "ypchsh - View documentation for the original command",
+    "content": "tldr chpass",
+    "group": "Freebsd",
+    "description": "ypchsh: This command is an alias of `chpass`. (View documentation for the original command)",
+    "tags": [
+      "freebsd",
+      "ypchsh",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-ypchpass-0",
+    "type": "command",
+    "title": "ypchpass - View documentation for the original command",
+    "content": "tldr chpass",
+    "group": "Freebsd",
+    "description": "ypchpass: This command is an alias of `chpass`. (View documentation for the original command)",
+    "tags": [
+      "freebsd",
+      "ypchpass",
+      "tldr",
+      "en"
+    ],
+    "source": "official"
+  },
+  {
+    "id": "tldr-en-freebsd-chfn-0",
+    "type": "command",
+    "title": "chfn - View documentation for the original command",
+    "content": "tldr chpass",
+    "group": "Freebsd",
+    "description": "chfn: This command is an alias of `chpass`. (View documentation for the original command)",
+    "tags": [
+      "freebsd",
+      "chfn",
       "tldr",
       "en"
     ],
@@ -660,285 +765,180 @@
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-ypchfn-0",
+    "id": "tldr-en-freebsd-sed-0",
     "type": "command",
-    "title": "ypchfn - View documentation for the original command",
-    "content": "tldr chpass",
+    "title": "sed - Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in all input lines and print the result to `stdout`",
+    "content": "{{command}} | sed 's/apple/mango/g'",
     "group": "Freebsd",
-    "description": "ypchfn: This command is an alias of `chpass`. (View documentation for the original command)",
+    "description": "sed: Edit text in a scriptable manner. (Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in all input lines and print the result to `stdout`)",
     "tags": [
       "freebsd",
-      "ypchfn",
+      "sed",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-chsh-0",
+    "id": "tldr-en-freebsd-sed-1",
     "type": "command",
-    "title": "chsh - View documentation for the original command",
-    "content": "tldr chpass",
+    "title": "sed - Execute a specific script [f]ile and print the result to `stdout`",
+    "content": "{{command}} | sed -f {{path/to/script.sed}}",
     "group": "Freebsd",
-    "description": "chsh: This command is an alias of `chpass`. (View documentation for the original command)",
+    "description": "sed: Edit text in a scriptable manner. (Execute a specific script [f]ile and print the result to `stdout`)",
     "tags": [
       "freebsd",
-      "chsh",
+      "sed",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-ipmitool-0",
+    "id": "tldr-en-freebsd-sed-2",
     "type": "command",
-    "title": "ipmitool - Load the IPMI kernel module for local connections",
-    "content": "kldload ipmi.ko",
+    "title": "sed - Delay opening each file until a command containing the related `w` function or flag is applied to a line of input",
+    "content": "{{command}} | sed -fa {{path/to/script.sed}}",
     "group": "Freebsd",
-    "description": "ipmitool: Interface with the Intelligent Platform Management Interface (IPMI). (Load the IPMI kernel module for local connections)",
+    "description": "sed: Edit text in a scriptable manner. (Delay opening each file until a command containing the related `w` function or flag is applied to a line of input)",
     "tags": [
       "freebsd",
-      "ipmitool",
+      "sed",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-ipmitool-1",
+    "id": "tldr-en-freebsd-sed-3",
     "type": "command",
-    "title": "ipmitool - Open IPMI shell on the local hardware",
-    "content": "ipmitool shell",
+    "title": "sed - Replace all `apple` (extended `regex`) occurrences with `APPLE` (extended `regex`) in all input lines and print the result to `stdout`",
+    "content": "{{command}} | sed -E 's/(apple)/\\U\\1/g'",
     "group": "Freebsd",
-    "description": "ipmitool: Interface with the Intelligent Platform Management Interface (IPMI). (Open IPMI shell on the local hardware)",
+    "description": "sed: Edit text in a scriptable manner. (Replace all `apple` (extended `regex`) occurrences with `APPLE` (extended `regex`) in all input lines and print the result to `stdout`)",
     "tags": [
       "freebsd",
-      "ipmitool",
+      "sed",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-ipmitool-2",
+    "id": "tldr-en-freebsd-sed-4",
     "type": "command",
-    "title": "ipmitool - Open IPMI shell on a remote host",
-    "content": "ipmitool -H {{ip_address}} -U {{user_name}} shell",
+    "title": "sed - Print just a first line to `stdout`",
+    "content": "{{command}} | sed -n '1p'",
     "group": "Freebsd",
-    "description": "ipmitool: Interface with the Intelligent Platform Management Interface (IPMI). (Open IPMI shell on a remote host)",
+    "description": "sed: Edit text in a scriptable manner. (Print just a first line to `stdout`)",
     "tags": [
       "freebsd",
-      "ipmitool",
+      "sed",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-0",
+    "id": "tldr-en-freebsd-sed-5",
     "type": "command",
-    "title": "df - Display all filesystems and their disk usage (using 512-byte units)",
-    "content": "df",
+    "title": "sed - Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in a specific file and overwrite the original file in place",
+    "content": "sed -i 's/apple/mango/g' {{path/to/file}}",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Display all filesystems and their disk usage (using 512-byte units))",
+    "description": "sed: Edit text in a scriptable manner. (Replace all `apple` (basic `regex`) occurrences with `mango` (basic `regex`) in a specific file and overwrite the original file in place)",
     "tags": [
       "freebsd",
-      "df",
+      "sed",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-1",
+    "id": "tldr-en-freebsd-base64-0",
     "type": "command",
-    "title": "df - Use [h]uman-readable units (based on powers of 1024) and display a grand total",
-    "content": "df -h -c",
+    "title": "base64 - Encode a file to `stdout`",
+    "content": "base64 {{[-i|--input]}} {{path/to/file}}",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Use [h]uman-readable units (based on powers of 1024) and display a grand total)",
+    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Encode a file to `stdout`)",
     "tags": [
       "freebsd",
-      "df",
+      "base64",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-2",
+    "id": "tldr-en-freebsd-base64-1",
     "type": "command",
-    "title": "df - Use [H]uman-readable units (based on powers of 1000)",
-    "content": "df -{{-si|H}}",
+    "title": "base64 - Encode a file to the specified output file",
+    "content": "base64 {{[-i|--input]}} {{path/to/input_file}} {{[-o|--output]}} {{path/to/output_file}}",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Use [H]uman-readable units (based on powers of 1000))",
+    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Encode a file to the specified output file)",
     "tags": [
       "freebsd",
-      "df",
+      "base64",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-3",
+    "id": "tldr-en-freebsd-base64-2",
     "type": "command",
-    "title": "df - Display the filesystem containing the specified file or directory",
-    "content": "df {{path/to/file_or_directory}}",
+    "title": "base64 - Wrap encoded output at a specific width (`0` disables wrapping)",
+    "content": "base64 {{[-b|--break]}} {{0|76|...}} {{path/to/file}}",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Display the filesystem containing the specified file or directory)",
+    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Wrap encoded output at a specific width (`0` disables wrapping))",
     "tags": [
       "freebsd",
-      "df",
+      "base64",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-4",
+    "id": "tldr-en-freebsd-base64-3",
     "type": "command",
-    "title": "df - Include statistics on the number of free and used [i]nodes, including the filesystem [T]ypes",
-    "content": "df -iT",
+    "title": "base64 - Decode a file to `stdout`",
+    "content": "base64 {{[-d|--decode]}} {{[-i|--input]}} {{path/to/file}}",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Include statistics on the number of free and used [i]nodes, including the filesystem [T]ypes)",
+    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Decode a file to `stdout`)",
     "tags": [
       "freebsd",
-      "df",
+      "base64",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-5",
+    "id": "tldr-en-freebsd-base64-4",
     "type": "command",
-    "title": "df - Use [k]ibibyte (1024 byte) units when showing size figures",
-    "content": "df -k",
+    "title": "base64 - Encode from `stdin` to `stdout`",
+    "content": "{{command}} | base64",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Use [k]ibibyte (1024 byte) units when showing size figures)",
+    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Encode from `stdin` to `stdout`)",
     "tags": [
       "freebsd",
-      "df",
+      "base64",
       "tldr",
       "en"
     ],
     "source": "official"
   },
   {
-    "id": "tldr-en-freebsd-df-6",
+    "id": "tldr-en-freebsd-base64-5",
     "type": "command",
-    "title": "df - Display information in a [P]ortable way",
-    "content": "df -P",
+    "title": "base64 - Decode from `stdin` to `stdout`",
+    "content": "{{command}} | base64 {{[-d|--decode]}}",
     "group": "Freebsd",
-    "description": "df: Display an overview of the filesystem disk space usage. (Display information in a [P]ortable way)",
+    "description": "base64: Encode or decode file or `stdin` to/from base64, to `stdout` or another file. (Decode from `stdin` to `stdout`)",
     "tags": [
       "freebsd",
-      "df",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-0",
-    "type": "command",
-    "title": "chpass - Add or change user database information for the current user interactively",
-    "content": "su -c chpass",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Add or change user database information for the current user interactively)",
-    "tags": [
-      "freebsd",
-      "chpass",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-1",
-    "type": "command",
-    "title": "chpass - Set a specific login [s]hell for the current user",
-    "content": "chpass -s {{path/to/shell}}",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Set a specific login [s]hell for the current user)",
-    "tags": [
-      "freebsd",
-      "chpass",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-2",
-    "type": "command",
-    "title": "chpass - Set a login [s]hell for a specific user",
-    "content": "chpass -s {{path/to/shell}} {{username}}",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Set a login [s]hell for a specific user)",
-    "tags": [
-      "freebsd",
-      "chpass",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-3",
-    "type": "command",
-    "title": "chpass - Change the account [e]xpire time (in seconds from the epoch, UTC)",
-    "content": "su -c 'chpass -e {{time}} {{username}}'",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Change the account [e]xpire time (in seconds from the epoch, UTC))",
-    "tags": [
-      "freebsd",
-      "chpass",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-4",
-    "type": "command",
-    "title": "chpass - Change a user's password",
-    "content": "su -c 'chpass -p {{encrypted_password}} {{username}}'",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Change a user's password)",
-    "tags": [
-      "freebsd",
-      "chpass",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-5",
-    "type": "command",
-    "title": "chpass - Specify the [h]ostname or address of an NIS server to query",
-    "content": "su -c 'chpass -h {{hostname}} {{username}}'",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Specify the [h]ostname or address of an NIS server to query)",
-    "tags": [
-      "freebsd",
-      "chpass",
-      "tldr",
-      "en"
-    ],
-    "source": "official"
-  },
-  {
-    "id": "tldr-en-freebsd-chpass-6",
-    "type": "command",
-    "title": "chpass - Specify a particular NIS [d]omain (system domain name by default)",
-    "content": "su -c 'chpass -d {{domain}} {{username}}'",
-    "group": "Freebsd",
-    "description": "chpass: Add or change user database information, including login shell and password. (Specify a particular NIS [d]omain (system domain name by default))",
-    "tags": [
-      "freebsd",
-      "chpass",
+      "base64",
       "tldr",
       "en"
     ],
