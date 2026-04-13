@@ -12,7 +12,6 @@ export type TransferFileStatus =
 export interface ServiceConfig {
   urlMode: UrlMode;
   port?: number | null;
-  pin?: string | null;
   bindAddress?: string | null;
   saveDir?: string | null;
 }
@@ -86,4 +85,16 @@ export interface FileProgressPayload {
   progressPercent: number;
   speedBytesPerSec: number;
   savedPath?: string | null;
+}
+
+export interface ConnectionRequestPayload {
+  deviceId: string;
+  name: string;
+  deviceType: string;
+  ipAddress: string;
+}
+
+export interface ConnectionRequestCancelledPayload {
+  deviceId: string;
+  reason: string;
 }

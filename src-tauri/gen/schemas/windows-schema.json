@@ -4989,6 +4989,12 @@
           "markdownDescription": "Enables the get_network_interfaces command without any pre-configured scope."
         },
         {
+          "description": "Enables the respond_connection_request command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:allow-respond-connection-request",
+          "markdownDescription": "Enables the respond_connection_request command without any pre-configured scope."
+        },
+        {
           "description": "Enables the respond_file_request command without any pre-configured scope.",
           "type": "string",
           "const": "ctxrun-plugin-transfer:allow-respond-file-request",
@@ -5035,6 +5041,12 @@
           "type": "string",
           "const": "ctxrun-plugin-transfer:deny-get-network-interfaces",
           "markdownDescription": "Denies the get_network_interfaces command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the respond_connection_request command without any pre-configured scope.",
+          "type": "string",
+          "const": "ctxrun-plugin-transfer:deny-respond-connection-request",
+          "markdownDescription": "Denies the respond_connection_request command without any pre-configured scope."
         },
         {
           "description": "Denies the respond_file_request command without any pre-configured scope.",

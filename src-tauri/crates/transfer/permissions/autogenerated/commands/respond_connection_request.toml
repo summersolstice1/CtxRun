@@ -1,0 +1,13 @@
+# Automatically generated - DO NOT EDIT!
+
+"$schema" = "../../schemas/schema.json"
+
+[[permission]]
+identifier = "allow-respond-connection-request"
+description = "Enables the respond_connection_request command without any pre-configured scope."
+commands.allow = ["respond_connection_request"]
+
+[[permission]]
+identifier = "deny-respond-connection-request"
+description = "Denies the respond_connection_request command without any pre-configured scope."
+commands.deny = ["respond_connection_request"]

@@ -62,7 +62,6 @@ pub async fn start_service<R: Runtime>(
         return Err(TransferError::AlreadyRunning);
     }
 
-    config.pin = normalize_optional_text(config.pin);
     config.save_dir = normalize_optional_text(config.save_dir);
     config.bind_address = normalize_optional_text(config.bind_address);
 
@@ -295,6 +294,29 @@ pub async fn respond_file_request<R: Runtime>(
                 &ServerWsMessage::FileReject { file_id },
             )
             .await?;
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn respond_connection_request<R: Runtime>(
+    _app: AppHandle<R>,
+    state: State<'_, TransferState<R>>,
+    device_id: String,
+    accept: bool,
+) -> Result<()> {
+    let shared = state.current_shared().await.ok_or(TransferError::NotRunning)?;
+    if accept {
+        shared
+            .device_manager
+            .approve_pending(&device_id)
+            .await
+            .ok_or_else(|| TransferError::DeviceNotFound(device_id))?;
+    } else {
+        shared
+            .device_manager
+            .reject_pending(&device_id)
+            .await;
     }
     Ok(())
 }

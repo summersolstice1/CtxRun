@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use serde::Serialize;
-use tokio::sync::{RwLock, mpsc};
+use tokio::sync::{RwLock, mpsc, oneshot};
 
 use crate::error::{Result, TransferError};
 use crate::models::{
@@ -14,6 +14,7 @@ use crate::models::{
 pub struct DeviceManager {
     devices: Arc<RwLock<HashMap<String, ConnectedDevice>>>,
     histories: Arc<RwLock<HashMap<String, Vec<TransferMessage>>>>,
+    pending: Arc<RwLock<HashMap<String, PendingDevice>>>,
 }
 
 #[derive(Clone)]
@@ -21,6 +22,11 @@ struct ConnectedDevice {
     device: TransferDevice,
     session_token: String,
     sender: mpsc::UnboundedSender<String>,
+}
+
+struct PendingDevice {
+    device: TransferDevice,
+    approval_tx: oneshot::Sender<bool>,
 }
 
 impl DeviceManager {
@@ -155,9 +161,55 @@ impl DeviceManager {
         }
     }
 
+    pub async fn add_pending(
+        &self,
+        device: TransferDevice,
+    ) -> oneshot::Receiver<bool> {
+        let (tx, rx) = oneshot::channel();
+        self.pending.write().await.insert(
+            device.id.clone(),
+            PendingDevice {
+                device,
+                approval_tx: tx,
+            },
+        );
+        rx
+    }
+
+    pub async fn approve_pending(&self, device_id: &str) -> Option<TransferDevice> {
+        self.pending
+            .write()
+            .await
+            .remove(device_id)
+            .and_then(|pending| {
+                let _ = pending.approval_tx.send(true);
+                Some(pending.device)
+            })
+    }
+
+    pub async fn reject_pending(&self, device_id: &str) -> bool {
+        self.pending
+            .write()
+            .await
+            .remove(device_id)
+            .map(|pending| {
+                let _ = pending.approval_tx.send(false);
+            })
+            .is_some()
+    }
+
+    pub async fn remove_pending(&self, device_id: &str) -> Option<TransferDevice> {
+        self.pending
+            .write()
+            .await
+            .remove(device_id)
+            .map(|pending| pending.device)
+    }
+
     pub async fn clear(&self) {
         self.devices.write().await.clear();
         self.histories.write().await.clear();
+        self.pending.write().await.clear();
     }
 
     pub async fn get_device(&self, device_id: &str) -> Option<TransferDevice> {

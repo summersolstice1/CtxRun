@@ -15,7 +15,6 @@ pub enum UrlMode {
 pub struct ServiceConfig {
     pub url_mode: UrlMode,
     pub port: Option<u16>,
-    pub pin: Option<String>,
     pub bind_address: Option<String>,
     pub save_dir: Option<String>,
 }
@@ -25,7 +24,6 @@ impl Default for ServiceConfig {
         Self {
             url_mode: UrlMode::Random,
             port: None,
-            pin: None,
             bind_address: None,
             save_dir: None,
         }
@@ -243,4 +241,20 @@ pub struct WsEnvelope {
 
 pub fn now_ms() -> u64 {
     Utc::now().timestamp_millis().max(0) as u64
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionRequestPayload {
+    pub device_id: String,
+    pub name: String,
+    pub device_type: String,
+    pub ip_address: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConnectionRequestCancelledPayload {
+    pub device_id: String,
+    pub reason: String,
 }

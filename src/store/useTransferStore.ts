@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 import type {
+  ConnectionRequestCancelledPayload,
+  ConnectionRequestPayload,
   DeviceConnectedPayload,
   DeviceDisconnectedPayload,
   ErrorPayload,
@@ -27,6 +29,8 @@ interface TransferState {
   selectedDeviceId: string | null;
   chatHistories: Record<string, TransferMessage[]>;
   lastError: string | null;
+  pendingDevices: ConnectionRequestPayload[];
+  respondConnectionRequest: (deviceId: string, accept: boolean) => Promise<void>;
   _unlistenFns: UnlistenFn[];
 
   clearError: () => void;
@@ -127,6 +131,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
   selectedDeviceId: null,
   chatHistories: {},
   lastError: null,
+  pendingDevices: [],
   _unlistenFns: [],
 
   clearError: () => set({ lastError: null }),
@@ -142,7 +147,6 @@ export const useTransferStore = create<TransferState>((set, get) => ({
         config: {
           urlMode: get().urlMode,
           port: get().port,
-          pin: null,
           bindAddress: null,
           saveDir: null,
         },
@@ -247,6 +251,19 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     }
   },
 
+  respondConnectionRequest: async (deviceId, accept) => {
+    try {
+      await invoke(`${PLUGIN_PREFIX}respond_connection_request`, { deviceId, accept });
+      if (!accept) {
+        set((state) => ({
+          pendingDevices: state.pendingDevices.filter((d) => d.deviceId !== deviceId),
+        }));
+      }
+    } catch (error) {
+      set({ lastError: toErrorMessage(error) });
+    }
+  },
+
   loadHistory: async (deviceId) => {
     if (!deviceId) return;
 
@@ -270,12 +287,34 @@ export const useTransferStore = create<TransferState>((set, get) => ({
     listenersInitInFlight = true;
 
     try {
+      const unlistenConnectionRequest = await listen<ConnectionRequestPayload>(
+        'transfer:connection-request',
+        (event) => {
+          set((state) => ({
+            pendingDevices: [
+              ...state.pendingDevices.filter((device) => device.deviceId !== event.payload.deviceId),
+              event.payload,
+            ],
+          }));
+        }
+      );
+
+      const unlistenConnectionRequestCancelled = await listen<ConnectionRequestCancelledPayload>(
+        'transfer:connection-request-cancelled',
+        (event) => {
+          set((state) => ({
+            pendingDevices: state.pendingDevices.filter((device) => device.deviceId !== event.payload.deviceId),
+          }));
+        }
+      );
+
       const unlistenDeviceConnected = await listen<DeviceConnectedPayload>(
         'transfer:device-connected',
         (event) => {
           const device = event.payload.device;
           set((state) => ({
             devices: upsertDevice(state.devices, device),
+            pendingDevices: state.pendingDevices.filter((d) => d.deviceId !== device.id),
             selectedDeviceId: state.selectedDeviceId ?? device.id,
           }));
           void get().loadHistory(device.id);
@@ -384,6 +423,8 @@ export const useTransferStore = create<TransferState>((set, get) => ({
 
       set({
         _unlistenFns: [
+          unlistenConnectionRequest,
+          unlistenConnectionRequestCancelled,
           unlistenDeviceConnected,
           unlistenDeviceDisconnected,
           unlistenMessageReceived,
@@ -405,6 +446,7 @@ export const useTransferStore = create<TransferState>((set, get) => ({
       isBusy: false,
       serviceInfo: null,
       devices: [],
+      pendingDevices: [],
       selectedDeviceId: null,
       chatHistories: {},
     }),

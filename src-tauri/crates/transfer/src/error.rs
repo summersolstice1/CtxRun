@@ -21,8 +21,6 @@ pub enum TransferError {
     InvalidSession,
     #[error("Invalid session route token.")]
     InvalidRouteToken,
-    #[error("Invalid PIN code.")]
-    InvalidPin,
     #[error("Device not found: {0}")]
     DeviceNotFound(String),
     #[error("File not found: {0}")]
@@ -76,7 +74,6 @@ impl IntoResponse for TransferError {
             TransferError::PortUnavailable(_) => StatusCode::CONFLICT,
             TransferError::InvalidSession => StatusCode::FORBIDDEN,
             TransferError::InvalidRouteToken => StatusCode::NOT_FOUND,
-            TransferError::InvalidPin => StatusCode::UNAUTHORIZED,
             TransferError::DeviceNotFound(_) => StatusCode::NOT_FOUND,
             TransferError::FileNotFound(_) => StatusCode::NOT_FOUND,
             TransferError::BadRequest(_) => StatusCode::BAD_REQUEST,

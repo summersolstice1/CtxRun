@@ -153,13 +153,14 @@
     .btn-send:disabled { opacity: 0.5; }
 
     /* 鉴权遮罩 */
-    #pinGate {
+    #approvalGate {
       position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100;
       display: flex; align-items: center; justify-content: center; padding: 20px;
     }
-    .pin-card { background: var(--surface); padding: 24px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; }
-    .pin-card input { width: 100%; padding: 12px; margin: 16px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; text-align: center; outline: none; }
-    .pin-card button { width: 100%; padding: 12px; border-radius: 8px; background: var(--primary); color: white; border: none; font-size: 16px; font-weight: 600; }
+    .approval-card { background: var(--surface); padding: 24px; border-radius: 16px; width: 100%; max-width: 320px; text-align: center; }
+    .approval-card .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .approval-card .retry-btn { margin-top: 16px; padding: 10px 20px; border-radius: 8px; background: var(--primary); color: white; border: none; font-size: 14px; font-weight: 600; }
     #mediaSheet {
       position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; justify-content: center;
       padding: 16px 12px calc(16px + env(safe-area-inset-bottom)); background: rgba(0,0,0,0.35);
@@ -248,18 +249,16 @@
 
   <div id="copyToast" class="hidden"></div>
 
-  <div id="pinGate" class="hidden">
-    <div class="pin-card">
-      <h2 id="pinTitle" style="margin:0 0 8px; font-size: 20px;">PIN Required</h2>
-      <p id="pinDescription" style="margin:0; font-size: 13px; color: var(--muted);">Check your PC for the PIN code.</p>
-      <input id="pinInput" type="number" placeholder="Enter PIN" />
-      <button id="pinSubmit">Connect</button>
-      <div id="pinError" style="color: var(--danger); font-size: 12px; margin-top: 12px; min-height: 14px;"></div>
+  <div id="approvalGate" class="hidden">
+    <div class="approval-card">
+      <div class="spinner"></div>
+      <h2 id="approvalTitle" style="margin:0 0 8px; font-size: 20px;"></h2>
+      <p id="approvalDesc" style="margin:0; font-size: 13px; color: var(--muted);"></p>
     </div>
   </div>
 
   <script>
-    const bootstrap = { wsPath: "__WS_PATH__", pinRequired: __PIN_REQUIRED__, cookieName: "__COOKIE_NAME__" };
+    const bootstrap = { wsPath: "__WS_PATH__", cookieName: "__COOKIE_NAME__" };
     const els = {
       msgs: document.getElementById('messages'),
       input: document.getElementById('composerInput'),
@@ -282,15 +281,12 @@
       recordVideoHint: document.getElementById('recordVideoHint'),
       mediaSheetCancel: document.getElementById('mediaSheetCancel'),
       copyToast: document.getElementById('copyToast'),
-      pinGate: document.getElementById('pinGate'),
-      pinTitle: document.getElementById('pinTitle'),
-      pinDescription: document.getElementById('pinDescription'),
-      pinInput: document.getElementById('pinInput'),
-      pinSubmit: document.getElementById('pinSubmit'),
-      pinError: document.getElementById('pinError')
+      approvalGate: document.getElementById('approvalGate'),
+      approvalTitle: document.getElementById('approvalTitle'),
+      approvalDesc: document.getElementById('approvalDesc')
     };
 
-    const state = { ws: null, deviceId: null, reconnectTimer: null };
+    const state = { ws: null, deviceId: null, reconnectTimer: null, reconnectEnabled: true };
     const THRESHOLD = 100 * 1024 * 1024;
     const pendingFiles = new Map();
     let copyToastTimer = null;
@@ -302,9 +298,10 @@
         camera: 'Camera',
         messagePlaceholder: 'Message...',
         send: 'Send',
-        pinRequired: 'PIN Required',
-        pinDescription: 'Check your PC for the PIN code.',
-        enterPin: 'Enter PIN',
+        waitingApproval: 'Waiting for Approval',
+        waitingApprovalDesc: 'Please confirm on your PC to proceed.',
+        connectionRejected: 'Connection Rejected',
+        connectionRejectedDesc: 'The PC rejected this connection.',
         connect: 'Connect',
         connected: 'Connected',
         disconnected: 'Disconnected',
@@ -331,9 +328,10 @@
         camera: '相机',
         messagePlaceholder: '输入消息...',
         send: '发送',
-        pinRequired: '需要 PIN 码',
-        pinDescription: '请查看电脑上的 PIN 码。',
-        enterPin: '输入 PIN 码',
+        waitingApproval: '等待确认',
+        waitingApprovalDesc: '请在电脑上确认连接请求。',
+        connectionRejected: '连接被拒绝',
+        connectionRejectedDesc: '电脑端拒绝了此连接。',
         connect: '连接',
         connected: '已连接',
         disconnected: '已断开连接',
@@ -380,10 +378,6 @@
       els.recordVideoText.textContent = t('recordVideo');
       els.recordVideoHint.textContent = t('recordVideoHint');
       els.mediaSheetCancel.textContent = t('cancel');
-      els.pinTitle.textContent = t('pinRequired');
-      els.pinDescription.textContent = t('pinDescription');
-      els.pinInput.placeholder = t('enterPin');
-      els.pinSubmit.textContent = t('connect');
     }
 
     applyStaticTranslations();
@@ -504,11 +498,10 @@
       state.ws = new WebSocket(`${protocol}://${location.host}${bootstrap.wsPath}`);
 
       state.ws.onopen = () => {
-        if (bootstrap.pinRequired) {
-          els.pinGate.classList.remove('hidden');
-        } else {
-          sendHello();
-        }
+        els.approvalGate.classList.remove('hidden');
+        els.approvalTitle.textContent = t('waitingApproval');
+        els.approvalDesc.textContent = t('waitingApprovalDesc');
+        sendHello();
       };
 
       state.ws.onmessage = (e) => {
@@ -517,7 +510,7 @@
           case 'session':
             state.deviceId = msg.deviceId;
             document.cookie = `${bootstrap.cookieName}=${msg.sessionToken}; path=/; max-age=3600; SameSite=Strict`;
-            els.pinGate.classList.add('hidden');
+            els.approvalGate.classList.add('hidden');
             els.statusDot.classList.add('ready');
             els.headerText.textContent = t('connected');
             break;
@@ -545,7 +538,13 @@
               }
             }
             break;
-          case 'error': els.pinError.textContent = msg.message; break;
+          case 'error':
+            if (msg.message && msg.message.toLowerCase().includes('reject')) {
+              state.reconnectEnabled = false;
+              els.approvalTitle.textContent = t('connectionRejected');
+              els.approvalDesc.textContent = t('connectionRejectedDesc');
+            }
+            break;
           case 'system': appendSysMsg(msg.content); break;
         }
       };
@@ -553,14 +552,15 @@
       state.ws.onclose = () => {
         els.statusDot.classList.remove('ready');
         els.headerText.textContent = t('disconnected');
-        // 断线重连机制
         clearTimeout(state.reconnectTimer);
-        state.reconnectTimer = setTimeout(connect, 3000);
+        if (state.reconnectEnabled) {
+          state.reconnectTimer = setTimeout(connect, 3000);
+        }
       };
     }
 
-    function sendHello(pin) {
-      state.ws.send(JSON.stringify({ type: "hello", userAgent: navigator.userAgent, pin }));
+    function sendHello() {
+      state.ws.send(JSON.stringify({ type: "hello", userAgent: navigator.userAgent }));
     }
 
     function handleSend() {
@@ -698,8 +698,6 @@
       Array.from(e.target.files).forEach(uploadFile);
       els.videoInput.value = '';
     };
-    els.pinSubmit.onclick = () => sendHello(els.pinInput.value);
-
     connect();
   </script>
 </body>

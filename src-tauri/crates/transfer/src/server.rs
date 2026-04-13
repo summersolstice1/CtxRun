@@ -32,6 +32,8 @@ use crate::ws;
 
 pub const EVENT_DEVICE_CONNECTED: &str = "transfer:device-connected";
 pub const EVENT_DEVICE_DISCONNECTED: &str = "transfer:device-disconnected";
+pub const EVENT_CONNECTION_REQUEST: &str = "transfer:connection-request";
+pub const EVENT_CONNECTION_REQUEST_CANCELLED: &str = "transfer:connection-request-cancelled";
 pub const EVENT_MESSAGE_RECEIVED: &str = "transfer:message-received";
 pub const EVENT_FILE_RECEIVED: &str = "transfer:file-received";
 pub const EVENT_FILE_PROGRESS: &str = "transfer:file-progress";
@@ -128,10 +130,7 @@ async fn root_page<R: Runtime>(
     if shared.route_token.is_some() {
         return Err(TransferError::InvalidRouteToken);
     }
-    Ok(Html(render_mobile_page(
-        &shared.ws_path(),
-        shared.config.pin.is_some(),
-    )))
+    Ok(Html(render_mobile_page(&shared.ws_path())))
 }
 
 async fn fixed_page<R: Runtime>(
@@ -140,10 +139,7 @@ async fn fixed_page<R: Runtime>(
     if shared.route_token.is_some() {
         return Err(TransferError::InvalidRouteToken);
     }
-    Ok(Html(render_mobile_page(
-        &shared.ws_path(),
-        shared.config.pin.is_some(),
-    )))
+    Ok(Html(render_mobile_page(&shared.ws_path())))
 }
 
 async fn token_page<R: Runtime>(
@@ -151,10 +147,7 @@ async fn token_page<R: Runtime>(
     State(shared): State<RunningServiceShared<R>>,
 ) -> Result<Html<String>> {
     validate_route_token(shared.route_token.as_deref(), Some(token.as_str()))?;
-    Ok(Html(render_mobile_page(
-        &shared.ws_path(),
-        shared.config.pin.is_some(),
-    )))
+    Ok(Html(render_mobile_page(&shared.ws_path())))
 }
 
 async fn ws_upgrade<R: Runtime>(

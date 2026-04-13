@@ -15,13 +15,15 @@ export function TransferView() {
   const { t } = useTranslation();
   const openPreview = usePreviewStore((state) => state.openPreview);
   const [
-    isRunning, isBusy, serviceInfo, devices, selectedDeviceId, chatHistories,
-    lastError, clearError, startService, stopService, selectDevice, sendMessage, sendFile, respondFileRequest, initListeners,
+    isRunning, isBusy, serviceInfo, devices, pendingDevices, selectedDeviceId, chatHistories,
+    lastError, clearError, startService, stopService, selectDevice, sendMessage, sendFile,
+    respondFileRequest, respondConnectionRequest, initListeners,
   ] = useTransferStore(
     useShallow((state) => [
-      state.isRunning, state.isBusy, state.serviceInfo, state.devices, state.selectedDeviceId,
-      state.chatHistories, state.lastError, state.clearError, state.startService, state.stopService,
-      state.selectDevice, state.sendMessage, state.sendFile, state.respondFileRequest, state.initListeners,
+      state.isRunning, state.isBusy, state.serviceInfo, state.devices, state.pendingDevices,
+      state.selectedDeviceId, state.chatHistories, state.lastError, state.clearError,
+      state.startService, state.stopService, state.selectDevice, state.sendMessage,
+      state.sendFile, state.respondFileRequest, state.respondConnectionRequest, state.initListeners,
     ])
   );
 
@@ -89,8 +91,10 @@ export function TransferView() {
         <DeviceSidebar
           isRunning={isRunning}
           devices={devices}
+          pendingDevices={pendingDevices}
           selectedDeviceId={selectedDeviceId}
           onSelect={(deviceId) => void selectDevice(deviceId)}
+          onRespondConnection={(deviceId, accept) => void respondConnectionRequest(deviceId, accept)}
         />
       </div>
 

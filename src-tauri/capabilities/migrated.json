@@ -113,6 +113,7 @@
     "ctxrun-plugin-transfer:allow-get-chat-history",
     "ctxrun-plugin-transfer:allow-get-network-interfaces",
     "ctxrun-plugin-transfer:allow-respond-file-request",
+    "ctxrun-plugin-transfer:allow-respond-connection-request",
     "ctxrun-plugin-exec-runtime:allow-request-exec",
     "ctxrun-plugin-exec-runtime:allow-approve-exec",
     "ctxrun-plugin-exec-runtime:allow-write-exec",
