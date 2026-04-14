@@ -22,25 +22,19 @@ impl ShortcutManager {
     }
 
     pub fn refresh<R: Runtime>(&self, app: &AppHandle<R>) {
-        let mut spotlight_key = "Alt+S".to_string();
-        let mut automator_key = "Alt+F1".to_string();
-
-        if let Some(config) = load_app_config_state(app) {
-            if let Some(configured_spotlight_key) = config
-                .spotlight_shortcut
-                .map(|key| key.trim().to_string())
-                .filter(|key| !key.is_empty())
-            {
-                spotlight_key = configured_spotlight_key;
-            }
-            if let Some(configured_automator_key) = config
-                .automator_shortcut
-                .map(|key| key.trim().to_string())
-                .filter(|key| !key.is_empty())
-            {
-                automator_key = configured_automator_key;
-            }
-        }
+        let config = load_app_config_state(app);
+        let spotlight_key = resolve_shortcut(
+            config
+                .as_ref()
+                .and_then(|state| state.spotlight_shortcut.as_deref()),
+            "Alt+S",
+        );
+        let automator_key = resolve_shortcut(
+            config
+                .as_ref()
+                .and_then(|state| state.automator_shortcut.as_deref()),
+            "Alt+F1",
+        );
 
         let _ = self.update_shortcut(app, ShortcutAction::ToggleSpotlight, spotlight_key);
         let _ = self.update_shortcut(app, ShortcutAction::ToggleAutomator, automator_key);
@@ -50,18 +44,24 @@ impl ShortcutManager {
         &self,
         app: &AppHandle<R>,
         action: ShortcutAction,
-        new_key: String,
+        new_key: Option<String>,
     ) -> crate::error::Result<()> {
         let mut registered = self.registered.lock().unwrap();
 
         if let Some(old_key) = registered.get(&action) {
-            if *old_key == new_key {
+            if Some(old_key) == new_key.as_ref() {
                 return Ok(());
             }
             if let Ok(shortcut) = old_key.parse::<Shortcut>() {
                 let _ = app.global_shortcut().unregister(shortcut);
             }
         }
+
+        let Some(new_key) = new_key else {
+            registered.remove(&action);
+            return Ok(());
+        };
+
         let shortcut = new_key.parse::<Shortcut>().map_err(|e| e.to_string())?;
 
         let action_clone = action.clone();
@@ -75,6 +75,20 @@ impl ShortcutManager {
 
         registered.insert(action, new_key);
         Ok(())
+    }
+}
+
+fn resolve_shortcut(configured_key: Option<&str>, default_key: &str) -> Option<String> {
+    match configured_key {
+        Some(key) => {
+            let trimmed = key.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        }
+        None => Some(default_key.to_string()),
     }
 }
 
