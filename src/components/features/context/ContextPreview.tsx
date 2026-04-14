@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Editor, OnMount } from '@monaco-editor/react';
 import { Copy, FileText, Loader2, AlertCircle, Search } from 'lucide-react';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import liquidLoaderUrl from '@/assets/liquid-loader.lottie';
 import { FileNode } from '@/types/context';
 import { getSelectedPaths, generateHeader } from '@/lib/context_assembler';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
@@ -114,7 +116,7 @@ export function ContextPreview({ fileTree }: ContextPreviewProps) {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3">
-        <Loader2 size={24} className="animate-spin text-primary" />
+        <DotLottieReact src={liquidLoaderUrl} autoplay loop className="w-16 h-16" />
         <p className="text-sm">{t('context.generating')}</p>
       </div>
     );

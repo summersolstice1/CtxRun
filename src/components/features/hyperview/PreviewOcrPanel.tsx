@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import liquidLoaderUrl from '@/assets/liquid-loader.lottie';
 import type { PreviewOcrState } from './usePreviewOcr';
 
 interface PreviewOcrPanelProps {
@@ -64,7 +66,7 @@ export function PreviewOcrPanel({
       <div ref={panelRef} className="h-full overflow-y-auto px-5 py-4">
         {state.isBusy ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-muted-foreground">
-            <Loader2 size={22} className="animate-spin" />
+            <DotLottieReact src={liquidLoaderUrl} autoplay loop className="w-16 h-16" />
             <p className="text-sm font-medium text-foreground">{t('peek.ocrRunningTitle')}</p>
           </div>
         ) : state.needsSetup ? (
