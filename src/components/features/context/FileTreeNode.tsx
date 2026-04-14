@@ -126,8 +126,8 @@ export function FileTreeNode({
         {node.name}
       </span>
 
-      {/* 新增：悬浮时显示的预览按钮 (仅文件显示) */}
-      {node.kind === 'file' && !node.isLocked && onPreview && (
+      {/* 悬浮时显示的预览按钮 (仅文件显示，包括被忽略的文件) */}
+      {node.kind === 'file' && onPreview && (
         <button
           onClick={handlePreviewClick}
           className="opacity-0 group-hover:opacity-100 p-1 hover:bg-background rounded mr-1 text-muted-foreground hover:text-primary transition-all"
