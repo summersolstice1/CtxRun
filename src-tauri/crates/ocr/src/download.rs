@@ -17,7 +17,15 @@ use crate::paths::{
 
 const OCR_PREPARE_EVENT: &str = "ocr:prepare-progress";
 const HTTP_TIMEOUT: Duration = Duration::from_secs(180);
+const HTTP_CONNECT_TIMEOUT: Duration = Duration::from_secs(12);
 const BUFFER_SIZE: usize = 64 * 1024;
+const DOWNLOAD_RETRY_BACKOFFS_MS: &[u64] = &[800, 2_000];
+const FILE_MIRROR_BASES: &[&str] = &[
+    "https://gitee.com/winriseF/models/raw/master/",
+    "https://gcore.jsdelivr.net/gh/WinriseF/CtxRun@main/",
+    "https://cdn.jsdelivr.net/gh/WinriseF/CtxRun@main/",
+    "https://raw.githubusercontent.com/WinriseF/CtxRun/main/",
+];
 
 pub fn ensure_models_downloaded<R: Runtime>(
     app: &AppHandle<R>,
@@ -75,6 +83,7 @@ pub fn ensure_models_downloaded<R: Runtime>(
                 &temp_dir.join(&file.name),
                 index,
                 required_files.len(),
+                &manifest.release.repository,
                 &package.release_tag,
                 &mut downloaded_bytes,
                 total_bytes,
@@ -170,6 +179,7 @@ fn write_active_package(storage: &OcrStoragePaths, active: &OcrActivePackage) ->
 fn build_http_client() -> Result<Client> {
     Client::builder()
         .timeout(HTTP_TIMEOUT)
+        .connect_timeout(HTTP_CONNECT_TIMEOUT)
         .user_agent("CtxRun OCR Downloader/1.0")
         .build()
         .map_err(|err| OcrServiceError::ManifestFetchFailed(err.to_string()))
@@ -232,41 +242,140 @@ fn download_file<R: Runtime>(
     destination: &Path,
     index: usize,
     total_files: usize,
+    release_repository: &str,
     release_tag: &str,
     downloaded_bytes: &mut u64,
     total_bytes: u64,
     app: &AppHandle<R>,
 ) -> Result<()> {
-    let mut response = client
-        .get(&file.url)
-        .send()
-        .and_then(|response| response.error_for_status())
-        .map_err(|err| OcrServiceError::DownloadFailed {
-            file: file.name.clone(),
-            reason: err.to_string(),
-        })?;
+    let candidate_urls = candidate_download_urls(file, release_repository, release_tag);
+    let mut failures = Vec::new();
 
+    for url in &candidate_urls {
+        let source = source_label(url);
+        let mut retry_index = 0usize;
+
+        loop {
+            match download_file_once(
+                client,
+                url,
+                file,
+                destination,
+                index,
+                total_files,
+                release_tag,
+                *downloaded_bytes,
+                total_bytes,
+                app,
+            ) {
+                Ok(file_bytes) => {
+                    *downloaded_bytes += file_bytes;
+                    return Ok(());
+                }
+                Err(DownloadAttemptFailure::Fatal(err)) => return Err(err),
+                Err(DownloadAttemptFailure::Source {
+                    reason,
+                    retry_same_source,
+                }) => {
+                    failures.push(format!("{source} (attempt {}): {reason}", retry_index + 1));
+
+                    if retry_same_source {
+                        if let Some(delay) = retry_backoff(retry_index) {
+                            emit_progress(
+                                app,
+                                OcrPrepareProgress {
+                                    stage: "retrying".to_string(),
+                                    release_tag: Some(release_tag.to_string()),
+                                    current_file: Some(file.name.clone()),
+                                    completed_files: index,
+                                    total_files,
+                                    downloaded_bytes: *downloaded_bytes,
+                                    total_bytes,
+                                    message: Some(format!(
+                                        "Retrying {} via {} in {} ms",
+                                        file.name,
+                                        source,
+                                        delay.as_millis()
+                                    )),
+                                },
+                            );
+                            std::thread::sleep(delay);
+                            retry_index += 1;
+                            continue;
+                        }
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    Err(OcrServiceError::DownloadFailed {
+        file: file.name.clone(),
+        reason: failures.join(" | "),
+    })
+}
+
+enum DownloadAttemptFailure {
+    Source {
+        reason: String,
+        retry_same_source: bool,
+    },
+    Fatal(OcrServiceError),
+}
+
+#[allow(clippy::too_many_arguments)]
+fn download_file_once<R: Runtime>(
+    client: &Client,
+    url: &str,
+    file: &OcrManifestFile,
+    destination: &Path,
+    index: usize,
+    total_files: usize,
+    release_tag: &str,
+    completed_downloaded_bytes: u64,
+    total_bytes: u64,
+    app: &AppHandle<R>,
+) -> std::result::Result<u64, DownloadAttemptFailure> {
     let temp_path = destination.with_extension("part");
-    let mut output = fs::File::create(&temp_path)?;
+    cleanup_partial_file(&temp_path);
+
+    let mut response = client
+        .get(url)
+        .send()
+        .map_err(|err| download_source_error(err.to_string(), is_retryable_request_error(&err)))?;
+
+    let status = response.status();
+    if !status.is_success() {
+        cleanup_partial_file(&temp_path);
+        return Err(download_source_error(
+            format!("HTTP status {status} for url({url})"),
+            retryable_status(status),
+        ));
+    }
+
+    let mut output =
+        fs::File::create(&temp_path).map_err(|err| DownloadAttemptFailure::Fatal(err.into()))?;
     let mut hasher = Sha256::new();
     let mut buffer = [0u8; BUFFER_SIZE];
     let mut file_bytes = 0u64;
 
     loop {
-        let read = response
-            .read(&mut buffer)
-            .map_err(|err| OcrServiceError::DownloadFailed {
-                file: file.name.clone(),
-                reason: err.to_string(),
-            })?;
+        let read = response.read(&mut buffer).map_err(|err| {
+            cleanup_partial_file(&temp_path);
+            download_source_error(err.to_string(), true)
+        })?;
         if read == 0 {
             break;
         }
 
-        output.write_all(&buffer[..read])?;
+        output.write_all(&buffer[..read]).map_err(|err| {
+            cleanup_partial_file(&temp_path);
+            DownloadAttemptFailure::Fatal(err.into())
+        })?;
         hasher.update(&buffer[..read]);
         file_bytes += read as u64;
-        *downloaded_bytes += read as u64;
 
         emit_progress(
             app,
@@ -276,34 +385,42 @@ fn download_file<R: Runtime>(
                 current_file: Some(file.name.clone()),
                 completed_files: index,
                 total_files,
-                downloaded_bytes: *downloaded_bytes,
+                downloaded_bytes: completed_downloaded_bytes + file_bytes,
                 total_bytes,
-                message: Some(format!("Downloading {}", file.name)),
+                message: Some(format!("Downloading {} via {}", file.name, source_label(url))),
             },
         );
     }
 
-    output.flush()?;
+    output.flush().map_err(|err| {
+        cleanup_partial_file(&temp_path);
+        DownloadAttemptFailure::Fatal(err.into())
+    })?;
 
     if file_bytes != file.size {
-        let _ = fs::remove_file(&temp_path);
-        return Err(OcrServiceError::DownloadFailed {
-            file: file.name.clone(),
-            reason: format!("expected {} bytes, got {}", file.size, file_bytes),
-        });
+        cleanup_partial_file(&temp_path);
+        return Err(download_source_error(
+            format!("expected {} bytes, got {} from {url}", file.size, file_bytes),
+            true,
+        ));
     }
 
     let actual_sha256 = sha256_hex(&hasher.finalize());
     if actual_sha256 != file.sha256.to_ascii_lowercase() {
-        let _ = fs::remove_file(&temp_path);
-        return Err(OcrServiceError::ChecksumMismatch {
-            file: file.name.clone(),
-            expected: file.sha256.clone(),
-            actual: actual_sha256,
-        });
+        cleanup_partial_file(&temp_path);
+        return Err(download_source_error(
+            format!(
+                "checksum mismatch from {url}: expected {}, got {}",
+                file.sha256, actual_sha256
+            ),
+            false,
+        ));
     }
 
-    fs::rename(temp_path, destination)?;
+    fs::rename(&temp_path, destination).map_err(|err| {
+        cleanup_partial_file(&temp_path);
+        DownloadAttemptFailure::Fatal(err.into())
+    })?;
     emit_progress(
         app,
         OcrPrepareProgress {
@@ -312,12 +429,123 @@ fn download_file<R: Runtime>(
             current_file: Some(file.name.clone()),
             completed_files: index + 1,
             total_files,
-            downloaded_bytes: *downloaded_bytes,
+            downloaded_bytes: completed_downloaded_bytes + file_bytes,
             total_bytes,
-            message: Some(format!("Downloaded {}", file.name)),
+            message: Some(format!("Downloaded {} via {}", file.name, source_label(url))),
         },
     );
-    Ok(())
+    Ok(file_bytes)
+}
+
+fn candidate_download_urls(
+    file: &OcrManifestFile,
+    release_repository: &str,
+    release_tag: &str,
+) -> Vec<String> {
+    let mut urls = Vec::new();
+    push_unique_url(&mut urls, &file.url);
+
+    for mirror in &file.mirrors {
+        push_unique_url(&mut urls, mirror);
+    }
+
+    if let Some(relative_path) = file
+        .mirrors
+        .iter()
+        .find_map(|url| mirror_relative_path(url))
+        .or_else(|| mirror_relative_path(&file.url))
+    {
+        for base in FILE_MIRROR_BASES {
+            push_unique_url(&mut urls, &format!("{base}{relative_path}"));
+        }
+    }
+
+    if let Some(url) = github_release_asset_url(release_repository, release_tag, &file.name) {
+        push_unique_url(&mut urls, &url);
+    }
+
+    urls
+}
+
+fn mirror_relative_path(url: &str) -> Option<String> {
+    let trimmed = url.trim();
+    FILE_MIRROR_BASES.iter().find_map(|base| {
+        trimmed
+            .strip_prefix(base)
+            .map(|path| path.trim_start_matches('/').to_string())
+    })
+}
+
+fn github_release_asset_url(
+    release_repository: &str,
+    release_tag: &str,
+    file_name: &str,
+) -> Option<String> {
+    let release_repository = release_repository.trim().trim_matches('/');
+    let release_tag = release_tag.trim();
+    if release_repository.is_empty() || release_tag.is_empty() {
+        return None;
+    }
+
+    let mut url = reqwest::Url::parse("https://github.com/").ok()?;
+    {
+        let mut segments = url.path_segments_mut().ok()?;
+        for segment in release_repository.split('/') {
+            if !segment.is_empty() {
+                segments.push(segment);
+            }
+        }
+        segments.push("releases");
+        segments.push("download");
+        segments.push(release_tag);
+        segments.push(file_name);
+    }
+
+    Some(url.to_string())
+}
+
+fn push_unique_url(urls: &mut Vec<String>, url: &str) {
+    let trimmed = url.trim();
+    if trimmed.is_empty() || urls.iter().any(|existing| existing == trimmed) {
+        return;
+    }
+    urls.push(trimmed.to_string());
+}
+
+fn source_label(url: &str) -> String {
+    reqwest::Url::parse(url)
+        .ok()
+        .and_then(|parsed| parsed.host_str().map(str::to_string))
+        .unwrap_or_else(|| url.to_string())
+}
+
+fn retry_backoff(attempt_index: usize) -> Option<Duration> {
+    DOWNLOAD_RETRY_BACKOFFS_MS
+        .get(attempt_index)
+        .copied()
+        .map(Duration::from_millis)
+}
+
+fn retryable_status(status: reqwest::StatusCode) -> bool {
+    status == reqwest::StatusCode::FORBIDDEN
+        || status == reqwest::StatusCode::REQUEST_TIMEOUT
+        || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+        || status.is_server_error()
+}
+
+fn is_retryable_request_error(err: &reqwest::Error) -> bool {
+    err.is_timeout() || err.is_connect() || err.is_body() || err.status().is_some_and(retryable_status)
+}
+
+fn download_source_error(reason: String, retry_same_source: bool) -> DownloadAttemptFailure {
+    DownloadAttemptFailure::Source {
+        reason,
+        retry_same_source,
+    }
+}
+
+fn cleanup_partial_file(path: &Path) {
+    let _ = fs::remove_file(path);
 }
 
 fn temp_package_dir(storage: &OcrStoragePaths, release_tag: &str) -> PathBuf {
@@ -402,5 +630,61 @@ mod tests {
         manifest.files.pop();
         let err = required_manifest_files(&manifest).expect_err("missing file should fail");
         assert!(err.to_string().contains("missing required files"));
+    }
+
+    #[test]
+    fn builds_candidate_urls_for_known_mirrors_and_release_assets() {
+        let file = OcrManifestFile {
+            name: "PP-OCRv5_mobile_rec.mnn".to_string(),
+            size: 1,
+            sha256: "00".to_string(),
+            url: "https://gitee.com/winriseF/models/raw/master/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string(),
+            mirrors: vec![],
+        };
+
+        let urls = candidate_download_urls(
+            &file,
+            "WinriseF/CtxRun",
+            "ocr-models-20260410-b7141e7",
+        );
+
+        assert_eq!(
+            urls[0],
+            "https://gitee.com/winriseF/models/raw/master/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn"
+        );
+        assert!(urls.contains(
+            &"https://gcore.jsdelivr.net/gh/WinriseF/CtxRun@main/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string()
+        ));
+        assert!(urls.contains(
+            &"https://cdn.jsdelivr.net/gh/WinriseF/CtxRun@main/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string()
+        ));
+        assert!(urls.contains(
+            &"https://raw.githubusercontent.com/WinriseF/CtxRun/main/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string()
+        ));
+        assert!(urls.contains(
+            &"https://github.com/WinriseF/CtxRun/releases/download/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string()
+        ));
+    }
+
+    #[test]
+    fn candidate_urls_are_deduplicated() {
+        let file = OcrManifestFile {
+            name: "PP-OCRv5_mobile_rec.mnn".to_string(),
+            size: 1,
+            sha256: "00".to_string(),
+            url: "https://gitee.com/winriseF/models/raw/master/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string(),
+            mirrors: vec![
+                "https://cdn.jsdelivr.net/gh/WinriseF/CtxRun@main/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string(),
+                "https://cdn.jsdelivr.net/gh/WinriseF/CtxRun@main/models/ocr/releases/ocr-models-20260410-b7141e7/PP-OCRv5_mobile_rec.mnn".to_string(),
+            ],
+        };
+
+        let urls = candidate_download_urls(
+            &file,
+            "WinriseF/CtxRun",
+            "ocr-models-20260410-b7141e7",
+        );
+
+        assert_eq!(urls.iter().filter(|url| url.contains("cdn.jsdelivr.net")).count(), 1);
     }
 }

@@ -115,6 +115,8 @@ pub struct OcrManifestFile {
     pub size: u64,
     pub sha256: String,
     pub url: String,
+    #[serde(default)]
+    pub mirrors: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
