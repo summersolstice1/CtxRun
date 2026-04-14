@@ -1,7 +1,9 @@
 import { DragEvent, ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { cn } from '@/lib/utils';
 import { useSpotlight } from './SpotlightContext';
+import uploadAnimationUrl from '@/assets/upload-files.lottie';
 
 interface SpotlightLayoutProps {
   children: ReactNode;
@@ -125,10 +127,13 @@ export function SpotlightLayout({
         {overlay}
 
         {mode === 'chat' && isDragOver && (
-          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-primary/10 border-2 border-dashed border-primary/40">
-            <div className="px-4 py-2 rounded-lg bg-background/85 text-foreground text-sm border border-border/60 shadow-sm">
-              {t('spotlight.dropToUpload')}
-            </div>
+          <div className="absolute inset-0 z-30 pointer-events-none flex items-center justify-center bg-black/20 backdrop-blur-[2px]">
+            <DotLottieReact
+              src={uploadAnimationUrl}
+              autoplay
+              loop
+              className="w-48 h-48 select-none"
+            />
           </div>
         )}
         

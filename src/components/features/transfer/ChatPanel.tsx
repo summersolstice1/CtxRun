@@ -5,7 +5,8 @@ import { getCurrentWebview } from '@tauri-apps/api/webview';
 import type { TransferDevice, TransferMessage } from '@/types/transfer';
 import { cn } from '@/lib/utils';
 import { buildPreviewUrl } from '@/lib/previewUrl';
-import transferDropIllustration from '@/assets/transfer-drop-illustration.svg';
+import uploadAnimationUrl from '@/assets/upload-files.lottie';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 interface ChatPanelProps {
   isRunning: boolean;
@@ -144,11 +145,11 @@ export function ChatPanel({ isRunning, isBusy, selectedDevice, messages, onSendM
           <div className="absolute inset-0 border border-emerald-500/18 bg-[radial-gradient(circle_at_top,rgba(74,222,128,0.10),transparent_34%),linear-gradient(180deg,rgba(240,253,244,0.50),rgba(236,253,245,0.46)_46%,rgba(220,252,231,0.50))]" />
           <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(187,247,208,0.18),transparent_24%,transparent_76%,rgba(167,243,208,0.18))]" />
           <div className="relative flex h-full items-center justify-center px-10 py-12">
-            <img
-              src={transferDropIllustration}
-              alt=""
-              className="h-auto max-h-[58vh] w-[380px] max-w-[78%] select-none opacity-95 saturate-[0.92] drop-shadow-[0_32px_60px_rgba(15,23,42,0.16)]"
-              draggable={false}
+            <DotLottieReact
+              src={uploadAnimationUrl}
+              autoplay
+              loop
+              className="h-auto max-h-[58vh] w-[380px] max-w-[78%] select-none"
             />
           </div>
         </div>

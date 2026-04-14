@@ -16,6 +16,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@lottiefiles/dotlottie-react": "^0.18.10",
     "@m-lab/ndt7": "^0.1.4",
     "@monaco-editor/react": "^4.7.0",
     "@spaceymonk/react-radial-menu": "^2.1.0",
