@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use tauri::async_runtime::JoinHandle;
@@ -15,8 +15,10 @@ pub mod error;
 pub mod models;
 pub mod paths;
 pub mod service;
+mod utils;
 
 use service::{IdleReaperAction, OcrService};
+use utils::lock_recover;
 
 pub use error::{OcrServiceError, Result};
 
@@ -131,12 +133,6 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             Ok(())
         })
         .build()
-}
-
-fn lock_recover<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 fn normalize_interval(interval: Duration) -> Duration {

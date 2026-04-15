@@ -1240,7 +1240,6 @@ dependencies = [
  "ctxrun-process-utils",
  "rayon",
  "regex",
- "reqwest 0.12.24",
  "serde",
  "serde_json",
  "sysinfo",

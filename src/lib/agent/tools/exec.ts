@@ -1,28 +1,13 @@
-import { useAppStore } from '@/store/useAppStore';
-import { useContextStore } from '@/store/useContextStore';
 import { AgentToolRegistry } from '../registry';
 import { AgentToolExecutionResult } from '../types';
 import { runExecCommand } from '@/lib/exec/client';
+import { getWorkspaceRoot } from './workspaceRoot';
 
 interface ShellCommandArgs {
   command: string;
   workdir?: string;
   timeoutMs?: number;
   timeout_ms?: number;
-}
-
-function getWorkspaceRoot(): string {
-  const appRoot = useAppStore.getState().projectRoot?.trim();
-  if (appRoot) {
-    return appRoot;
-  }
-
-  const contextRoot = useContextStore.getState().projectRoot?.trim();
-  if (contextRoot) {
-    return contextRoot;
-  }
-
-  throw new Error('projectRoot is not configured. Please select a workspace folder first.');
 }
 
 function normalizeArgs(input: unknown): ShellCommandArgs {

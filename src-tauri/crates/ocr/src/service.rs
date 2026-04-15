@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex, MutexGuard};
+use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use image::DynamicImage;
@@ -11,6 +11,7 @@ use crate::download;
 use crate::error::{OcrServiceError, Result};
 use crate::models::{OcrBoundingBox, OcrLine, OcrPoint, OcrRecognitionResponse, OcrStatus};
 use crate::paths::{OCR_PROFILE, OcrPackagePaths, OcrStoragePaths, required_model_files};
+use crate::utils::lock_recover;
 use ctxrun_runtime_utils::IdleTracker;
 
 const OCR_IDLE_TTL: Duration = Duration::from_secs(120);
@@ -320,10 +321,4 @@ fn build_response(
         image_width,
         image_height,
     }
-}
-
-fn lock_recover<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }

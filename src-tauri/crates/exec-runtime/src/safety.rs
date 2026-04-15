@@ -1,12 +1,11 @@
 use std::path::{Path, PathBuf};
 
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ctxrun_process_utils::new_background_command;
 use regex::Regex;
 use serde::Deserialize;
 
 use crate::models::ExecRiskLevel;
+use crate::utils::encode_utf16_base64;
 
 const POWERSHELL_PARSER_SCRIPT: &str = include_str!("powershell_parser.ps1");
 
@@ -310,14 +309,6 @@ fn parse_powershell_script(script: &str) -> PowershellParseResult {
             commands: Vec::new(),
         },
     }
-}
-
-fn encode_utf16_base64(script: &str) -> String {
-    let mut utf16 = Vec::with_capacity(script.len() * 2);
-    for unit in script.encode_utf16() {
-        utf16.extend_from_slice(&unit.to_le_bytes());
-    }
-    BASE64_STANDARD.encode(utf16)
 }
 
 fn try_parse_simple_command_words(script: &str) -> Option<Vec<String>> {

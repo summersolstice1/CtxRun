@@ -7,6 +7,7 @@ pub mod commands;
 mod manager;
 pub mod models;
 mod safety;
+mod utils;
 
 pub type Result<T> = std::result::Result<T, String>;
 pub use manager::ExecRuntime;

@@ -1,8 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
-import { useAppStore } from '@/store/useAppStore';
-import { useContextStore } from '@/store/useContextStore';
 import { AgentToolRegistry } from '../registry';
 import { AgentToolExecutionResult } from '../types';
+import { getWorkspaceRoot } from './workspaceRoot';
 
 const TOOL_RUNTIME_PLUGIN_PREFIX = 'plugin:ctxrun-plugin-tool-runtime|';
 
@@ -91,20 +90,6 @@ interface AgentSearchLocalFilesResponse {
   maxDepth: number;
   truncated: boolean;
   entries: AgentListEntry[];
-}
-
-function getWorkspaceRoot(): string {
-  const appRoot = useAppStore.getState().projectRoot?.trim();
-  if (appRoot) {
-    return appRoot;
-  }
-
-  const contextRoot = useContextStore.getState().projectRoot?.trim();
-  if (contextRoot) {
-    return contextRoot;
-  }
-
-  throw new Error('projectRoot is not configured. Please select a workspace folder first.');
 }
 
 function normalizeListArgs(input: unknown): ListDirectoryArgs {

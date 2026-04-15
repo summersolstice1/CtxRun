@@ -120,7 +120,6 @@ tauri-plugin-os = { workspace = true }
 sysinfo = "0.37"
 regex = { workspace = true }
 rayon = { workspace = true }
-reqwest = { workspace = true }
 walkdir = "2"
 tokio = { workspace = true }
 thiserror = { workspace = true }

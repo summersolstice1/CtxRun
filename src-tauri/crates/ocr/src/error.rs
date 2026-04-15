@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use serde::Serialize;
 use thiserror::Error;
 
@@ -28,13 +26,6 @@ pub enum OcrServiceError {
 
     #[error("OCR model download failed for {file}: {reason}")]
     DownloadFailed { file: String, reason: String },
-
-    #[error("OCR model checksum mismatch for {file}: expected {expected}, got {actual}")]
-    ChecksumMismatch {
-        file: String,
-        expected: String,
-        actual: String,
-    },
 
     #[error("OCR engine initialization failed: {0}")]
     EngineInitFailed(String),
@@ -94,12 +85,6 @@ impl From<String> for OcrServiceError {
 impl From<&str> for OcrServiceError {
     fn from(value: &str) -> Self {
         Self::Message(value.to_string())
-    }
-}
-
-impl From<PathBuf> for OcrServiceError {
-    fn from(value: PathBuf) -> Self {
-        Self::Message(value.to_string_lossy().to_string())
     }
 }
 

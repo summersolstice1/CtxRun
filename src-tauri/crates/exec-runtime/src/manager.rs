@@ -4,8 +4,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use base64::Engine;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use ctxrun_process_utils::{new_background_command, new_tokio_background_command};
 use tauri::{AppHandle, Emitter, Runtime};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
@@ -18,6 +16,7 @@ use crate::models::{
     ExecRequestResponse, ExecRequestStatus, ExecSessionSnapshot, ExecSessionState,
 };
 use crate::safety::{SafetyDecision, assess_command};
+use crate::utils::encode_utf16_base64;
 
 const EXEC_OUTPUT_PREVIEW_CHARS: usize = 16_000;
 const DEFAULT_TIMEOUT_MS: u64 = 120_000;
@@ -297,14 +296,6 @@ impl ExecRuntime {
 
         Ok(handle.snapshot(None).await)
     }
-}
-
-fn encode_utf16_base64(script: &str) -> String {
-    let mut utf16 = Vec::with_capacity(script.len() * 2);
-    for unit in script.encode_utf16() {
-        utf16.extend_from_slice(&unit.to_le_bytes());
-    }
-    BASE64_STANDARD.encode(utf16)
 }
 
 fn spawn_output_task<R: Runtime>(

@@ -9,9 +9,6 @@ pub enum AppError {
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
 
-    #[error("HTTP error: {0}")]
-    Http(#[from] reqwest::Error),
-
     #[error("Database error: {0}")]
     Db(#[from] ctxrun_db::DbError),
 
