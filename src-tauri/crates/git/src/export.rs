@@ -138,12 +138,12 @@ fn to_xml(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
         if layout == ExportLayout::Split {
             if !file.original_content.is_empty() {
                 output.push_str("    <original><![CDATA[\n");
-                output.push_str(&file.original_content);
+                output.push_str(&escape_cdata(&file.original_content));
                 output.push_str("\n]]></original>\n");
             }
             if !file.modified_content.is_empty() {
                 output.push_str("    <modified><![CDATA[\n");
-                output.push_str(&file.modified_content);
+                output.push_str(&escape_cdata(&file.modified_content));
                 output.push_str("\n]]></modified>\n");
             }
         } else {
@@ -154,7 +154,7 @@ fn to_xml(files: Vec<GitDiffFile>, layout: ExportLayout) -> String {
                 layout,
             );
             output.push_str("    <diff><![CDATA[\n");
-            output.push_str(&diff);
+            output.push_str(&escape_cdata(&diff));
             output.push_str("\n]]></diff>\n");
         }
         output.push_str("  </file>\n");
@@ -211,4 +211,8 @@ fn escape_xml_attr(s: &str) -> String {
         .replace("'", "&apos;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
+}
+
+fn escape_cdata(content: &str) -> String {
+    content.replace("]]>", "]]]]><![CDATA[>")
 }

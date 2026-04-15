@@ -11,7 +11,7 @@ use serde::Deserialize;
 use sysinfo::System;
 use tauri::window::Color;
 use tauri::{
-    AppHandle, Listener, Manager, RunEvent, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
+    AppHandle, Listener, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder,
     WindowEvent, Wry,
     menu::{Menu, MenuItem},
     tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
@@ -262,9 +262,9 @@ fn main() {
                 })
                 .menu(&menu)
                 .show_menu_on_left_click(false)
-                .on_menu_event(|_app, event| {
+                .on_menu_event(|app, event| {
                     if event.id().as_ref() == TRAY_QUIT_MENU_ID {
-                        std::process::exit(0);
+                        app.exit(0);
                     }
                 })
                 .on_tray_icon_event(|tray, event| {
@@ -305,9 +305,5 @@ fn main() {
         })
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_app_handle, event| {
-            if let RunEvent::ExitRequested { api, .. } = event {
-                api.prevent_exit();
-            }
-        });
+        .run(|_app_handle, _event| {});
 }
